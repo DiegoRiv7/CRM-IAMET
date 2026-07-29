@@ -654,7 +654,7 @@
          '<div class="pend-cor-draft-txt">' + _esc(it._draft) + '</div>' +
          '<div class="pend-cor-draft-acts">' +
            '<button type="button" class="pend-cor-draft-mini" onclick="pendCorCopiar(' + it.mail_id + ')">Copiar</button>' +
-           '<button type="button" class="pend-cor-draft-mini" onclick="pendVerCorreo(' + it.mail_id + ')">Abrir en correo</button>' +
+           '<button type="button" class="pend-cor-draft-mini" onclick="pendCorAbrirConRespuesta(' + it.mail_id + ')">Abrir en correo</button>' +
          '</div></div>')
       : '';
     var listoOn = esListo ? ' on' : '';
@@ -749,8 +749,40 @@
   };
   window.pendVerCorreo = function (id) {
     var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    var mw = document.getElementById('widgetMail');
+    if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+    if (mw) mw.style.zIndex = '11000';
     if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); return; } catch (e) {} }
     window.location = '/app/?tab=correo';
+  };
+  // Abre el correo en el módulo Correo y despliega Responder con el borrador ya redactado.
+  window.pendCorAbrirConRespuesta = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    var draft = (it && it._draft) ? it._draft : '';
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    var mw = document.getElementById('widgetMail');
+    if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+    if (mw) mw.style.zIndex = '11000';
+    if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
+    else { window.location = '/app/?tab=correo'; return; }
+    if (!draft) return;
+    var draftHtml = _esc(draft).replace(/\n/g, '<br>');
+    // El detalle del correo se carga async; en cuanto mailResponder logre abrir el
+    // panel de respuesta (ya con el correo cargado), inyectamos el borrador arriba.
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      try { if (typeof window.mailResponder === 'function') window.mailResponder(false); } catch (e) {}
+      var panel = document.getElementById('mailReplyPanel');
+      var visible = panel && window.getComputedStyle(panel).display !== 'none';
+      if (visible) {
+        clearInterval(iv);
+        var ed = document.getElementById('mailRespEditor');
+        if (ed) { ed.innerHTML = draftHtml + '<br><br>' + ed.innerHTML; try { ed.focus(); } catch (e) {} }
+      } else if (tries > 40) {
+        clearInterval(iv);
+      }
+    }, 150);
   };
   // Genera un borrador de respuesta con la IA (mismo proveedor del asistente).
   window.pendCorGenerar = function (id) {
