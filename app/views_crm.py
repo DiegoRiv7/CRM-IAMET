@@ -7722,6 +7722,58 @@ def api_asistente_correos_estado(request):
 
 
 @login_required
+def api_asistente_correo_cuerpo(request, correo_id):
+    """Cuerpo de un correo para PREVISUALIZAR en el asistente SIN marcarlo como leído.
+    Usa IMAP en modo readonly + BODY.PEEK (no toca la bandera \\Seen) y NO guarda nada
+    en el modelo, para no interferir con la carga normal (adjuntos + marcar leído) que
+    hace la sección Correo cuando el usuario lo abre de verdad.
+    """
+    import email as _email
+    from .models import MailCorreo, MailConexion
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'no encontrado'}, status=404)
+
+    # Ya en caché (se abrió antes): devolverlo sin tocar nada.
+    if correo.cuerpo_cargado:
+        return JsonResponse({'ok': True, 'cuerpo_texto': correo.cuerpo_texto or '',
+                             'cuerpo_html': correo.cuerpo_html or ''})
+
+    texto, html = '', ''
+    try:
+        from .views_mail import _get_imap
+        conexion = correo.conexion or MailConexion.objects.filter(usuario=request.user, activo=True).first()
+        if not conexion:
+            return JsonResponse({'ok': True, 'cuerpo_texto': '', 'cuerpo_html': ''})
+        imap = _get_imap(conexion)
+        imap.select(correo.carpeta_imap, readonly=True)     # readonly ⇒ NO marca \Seen
+        typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+        raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+        if raw:
+            msg = _email.message_from_bytes(raw)
+            for part in msg.walk():
+                if part.get_filename():
+                    continue
+                ct = part.get_content_type()
+                if ct == 'text/plain' and not texto:
+                    cs = part.get_content_charset() or 'utf-8'
+                    texto = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')
+                elif ct == 'text/html' and not html:
+                    cs = part.get_content_charset() or 'utf-8'
+                    html = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')[:200000]
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    except Exception:
+        return JsonResponse({'ok': True, 'cuerpo_texto': correo.cuerpo_texto or '',
+                             'cuerpo_html': correo.cuerpo_html or ''})
+
+    return JsonResponse({'ok': True, 'cuerpo_texto': texto, 'cuerpo_html': html})
+
+
+@login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
     Sirve para refrescar el widget en el momento (sin recargar todo ni la IA)

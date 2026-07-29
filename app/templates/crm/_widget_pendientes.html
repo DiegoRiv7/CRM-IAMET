@@ -661,7 +661,7 @@
     };
     if (it._body != null) { render(it._body); return; }
     box.innerHTML = '<span style="color:#9a9ca3;">Cargando contenido…</span>';
-    fetch('/app/api/mail/detalle/' + it.mail_id + '/', { credentials: 'same-origin' })
+    fetch('/app/api/asistente/correo/' + it.mail_id + '/cuerpo/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var txt = '';
