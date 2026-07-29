@@ -3150,6 +3150,8 @@ class MensajeOportunidad(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     texto = models.TextField(blank=True)
     imagen = models.FileField(upload_to=chat_imagen_upload_path, null=True, blank=True)
+    # Mensaje fijado en la conversación (visible para todo el equipo)
+    fijado = models.BooleanField(default=False, db_index=True)
     reply_to = models.ForeignKey(
         'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas'
     )

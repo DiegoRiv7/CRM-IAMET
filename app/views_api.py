@@ -608,6 +608,7 @@ def api_chat_oportunidad(request, opp_id):
             'es_mio': (u.id == request.user.id) if u else False,
             'es_bitrix': es_bitrix,
             'bitrix_tipo': bitrix_tipo,
+            'fijado': bool(getattr(m, 'fijado', False)),
         }
 
     if request.method == 'GET':
@@ -723,6 +724,28 @@ def api_chat_oportunidad(request, opp_id):
         return JsonResponse({'success': True, 'mensaje': serializar(m)})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@login_required
+def api_chat_mensaje_fijar(request, opp_id, msg_id):
+    """Fija/desfija un mensaje de la conversación (visible para el equipo).
+    Solo puede haber UN mensaje fijado por oportunidad: fijar uno desfija
+    el anterior."""
+    from .models import MensajeOportunidad, TodoItem
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    try:
+        opp = TodoItem.objects.get(id=opp_id)
+        m = MensajeOportunidad.objects.get(id=msg_id, oportunidad=opp)
+    except (TodoItem.DoesNotExist, MensajeOportunidad.DoesNotExist):
+        return JsonResponse({'error': 'Mensaje no encontrado'}, status=404)
+    nuevo_estado = not m.fijado
+    if nuevo_estado:
+        MensajeOportunidad.objects.filter(oportunidad=opp, fijado=True).update(fijado=False)
+    m.fijado = nuevo_estado
+    m.save(update_fields=['fijado'])
+    return JsonResponse({'success': True, 'fijado': m.fijado})
 
 
 @csrf_exempt

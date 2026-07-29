@@ -225,6 +225,30 @@
         wireDocInput(inst, 'poNumber', 'po_number');
         wireDocInput(inst, 'facturaNumero', 'factura_numero');
 
+        // Conversación embebida: chips de filtro + búsqueda con debounce
+        inst.convFiltro = 'todo';
+        inst.convQuery = '';
+        root.addEventListener('click', function (ev) {
+            var chip = ev.target.closest('[data-conv-filtro]');
+            if (!chip || !root.contains(chip)) return;
+            inst.convFiltro = chip.getAttribute('data-conv-filtro');
+            root.querySelectorAll('[data-conv-filtro]').forEach(function (c) {
+                c.classList.toggle('is-active', c === chip);
+            });
+            renderConvFeed(inst);
+        });
+        var convSearchEl = q(inst, 'convSearch');
+        if (convSearchEl) {
+            convSearchEl.addEventListener('input', function () {
+                clearTimeout(inst._convSearchTO);
+                var v = this.value;
+                inst._convSearchTO = setTimeout(function () {
+                    inst.convQuery = v.trim().toLowerCase();
+                    renderConvFeed(inst);
+                }, 200);
+            });
+        }
+
         // Probabilidad: drag en la barra
         q(inst, 'probBar').addEventListener('mousedown', function (e) {
             if (window.ES_INGENIERO) return;
@@ -337,6 +361,9 @@
                 break;
             case 'vincular-proyecto':
                 abrirVincularProyecto(inst);
+                break;
+            case 'conv-enviar':
+                enviarNotaConv(inst);
                 break;
             case 'save-confirm':
                 saveEdits(inst);
@@ -486,6 +513,7 @@
         inst.data = JSON.parse(JSON.stringify(d));
         inst.edited = {};
         hideSaveBar(inst);
+        loadConversacion(inst);
 
         var tipo = d.tipo_negociacion || 'runrate';
         var ing = !!window.ES_INGENIERO;
@@ -1206,6 +1234,156 @@
     }
 
     /* ── Sección: Proyecto vinculado (port woRenderProyectoSection) ── */
+
+    /* ── Conversación embebida (expediente vivo) ─────────────────────
+       Feed compacto de la conversación de la oportunidad dentro del
+       widget: notas, tarjetas de correo y eventos, con búsqueda, filtro
+       por tipo y mensaje fijado. La versión completa (adjuntos, replies,
+       menciones) sigue en el overlay (botón expandir). */
+    function _convClasificar(m) {
+        if (m.tipo === 'correo') return 'correo';
+        var t = m.texto || '';
+        if (m.es_bitrix || t.indexOf('[ACT') === 0 || m.bitrix_tipo) return 'evento';
+        return 'nota';
+    }
+
+    function loadConversacion(inst) {
+        var feed = q(inst, 'convFeed');
+        if (!feed) return;
+        var oppId = inst.oppId;
+        fetch('/app/api/oportunidad/' + oppId + '/chat/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!alive(inst) || inst.oppId !== oppId) return;
+                inst.convMsgs = data.mensajes || [];
+                renderConvFeed(inst, true);
+            })
+            .catch(function () {
+                if (feed) feed.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">No se pudo cargar la conversación.</div>';
+            });
+    }
+
+    function renderConvFeed(inst, scrollFondo) {
+        var feed = q(inst, 'convFeed');
+        var pinned = q(inst, 'convPinned');
+        if (!feed) return;
+        var msgs = inst.convMsgs || [];
+        var filtro = inst.convFiltro || 'todo';
+        var query = inst.convQuery || '';
+
+        // Barra de fijado (siempre visible, independiente del filtro)
+        var fijado = null;
+        for (var i = 0; i < msgs.length; i++) {
+            if (msgs[i].fijado) { fijado = msgs[i]; break; }
+        }
+        if (pinned) {
+            if (fijado) {
+                pinned.style.display = 'flex';
+                pinned.style.cssText += ';align-items:flex-start;gap:8px;background:#FFF8E6;border:1px solid #F5DFA6;border-radius:10px;padding:8px 11px;margin-bottom:0.55rem;';
+                pinned.innerHTML =
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="#B45309" stroke="#B45309" stroke-width="1" style="flex-shrink:0;margin-top:2px;"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.66rem;font-weight:800;color:#B45309;letter-spacing:0.04em;">FIJADO' + (fijado.nombre ? ' \u00b7 ' + esc(fijado.nombre) : '') + '</div>' +
+                    '<div style="font-size:0.78rem;color:#1D1D1F;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(fijado.texto || '') + '</div>' +
+                    '</div>' +
+                    '<button type="button" data-conv-pin="' + fijado.id + '" title="Desfijar" style="border:none;background:none;color:#B45309;cursor:pointer;font-size:0.8rem;padding:2px;flex-shrink:0;">&times;</button>';
+            } else {
+                pinned.style.display = 'none';
+            }
+        }
+
+        var visibles = msgs.filter(function (m) {
+            var cls = _convClasificar(m);
+            if (filtro !== 'todo' && cls !== filtro) return false;
+            if (query) {
+                var blob = ((m.texto || '') + ' ' + (m.nombre || '') + ' ' + (m.asunto || '') + ' ' + (m.remitente_nombre || '')).toLowerCase();
+                if (blob.indexOf(query) === -1) return false;
+            }
+            return true;
+        });
+
+        if (!visibles.length) {
+            feed.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;padding:1.5rem 0;">' +
+                (query || filtro !== 'todo' ? 'Sin resultados con este filtro.' : 'Sin mensajes todavía. Escribe la primera nota.') + '</div>';
+            return;
+        }
+
+        var h = '';
+        visibles.forEach(function (m) {
+            var cls = _convClasificar(m);
+            if (cls === 'correo') {
+                var esEnv = (m.direccion || '').toUpperCase() === 'SENT';
+                var acc = esEnv ? '#0052D4' : '#059669';
+                h += '<div onclick="if(typeof woCorreoVerDetalle===\'function\')woCorreoVerDetalle(' + m.id + ')" ' +
+                    'style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;background:' + (esEnv ? 'rgba(0,82,212,0.05)' : 'rgba(16,185,129,0.06)') + ';border:1px solid ' + (esEnv ? 'rgba(0,82,212,0.16)' : 'rgba(16,185,129,0.2)') + ';border-radius:10px;padding:8px 11px;">' +
+                    '<svg width="13" height="13" fill="none" stroke="' + acc + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.62rem;font-weight:800;color:' + acc + ';letter-spacing:0.05em;">' + (esEnv ? 'CORREO ENVIADO' : 'CORREO RECIBIDO') + '</div>' +
+                    '<div style="font-size:0.78rem;font-weight:700;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.asunto || '(sin asunto)') + '</div>' +
+                    '<div style="font-size:0.66rem;color:#9CA3AF;margin-top:1px;">' + esc(m.fecha || '') + '</div>' +
+                    '</div></div>';
+                return;
+            }
+            if (cls === 'evento') {
+                h += '<div style="display:flex;align-items:center;gap:7px;padding:2px 4px;">' +
+                    '<span style="width:6px;height:6px;border-radius:50%;background:#C7C7CC;flex-shrink:0;"></span>' +
+                    '<span style="font-size:0.72rem;color:#86868B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + esc((m.texto || '').replace(/^\[[^\]]*\]\s*/, '').split('|')[0]) + '</span>' +
+                    '<span style="font-size:0.64rem;color:#C7C7CC;flex-shrink:0;">' + esc(m.fecha || '') + '</span>' +
+                    '</div>';
+                return;
+            }
+            // Nota
+            var mio = !!m.es_mio;
+            h += '<div class="wo-conv-msg" style="display:flex;flex-direction:column;align-items:' + (mio ? 'flex-end' : 'flex-start') + ';">' +
+                '<div style="font-size:0.64rem;color:#9CA3AF;margin-bottom:2px;padding:0 6px;">' + (mio ? '' : esc(m.nombre || '') + ' \u00b7 ') + esc(m.fecha || '') + '</div>' +
+                '<div style="display:flex;align-items:center;gap:5px;max-width:88%;flex-direction:' + (mio ? 'row-reverse' : 'row') + ';">' +
+                '<div style="background:' + (mio ? '#0052D4' : '#F2F2F7') + ';color:' + (mio ? '#fff' : '#1D1D1F') + ';padding:7px 11px;border-radius:' + (mio ? '13px 13px 4px 13px' : '13px 13px 13px 4px') + ';font-size:0.8rem;line-height:1.4;word-break:break-word;">' + esc(m.texto || '') + '</div>' +
+                '<button type="button" data-conv-pin="' + m.id + '" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '" class="wo-conv-pinbtn' + (m.fijado ? ' is-pinned' : '') + '">' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="' + (m.fijado ? '#B45309' : 'none') + '" stroke="currentColor" stroke-width="1.6"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                '</button>' +
+                '</div></div>';
+        });
+        feed.innerHTML = h;
+        if (scrollFondo) feed.scrollTop = feed.scrollHeight;
+
+        // Pin: delegación local (feed + barra de fijado se regeneran juntos)
+        var wire = function (contEl) {
+            if (!contEl) return;
+            contEl.querySelectorAll('[data-conv-pin]').forEach(function (btn) {
+                btn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    var msgId = btn.getAttribute('data-conv-pin');
+                    fetch('/app/api/oportunidad/' + inst.oppId + '/chat/mensaje/' + msgId + '/fijar/', {
+                        method: 'POST', headers: { 'X-CSRFToken': csrf() },
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) { if (d && d.success) loadConversacion(inst); });
+                });
+            });
+        };
+        wire(feed);
+        wire(pinned);
+    }
+
+    function enviarNotaConv(inst) {
+        var input = q(inst, 'convInput');
+        if (!input) return;
+        var texto = input.value.trim();
+        if (!texto) return;
+        input.value = '';
+        var fd = new FormData();
+        fd.append('texto', texto);
+        fetch('/app/api/oportunidad/' + inst.oppId + '/chat/', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRFToken': csrf() },
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.success) loadConversacion(inst);
+                else input.value = texto;  // restaurar si falló
+            })
+            .catch(function () { input.value = texto; });
+    }
 
     function renderProyecto(inst, d) {
         var card = q(inst, 'proyectoCard');

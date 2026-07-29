@@ -121,3 +121,37 @@ body {
     border-radius: 0.5rem;
     transition: width 0.5s ease-in-out;
 }
+
+/* ═══ Conversación embebida (widget v3) ═══ */
+.wo-conv-chip {
+    border: 1px solid #E5E5EA;
+    background: #fff;
+    color: #6B7280;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+}
+.wo-conv-chip:hover { border-color: #BFDBFE; color: #0052D4; }
+.wo-conv-chip.is-active {
+    background: #0052D4;
+    border-color: #0052D4;
+    color: #fff;
+}
+.wo-conv-pinbtn {
+    border: none;
+    background: none;
+    color: #C7C7CC;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s;
+    flex-shrink: 0;
+}
+.wo-conv-msg:hover .wo-conv-pinbtn { opacity: 1; }
+.wo-conv-pinbtn:hover { color: #B45309; }
+.wo-conv-pinbtn.is-pinned { opacity: 1; color: #B45309; }
