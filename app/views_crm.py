@@ -8008,33 +8008,83 @@ def api_asistente_correo_cuerpo(request, correo_id):
 
 # ══════════════════════ Sección Reportes · "Mi desempeño" ══════════════════════
 
-def _desempeno_rango(periodo, today):
-    """(inicio, fin, etiqueta) del período seleccionado."""
+_DES_MESES_L = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+_DES_MESES_A = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul',
+                'ago', 'sep', 'oct', 'nov', 'dic']
+
+
+def _desempeno_periodo(gran, ref):
+    """(inicio, fin, etiqueta, meses) del período que contiene ref.
+    meses = lista de (mes_int, anio) que cubre el dinero (mensual) del período."""
+    import calendar
     from datetime import timedelta
-    if periodo == 'dia':
-        return today, today, 'Hoy'
-    if periodo == 'semana':
-        return today - timedelta(days=today.weekday()), today, 'Esta semana'
-    return today.replace(day=1), today, 'Este mes'
+    if gran == 'dia':
+        return ref, ref, '%d de %s, %d' % (ref.day, _DES_MESES_L[ref.month], ref.year), [(ref.month, ref.year)]
+    if gran == 'semana':
+        start = ref - timedelta(days=ref.weekday())
+        end = start + timedelta(days=6)
+        if start.month == end.month:
+            label = '%d–%d %s %d' % (start.day, end.day, _DES_MESES_A[start.month], start.year)
+        else:
+            label = '%d %s – %d %s %d' % (start.day, _DES_MESES_A[start.month],
+                                          end.day, _DES_MESES_A[end.month], end.year)
+        return start, end, label, [(start.month, start.year)]
+    if gran == 'anio':
+        return (ref.replace(month=1, day=1), ref.replace(month=12, day=31),
+                '%d' % ref.year, [(m, ref.year) for m in range(1, 13)])
+    # mes
+    last = calendar.monthrange(ref.year, ref.month)[1]
+    return (ref.replace(day=1), ref.replace(day=last),
+            '%s %d' % (_DES_MESES_L[ref.month].capitalize(), ref.year), [(ref.month, ref.year)])
 
 
-def _desempeno_dinero(user_ids, today):
-    """(facturado, cobrado) del MES en curso. Son datos mensuales (archivos admin):
-    para un vendedor se suman sus clientes (match difuso por nombre); user_ids None
-    (toda la empresa) usa el total del archivo directo."""
+def _desempeno_params(request):
+    """Resuelve (user_ids, es_global, gran, ref, today) desde el request.
+    user_ids None = toda la empresa (supervisor global con 'todos')."""
+    from django.utils import timezone
+    from datetime import date
+    user = request.user
+    today = timezone.localdate()
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+    gran = (request.GET.get('gran', 'mes') or 'mes').strip().lower()
+    if gran not in ('dia', 'semana', 'mes', 'anio'):
+        gran = 'mes'
+    ref = today
+    rs = (request.GET.get('ref', '') or '').strip()
+    if rs:
+        try:
+            y, m, d = rs.split('-')
+            ref = date(int(y), int(m), int(d))
+        except Exception:
+            ref = today
+    if ref > today:
+        ref = today
+    visibles = get_usuarios_visibles_ids(user)   # None = supervisor global
+    if sel == 'todos':
+        user_ids = None if visibles is None else list(visibles)
+        es_global = True
+    elif sel.isdigit():
+        tid = int(sel)
+        user_ids = [tid] if (visibles is None or tid in visibles) else [user.id]
+        es_global = False
+    else:
+        user_ids = [user.id]
+        es_global = False
+    return user_ids, es_global, gran, ref, today
+
+
+def _desempeno_dinero(user_ids, meses):
+    """(facturado, cobrado) sumando los meses dados [(mes_int, anio), ...]. Son datos
+    mensuales (archivos admin): para un vendedor se suman sus clientes (match difuso por
+    nombre); user_ids None (toda la empresa) usa el total del archivo directo."""
     from decimal import Decimal
     from .models import ArchivoFacturacion, ArchivoCobrado, Cliente
-    mes = '%02d' % today.month
-    anio = today.year
-    af = ArchivoFacturacion.objects.filter(mes=mes, anio=anio).first()
-    ac = ArchivoCobrado.objects.filter(mes=mes, anio=anio).first()
-    if user_ids is None:
-        return (af.total_facturado if af else Decimal('0')), (ac.total_cobrado if ac else Decimal('0'))
-    objetivo = [(nm or '').upper().strip() for _cid, nm in
-                Cliente.objects.filter(asignado_a_id__in=user_ids).values_list('id', 'nombre_empresa')]
-    objetivo = [n for n in objetivo if n]
-    if not objetivo:
-        return Decimal('0'), Decimal('0')
+    objetivo = None
+    if user_ids is not None:
+        objetivo = [(nm or '').upper().strip() for _cid, nm in
+                    Cliente.objects.filter(asignado_a_id__in=user_ids).values_list('id', 'nombre_empresa')]
+        objetivo = [n for n in objetivo if n]
 
     def _match_sum(datos):
         total = Decimal('0')
@@ -8043,6 +8093,12 @@ def _desempeno_dinero(user_ids, today):
         for cname, monto in datos.items():
             cu = (cname or '').upper().strip()
             if not cu:
+                continue
+            if objetivo is None:
+                try:
+                    total += Decimal(str(monto))
+                except Exception:
+                    pass
                 continue
             for nm in objetivo:
                 if nm == cu or (len(nm) >= 4 and (nm in cu or cu in nm)):
@@ -8053,7 +8109,19 @@ def _desempeno_dinero(user_ids, today):
                     break
         return total
 
-    return _match_sum(af.datos_json if af else None), _match_sum(ac.datos_json if ac else None)
+    fact = Decimal('0')
+    cob = Decimal('0')
+    for (m, a) in meses:
+        ms = '%02d' % m
+        af = ArchivoFacturacion.objects.filter(mes=ms, anio=a).first()
+        ac = ArchivoCobrado.objects.filter(mes=ms, anio=a).first()
+        if objetivo is None:
+            fact += (af.total_facturado if af else Decimal('0'))
+            cob += (ac.total_cobrado if ac else Decimal('0'))
+        else:
+            fact += _match_sum(af.datos_json if af else None)
+            cob += _match_sum(ac.datos_json if ac else None)
+    return fact, cob
 
 
 def _desempeno_metricas(user_ids, start, end):
@@ -8121,44 +8189,20 @@ def _desempeno_metricas(user_ids, start, end):
     }
 
 
-@login_required
-def api_asistente_desempeno(request):
-    """GET /app/api/asistente/desempeno/?vendedor=<id|todos|mias>&periodo=<dia|semana|mes>
-    Mosaico de KPIs de desempeño personal (o de toda la empresa si jefe elige 'todos').
-    El hero facturado/cobrado es del MES en curso (dato mensual); los tiles de actividad
-    responden al período elegido. Oculta métricas que no aplican al rol."""
-    from django.utils import timezone
-    user = request.user
-    today = timezone.localdate()
-    sel = (request.GET.get('vendedor', '') or '').strip().lower()
-    periodo = (request.GET.get('periodo', 'mes') or 'mes').strip().lower()
-    if periodo not in ('dia', 'semana', 'mes'):
-        periodo = 'mes'
+def _desempeno_fmt(v):
+    try:
+        return '${:,.0f}'.format(float(v))
+    except Exception:
+        return '$0'
 
-    visibles = get_usuarios_visibles_ids(user)   # None = supervisor global (ve todo)
-    if sel == 'todos':
-        user_ids = None if visibles is None else list(visibles)
-        es_global = True
-    elif sel.isdigit():
-        tid = int(sel)
-        user_ids = [tid] if (visibles is None or tid in visibles) else [user.id]
-        es_global = False
-    else:   # '' o 'mias'
-        user_ids = [user.id]
-        es_global = False
 
-    start, end, plabel = _desempeno_rango(periodo, today)
+def _desempeno_paquete(request):
+    """Calcula todo el desempeño para el request → dict con título, período, dinero,
+    tiles y metadatos. Compartido por el endpoint JSON y el de exportación."""
+    user_ids, es_global, gran, ref, today = _desempeno_params(request)
+    start, end, plabel, meses = _desempeno_periodo(gran, ref)
     met = _desempeno_metricas(user_ids, start, end)
-    facturado, cobrado = _desempeno_dinero(user_ids, today)
-
-    MESES = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
-             'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-
-    def fmt(v):
-        try:
-            return '${:,.0f}'.format(float(v))
-        except Exception:
-            return '$0'
+    facturado, cobrado = _desempeno_dinero(user_ids, meses)
 
     hay_negocio = met['tiene_opps'] or met['tiene_clientes'] or es_global
     tiles = []
@@ -8170,19 +8214,138 @@ def api_asistente_desempeno(request):
     tiles.append({'key': 'tareas', 'valor': met['tareas'], 'label': 'Tareas cerradas'})
     tiles.append({'key': 'actividades', 'valor': met['actividades'], 'label': 'Actividades completadas'})
 
-    return JsonResponse({
-        'success': True,
-        'periodo': periodo,
-        'periodo_label': plabel,
+    # A quién corresponde el reporte (para la exportación).
+    if es_global:
+        quien = 'Toda la empresa'
+    elif user_ids and len(user_ids) == 1:
+        from django.contrib.auth.models import User as _User
+        u = _User.objects.filter(id=user_ids[0]).first()
+        quien = (u.get_full_name() or u.username) if u else ''
+    else:
+        quien = ''
+
+    return {
         'titulo': ('Desempeño del equipo' if es_global else 'Tu desempeño'),
+        'quien': quien,
+        'gran': gran,
+        'ref': ref.isoformat(),
+        'periodo_label': plabel,
+        'puede_avanzar': end < today,
         'dinero': {
             'mostrar': bool(hay_negocio),
-            'facturado_fmt': fmt(facturado),
-            'cobrado_fmt': fmt(cobrado),
-            'mes_label': MESES[today.month],
+            'facturado': float(facturado),
+            'cobrado': float(cobrado),
+            'facturado_fmt': _desempeno_fmt(facturado),
+            'cobrado_fmt': _desempeno_fmt(cobrado),
         },
         'tiles': tiles,
+    }
+
+
+@login_required
+def api_asistente_desempeno(request):
+    """GET /app/api/asistente/desempeno/?vendedor=<id|todos|mias>&gran=<dia|semana|mes|anio>&ref=YYYY-MM-DD
+    Mosaico de KPIs de desempeño. El hero facturado/cobrado es mensual (dato de archivos
+    admin); los tiles de actividad responden al período elegido. Oculta métricas que no
+    aplican al rol. `ref` fija el período a mostrar (default hoy)."""
+    pkg = _desempeno_paquete(request)
+    return JsonResponse({
+        'success': True,
+        'titulo': pkg['titulo'],
+        'gran': pkg['gran'],
+        'ref': pkg['ref'],
+        'periodo_label': pkg['periodo_label'],
+        'puede_avanzar': pkg['puede_avanzar'],
+        'dinero': {
+            'mostrar': pkg['dinero']['mostrar'],
+            'facturado_fmt': pkg['dinero']['facturado_fmt'],
+            'cobrado_fmt': pkg['dinero']['cobrado_fmt'],
+        },
+        'tiles': pkg['tiles'],
     })
+
+
+@login_required
+def api_asistente_desempeno_export(request):
+    """GET .../desempeno/export/?formato=<xlsx|pdf>&... — descarga el desempeño como
+    tabla Excel o PDF, respetando vendedor/período."""
+    formato = (request.GET.get('formato', 'xlsx') or 'xlsx').strip().lower()
+    pkg = _desempeno_paquete(request)
+
+    filas = []
+    if pkg['dinero']['mostrar']:
+        filas.append(('Facturado', pkg['dinero']['facturado_fmt']))
+        filas.append(('Cobrado', pkg['dinero']['cobrado_fmt']))
+    for t in pkg['tiles']:
+        filas.append((t['label'], t['valor']))
+
+    titulo = pkg['titulo']
+    quien = pkg['quien']
+    periodo = pkg['periodo_label']
+    base_name = 'desempeno_%s_%s' % (pkg['gran'], pkg['ref'])
+
+    if formato == 'pdf':
+        from django.utils.html import escape as _esc
+        filas_html = ''.join(
+            '<tr><td class="k">%s</td><td class="v">%s</td></tr>' % (_esc(str(k)), _esc(str(v)))
+            for k, v in filas)
+        html = (
+            '<html><head><meta charset="utf-8"><style>'
+            '@page{size:A4;margin:2cm;}'
+            'body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1c1d22;}'
+            'h1{font-size:22px;margin:0 0 2px;} .sub{color:#6b6d76;font-size:13px;margin-bottom:2px;}'
+            '.per{color:#0a84ff;font-weight:700;font-size:13px;margin-bottom:18px;}'
+            'table{width:100%;border-collapse:collapse;} '
+            'td{padding:11px 6px;border-bottom:1px solid #eceef1;font-size:14px;} '
+            'td.k{color:#4b5563;} td.v{text-align:right;font-weight:700;font-size:16px;} '
+            '.foot{margin-top:24px;color:#9a9ca3;font-size:11px;}'
+            '</style></head><body>'
+            '<h1>%s</h1>'
+            '<div class="sub">%s</div>'
+            '<div class="per">%s</div>'
+            '<table>%s</table>'
+            '<div class="foot">Generado desde el CRM IAMET · La facturación y cobranza son del período mensual correspondiente.</div>'
+            '</body></html>'
+        ) % (_esc(titulo), _esc(quien), _esc(periodo), filas_html)
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        resp = HttpResponse(pdf, content_type='application/pdf')
+        resp['Content-Disposition'] = 'attachment; filename="%s.pdf"' % base_name
+        return resp
+
+    # Excel (xlsx)
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Desempeño'
+    ws['A1'] = titulo
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A2'] = quien
+    ws['A2'].font = Font(color='6B6D76', size=11)
+    ws['A3'] = periodo
+    ws['A3'].font = Font(bold=True, color='0A84FF', size=11)
+    hrow = 5
+    ws.cell(row=hrow, column=1, value='Métrica').font = Font(bold=True, color='FFFFFF')
+    ws.cell(row=hrow, column=2, value='Valor').font = Font(bold=True, color='FFFFFF')
+    fill = PatternFill('solid', fgColor='0A84FF')
+    ws.cell(row=hrow, column=1).fill = fill
+    ws.cell(row=hrow, column=2).fill = fill
+    for i, (k, v) in enumerate(filas, start=hrow + 1):
+        ws.cell(row=i, column=1, value=str(k))
+        c = ws.cell(row=i, column=2, value=v)
+        c.alignment = Alignment(horizontal='right')
+    ws.column_dimensions['A'].width = 34
+    ws.column_dimensions['B'].width = 18
+    import io
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="%s.xlsx"' % base_name
+    return resp
 
 
 @login_required

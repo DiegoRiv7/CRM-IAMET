@@ -177,23 +177,29 @@
   .pend-sc-btn.blue{background:#0a84ff;}
   .pend-sc-btn.blue:hover{background:#0060df;}
   .pend-sc-btn:disabled{opacity:.55;cursor:default;}
-  /* ── Sección Reportes · Mi desempeño (mosaico de KPIs) ── */
-  .pend-des{max-width:720px;margin:2% auto 0;padding:0 6px;}
-  .pend-des-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
-  .pend-des-title{font-size:1.5rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  /* ── Sección Reportes · Mi desempeño (editorial, coherente con Resumen/Clientes) ── */
+  .pend-des{max-width:960px;margin:0 auto;padding:4px 8px 24px;}
+  .pend-des-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .pend-des-actions{display:flex;gap:8px;flex:none;}
+  .pend-des-xbtn{border:1px solid #e2e4e8;border-radius:9px;background:#fff;color:#4b5563;font-size:.82rem;font-weight:600;
+    padding:7px 14px;cursor:pointer;transition:background .12s,border-color .12s;}
+  .pend-des-xbtn:hover{background:#f5f6f8;border-color:#d4d6da;}
+  .pend-des-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
   .pend-des-seg{display:inline-flex;background:#f0f1f3;border-radius:10px;padding:3px;gap:2px;}
-  .pend-des-seg button{border:none;background:none;font-size:.82rem;font-weight:600;color:#6b6d76;padding:6px 13px;border-radius:8px;cursor:pointer;transition:all .12s;}
+  .pend-des-seg button{border:none;background:none;font-size:.82rem;font-weight:600;color:#6b6d76;padding:6px 15px;border-radius:8px;cursor:pointer;transition:all .12s;}
   .pend-des-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
-  .pend-des-hero{background:linear-gradient(135deg,#0a84ff,#0060df);border-radius:16px;padding:20px 24px;color:#fff;margin-bottom:16px;}
-  .pend-des-hero-row{display:flex;gap:36px;flex-wrap:wrap;}
-  .pend-des-hero-lbl{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:3px;}
-  .pend-des-hero-val{font-size:1.85rem;font-weight:800;letter-spacing:-.01em;line-height:1.1;}
-  .pend-des-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-  .pend-des-tile{background:#fff;border:1px solid #edeef1;border-radius:14px;padding:18px 16px;text-align:left;}
-  .pend-des-tile-val{font-size:2.1rem;font-weight:800;color:#1c1d22;line-height:1;letter-spacing:-.02em;}
-  .pend-des-tile-lbl{font-size:.82rem;color:#6b6d76;font-weight:600;margin-top:7px;line-height:1.3;}
-  .pend-des-foot{font-size:.78rem;color:#9a9ca3;text-align:center;margin-top:16px;}
-  @media (max-width:620px){ .pend-des-grid{grid-template-columns:repeat(2,1fr);} }
+  .pend-des-nav{display:inline-flex;align-items:center;gap:8px;}
+  .pend-des-nav button{width:30px;height:30px;border-radius:8px;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;font-size:1.05rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+  .pend-des-nav button:hover:not(:disabled){background:#f5f6f8;}
+  .pend-des-nav button:disabled{opacity:.35;cursor:default;}
+  .pend-des-nav-lbl{font-size:.9rem;font-weight:700;color:#1c1d22;min-width:130px;text-align:center;}
+  .pend-des-money{display:flex;gap:56px;padding:2px 4px 22px;border-bottom:1px solid #edeef1;margin-bottom:26px;flex-wrap:wrap;}
+  .pend-des-money-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9a9ca3;margin-bottom:5px;}
+  .pend-des-money-val{font-size:2.1rem;font-weight:800;color:#16181d;letter-spacing:-.02em;line-height:1;}
+  .pend-des-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:28px 24px;padding:0 4px;}
+  .pend-des-kpi-val{font-size:2.4rem;font-weight:800;color:#16181d;line-height:1;letter-spacing:-.02em;}
+  .pend-des-kpi-lbl{font-size:.86rem;color:#6b6d76;font-weight:600;margin-top:9px;line-height:1.3;}
+  @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
   /* Botonera de la tarjeta de correo */
   .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
   .pend-cor-btns .pend-sc-btn{margin-top:0;}
@@ -359,7 +365,7 @@
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
   var _section = 'dia', _cliData = null, _cliIdx = 0, _corData = null, _corIdx = 0;
-  var _desData = null, _desPeriodo = 'mes';
+  var _desData = null, _desGran = 'mes', _desRef = null;
   var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
@@ -907,12 +913,16 @@
   }
   window.pendRefreshCorreos = pendRefreshCorreos;
 
-  // ── Sección Reportes · "Mi desempeño" (mosaico de KPIs) ──
+  // ── Sección Reportes · "Mi desempeño" (editorial + período navegable + export) ──
+  function _desQS() {
+    return 'vendedor=' + encodeURIComponent(_sel) + '&gran=' + encodeURIComponent(_desGran) +
+      (_desRef ? '&ref=' + encodeURIComponent(_desRef) : '');
+  }
   function _renderDesempeno() {
     var res = el('pendResArea'); if (!res) return;
     if (_desData) { _drawDesempeno(res); return; }
     res.className = ''; res.innerHTML = '<div class="pend-empty">Calculando tu desempeño…</div>';
-    fetch('/app/api/asistente/desempeno/?vendedor=' + encodeURIComponent(_sel) + '&periodo=' + encodeURIComponent(_desPeriodo), { credentials: 'same-origin' })
+    fetch('/app/api/asistente/desempeno/?' + _desQS(), { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo calcular el desempeño</div>'; return; }
@@ -923,36 +933,63 @@
   function _drawDesempeno(res) {
     if (!_desData) return;
     var d = _desData;
-    var seg = ['dia', 'semana', 'mes'].map(function (p) {
-      var lbl = p === 'dia' ? 'Día' : (p === 'semana' ? 'Semana' : 'Mes');
-      return '<button type="button" class="' + (_desPeriodo === p ? 'on' : '') + '" onclick="pendDesPeriodo(\'' + p + '\')">' + lbl + '</button>';
+    var seg = [['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']].map(function (p) {
+      return '<button type="button" class="' + (_desGran === p[0] ? 'on' : '') + '" onclick="pendDesGran(\'' + p[0] + '\')">' + p[1] + '</button>';
     }).join('');
-    var hero = '';
+    var nav = '<div class="pend-des-nav">' +
+      '<button type="button" onclick="pendDesNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-des-nav-lbl">' + _esc(d.periodo_label || '') + '</span>' +
+      '<button type="button" onclick="pendDesNav(1)"' + (d.puede_avanzar ? '' : ' disabled') + ' aria-label="Siguiente">›</button>' +
+    '</div>';
+    var money = '';
     if (d.dinero && d.dinero.mostrar) {
-      hero = '<div class="pend-des-hero"><div class="pend-des-hero-row">' +
-        '<div><div class="pend-des-hero-lbl">Facturado · ' + _esc(d.dinero.mes_label) + '</div>' +
-          '<div class="pend-des-hero-val">' + _esc(d.dinero.facturado_fmt) + '</div></div>' +
-        '<div><div class="pend-des-hero-lbl">Cobrado · ' + _esc(d.dinero.mes_label) + '</div>' +
-          '<div class="pend-des-hero-val">' + _esc(d.dinero.cobrado_fmt) + '</div></div>' +
-        '</div></div>';
+      money = '<div class="pend-des-money">' +
+        '<div><div class="pend-des-money-lbl">Facturado</div><div class="pend-des-money-val">' + _esc(d.dinero.facturado_fmt) + '</div></div>' +
+        '<div><div class="pend-des-money-lbl">Cobrado</div><div class="pend-des-money-val">' + _esc(d.dinero.cobrado_fmt) + '</div></div>' +
+      '</div>';
     }
-    var tiles = (d.tiles || []).map(function (t) {
-      return '<div class="pend-des-tile"><div class="pend-des-tile-val">' + t.valor + '</div>' +
-        '<div class="pend-des-tile-lbl">' + _esc(t.label) + '</div></div>';
+    var kpis = (d.tiles || []).map(function (t) {
+      return '<div><div class="pend-des-kpi-val">' + t.valor + '</div><div class="pend-des-kpi-lbl">' + _esc(t.label) + '</div></div>';
     }).join('');
     res.className = '';
     res.innerHTML = '<div class="pend-des">' +
-      '<div class="pend-des-top"><div class="pend-des-title">' + _esc(d.titulo || 'Tu desempeño') + '</div>' +
-        '<div class="pend-des-seg">' + seg + '</div></div>' +
-      hero +
-      '<div class="pend-des-grid">' + tiles + '</div>' +
-      '<div class="pend-des-foot">Actividad de ' + (_desPeriodo === 'dia' ? 'hoy' : (_desPeriodo === 'semana' ? 'esta semana' : 'este mes')) +
-        (d.dinero && d.dinero.mostrar ? ' · la facturación y cobranza son del mes en curso' : '') + '</div>' +
+      '<div class="pend-des-top"><div>' +
+        '<div class="pend-res-saludo">' + _esc(d.titulo || 'Tu desempeño') + '</div>' +
+        '<div class="pend-res-sub">' + _esc(d.periodo_label || '') + '</div></div>' +
+        '<div class="pend-des-actions">' +
+          '<button type="button" class="pend-des-xbtn" onclick="pendDesExport(\'xlsx\')">Excel</button>' +
+          '<button type="button" class="pend-des-xbtn" onclick="pendDesExport(\'pdf\')">PDF</button>' +
+        '</div></div>' +
+      '<div class="pend-des-controls"><div class="pend-des-seg">' + seg + '</div>' + nav + '</div>' +
+      money +
+      '<div class="pend-des-kpis">' + kpis + '</div>' +
     '</div>';
   }
-  window.pendDesPeriodo = function (p) {
-    if (_desPeriodo === p) return;
-    _desPeriodo = p; _desData = null; _renderDesempeno();
+  function _desParseRef() {
+    if (_desRef) { var p = _desRef.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+  function _desFmtRef(dt) {
+    return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2);
+  }
+  window.pendDesGran = function (g) {
+    if (_desGran === g) return;
+    _desGran = g; _desData = null; _renderDesempeno();
+  };
+  window.pendDesNav = function (delta) {
+    var dt = _desParseRef();
+    if (_desGran === 'dia') dt.setDate(dt.getDate() + delta);
+    else if (_desGran === 'semana') dt.setDate(dt.getDate() + delta * 7);
+    else if (_desGran === 'anio') dt.setFullYear(dt.getFullYear() + delta);
+    else dt.setMonth(dt.getMonth() + delta);
+    var hoy = new Date(); hoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    if (dt > hoy) dt = hoy;
+    _desRef = _desFmtRef(dt); _desData = null; _renderDesempeno();
+  };
+  window.pendDesExport = function (fmt) {
+    var url = '/app/api/asistente/desempeno/export/?formato=' + fmt + '&' + _desQS();
+    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
   // ── Chat con el asistente general (el "consultor") ──
