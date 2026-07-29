@@ -608,10 +608,7 @@
         var stagesContainer = q(inst, 'pipelineStages');
         stagesContainer.innerHTML = '';
         var pipelineWrap = q(inst, 'pipelineWrap');
-        var sinPipeline = (tipo === 'bitrix_proyecto');
-        pipelineWrap.style.display = sinPipeline ? 'none' : '';
-        // Sin pestañas de etapa, la línea bajo el header la pone el header.
-        inst.root.classList.toggle('wo-no-pipeline', sinPipeline);
+        pipelineWrap.style.display = (tipo === 'bitrix_proyecto') ? 'none' : '';
 
         var etapas = getEtapasForTipo(tipo);
         var currentEtapa = d.etapa_corta || etapas[0];

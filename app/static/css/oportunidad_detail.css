@@ -180,62 +180,14 @@ body {
 }
 .opp-v2 .wo-conv-act.is-mail:hover { background: rgba(0, 82, 212, 0.16); }
 
-/* ═══ Etapas como pestañas colgadas de la barra del header (widget v3) ═══
-   El pipeline ya no es una caja gris con aire arriba y abajo: las etapas
-   se pegan a la línea inferior del header como pestañas. Recupera ~40px
-   de alto, que es lo que sube toda la información de abajo. */
-.opp-v2 .wo-header {
-    padding: 1.35rem 2rem 0.55rem;
-    border-bottom: none;
-}
+/* ═══ Pipeline arriba (widget v3) ═══
+   El diseño de las etapas es el original de crm.css: caja gris, cápsulas
+   y conectores. Lo único que se toca aquí es el aire — header compacto y
+   menos padding alrededor — para que el pipeline suba y quede alto libre
+   para la información de abajo. */
+.opp-v2 .wo-header { padding: 1.35rem 2rem 0.55rem; }
 .opp-v2 .wo-tab-panel { padding-top: 0; }
-
-.opp-v2 .wo-pipeline {
-    padding: 0.5rem 2rem 0.6rem;
-    border-bottom: 1px solid #E5E5EA;
-}
-/* Sin pipeline (proyectos Bitrix24) la línea la pone el header. */
-.opp-v2.wo-no-pipeline .wo-header { border-bottom: 1px solid #E5E5EA; }
-
-.opp-v2 .wo-pipeline-container {
-    background: none;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    gap: 0.4rem;
-}
-.opp-v2 .wo-pipeline-stages { gap: 6px; padding: 0; }
-.opp-v2 .wo-stage-connector { display: none; }
-
-/* Cápsulas: más grandes y con aire, cada etapa se lee sola. */
-.opp-v2 .wo-stage-btn {
-    border-radius: 999px;
-    padding: 9px 18px;
-    font-size: 0.71rem;
-    letter-spacing: 0.02em;
-    background: #fff;
-    border: 1.5px solid #E7EAEF;
-    color: #6B7280;
-    box-shadow: none;
-}
-.opp-v2 .wo-stage-btn:hover {
-    transform: none;
-    background: #F5F8FE;
-    border-color: #BFD9FF;
-    color: #1D1D1F;
-}
-.opp-v2 .wo-stage-btn.completed {
-    background: #EBF4FF;
-    border-color: #BFD9FF;
-    color: #0052D4;
-}
-.opp-v2 .wo-stage-btn.active {
-    background: #0052D4;
-    border-color: #0052D4;
-    color: #fff;
-    box-shadow: 0 3px 12px rgba(0, 82, 212, 0.3);
-}
-.opp-v2 .wo-scroll-btn { width: 28px; height: 28px; box-shadow: none; }
+.opp-v2 .wo-pipeline { padding: 0.55rem 2rem 0.7rem; }
 
 /* ═══ Botón "Nueva" discreto (mitades de Tareas / Actividades) ═══ */
 .opp-v2 .wo-btn-mini {
