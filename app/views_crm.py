@@ -7634,7 +7634,7 @@ def api_asistente_correos(request):
     """GET /app/api/asistente/correos/ — correos importantes de las últimas 24h SIN responder."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo
+    from .models import MailConexion, MailCorreo, CorreoAtendido
 
     user = request.user
     now = timezone.now()
@@ -7664,6 +7664,10 @@ def api_asistente_correos(request):
 
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
 
+    # Marcados manualmente como "listo" (informativos sin respuesta).
+    atendidos = set(CorreoAtendido.objects.filter(
+        usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
+
     pend, done = [], []
     for m in inbox:
         hk = m.hilo_key
@@ -7675,7 +7679,9 @@ def api_asistente_correos(request):
             continue
         remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
         mensaje, accion = _cor_msg(remitente, motivos, kw)
-        completada = bool(hk and hk in sent_today)
+        respondido = bool(hk and hk in sent_today)
+        listo = m.id in atendidos
+        completada = respondido or listo
         snippet = (m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
         item = {
             'mail_id': m.id,
@@ -7691,6 +7697,7 @@ def api_asistente_correos(request):
             'mensaje': mensaje,
             'accion': accion,
             'completada': completada,
+            'motivo_done': ('respondido' if respondido else ('listo' if listo else '')),
         }
         (done if completada else pend).append(item)
 
@@ -7702,12 +7709,13 @@ def api_asistente_correos(request):
 
 @login_required
 def api_asistente_correos_estado(request):
-    """Ligero: dado ?ids=1,2,3 (mail ids) devuelve cuáles ya se respondieron HOY (SENT en su hilo)."""
+    """Ligero: dado ?ids=1,2,3 (mail ids) devuelve cuáles ya están resueltos HOY:
+    respondidos (SENT en su hilo hoy) o marcados manualmente como "listo"."""
     from django.utils import timezone
-    from .models import MailCorreo
+    from .models import MailCorreo, CorreoAtendido
     ids = [int(x) for x in (request.GET.get('ids', '') or '').split(',') if x.strip().isdigit()]
     today = timezone.localdate()
-    worked = []
+    worked = set()
     if ids:
         rows = MailCorreo.objects.filter(usuario=request.user, id__in=ids).values('id', 'hilo_key')
         hk_by_id = {r['id']: r['hilo_key'] for r in rows}
@@ -7717,8 +7725,133 @@ def api_asistente_correos_estado(request):
             for s in MailCorreo.objects.filter(usuario=request.user, carpeta_display='SENT', hilo_key__in=hk_set).values('hilo_key', 'fecha_envio'):
                 if s['fecha_envio'] and timezone.localtime(s['fecha_envio']).date() == today:
                     sent_hks.add(s['hilo_key'])
-        worked = [mid for mid, hk in hk_by_id.items() if hk and hk in sent_hks]
-    return JsonResponse({'success': True, 'worked_ids': worked})
+        for mid, hk in hk_by_id.items():
+            if hk and hk in sent_hks:
+                worked.add(mid)
+        for mid in CorreoAtendido.objects.filter(usuario=request.user, mail_id__in=ids).values_list('mail_id', flat=True):
+            worked.add(mid)
+    return JsonResponse({'success': True, 'worked_ids': sorted(worked)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_correo_listo(request, correo_id):
+    """Marca/desmarca un correo como "listo" (informativo, sin respuesta) desde el asistente."""
+    import json as _json
+    from django.utils import timezone
+    from .models import MailCorreo, CorreoAtendido
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+    try:
+        body = _json.loads(request.body or '{}')
+    except Exception:
+        body = {}
+    marcar = body.get('marcar', True)
+    if marcar:
+        CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+        return JsonResponse({'success': True, 'completada': True, 'motivo_done': 'listo'})
+    CorreoAtendido.objects.filter(usuario=request.user, mail=correo).delete()
+    return JsonResponse({'success': True, 'completada': False, 'motivo_done': ''})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_correo_respuesta(request, correo_id):
+    """Redacta con IA un borrador de respuesta para un correo importante.
+
+    Reusa el mismo proveedor de IA del asistente (asistente_provider.chat). Baja el
+    cuerpo del correo en readonly/PEEK (sin marcarlo leído) para dar contexto, y
+    devuelve SOLO el texto del borrador — el usuario lo revisa y lo abre en Correo.
+    """
+    import email as _email
+    from .models import MailCorreo, MailConexion, AsistenteConfig
+    from .asistente_provider import chat, AsistenteError
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+
+    cfg = AsistenteConfig.get_singleton()
+    if not cfg.activo:
+        return JsonResponse({'success': False, 'error': 'Asistente desactivado.'}, status=403)
+
+    # Cuerpo para contexto: caché si ya se abrió, si no PEEK readonly (no marca leído).
+    cuerpo = (correo.cuerpo_texto or '').strip()
+    if not cuerpo and not correo.cuerpo_cargado:
+        try:
+            from .views_mail import _get_imap
+            conexion = correo.conexion or MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if conexion:
+                imap = _get_imap(conexion)
+                imap.select(correo.carpeta_imap, readonly=True)
+                typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+                raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+                if raw:
+                    msg = _email.message_from_bytes(raw)
+                    for part in msg.walk():
+                        if part.get_filename():
+                            continue
+                        if part.get_content_type() == 'text/plain':
+                            cs = part.get_content_charset() or 'utf-8'
+                            cuerpo = (part.get_payload(decode=True) or b'').decode(cs, errors='replace').strip()
+                            break
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    cuerpo = cuerpo[:2500]
+
+    remitente = (correo.remitente_nombre or '').strip() or (correo.remitente_email or '').split('@')[0]
+    nombre_yo = (request.user.get_full_name() or request.user.username or '').strip()
+    sys_msg = {
+        'role': 'system',
+        'content': (
+            'Eres un asistente que redacta respuestas de correo profesionales en '
+            'español para un vendedor/ingeniero de IAMET (integrador de tecnología). '
+            'Escribe un borrador BREVE, claro y cordial, listo para enviar. Usa el '
+            'nombre del remitente en el saludo si lo conoces. NO inventes datos, '
+            'precios ni fechas que no estén en el correo original: si falta información '
+            'para responder algo concreto, pídela amablemente. Cierra con una despedida '
+            'y la firma del usuario. Devuelve SOLO el cuerpo del correo, sin asunto, '
+            'sin comillas y sin explicaciones.'
+        ),
+    }
+    user_msg = {
+        'role': 'user',
+        'content': (
+            f'Correo recibido de {remitente} <{correo.remitente_email or ""}>.\n'
+            f'Asunto: {correo.asunto or "(sin asunto)"}\n\n'
+            f'Cuerpo:\n{cuerpo or "(sin cuerpo disponible)"}\n\n'
+            f'Redacta la respuesta. Yo soy {nombre_yo or "el vendedor"}; '
+            f'firma con mi nombre.'
+        ),
+    }
+    try:
+        resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo,
+                    temperature=0.5, max_tokens=700)
+    except AsistenteError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=502)
+    except Exception as e:
+        logger.exception('Error redactando respuesta de correo: %s', e)
+        return JsonResponse({'success': False, 'error': 'Error inesperado al redactar.'}, status=500)
+
+    borrador = (resp.get('text') or '').strip()
+    if not borrador:
+        return JsonResponse({'success': False, 'error': 'La IA no devolvió texto.'}, status=502)
+    asunto = correo.asunto or ''
+    if asunto and not asunto.lower().startswith('re:'):
+        asunto = 'Re: ' + asunto
+    return JsonResponse({
+        'success': True,
+        'borrador': borrador,
+        'destinatario_email': correo.remitente_email or '',
+        'asunto': asunto,
+    })
 
 
 @login_required

@@ -174,6 +174,24 @@
   .pend-sc-btn{margin-top:auto;width:100%;border:none;border-radius:11px;background:#111317;color:#fff;font-size:.95rem;font-weight:700;
     padding:13px;cursor:pointer;transition:background .15s;}
   .pend-sc-btn:hover{background:#000;}
+  .pend-sc-btn.blue{background:#0a84ff;}
+  .pend-sc-btn.blue:hover{background:#0060df;}
+  .pend-sc-btn:disabled{opacity:.55;cursor:default;}
+  /* Botonera de la tarjeta de correo */
+  .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
+  .pend-cor-btns .pend-sc-btn{margin-top:0;}
+  .pend-cor-listo{width:100%;border:1px solid #e2e4e8;border-radius:11px;background:#fff;color:#5a5c63;
+    font-size:.86rem;font-weight:600;padding:9px;cursor:pointer;transition:background .15s,border-color .15s;}
+  .pend-cor-listo:hover{background:#f5f6f8;border-color:#d4d6da;}
+  .pend-cor-listo.on{background:#eef8f1;border-color:#cfe9d7;color:#2b8a3e;}
+  /* Borrador generado por IA dentro de la columna del asistente */
+  .pend-cor-draft{margin-top:14px;background:#f0f7ff;border:1px solid #d6e8ff;border-radius:12px;padding:13px 15px;}
+  .pend-cor-draft-lbl{font-size:.68rem;font-weight:800;color:#0a84ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .pend-cor-draft-txt{font-size:.92rem;line-height:1.55;color:#26303a;white-space:pre-wrap;max-height:220px;overflow-y:auto;}
+  .pend-cor-draft-acts{display:flex;gap:8px;margin-top:10px;}
+  .pend-cor-draft-mini{border:1px solid #cfe0f5;border-radius:8px;background:#fff;color:#0a66ff;font-size:.8rem;font-weight:700;
+    padding:6px 11px;cursor:pointer;transition:background .15s;}
+  .pend-cor-draft-mini:hover{background:#eef4ff;}
   /* Paginación */
   .pend-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 4px;}
   .pend-pager-btn{width:34px;height:34px;border-radius:50%;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;
@@ -622,17 +640,35 @@
     if (_corIdx >= total) _corIdx = total - 1;
     if (_corIdx < 0) _corIdx = 0;
     var it = items[_corIdx];
-    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Respondido hoy</span>' : ('Sin responder · ' + _esc(it.hace));
+    var esListo = it.motivo_done === 'listo';
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">' + (esListo ? '✓ Marcado como listo' : '✓ Respondido hoy') + '</span>'
+      : ('Sin responder · ' + _esc(it.hace));
+    var playDoneTxt = esListo ? '¡Listo! Marcaste este correo como atendido.' : '¡Listo! Respondiste este correo. 💪';
     var playBlock = it.completada
-      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Respondiste este correo. 💪</div></div>'
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">' + playDoneTxt + '</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    // Borrador IA persistido en el item (si ya se generó en esta sesión).
+    var draftBlock = it._draft
+      ? ('<div class="pend-cor-draft"><div class="pend-cor-draft-lbl">Borrador de respuesta</div>' +
+         '<div class="pend-cor-draft-txt">' + _esc(it._draft) + '</div>' +
+         '<div class="pend-cor-draft-acts">' +
+           '<button type="button" class="pend-cor-draft-mini" onclick="pendCorCopiar(' + it.mail_id + ')">Copiar</button>' +
+           '<button type="button" class="pend-cor-draft-mini" onclick="pendVerCorreo(' + it.mail_id + ')">Abrir en correo</button>' +
+         '</div></div>')
+      : '';
+    var listoOn = esListo ? ' on' : '';
+    var listoLbl = esListo ? '✓ Listo — quitar' : 'Marcar como listo';
     var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
           '<div class="pend-sc-agent-name">Asistente</div>' +
           '<div class="pend-sc-agent-sub">' + agentSub + '</div></div></div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
-        playBlock +
+        playBlock + draftBlock +
+        '<div class="pend-cor-btns">' +
+          '<button type="button" class="pend-sc-btn blue" id="pendCorGenBtn" onclick="pendCorGenerar(' + it.mail_id + ')">Generar respuesta</button>' +
+        '</div>' +
       '</div>' +
       '<div class="pend-sc-right">' +
         '<div class="pend-sc-flabel">De</div>' +
@@ -641,7 +677,10 @@
         '<div class="pend-sc-block"><div class="pend-sc-flabel">Asunto</div><div class="pend-sc-kv-val">' + _esc(it.asunto) + '</div></div>' +
         (it.adjuntos ? '<div class="pend-sc-flabel" style="margin-top:8px;">📎 Con adjuntos</div>' : '') +
         '<div class="pend-sc-block pend-cor-msg"><div class="pend-sc-flabel">Mensaje</div><div id="pendCorBody" class="pend-cor-body"></div></div>' +
-        '<button type="button" class="pend-sc-btn" onclick="pendVerCorreo(' + it.mail_id + ')">Responder</button>' +
+        '<div class="pend-cor-btns">' +
+          '<button type="button" class="pend-sc-btn" onclick="pendVerCorreo(' + it.mail_id + ')">Abrir</button>' +
+          '<button type="button" class="pend-cor-listo' + listoOn + '" onclick="pendCorListo(' + it.mail_id + ',' + (esListo ? 'false' : 'true') + ')">' + listoLbl + '</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
     var pager = total > 1 ? ('<div class="pend-pager">' +
@@ -653,11 +692,34 @@
     res.innerHTML = hero + card + pager;
     _loadCorBody(it);   // baja el cuerpo real (lazy, reusa el endpoint del correo)
   }
+  // Deja SOLO el mensaje principal: corta hilo citado/reenvío, firma, redes, imágenes cid.
+  function _corLimpiar(txt) {
+    if (!txt) return '';
+    var t = txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    t = t.replace(/\[cid:[^\]]*\]/gi, '').replace(/\[(imagenpegada|image|imagen)[^\]]*\]/gi, '');
+    t = t.replace(/<(mailto:|https?:\/\/|tel:)[^>]*>/gi, '');
+    var lines = t.split('\n'), out = [];
+    var qz = /^(_{5,}|-{2,}\s*Original|>|\s*(De|From|Enviado|Sent|Para|To|Cc|Asunto|Subject)\s*:|\s*El .+escrib|\s*On .+wrote:)/i;
+    var sig = /^--\s*$/;
+    var phone = /(\+?\d[\d ().\-]{7,}\d)/;
+    var social = /\b(facebook|twitter|linkedin|instagram|youtube|tiktok)\b/i;
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (qz.test(ln)) break;                 // historial citado / reenvío
+      if (sig.test(ln)) break;                // delimitador de firma "-- "
+      if (i >= 2 && (phone.test(ln) || social.test(ln) || /https?:\/\//i.test(ln))) break;  // bloque de firma
+      out.push(ln);
+    }
+    var res = out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (res.length > 900) res = res.slice(0, 900).replace(/\s+\S*$/, '') + '…';
+    return res;
+  }
   function _loadCorBody(it) {
     var box = el('pendCorBody'); if (!box) return;
-    var render = function (txt) {
-      if (!txt) { box.innerHTML = '<span style="color:#9a9ca3;">Ábrelo para ver el contenido completo.</span>'; return; }
-      box.innerHTML = _esc(txt.slice(0, 2000)).replace(/\n{3,}/g, '\n\n').replace(/\n/g, '<br>');
+    var render = function (raw) {
+      var txt = _corLimpiar(raw);
+      if (!txt) { box.innerHTML = '<span style="color:#9a9ca3;">Sin texto para previsualizar — ábrelo para verlo completo.</span>'; return; }
+      box.innerHTML = _esc(txt).replace(/\n/g, '<br>');
     };
     if (it._body != null) { render(it._body); return; }
     box.innerHTML = '<span style="color:#9a9ca3;">Cargando contenido…</span>';
@@ -689,6 +751,64 @@
     var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
     if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); return; } catch (e) {} }
     window.location = '/app/?tab=correo';
+  };
+  // Genera un borrador de respuesta con la IA (mismo proveedor del asistente).
+  window.pendCorGenerar = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    if (!it) return;
+    var btn = el('pendCorGenBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Redactando…'; }
+    fetch('/app/api/asistente/correo/' + id + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.success) {
+          it._draft = d.borrador || '';
+          it._draftAsunto = d.asunto || '';
+          if (_section === 'correo') _drawCorreos(el('pendResArea'));
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = 'Generar respuesta'; }
+          alert((d && d.error) || 'No se pudo generar la respuesta.');
+        }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Generar respuesta'; }
+        alert('No se pudo generar la respuesta.');
+      });
+  };
+  window.pendCorCopiar = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    if (!it || !it._draft) return;
+    var done = function () {
+      var b = event && event.target; if (b) { var t = b.textContent; b.textContent = '¡Copiado!'; setTimeout(function () { b.textContent = t; }, 1400); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(it._draft).then(done, function () {}); }
+    else { try { var ta = document.createElement('textarea'); ta.value = it._draft; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } catch (e) {} }
+  };
+  window.pendCorListo = function (id, marcar) {
+    fetch('/app/api/asistente/correo/' + id + '/listo/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marcar: !!marcar })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { alert('No se pudo actualizar.'); return; }
+        var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+        if (!it) return;
+        it.completada = !!d.completada;
+        it.motivo_done = d.motivo_done || '';
+        var p = _corData.items.filter(function (x) { return !x.completada; });
+        var q = _corData.items.filter(function (x) { return x.completada; });
+        var idx = p.concat(q).indexOf(it);
+        _corData.items = p.concat(q);
+        _corData.pendientes = p.length; _corData.completadas = q.length;
+        if (idx >= 0) _corIdx = idx;
+        if (_section === 'correo') _drawCorreos(el('pendResArea'));
+      })
+      .catch(function () { alert('No se pudo actualizar.'); });
   };
   function pendRefreshCorreos() {
     if (!_corData || !_corData.items || !_corData.items.length) return;

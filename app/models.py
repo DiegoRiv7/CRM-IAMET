@@ -6762,6 +6762,29 @@ class PendienteCompletada(models.Model):
         return f'{self.usuario_id} · opp {self.oportunidad_id} · {self.fecha}'
 
 
+class CorreoAtendido(models.Model):
+    """Marca manual de "este correo ya está listo" desde el asistente (sección Correo).
+
+    Para correos meramente informativos que NO requieren respuesta: el usuario los
+    marca como listos y dejan de aparecer como pendientes (cuentan como completados
+    del día). Complementa la detección automática de "respondido" (SENT en el hilo).
+    Es por usuario y por correo.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='correos_atendidos')
+    mail = models.ForeignKey(MailCorreo, on_delete=models.CASCADE, related_name='+')
+    fecha = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'mail')]
+        indexes = [models.Index(fields=['usuario', 'fecha'])]
+        verbose_name = 'Correo marcado listo'
+        verbose_name_plural = 'Correos marcados listos'
+
+    def __str__(self):
+        return f'{self.usuario_id} · mail {self.mail_id} · {self.fecha}'
+
+
 class ReplayMensual(models.Model):
     """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
     (usuario, mes, anio): el mes ya cerró, los datos son finales."""
