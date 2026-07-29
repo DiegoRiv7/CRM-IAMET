@@ -279,41 +279,65 @@ body {
 }
 .opp-v2 .wo-head-expand:hover { background: rgba(0, 82, 212, 0.07); color: #0052D4; }
 
-/* "Archivos en Drive" al mismo tamaño que Cotizaciones y Conversación. */
-.opp-v2 .wo-drive-head h4 { font-size: 0.9rem; font-weight: 700; }
+/* "Archivos en Drive": mismo tamaño que Cotizaciones y Conversación, y en
+   tono sólido — es el encabezado de la pestaña, no un rótulo secundario. */
+.opp-v2 .wo-drive-head h4 { font-size: 0.9rem; font-weight: 700; color: #1D1D1F; }
 
-/* Proyecto vinculado, arriba junto al título. */
+/* "Subir" sólido: es la acción de la pestaña y tiene que verse. */
+.opp-v2 .wo-btn-solid {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: none;
+    background: #0052D4;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 6px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: filter 0.12s;
+}
+.opp-v2 .wo-btn-solid:hover { filter: brightness(1.12); }
+.opp-v2 .wo-btn-solid svg { width: 11px; height: 11px; }
+
+/* Proyecto vinculado, arriba junto al título.
+   Va como pastilla SÓLIDA de la misma familia que el badge de pipeline: el
+   header es oscuro o con degradado en varios temas, y como texto suelto no
+   se leía. Al llevar también la clase .wo-type-badge, hereda gratis el
+   color que cada tema ya define para ese badge. */
 .opp-v2 .wo-proy-head {
     display: flex;
     align-items: center;
     min-width: 0;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
 }
-.opp-v2 .wo-proy-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+.opp-v2 .wo-proy-badge {
     max-width: 100%;
     border: none;
-    background: none;
-    padding: 0;
-    margin-top: 2px;
+    background: #0052D4;
+    color: #fff;
+    padding: 5px 14px;
+    margin: 0;
     font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #0052D4;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
     cursor: pointer;
     text-align: left;
 }
-.opp-v2 .wo-proy-link span {
+.opp-v2 .wo-proy-badge span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.opp-v2 .wo-proy-link:hover { text-decoration: underline; }
-.opp-v2 .wo-proy-link.is-vincular { font-size: 0.85rem; font-weight: 600; opacity: 0.8; }
-.opp-v2 .wo-proy-link.is-vincular:hover { opacity: 1; }
-.opp-v2 .wo-proy-vacio { font-size: 0.85rem; color: #9CA3AF; }
+.opp-v2 .wo-proy-badge:hover { filter: brightness(1.12); }
+/* Placeholder de carga: gris neutro, el header es claro en unos temas y
+   oscuro en otros. */
+.opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
 
 /* El badge de pipeline ya no va sobre el título: sin el margen que traía. */
 .opp-v2 .wo-g-info .wo-type-badge { margin: 3px 0 0; }
@@ -368,11 +392,14 @@ body {
 .opp-v2 .wo-g-cot { display: flex; flex-direction: column; }
 .opp-v2 .wo-g-cot .wo-quote-list { flex: 1; min-height: 0; overflow-y: auto; }
 
+/* El bloque se lee como una pestaña pegada al pie de Cotizaciones: raya
+   oscura arriba y fondo más claro que la card, para que se distinga sin
+   despegarse. */
 .opp-v2 .wo-drive-block {
     margin: 0.9rem -1.5rem -1.5rem;   /* sangra hasta el borde de la card */
-    padding: 0.8rem 1.5rem 1rem;
-    border-top: 1px solid #E2E8F0;
-    background: rgba(0, 0, 0, 0.015);
+    padding: 0.85rem 1.5rem 1rem;
+    border-top: 2px solid #1D1D1F;
+    background: #fff;
     border-radius: 0 0 18px 18px;
     flex-shrink: 0;
 }

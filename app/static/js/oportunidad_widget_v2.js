@@ -1526,12 +1526,15 @@
             slot.innerHTML = '';
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'wo-proy-link is-vincular';
+            // wo-type-badge además de la clase propia: así hereda el color que
+            // cada tema ya define para el badge del header.
+            b.className = 'wo-type-badge wo-proy-badge';
             b.setAttribute('data-action', 'vincular-proyecto');
             b.innerHTML =
                 '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
                 '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
-                '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' + txt;
+                '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+                '<span>' + esc(txt) + '</span>';
             slot.appendChild(b);
         }
 
@@ -1539,7 +1542,7 @@
             slot.innerHTML = '';
             var link = document.createElement('button');
             link.type = 'button';
-            link.className = 'wo-proy-link';
+            link.className = 'wo-type-badge wo-proy-badge';
             link.title = 'Abrir proyecto: ' + (p.nombre || '');
             link.innerHTML =
                 '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
