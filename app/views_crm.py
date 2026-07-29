@@ -8355,7 +8355,7 @@ def _feed_correos_items(user, limite=6):
     ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo
+    from .models import MailConexion, MailCorreo, CorreoAtendido
     out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
