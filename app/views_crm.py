@@ -7629,6 +7629,106 @@ def _cor_hace(dt, now):
     d = int(secs // 86400); return 'hace %d día%s' % (d, 's' if d != 1 else '')
 
 
+# Cuántos correos "casi importantes" (borderline) leemos el cuerpo por IMAP en
+# una misma carga. Tope para no encadenar decenas de FETCH y volver lenta la sección.
+_COR_BODY_FETCH_CAP = 12
+
+
+def _cor_fetch_cuerpos(user, correos):
+    """Baja el cuerpo (texto) de varios correos por IMAP en modo readonly + PEEK,
+    reusando UNA conexión por buzón (no marca \\Seen, no guarda nada en el modelo).
+    Devuelve {mail_id: texto}. Los que fallen simplemente no aparecen en el dict."""
+    import email as _email
+    from .models import MailConexion
+    out = {}
+    if not correos:
+        return out
+
+    # Agrupar por conexión para abrir un solo IMAP por buzón.
+    activa = MailConexion.objects.filter(usuario=user, activo=True).first()
+    grupos = {}
+    for m in correos:
+        cx = m.conexion or activa
+        if not cx:
+            continue
+        grupos.setdefault(cx, []).append(m)
+
+    for cx, ms in grupos.items():
+        imap = None
+        try:
+            from .views_mail import _get_imap
+            imap = _get_imap(cx)
+            carpeta_actual = None
+            for m in ms:
+                carpeta = m.carpeta_imap or 'INBOX'
+                if not m.uid_imap:
+                    continue
+                try:
+                    if carpeta != carpeta_actual:
+                        imap.select(carpeta, readonly=True)      # readonly ⇒ NO marca \Seen
+                        carpeta_actual = carpeta
+                    typ, data = imap.uid('FETCH', m.uid_imap.encode(), '(BODY.PEEK[])')
+                    raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+                    if not raw:
+                        continue
+                    msg = _email.message_from_bytes(raw)
+                    texto, html = '', ''
+                    for part in msg.walk():
+                        if part.get_filename():
+                            continue
+                        ct = part.get_content_type()
+                        if ct == 'text/plain' and not texto:
+                            cs = part.get_content_charset() or 'utf-8'
+                            texto = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')
+                        elif ct == 'text/html' and not html:
+                            cs = part.get_content_charset() or 'utf-8'
+                            html = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')[:120000]
+                    if not texto and html:
+                        import re as _re
+                        texto = _re.sub(r'<[^>]+>', ' ', html)
+                    if texto:
+                        out[m.id] = texto
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        finally:
+            if imap is not None:
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+    return out
+
+
+def _cor_item(m, score, motivos, kw, cuerpo, now, sent_today, atendidos):
+    """Construye el dict de un correo importante para el frontend."""
+    from django.utils import timezone
+    hk = m.hilo_key
+    remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+    mensaje, accion = _cor_msg(remitente, motivos, kw)
+    respondido = bool(hk and hk in sent_today)
+    listo = m.id in atendidos
+    completada = respondido or listo
+    snippet = (cuerpo or m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
+    return {
+        'mail_id': m.id,
+        'remitente': remitente,
+        'remitente_email': m.remitente_email or '',
+        'asunto': m.asunto or '(sin asunto)',
+        'snippet': snippet,
+        'hace': _cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else '',
+        'adjuntos': bool(m.tiene_adjuntos),
+        'score': score,
+        'motivos': sorted(motivos),
+        'kw': kw,
+        'mensaje': mensaje,
+        'accion': accion,
+        'completada': completada,
+        'motivo_done': ('respondido' if respondido else ('listo' if listo else '')),
+    }, completada
+
+
 @login_required
 def api_asistente_correos(request):
     """GET /app/api/asistente/correos/ — correos importantes de las últimas 24h SIN responder."""
@@ -7669,37 +7769,37 @@ def api_asistente_correos(request):
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
 
     pend, done = [], []
+    borderline = []   # (m, score_prelim): casi importantes SIN cuerpo aún → leerlo por IMAP
     for m in inbox:
         hk = m.hilo_key
         if hk and hk in sent_before:
             continue   # ya respondido antes de hoy → resuelto
         score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
                                         known_emails, known_domains, cliente_nombres)
-        if score < 3:
-            continue
-        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
-        mensaje, accion = _cor_msg(remitente, motivos, kw)
-        respondido = bool(hk and hk in sent_today)
-        listo = m.id in atendidos
-        completada = respondido or listo
-        snippet = (m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
-        item = {
-            'mail_id': m.id,
-            'remitente': remitente,
-            'remitente_email': m.remitente_email or '',
-            'asunto': m.asunto or '(sin asunto)',
-            'snippet': snippet,
-            'hace': _cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else '',
-            'adjuntos': bool(m.tiene_adjuntos),
-            'score': score,
-            'motivos': sorted(motivos),
-            'kw': kw,
-            'mensaje': mensaje,
-            'accion': accion,
-            'completada': completada,
-            'motivo_done': ('respondido' if respondido else ('listo' if listo else '')),
-        }
-        (done if completada else pend).append(item)
+        if score >= 3:
+            item, completada = _cor_item(m, score, motivos, kw, m.cuerpo_texto, now, sent_today, atendidos)
+            (done if completada else pend).append(item)
+        elif score >= 1 and not (m.cuerpo_texto or '').strip() and not m.cuerpo_cargado:
+            # No alcanza con asunto/remitente/dominio y NO tenemos el cuerpo:
+            # candidato a leerlo para confirmar o descartar.
+            borderline.append((m, score))
+
+    # Segundo paso: leer el cuerpo SOLO de los borderline con más potencial (tope),
+    # re-evaluar con el cuerpo real y rescatar los que crucen el umbral.
+    if borderline:
+        borderline.sort(key=lambda t: -t[1])
+        objetivo = [m for (m, _s) in borderline[:_COR_BODY_FETCH_CAP]]
+        cuerpos = _cor_fetch_cuerpos(user, objetivo)
+        for m in objetivo:
+            cuerpo = cuerpos.get(m.id, '')
+            if not cuerpo:
+                continue
+            score, motivos, kw = _cor_score(m.remitente_email, m.asunto, cuerpo,
+                                            known_emails, known_domains, cliente_nombres)
+            if score < 3:
+                continue   # el cuerpo confirmó que no es importante → descartar
+            item, completada = _cor_item(m, score, motivos, kw, cuerpo, now, sent_today, atendidos)
+            (done if completada else pend).append(item)
 
     pend.sort(key=lambda x: -x['score'])
     items = pend + done
