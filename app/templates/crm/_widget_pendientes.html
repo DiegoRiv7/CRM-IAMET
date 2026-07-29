@@ -5,6 +5,12 @@
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
+<!-- Launcher del asistente: versión reducida, siempre visible abajo-derecha cuando el panel grande está cerrado -->
+<div class="pend-launcher" id="pendLauncher" onclick="pendAbrir()" style="display:none;">
+  <div class="pend-lc-head"><span class="pend-lc-dot"></span> Mi Asistente <span class="pend-lc-badge" id="pendLcBadge" style="display:none;">0</span></div>
+  <div class="pend-lc-msg" id="pendLcMsg">Revisando lo importante…</div>
+  <div class="pend-lc-cta">Ver sugerencias ›</div>
+</div>
 <div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi Asistente">
   <div class="ww-card pend-card">
     <!-- Controles de ventana (— □ ×): esquina superior derecha, discretos -->
@@ -200,6 +206,18 @@
   .pend-des-kpi-val{font-size:2.4rem;font-weight:800;color:#16181d;line-height:1;letter-spacing:-.02em;}
   .pend-des-kpi-lbl{font-size:.86rem;color:#6b6d76;font-weight:600;margin-top:9px;line-height:1.3;}
   @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
+  /* ── Launcher (asistente reducido, siempre visible) ── */
+  .pend-launcher{position:fixed;right:22px;bottom:22px;width:360px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
+    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:15px 17px;cursor:pointer;z-index:900;transition:box-shadow .2s,transform .2s;}
+  .pend-launcher:hover{box-shadow:0 22px 50px rgba(15,23,42,.22);transform:translateY(-2px);}
+  .pend-lc-head{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:800;color:#16181d;margin-bottom:8px;}
+  .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
+  .pend-lc-badge{background:#16181d;color:#fff;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:auto;}
+  .pend-lc-msg{font-size:.86rem;color:#374151;line-height:1.5;}
+  .pend-lc-msg b{color:#16181d;}
+  .pend-lc-cta{font-size:.78rem;color:#0a84ff;font-weight:700;margin-top:11px;}
+  .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
+  @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
   /* Botonera de la tarjeta de correo */
   .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
   .pend-cor-btns .pend-sc-btn{margin-top:0;}
@@ -433,6 +451,7 @@
     if (!ov) return;
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
+    var _lc = el('pendLauncher'); if (_lc) _lc.style.display = 'none';   // ocultar launcher al expandir
     var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
     // Abrir siempre en "Mi día" (por si se cerró en otra sección). Conserva el recap 18:00.
     _section = 'dia'; _tab = 'resumen';
@@ -465,6 +484,7 @@
     ov.classList.remove('active');
     if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    pendLauncherShow(); pendFeedRefresh();   // vuelve el launcher reducido
   };
 
   window.pendSetTab = function (tab) {
@@ -991,6 +1011,45 @@
     var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
+
+  // ── Launcher (asistente reducido, siempre presente abajo-derecha) ──
+  var _lcTotal = -1, _lcTimer = null;
+  function pendLauncherShow() {
+    var ov = el('widgetPendientes'), lc = el('pendLauncher'); if (!lc) return;
+    var abierto = ov && ov.classList.contains('active');
+    lc.style.display = abierto ? 'none' : '';
+  }
+  window.pendLauncherShow = pendLauncherShow;
+  function pendFeedRefresh() {
+    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var msg = el('pendLcMsg'); if (msg) msg.textContent = d.resumen || '';
+        var b = el('pendLcBadge');
+        if (b) { if (d.total > 0) { b.textContent = d.total; b.style.display = ''; } else b.style.display = 'none'; }
+        // Si aumentó (llegó algo nuevo), el launcher late para llamar la atención.
+        if (_lcTotal >= 0 && d.total > _lcTotal) {
+          var lc = el('pendLauncher');
+          if (lc && lc.style.display !== 'none') { lc.classList.remove('pulse'); void lc.offsetWidth; lc.classList.add('pulse'); }
+        }
+        _lcTotal = d.total;
+      }).catch(function () {});
+  }
+  window.pendFeedRefresh = pendFeedRefresh;
+  (function _pendLauncherInit() {
+    var start = function () {
+      pendLauncherShow();
+      pendFeedRefresh();
+      if (_lcTimer) clearInterval(_lcTimer);
+      _lcTimer = setInterval(function () {
+        var ov = el('widgetPendientes');
+        if (!(ov && ov.classList.contains('active'))) pendFeedRefresh();
+      }, 60000);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
 
   // ── Chat con el asistente general (el "consultor") ──
   function _getCsrf() {

@@ -161,6 +161,7 @@ urlpatterns = [
     path('api/asistente/correo/<int:correo_id>/respuesta/', views.api_asistente_correo_respuesta, name='api_asistente_correo_respuesta'),
     path('api/asistente/desempeno/', views.api_asistente_desempeno, name='api_asistente_desempeno'),
     path('api/asistente/desempeno/export/', views.api_asistente_desempeno_export, name='api_asistente_desempeno_export'),
+    path('api/asistente/feed/', views.api_asistente_feed, name='api_asistente_feed'),
     path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
     path('api/desglose-facturacion/', views.api_desglose_facturacion, name='api_desglose_facturacion'),
     path('api/subir-cobrado/', views.api_subir_cobrado, name='api_subir_cobrado'),

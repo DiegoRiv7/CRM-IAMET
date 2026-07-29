@@ -8348,6 +8348,84 @@ def api_asistente_desempeno_export(request):
     return resp
 
 
+# ══════════════ Asistente proactivo · feed liviano para el launcher ══════════════
+
+def _feed_correos_importantes(user):
+    """Conteo BARATO de correos importantes sin responder (asunto/remitente, sin IMAP)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailConexion, MailCorreo
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return 0
+    cutoff = timezone.now() - timedelta(hours=24)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
+    if not inbox:
+        return 0
+    hks = set(m.hilo_key for m in inbox if m.hilo_key)
+    sent = set()
+    if hks:
+        for hk in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT',
+                                             hilo_key__in=hks).values_list('hilo_key', flat=True):
+            sent.add(hk)
+    atendidos = set(CorreoAtendido.objects.filter(
+        usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
+    known_emails, known_domains, cliente_nombres = _cor_conocidos()
+    n = 0
+    for m in inbox:
+        if (m.hilo_key and m.hilo_key in sent) or m.id in atendidos:
+            continue
+        score, _mot, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                      known_emails, known_domains, cliente_nombres)
+        if score >= 3:
+            n += 1
+    return n
+
+
+@login_required
+def api_asistente_feed(request):
+    """GET /app/api/asistente/feed/ — resumen liviano para el launcher (siempre visible):
+    lo importante que necesita atención AHORA. Solo cuenta señales que ya validamos
+    (correos importantes + clientes en pausa), 100% código, apto para sondeo."""
+    from django.utils import timezone
+    user = request.user
+    today = timezone.localdate()
+
+    correos = _feed_correos_importantes(user)
+    try:
+        cli = _asistente_clientes_items(user, 'mias', today)
+        clientes = cli.get('pendientes', 0) if cli.get('modo') != 'todobien' else 0
+    except Exception:
+        clientes = 0
+
+    total = correos + clientes
+    nombre = (user.first_name or '').strip() or (user.get_full_name() or user.username or '').split(' ')[0]
+
+    partes = []
+    if correos:
+        partes.append('%d correo%s importante%s sin responder' % (
+            correos, '' if correos == 1 else 's', '' if correos == 1 else 's'))
+    if clientes:
+        partes.append('%d cliente%s sin atender' % (clientes, '' if clientes == 1 else 's'))
+
+    if partes:
+        cuerpo = ' y '.join(partes)
+        resumen = (('%s, ' % nombre) if nombre else '') + cuerpo + '.'
+        resumen = resumen[0].upper() + resumen[1:]
+    else:
+        resumen = 'Todo bajo control%s. Te aviso si algo necesita tu atención.' % (
+            (', ' + nombre) if nombre else '')
+
+    return JsonResponse({
+        'success': True,
+        'total': total,
+        'correos': correos,
+        'clientes': clientes,
+        'resumen': resumen,
+    })
+
+
 @login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
