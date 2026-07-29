@@ -775,25 +775,32 @@
     var mw = document.getElementById('widgetMail');
     if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
     if (mw) mw.style.zIndex = '11000';
+    // Limpiamos el asunto ANTES de cargar: el módulo lo repuebla cuando el detalle
+    // termina de cargar y en ese mismo paso cierra cualquier Responder abierto. Por
+    // eso esperamos a que el asunto vuelva a tener texto para recién ahí abrir Responder
+    // (si lo abrimos antes, esa carga tardía nos lo cerraría a los pocos segundos).
+    var subEl = document.getElementById('mailDetailSubject');
+    if (subEl) subEl.textContent = '';
     if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
     else { window.location = '/app/?tab=correo'; return; }
     if (!draft) return;
     var draftHtml = _esc(draft).replace(/\n/g, '<br>');
-    // El detalle del correo se carga async; en cuanto mailResponder logre abrir el
-    // panel de respuesta (ya con el correo cargado), inyectamos el borrador arriba.
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
-      try { if (typeof window.mailResponder === 'function') window.mailResponder(false); } catch (e) {}
-      var panel = document.getElementById('mailReplyPanel');
-      var visible = panel && window.getComputedStyle(panel).display !== 'none';
-      if (visible) {
-        clearInterval(iv);
-        var ed = document.getElementById('mailRespEditor');
-        if (ed) { ed.innerHTML = draftHtml + '<br><br>' + ed.innerHTML; try { ed.focus(); } catch (e) {} }
-      } else if (tries > 40) {
-        clearInterval(iv);
+      var s = document.getElementById('mailDetailSubject');
+      var cargado = s && (s.textContent || '').trim().length > 0;   // el detalle ya cargó
+      if (cargado) {
+        try { if (typeof window.mailResponder === 'function') window.mailResponder(false); } catch (e) {}
+        var panel = document.getElementById('mailReplyPanel');
+        if (panel && window.getComputedStyle(panel).display !== 'none') {
+          var ed = document.getElementById('mailRespEditor');
+          if (ed) { ed.innerHTML = draftHtml + '<br><br>' + ed.innerHTML; try { ed.focus(); } catch (e) {} }
+          clearInterval(iv);
+          return;
+        }
       }
+      if (tries > 80) clearInterval(iv);   // ~12s de tope (IMAP lento)
     }, 150);
   };
   // Genera un borrador de respuesta con la IA (mismo proveedor del asistente).
