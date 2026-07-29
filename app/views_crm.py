@@ -7535,6 +7535,10 @@ _COR_SPAM_SENDER = ['noreply', 'no-reply', 'no_reply', 'no.reply', 'notifica', '
 _COR_SPAM_BODY = ['unsubscribe', 'darse de baja', 'cancelar suscripcion', 'cancelar tu suscripcion',
                   'no deseas recibir', 'da clic para dejar de']
 _COR_PROMO = ['oferta', 'descuento', 'promocion', 'gratis', 'sorteo', 'black friday', 'cyber', '2x1', 'envio gratis']
+_COR_AUTO = ['respuesta automatica', 'automatic reply', 'auto-reply', 'autoreply', 'out of office',
+             'fuera de la oficina', 'fuera de oficina', 'notificacion de ausencia', 'ausencia de oficina',
+             'delivery status', 'undeliverable', 'mailer-daemon', 'mailer daemon', 'correo no entregado',
+             'devolucion de correo', 'read receipt', 'confirmacion de lectura', 'acuse de recibo']
 _COR_PUBLIC_DOM = {'gmail.com', 'hotmail.com', 'hotmail.es', 'outlook.com', 'outlook.es', 'yahoo.com',
                    'yahoo.com.mx', 'live.com', 'live.com.mx', 'icloud.com', 'me.com', 'aol.com'}
 
@@ -7562,6 +7566,9 @@ def _cor_score(rem_email, asunto, cuerpo, known_emails, known_domains, cliente_n
         if bad in rem:
             return 0, set(), ''
     asu = _cor_norm(asunto)
+    for a in _COR_AUTO:               # auto-respuestas / fuera de oficina / rebotes → no son para responder
+        if a in asu:
+            return 0, set(), ''
     cue = _cor_norm(cuerpo)[:4000]
     for bad in _COR_SPAM_BODY:
         if bad in cue:

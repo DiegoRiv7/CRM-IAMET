@@ -303,6 +303,10 @@
   .pend-asis-soon{border:1px dashed #e2e5ea;border-radius:14px;padding:18px;background:#fafbfc;}
   .pend-asis-soon-t{font-size:.95rem;font-weight:700;color:#1c1d22;margin-bottom:6px;}
   .pend-asis-soon-d{font-size:.85rem;color:#8a8c93;line-height:1.5;}
+  /* Cuerpo del correo (Correo) */
+  .pend-cor-msg{flex:1;min-height:0;display:flex;flex-direction:column;}
+  .pend-cor-body{font-size:.88rem;color:#4b5563;line-height:1.55;margin-top:6px;flex:1;min-height:0;max-height:340px;overflow-y:auto;
+    background:#fbfbfc;border:1px solid #f0f1f3;border-radius:10px;padding:12px 14px;word-break:break-word;}
   /* Controles de ventana (— □ ×): esquina superior derecha, discretos */
   .pend-winctl{position:absolute;top:9px;right:12px;z-index:6;display:flex;align-items:center;gap:5px;}
   #widgetPendientes .pend-winctl .ww-btn,
@@ -635,8 +639,8 @@
         '<div class="pend-sc-kv-val">' + _esc(it.remitente) + '</div>' +
         (it.remitente_email ? '<div style="font-size:.8rem;color:#9a9ca3;margin-top:1px;">' + _esc(it.remitente_email) + '</div>' : '') +
         '<div class="pend-sc-block"><div class="pend-sc-flabel">Asunto</div><div class="pend-sc-kv-val">' + _esc(it.asunto) + '</div></div>' +
-        (it.snippet ? '<div class="pend-sc-block"><div class="pend-sc-play-txt" style="color:#5a5c63;">' + _esc(it.snippet) + '…</div></div>' : '') +
-        (it.adjuntos ? '<div class="pend-sc-block"><div class="pend-sc-flabel">📎 Con adjuntos</div></div>' : '') +
+        (it.adjuntos ? '<div class="pend-sc-flabel" style="margin-top:8px;">📎 Con adjuntos</div>' : '') +
+        '<div class="pend-sc-block pend-cor-msg"><div class="pend-sc-flabel">Mensaje</div><div id="pendCorBody" class="pend-cor-body"></div></div>' +
         '<button type="button" class="pend-sc-btn" onclick="pendVerCorreo(' + it.mail_id + ')">Responder</button>' +
       '</div>' +
     '</div>';
@@ -647,6 +651,33 @@
     '</div>') : '';
     res.className = 'pend-day';
     res.innerHTML = hero + card + pager;
+    _loadCorBody(it);   // baja el cuerpo real (lazy, reusa el endpoint del correo)
+  }
+  function _loadCorBody(it) {
+    var box = el('pendCorBody'); if (!box) return;
+    var render = function (txt) {
+      if (!txt) { box.innerHTML = '<span style="color:#9a9ca3;">Ábrelo para ver el contenido completo.</span>'; return; }
+      box.innerHTML = _esc(txt.slice(0, 2000)).replace(/\n{3,}/g, '\n\n').replace(/\n/g, '<br>');
+    };
+    if (it._body != null) { render(it._body); return; }
+    box.innerHTML = '<span style="color:#9a9ca3;">Cargando contenido…</span>';
+    fetch('/app/api/mail/detalle/' + it.mail_id + '/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var txt = '';
+        if (d && d.ok) {
+          txt = (d.cuerpo_texto || '').trim();
+          if (!txt && d.cuerpo_html) { var t = document.createElement('div'); t.innerHTML = d.cuerpo_html; txt = (t.textContent || '').trim(); }
+        }
+        it._body = txt;
+        var cur = (_corData.items || [])[_corIdx];
+        if (_section === 'correo' && cur && cur.mail_id === it.mail_id) render(txt);
+      })
+      .catch(function () {
+        it._body = it.snippet || '';
+        var cur = (_corData.items || [])[_corIdx];
+        if (_section === 'correo' && cur && cur.mail_id === it.mail_id) render(it._body);
+      });
   }
   window.pendCorNav = function (delta) {
     if (!_corData) return;
