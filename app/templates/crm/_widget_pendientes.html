@@ -506,12 +506,12 @@
     if (_cliData.modo === 'todobien') {
       res.className = '';
       res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;">' +
-        '<div class="pend-res-saludo" style="text-align:center;">Clientes al día 🎉</div>' +
+        '<div class="pend-res-saludo" style="text-align:center;">Clientes al día</div>' +
         '<div class="pend-split" style="margin-top:20px;"><div class="pend-sc-left">' +
           '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
             '<div class="pend-sc-agent-name">Asistente</div>' +
             '<div class="pend-sc-agent-sub">Todo en orden</div></div></div>' +
-          '<div class="pend-sc-msg">' + _esc(_cliData.mensaje_ok || 'No tienes clientes en pausa. 👏') + '</div>' +
+          '<div class="pend-sc-msg">' + _esc(_cliData.mensaje_ok || 'No tienes clientes en pausa.') + '</div>' +
         '</div></div></div>';
       return;
     }
@@ -523,7 +523,7 @@
     var sub;
     if (pend > 0) { sub = '<b>' + pend + '</b> cliente' + (pend === 1 ? '' : 's') + ' ' + cfg.s; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
     else if (comp > 0) { sub = '¡Reactivaste a todos por hoy! <b>' + comp + '</b> ✓'; }
-    else { sub = 'Sin pendientes 🎉'; }
+    else { sub = 'Sin pendientes'; }
     var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">' + cfg.t + '</div>' +
       '<div class="pend-res-sub">' + sub + '</div></div>';
     if (!total) { res.className = ''; res.innerHTML = hero; return; }
@@ -535,7 +535,7 @@
     var estadoLbl = (_CLI_TIER[it.tier] || cfg).e;
     var agentSub = it.completada ? '<span class="pend-sc-done">✓ Reactivado hoy</span>' : (estadoLbl + ' · ' + it.dias + ' días');
     var playBlock = it.completada
-      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Le creaste una oportunidad nueva a este cliente. 💪</div></div>'
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Le creaste una oportunidad nueva a este cliente.</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
     var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
@@ -629,14 +629,26 @@
     }
     var items = _corData.items || [];
     var total = items.length;
+    // Sin correos importantes: tarjeta del asistente (mismo formato que Clientes al día).
+    if (!total) {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;">' +
+        '<div class="pend-res-saludo" style="text-align:center;">Correo al día</div>' +
+        '<div class="pend-split" style="margin-top:20px;"><div class="pend-sc-left">' +
+          '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+            '<div class="pend-sc-agent-name">Asistente</div>' +
+            '<div class="pend-sc-agent-sub">Todo en orden</div></div></div>' +
+          '<div class="pend-sc-msg">No tienes correos importantes sin responder. En cuanto llegue algo que valga la pena, te lo muestro aquí.</div>' +
+        '</div></div></div>';
+      return;
+    }
     var pend = (_corData.pendientes != null ? _corData.pendientes : items.filter(function (x) { return !x.completada; }).length);
     var comp = (_corData.completadas != null ? _corData.completadas : total - pend);
     var sub;
     if (pend > 0) { sub = '<b>' + pend + '</b> correo' + (pend === 1 ? '' : 's') + ' importante' + (pend === 1 ? '' : 's') + ' sin responder · últimas 24 h'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
-    else if (comp > 0) { sub = '¡Respondiste todo por hoy! <b>' + comp + '</b> ✓'; }
-    else { sub = 'Sin correos importantes pendientes 🎉'; }
+    else if (comp > 0) { sub = 'Respondiste todo por hoy · <b>' + comp + '</b> ✓ — vuelvo a revisar mañana'; }
+    else { sub = 'Sin correos importantes sin responder'; }
     var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Correo</div><div class="pend-res-sub">' + sub + '</div></div>';
-    if (!total) { res.className = ''; res.innerHTML = hero; return; }
     if (_corIdx >= total) _corIdx = total - 1;
     if (_corIdx < 0) _corIdx = 0;
     var it = items[_corIdx];
@@ -644,7 +656,7 @@
     var agentSub = it.completada
       ? '<span class="pend-sc-done">' + (esListo ? '✓ Marcado como listo' : '✓ Respondido hoy') + '</span>'
       : ('Sin responder · ' + _esc(it.hace));
-    var playDoneTxt = esListo ? '¡Listo! Marcaste este correo como atendido.' : '¡Listo! Respondiste este correo. 💪';
+    var playDoneTxt = esListo ? 'Marcaste este correo como atendido.' : 'Respondiste este correo. Queda registrado por hoy.';
     var playBlock = it.completada
       ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">' + playDoneTxt + '</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
@@ -1078,7 +1090,7 @@
     } else if (completadas > 0) {
       subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
     } else {
-      subtxt = 'Vas al día — no hay nada urgente para hoy. 🎉';
+      subtxt = 'Vas al día — no hay nada urgente para hoy.';
     }
     var hero = '<div class="pend-res-hero">' +
       '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
@@ -1142,12 +1154,12 @@
     _renderResumen();
   };
   function _completedMsg(it) {
-    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
-    return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
+    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad.';
+    return '¡Listo! Completaste la tarea de esta oportunidad.';
   }
   window.pendIrUrl = function (u) { if (u) window.location = u; };
   function _completedMsgTA(it) {
-    return '¡Listo! Cerraste esta ' + (it && it.tipo === 'actividad' ? 'actividad' : 'tarea') + '. 💪';
+    return '¡Listo! Cerraste esta ' + (it && it.tipo === 'actividad' ? 'actividad' : 'tarea') + '.';
   }
   // "Mi día" para roles SIN oportunidades: sus TAREAS y ACTIVIDADES pendientes/hechas.
   function _renderResumenTareas(res, r) {
@@ -1162,7 +1174,7 @@
     } else if (completadas > 0) {
       subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
     } else {
-      subtxt = 'Vas al día — no hay tareas ni actividades pendientes. 🎉';
+      subtxt = 'Vas al día — no hay tareas ni actividades pendientes.';
     }
     var hero = '<div class="pend-res-hero">' +
       '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
@@ -1376,8 +1388,8 @@
     var items = (_data.buckets && _data.buckets[_tab]) || [];
     var esTareaB = (_data.buckets_tipo === 'tarea');
     if (!items.length) {
-      var vacioOpp = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
-      var vacioTar = { pendientes:'No tienes tareas ni actividades atrasadas 🎉', hoy:'Nada para hoy', proximamente:'Nada programado a futuro' };
+      var vacioOpp = { pendientes:'No hay oportunidades atrasadas ni sin agendar', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      var vacioTar = { pendientes:'No tienes tareas ni actividades atrasadas', hoy:'Nada para hoy', proximamente:'Nada programado a futuro' };
       var vacio = esTareaB ? vacioTar : vacioOpp;
       res.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
       return;
