@@ -237,6 +237,38 @@
             });
             renderConvFeed(inst);
         });
+        // Drive: soltar archivos encima del bloque los sube, sin abrir el
+        // gestor ni pasar por el botón.
+        var driveBlock = root.querySelector('.wo-drive-block');
+        if (driveBlock) {
+            var dragDepth = 0;
+            var traeArchivos = function (ev) {
+                return ev.dataTransfer &&
+                    Array.prototype.indexOf.call(ev.dataTransfer.types, 'Files') !== -1;
+            };
+            driveBlock.addEventListener('dragenter', function (ev) {
+                if (!traeArchivos(ev)) return;
+                ev.preventDefault();
+                dragDepth++;
+                driveBlock.classList.add('is-drop');
+            });
+            driveBlock.addEventListener('dragover', function (ev) {
+                if (traeArchivos(ev)) ev.preventDefault();
+            });
+            driveBlock.addEventListener('dragleave', function () {
+                dragDepth--;
+                if (dragDepth <= 0) { dragDepth = 0; driveBlock.classList.remove('is-drop'); }
+            });
+            driveBlock.addEventListener('drop', function (ev) {
+                if (!traeArchivos(ev)) return;
+                ev.preventDefault();
+                dragDepth = 0;
+                driveBlock.classList.remove('is-drop');
+                setFocus(inst);
+                subirADrive(inst, ev.dataTransfer.files);
+            });
+        }
+
         var driveFileEl = q(inst, 'driveFile');
         if (driveFileEl) {
             driveFileEl.addEventListener('change', function () {

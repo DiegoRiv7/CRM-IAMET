@@ -356,11 +356,12 @@ body {
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 0.5rem;
+    padding: 0 7px;   /* mismo sangrado que las filas: los íconos alinean */
 }
 .opp-v2 .wo-drive-head h4 {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin: 0;
     font-size: 0.7rem;
     font-weight: 800;
@@ -368,6 +369,14 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+.opp-v2 .wo-drive-head h4 svg { color: #0052D4; flex-shrink: 0; }
+
+/* Soltar archivos encima del bloque los sube directo. */
+.opp-v2 .wo-drive-block.is-drop {
+    background: rgba(0, 82, 212, 0.07);
+    box-shadow: inset 0 0 0 2px #0052D4;
+}
+.opp-v2 .wo-drive-block.is-drop .wo-drive-list { opacity: 0.45; }
 .opp-v2 .wo-drive-list { display: flex; flex-direction: column; gap: 2px; }
 .opp-v2 .wo-drive-item {
     display: flex;
