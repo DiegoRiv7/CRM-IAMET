@@ -251,6 +251,7 @@
   .pend-mini-card{padding:15px 2px;border-bottom:1px solid #f0f1f3;}
   .pend-mini-card:last-child{border-bottom:none;}
   .pend-mini-clbl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:5px;}
+  .pend-mini-clbl.urg{color:#c2410c;}
   .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
   .pend-mini-cd{font-size:.83rem;color:#4b5563;line-height:1.5;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
@@ -716,7 +717,7 @@
       res.className = '';
       res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;text-align:center;">' +
         '<div class="pend-res-saludo">Conecta tu correo</div>' +
-        '<div class="pend-res-sub" style="margin-top:8px;">Cuando conectes tu buzón en la sección <b>Correo</b>, el asistente te avisará aquí de los correos importantes sin responder de las últimas 24 horas.</div></div>';
+        '<div class="pend-res-sub" style="margin-top:8px;">Cuando conectes tu buzón en la sección <b>Correo</b>, el asistente te avisará aquí de los correos importantes que siguen sin respuesta — e insistirá con los que llevan días.</div></div>';
       return;
     }
     var items = _corData.items || [];
@@ -737,7 +738,7 @@
     var pend = (_corData.pendientes != null ? _corData.pendientes : items.filter(function (x) { return !x.completada; }).length);
     var comp = (_corData.completadas != null ? _corData.completadas : total - pend);
     var sub;
-    if (pend > 0) { sub = '<b>' + pend + '</b> correo' + (pend === 1 ? '' : 's') + ' importante' + (pend === 1 ? '' : 's') + ' sin responder · últimas 24 h'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    if (pend > 0) { sub = '<b>' + pend + '</b> correo' + (pend === 1 ? '' : 's') + ' importante' + (pend === 1 ? '' : 's') + ' sin responder'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
     else if (comp > 0) { sub = 'Respondiste todo por hoy · <b>' + comp + '</b> ✓ — vuelvo a revisar mañana'; }
     else { sub = 'Sin correos importantes sin responder'; }
     var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Correo</div><div class="pend-res-sub">' + sub + '</div></div>';
@@ -1148,7 +1149,7 @@
       return '<button type="button" class="pend-mini-btn ' + c[1] + '" onclick="' + call + '">' + c[0] + '</button>';
     }).join('');
     return '<div class="pend-mini-card">' +
-      '<div class="pend-mini-clbl"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+      '<div class="pend-mini-clbl' + (it.urgente ? ' urg' : '') + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
       '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
       '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
       '<div class="pend-mini-acts">' + acts + '</div>' +

@@ -7530,11 +7530,18 @@ _COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'solicitud
 _COR_ESPERA = ['quedo a la espera', 'en espera de su respuesta', 'en espera de tu respuesta', 'favor de',
                'me confirmas', 'quedo atento', 'quedamos atentos', 'esperamos su respuesta',
                'agradezco su pronta', 'me puedes', 'nos pueden', 'podrias', 'me apoyas']
+# Ventana para "importantes sin responder": no solo 24h — así el asistente sigue
+# insistiendo con los que se te van pasando (hasta 7 días).
+_COR_VENTANA_HORAS = 168
+
 _COR_SPAM_SENDER = ['noreply', 'no-reply', 'no_reply', 'no.reply', 'notifica', 'notification', 'mailer',
-                    'newsletter', 'marketing@', 'automat', 'mailchimp', 'sendgrid', 'bounce', 'postmaster']
+                    'newsletter', 'marketing@', 'automat', 'mailchimp', 'sendgrid', 'bounce', 'postmaster',
+                    'alert@', 'alerts@', '-alert', 'noreply-', 'donotreply', 'do-not-reply']
 _COR_SPAM_BODY = ['unsubscribe', 'darse de baja', 'cancelar suscripcion', 'cancelar tu suscripcion',
                   'no deseas recibir', 'da clic para dejar de']
-_COR_PROMO = ['oferta', 'descuento', 'promocion', 'gratis', 'sorteo', 'black friday', 'cyber', '2x1', 'envio gratis']
+_COR_PROMO = ['oferta', 'descuento', 'promocion', 'gratis', 'sorteo', 'black friday', 'cyber', '2x1', 'envio gratis',
+              'boletin', 'newsletter', 'webinar', 'novedades', 'catalogo', 'no te pierdas', 'aprovecha',
+              'suscribete', 'proximo evento', 'ultimas horas']
 _COR_AUTO = ['respuesta automatica', 'automatic reply', 'auto-reply', 'autoreply', 'out of office',
              'fuera de la oficina', 'fuera de oficina', 'notificacion de ausencia', 'ausencia de oficina',
              'delivery status', 'undeliverable', 'mailer-daemon', 'mailer daemon', 'correo no entregado',
@@ -7710,6 +7717,12 @@ def _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos):
     respondido = bool(respondido_hoy)
     listo = m.id in atendidos
     completada = respondido or listo
+    dias = 0
+    if m.fecha_envio:
+        dias = (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days
+    urgente = (not completada) and dias >= 2
+    if urgente and not listo:
+        mensaje = 'Lleva %d días esperando tu respuesta. %s' % (dias, mensaje)
     snippet = (cuerpo or m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
     return {
         'mail_id': m.id,
@@ -7725,6 +7738,8 @@ def _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos):
         'mensaje': mensaje,
         'accion': accion,
         'completada': completada,
+        'dias_espera': dias,
+        'urgente': urgente,
         'motivo_done': ('respondido' if respondido else ('listo' if listo else '')),
     }, completada
 
@@ -7744,10 +7759,10 @@ def api_asistente_correos(request):
         return JsonResponse({'success': True, 'conectado': False, 'items': [], 'total': 0,
                              'pendientes': 0, 'completadas': 0})
 
-    cutoff = now - timedelta(hours=24)
+    cutoff = now - timedelta(hours=_COR_VENTANA_HORAS)
     inbox = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
-        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
+        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:300])
 
     # Última respuesta (SENT) por hilo: "sin responder" = NO hay un enviado posterior
     # al último correo que te mandaron (aunque ya hubieras respondido antes en el hilo).
@@ -7818,7 +7833,9 @@ def api_asistente_correos(request):
             item, completada = _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos)
             (done if completada else pend).append(item)
 
-    pend.sort(key=lambda x: -x['score'])
+    # Orden por urgencia: mezcla importancia (score) + antigüedad (los que llevan
+    # días sin responder suben, para que el asistente insista con lo que se te pasa).
+    pend.sort(key=lambda x: -(x['score'] + min(x.get('dias_espera', 0), 7) * 0.6))
     items = pend + done
     return JsonResponse({'success': True, 'conectado': True, 'items': items, 'total': len(items),
                          'pendientes': len(pend), 'completadas': len(done)})
@@ -8377,10 +8394,10 @@ def _feed_correos_items(user, limite=6):
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
     now = timezone.now()
-    cutoff = now - timedelta(hours=24)
+    cutoff = now - timedelta(hours=_COR_VENTANA_HORAS)
     inbox = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
-        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
+        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:300])
     if not inbox:
         return out
     # Última respuesta (SENT) por hilo → "sin responder" = NO hay enviado posterior
@@ -8415,16 +8432,27 @@ def _feed_correos_items(user, limite=6):
                                         known_emails, known_domains, cliente_nombres)
         if score >= 3:
             scored.append((score, m, motivos))
-    scored.sort(key=lambda t: -t[0])
+    def _dias(m):
+        return (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days if m.fecha_envio else 0
+    # Urgencia: importancia (score) + antigüedad (los que llevan días suben).
+    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
     for score, m, motivos in scored[:limite]:
         remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
         venta = ('negocio' in motivos)
+        dias = _dias(m)
+        urgente = dias >= 2
         asunto = (m.asunto or '').strip()
+        if venta:
+            categoria = 'Posible venta nueva'
+        elif urgente:
+            categoria = 'Lleva %d días sin responder' % dias
+        else:
+            categoria = 'Correo sin responder'
         out.append({
-            'tipo': 'correo', 'grupo': 'correo',
-            'categoria': 'Posible venta nueva' if venta else 'Correo sin responder',
+            'tipo': 'correo', 'grupo': 'correo', 'categoria': categoria,
             'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
             'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
+            'dias_espera': dias, 'urgente': urgente,
             'acciones': (['crear_oportunidad', 'abrir_correo', 'no_importa'] if venta
                          else ['ver_borrador', 'abrir_correo', 'no_importa']),
         })
