@@ -463,6 +463,20 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* Carpeta donde vive el archivo: el bloque ya no lista solo la raíz, así
+   que hay que decir de dónde sale cada uno. */
+.opp-v2 .wo-drive-carpeta {
+    flex-shrink: 0;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.64rem;
+    color: #9CA3AF;
+    background: rgba(0, 0, 0, 0.045);
+    border-radius: 5px;
+    padding: 2px 6px;
+}
 .opp-v2 .wo-drive-ext { font-size: 0.64rem; font-weight: 700; color: #9CA3AF; flex-shrink: 0; }
 .opp-v2 .wo-drive-vacio { font-size: 0.78rem; color: #9CA3AF; padding: 4px 7px; }
 .opp-v2 .wo-drive-mas {

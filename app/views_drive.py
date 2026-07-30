@@ -527,6 +527,59 @@ def api_drive_oportunidad(request, opp_id):
     opp = get_object_or_404(TodoItem, id=opp_id)
 
     if request.method == 'GET':
+        # Vista "recientes": la usa el bloque de Drive embebido en el widget de
+        # la oportunidad, que es una vista previa, no un navegador. Devuelve los
+        # últimos archivos vengan de la carpeta que vengan — listar solo la raíz
+        # dejaba el bloque en "Sin archivos" cuando todo estaba en carpetas.
+        recientes = request.GET.get('recientes')
+        if recientes:
+            try:
+                tope = max(1, min(int(recientes), 20))
+            except (TypeError, ValueError):
+                tope = 3
+
+            def _fila(a, url, carpeta):
+                return {
+                    'id': a.id,
+                    'nombre': a.nombre_original,
+                    'extension': a.extension,
+                    'tipo_archivo': a.tipo_archivo,
+                    'carpeta': carpeta,
+                    'url': url,
+                    'fecha_subida': a.fecha_subida.isoformat(),
+                }
+
+            propios = ArchivoOportunidad.objects.filter(
+                oportunidad=opp
+            ).select_related('carpeta').order_by('-fecha_subida')[:tope]
+            items = [
+                _fila(a, f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
+                      a.carpeta.nombre if a.carpeta else '')
+                for a in propios
+            ]
+            total = ArchivoOportunidad.objects.filter(oportunidad=opp).count()
+
+            # Los archivos del proyecto vinculado son parte del mismo expediente
+            # para quien lo consulta, así que entran en la misma lista.
+            opp_proyecto = OportunidadProyecto.objects.filter(oportunidad=opp).first()
+            if opp_proyecto:
+                try:
+                    pv = Proyecto.objects.get(bitrix_group_id=int(opp_proyecto.bitrix_project_id))
+                    del_proyecto = ArchivoProyecto.objects.filter(
+                        proyecto=pv
+                    ).select_related('carpeta').order_by('-fecha_subida')[:tope]
+                    items += [
+                        _fila(a, f'/app/api/proyecto/{pv.id}/archivo/{a.id}/stream/',
+                              a.carpeta.nombre if a.carpeta else '')
+                        for a in del_proyecto
+                    ]
+                    total += ArchivoProyecto.objects.filter(proyecto=pv).count()
+                except (Proyecto.DoesNotExist, ValueError):
+                    pass
+
+            items.sort(key=lambda x: x['fecha_subida'], reverse=True)
+            return JsonResponse({'success': True, 'recientes': items[:tope], 'total': total})
+
         parent_id = request.GET.get('parent')
         carpetas = CarpetaOportunidad.objects.filter(
             oportunidad=opp,

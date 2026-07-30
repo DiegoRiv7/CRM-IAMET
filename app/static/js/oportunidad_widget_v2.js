@@ -1586,32 +1586,34 @@
         var oppId = inst.oppId;
         cont.innerHTML = '<div class="wo-drive-vacio">Cargando…</div>';
 
-        fetch('/app/api/oportunidad/' + oppId + '/drive/', { credentials: 'same-origin' })
+        // "recientes": los últimos archivos estén donde estén. Pedir solo la
+        // raíz dejaba el bloque vacío en oportunidades con todo en carpetas.
+        fetch('/app/api/oportunidad/' + oppId + '/drive/?recientes=' + TOPE_DRIVE, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;
-                var archivos = (data && data.archivos) || [];
-                var carpetas = (data && data.carpetas) || [];
-                if (!archivos.length && !carpetas.length) {
+                var archivos = (data && data.recientes) || [];
+                if (!archivos.length) {
                     cont.innerHTML = '<div class="wo-drive-vacio">Sin archivos</div>';
                     return;
                 }
                 cont.innerHTML = '';
-                archivos.slice(0, TOPE_DRIVE).forEach(function (a) {
+                archivos.forEach(function (a) {
                     var row = document.createElement('a');
                     row.className = 'wo-drive-item';
                     row.href = a.url;
                     row.target = '_blank';
                     row.rel = 'noopener';
-                    row.title = a.nombre || '';
+                    row.title = (a.carpeta ? a.carpeta + ' / ' : '') + (a.nombre || '');
                     row.innerHTML =
                         '<svg width="13" height="13" fill="none" stroke="#86868B" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;">' +
                         '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
                         '<span class="wo-drive-nombre">' + esc(a.nombre || 'Archivo') + '</span>' +
+                        (a.carpeta ? '<span class="wo-drive-carpeta">' + esc(a.carpeta) + '</span>' : '') +
                         '<span class="wo-drive-ext">' + esc((a.extension || '').toUpperCase()) + '</span>';
                     cont.appendChild(row);
                 });
-                var resto = (archivos.length - TOPE_DRIVE) + carpetas.length;
+                var resto = (data.total || archivos.length) - archivos.length;
                 if (resto > 0) {
                     var mas = document.createElement('button');
                     mas.type = 'button';
