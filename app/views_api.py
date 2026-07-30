@@ -612,7 +612,14 @@ def api_chat_oportunidad(request, opp_id):
         }
 
     if request.method == 'GET':
-        msgs = list(MensajeOportunidad.objects.filter(oportunidad=opp).exclude(texto__startswith='[mail:').select_related('usuario', 'reply_to', 'reply_to__usuario'))
+        # Se excluyen los mensajes-bitácora de actividades ([ACT:…] y
+        # [ACT_COMPLETADA:…]): las actividades ahora viven solo en su cuadro del
+        # widget, también cuando se completan. Los históricos de Bitrix
+        # ([BITRIX_ACT:…]) NO caen aquí y siguen apareciendo.
+        msgs = list(MensajeOportunidad.objects.filter(oportunidad=opp)
+                    .exclude(texto__startswith='[mail:')
+                    .exclude(texto__startswith='[ACT')
+                    .select_related('usuario', 'reply_to', 'reply_to__usuario'))
         items = [{'__tipo': 'chat', '__fecha': m.fecha, 'data': serializar(m)} for m in msgs]
 
         # Incluir también los correos enviados/recibidos vinculados a la

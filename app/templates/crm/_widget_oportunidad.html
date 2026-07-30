@@ -238,7 +238,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     <button type="button" class="wo-conv-chip is-active" data-conv-filtro="todo" onclick="woConvSetFiltro('todo', this)">Todo</button>
                     <button type="button" class="wo-conv-chip" data-conv-filtro="nota" onclick="woConvSetFiltro('nota', this)">Notas</button>
                     <button type="button" class="wo-conv-chip" data-conv-filtro="correo" onclick="woConvSetFiltro('correo', this)">Correos</button>
-                    <button type="button" class="wo-conv-chip" data-conv-filtro="actividad" onclick="woConvSetFiltro('actividad', this)">Actividades</button>
+                    <button type="button" class="wo-conv-chip" data-conv-filtro="historial" onclick="woConvSetFiltro('historial', this)">Historial</button>
                 </div>
             </div>
             <div id="woConvFijado" style="display:none;align-items:flex-start;gap:9px;background:#FFF8E6;border:1px solid #F5DFA6;border-radius:10px;padding:9px 12px;margin-top:0.6rem;"></div>
@@ -1787,7 +1787,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
         function woConvClasificar(m) {
             if (m.tipo === 'correo') return 'correo';
             var t = m.texto || '';
-            if (m.es_bitrix || t.indexOf('[ACT') === 0 || m.bitrix_tipo) return 'actividad';
+            if (m.es_bitrix || m.bitrix_tipo) return 'historial';
             return 'nota';
         }
 
@@ -2908,21 +2908,12 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     document.body.appendChild(toast);
                     setTimeout(function () { toast.remove(); }, 3200);
 
-                    // Publicar mensaje en la conversación como tarjeta clickeable [ACT:ID]
-                    var fechaFmt = f_date ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; })(f_date) : '';
-                    var tareaId = res.tarea ? res.tarea.id : '';
-                    var chatMsg = '[ACT:' + tareaId + ']' + titulo + '|' + fechaFmt + '|' + t_ini + '|' + t_fin + '|' + desc;
-                    var fd = new FormData();
-                    fd.append('texto', chatMsg);
-                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrf },
-                        body: fd
-                    }).then(function () {
-                        woCargarNotas(_woCurrentOppId);
-                    }).catch(function () {
-                        woCargarNotas(_woCurrentOppId);
-                    });
+                    // Las actividades viven en SU cuadro (incluidas las completadas),
+                    // ya no se publican como mensaje en la conversación. Se avisa al
+                    // bus para que los widgets abiertos refresquen su lista.
+                    if (window.crmDataBus) {
+                        window.crmDataBus.emit('tarea-opp', 'created', res.tarea ? res.tarea.id : null);
+                    }
 
                     if (typeof woCargarTareasInline === 'function') {
                         woCargarTareasInline(_woCurrentOppId);

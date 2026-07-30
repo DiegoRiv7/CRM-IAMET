@@ -1326,10 +1326,10 @@
        menciones) sigue en el overlay (botón expandir). */
     function _convClasificar(m) {
         if (m.tipo === 'correo') return 'correo';
-        var t = m.texto || '';
-        // Las actividades de la oportunidad se quedan en la conversación cuando
-        // se completan: son su propio filtro (antes rotulado "eventos").
-        if (m.es_bitrix || t.indexOf('[ACT') === 0 || m.bitrix_tipo) return 'actividad';
+        // Lo que queda aquí es la bitácora importada de Bitrix24. Las actividades
+        // del CRM ya no pasan por la conversación: viven en su cuadro, también
+        // cuando se completan.
+        if (m.es_bitrix || m.bitrix_tipo) return 'historial';
         return 'nota';
     }
 
@@ -1410,7 +1410,7 @@
                     '</div></div>';
                 return;
             }
-            if (cls === 'actividad') {
+            if (cls === 'historial') {
                 h += '<div style="display:flex;align-items:center;gap:7px;padding:2px 4px;">' +
                     '<span style="width:6px;height:6px;border-radius:50%;background:#C7C7CC;flex-shrink:0;"></span>' +
                     '<span style="font-size:0.72rem;color:#86868B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + esc((m.texto || '').replace(/^\[[^\]]*\]\s*/, '').split('|')[0]) + '</span>' +
