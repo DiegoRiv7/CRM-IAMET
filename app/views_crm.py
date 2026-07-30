@@ -7523,7 +7523,7 @@ def _cor_norm(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
 
-_COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'propuesta', 'orden de compra',
+_COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'solicitud', 'propuesta', 'orden de compra',
            ' oc ', 'rfq', 'licitacion', 'presupuesto', 'factura', 'proyecto', 'reunion', 'visita',
            'disponibilidad', 'tiempo de entrega', 'precio', 'seguimiento', 'urgente', 'pendiente',
            'pedido', 'compra', 'instalacion', 'soporte', 'garantia', 'servicio']
@@ -7701,13 +7701,13 @@ def _cor_fetch_cuerpos(user, correos):
     return out
 
 
-def _cor_item(m, score, motivos, kw, cuerpo, now, sent_today, atendidos):
-    """Construye el dict de un correo importante para el frontend."""
+def _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos):
+    """Construye el dict de un correo importante para el frontend.
+    respondido_hoy: ya lo respondiste HOY (hay un SENT de hoy posterior a este correo)."""
     from django.utils import timezone
-    hk = m.hilo_key
     remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
     mensaje, accion = _cor_msg(remitente, motivos, kw)
-    respondido = bool(hk and hk in sent_today)
+    respondido = bool(respondido_hoy)
     listo = m.id in atendidos
     completada = respondido or listo
     snippet = (cuerpo or m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
@@ -7749,18 +7749,18 @@ def api_asistente_correos(request):
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
         fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
 
-    # Respuestas por hilo (SENT): antes de hoy = ya resuelto; hoy = "respondido hoy".
+    # Última respuesta (SENT) por hilo: "sin responder" = NO hay un enviado posterior
+    # al último correo que te mandaron (aunque ya hubieras respondido antes en el hilo).
     hks = set(m.hilo_key for m in inbox if m.hilo_key)
-    sent_before, sent_today = set(), set()
+    last_sent = {}
     if hks:
         for s in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT', hilo_key__in=hks).values('hilo_key', 'fecha_envio'):
-            if not s['fecha_envio']:
+            f = s['fecha_envio']
+            if not f:
                 continue
-            d = timezone.localtime(s['fecha_envio']).date()
-            if d < today:
-                sent_before.add(s['hilo_key'])
-            elif d == today:
-                sent_today.add(s['hilo_key'])
+            hk = s['hilo_key']
+            if hk not in last_sent or f > last_sent[hk]:
+                last_sent[hk] = f
 
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
 
@@ -7768,16 +7768,32 @@ def api_asistente_correos(request):
     atendidos = set(CorreoAtendido.objects.filter(
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
 
+    def _estado_hilo(m):
+        """(mostrar, respondido_hoy). inbox viene ordenado por -fecha_envio, así que el
+        primero de cada hilo es el más reciente; los siguientes del mismo hilo se ocultan."""
+        hk = m.hilo_key
+        ls = last_sent.get(hk) if hk else None
+        respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
+        if respondido and timezone.localtime(ls).date() != today:
+            return False, False   # ya resuelto en un día anterior → ocultar
+        return True, respondido
+
     pend, done = [], []
     borderline = []   # (m, score_prelim): casi importantes SIN cuerpo aún → leerlo por IMAP
+    seen_hk = set()
     for m in inbox:
         hk = m.hilo_key
-        if hk and hk in sent_before:
-            continue   # ya respondido antes de hoy → resuelto
+        if hk:
+            if hk in seen_hk:
+                continue   # ya consideramos el correo más reciente de este hilo
+            seen_hk.add(hk)
+        mostrar, respondido_hoy = _estado_hilo(m)
+        if not mostrar:
+            continue
         score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
                                         known_emails, known_domains, cliente_nombres)
         if score >= 3:
-            item, completada = _cor_item(m, score, motivos, kw, m.cuerpo_texto, now, sent_today, atendidos)
+            item, completada = _cor_item(m, score, motivos, kw, m.cuerpo_texto, now, respondido_hoy, atendidos)
             (done if completada else pend).append(item)
         elif score >= 1 and not (m.cuerpo_texto or '').strip() and not m.cuerpo_cargado:
             # No alcanza con asunto/remitente/dominio y NO tenemos el cuerpo:
@@ -7798,7 +7814,8 @@ def api_asistente_correos(request):
                                             known_emails, known_domains, cliente_nombres)
             if score < 3:
                 continue   # el cuerpo confirmó que no es importante → descartar
-            item, completada = _cor_item(m, score, motivos, kw, cuerpo, now, sent_today, atendidos)
+            _mostrar, respondido_hoy = _estado_hilo(m)
+            item, completada = _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos)
             (done if completada else pend).append(item)
 
     pend.sort(key=lambda x: -x['score'])
@@ -8366,18 +8383,33 @@ def _feed_correos_items(user, limite=6):
         fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
     if not inbox:
         return out
+    # Última respuesta (SENT) por hilo → "sin responder" = NO hay enviado posterior
+    # al último correo recibido (aunque ya hubieras respondido antes en el hilo).
     hks = set(m.hilo_key for m in inbox if m.hilo_key)
-    sent = set()
+    last_sent = {}
     if hks:
-        for hk in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT',
-                                             hilo_key__in=hks).values_list('hilo_key', flat=True):
-            sent.add(hk)
+        for s in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT',
+                                            hilo_key__in=hks).values('hilo_key', 'fecha_envio'):
+            f = s['fecha_envio']
+            if not f:
+                continue
+            hk = s['hilo_key']
+            if hk not in last_sent or f > last_sent[hk]:
+                last_sent[hk] = f
     atendidos = set(CorreoAtendido.objects.filter(
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
     scored = []
+    seen_hk = set()
     for m in inbox:
-        if (m.hilo_key and m.hilo_key in sent) or m.id in atendidos:
+        hk = m.hilo_key
+        if hk:
+            if hk in seen_hk:
+                continue   # solo el correo más reciente de cada hilo
+            seen_hk.add(hk)
+        ls = last_sent.get(hk) if hk else None
+        respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
+        if respondido or m.id in atendidos:
             continue
         score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
                                         known_emails, known_domains, cliente_nombres)
