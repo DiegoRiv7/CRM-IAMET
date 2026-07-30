@@ -8942,6 +8942,53 @@
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
 
+            // ── Barra de vencimiento (rediseño v3) ──
+            // Siempre visible porque sostiene la acción principal, pero los
+            // botones de reagendar solo salen cuando la tarea urge: en una que
+            // vence en tres semanas serían ruido.
+            var dueBar = document.getElementById('crmTaskDueBar');
+            if (dueBar) {
+                var _completada = tarea.estado === 'completada';
+                var _smart = tarea.fecha_limite
+                    ? crmTaskFechaInteligente(tarea.fecha_limite, tarea.estado)
+                    : null;
+                var _tone = _smart ? _smart.tone : '';
+                var _urge = !_completada && (_tone === 'vencida' || _tone === 'urgente');
+
+                var _pill = document.getElementById('crmTaskDuePill');
+                var _txt = document.getElementById('crmTaskDueTxt');
+                var _snoozeWrap = document.getElementById('crmTaskSnoozeWrap');
+                var _snoozeLbl = document.getElementById('crmTaskSnoozeLbl');
+
+                if (_pill) _pill.className = 'crm-tw-due-pill' + (_urge ? ' ' + _tone : '');
+                if (_txt) {
+                    if (!_smart) _txt.textContent = 'Sin fecha límite';
+                    else if (_completada) _txt.textContent = _smart.main;
+                    else _txt.textContent = _smart.meta + ' · ' + _smart.main;
+                }
+                if (_snoozeWrap) _snoozeWrap.style.display = _urge ? '' : 'none';
+                if (_snoozeLbl) _snoozeLbl.style.display = _urge ? '' : 'none';
+                dueBar.style.display = 'flex';
+            }
+
+            // ── Subtareas plegadas ──
+            // El contenido lo pinta este mismo render más abajo; el listener va
+            // en el contenedor, que NO se reemplaza, así sobrevive al innerHTML.
+            var _subSec = document.getElementById('crmTaskSubtareasSection');
+            if (_subSec) {
+                _subSec.classList.remove('is-open');   // cada tarea abre plegada
+                if (!_subSec._plegadoWired) {
+                    _subSec._plegadoWired = true;
+                    _subSec.addEventListener('click', function (ev) {
+                        var h = ev.target.closest('.crm-tw-section-title');
+                        if (!h || !_subSec.contains(h)) return;
+                        // La tarjeta de "tarea principal" no tiene lista que plegar.
+                        if (_subSec.querySelector('.crm-tw-parent-card')) return;
+                        _subSec.classList.toggle('is-open');
+                    });
+                }
+            }
+
             // Cliente: solo en el header breadcrumb; el row del sidebar queda oculto
             // (pero guardamos el nombre en el span por compat con editores legacy)
             var clienteRow = document.getElementById('crmTaskClienteRow');
@@ -9425,6 +9472,32 @@
                 if (e.key === 'Escape') crmTaskCancelarEdicion();
                 if (e.key === 'Enter') { inp.blur(); crmTaskGuardar(); }
             });
+        }
+
+        /* Reagendar de un clic desde la barra de vencimiento. Conserva la hora
+           original de la tarea (si no tenía, 17:00) y guarda de inmediato —
+           el chiste es que sea un clic. Pasa por crmTaskGuardar, así que la
+           regla de "pedir razón si el responsable mueve la fecha" sigue
+           aplicando igual que al editarla a mano. */
+        function crmTaskReagendar(cuando) {
+            if (cuando === 'otra') {
+                crmTaskEditarFechaLimite(_crmTaskOriginal.fecha_limite);
+                return;
+            }
+            var base = _crmTaskOriginal.fecha_limite ? new Date(_crmTaskOriginal.fecha_limite) : null;
+            var valida = base && !isNaN(base.getTime());
+            var d = new Date();
+            d.setHours(valida ? base.getHours() : 17, valida ? base.getMinutes() : 0, 0, 0);
+
+            if (cuando === 'manana') {
+                d.setDate(d.getDate() + 1);
+            } else {
+                // Próximo lunes; si hoy ya es lunes, el de la semana entrante.
+                d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+            }
+            _crmTaskEdits.fecha_limite = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            crmTaskGuardar();
         }
 
         function crmTaskEditarResponsable() {
@@ -11451,6 +11524,7 @@
         window.crmTaskAgregarInvolucrado = crmTaskAgregarInvolucrado;
         window.crmTaskEditarTitulo = crmTaskEditarTitulo;
         window.crmTaskEditarFechaLimite = crmTaskEditarFechaLimite;
+        window.crmTaskReagendar = crmTaskReagendar;
         window.crmTaskEditarResponsable = crmTaskEditarResponsable;
         window.crmTaskEditarCliente = crmTaskEditarCliente;
         window.crmTaskEditarDescripcion = crmTaskEditarDescripcion;

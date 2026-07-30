@@ -25,6 +25,88 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 .crm-ce-editor img, .crm-ce-img { max-width: 100%; max-height: 240px; height: auto; display: block; margin: 5px 0; border-radius: 6px; border: 1px solid #E5E7EB; }
 .crm-ce-uploading { opacity: 0.5; filter: grayscale(0.2); }
 .crm-ce-dragover { outline: 2px dashed #4f6ef7 !important; outline-offset: 2px; background: #F8FAFF; }
+
+/* ═══════════ REDISEÑO v3 ═══════════
+   Mismo lenguaje que el widget de Oportunidad: todo en cuadros sólidos, la
+   acción principal siempre visible arriba y la barra de reagendar solo
+   cuando urge. */
+
+/* ── Barra de vencimiento ── */
+.crm-tw-duebar {
+    display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+    padding: 11px 18px; background: #fff; border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+}
+.crm-tw-due-pill {
+    display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+    padding: 5px 13px; font-size: 0.78rem; font-weight: 700;
+    background: #F2F2F7; color: #3A3A3C;
+}
+.crm-tw-due-pill.vencida { background: rgba(255,59,48,.1); color: #FF3B30; }
+.crm-tw-due-pill.urgente { background: rgba(255,149,0,.13); color: #B45309; }
+.crm-tw-due-lbl { font-size: 0.66rem; font-weight: 800; letter-spacing: .06em; color: #86868B; }
+.crm-tw-snooze-wrap { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.crm-tw-snooze {
+    border: 1px solid #E2E8F0; background: #fff; border-radius: 999px;
+    padding: 5px 13px; font: inherit; font-size: 0.75rem; font-weight: 600;
+    color: #1D1D1F; cursor: pointer; transition: border-color .12s, color .12s;
+}
+.crm-tw-snooze:hover { border-color: #BFD9FF; color: #0052D4; }
+.crm-tw-duebar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* ── Cuadros sólidos ── */
+.crm-tw-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 18px;
+    padding: 18px 20px; margin-bottom: 16px;
+}
+.crm-tw-main-scroll > .crm-tw-card:last-child { margin-bottom: 0; }
+.crm-tw-sidebar-inner > .crm-tw-card { margin-bottom: 14px; }
+.crm-tw-sb-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.crm-tw-sb-footlink {
+    display: block; margin-top: 6px; padding: 0; border: none; background: none;
+    font: inherit; font-size: 0.72rem; font-weight: 600; color: #0052D4; cursor: pointer;
+}
+.crm-tw-sb-footlink:hover { text-decoration: underline; }
+
+/* ── Relacionado: renglones navegables ── */
+.crm-tw-rel-row {
+    display: flex; align-items: center; gap: 11px; padding: 9px 10px;
+    margin: 0 -10px; border-radius: 11px; cursor: pointer; transition: background .12s;
+}
+.crm-tw-rel-row:hover { background: rgba(0,82,212,.05); }
+.crm-tw-rel-ico {
+    width: 32px; height: 32px; border-radius: 9px; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+}
+.crm-tw-rel-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.crm-tw-rel-lbl {
+    font-size: 0.62rem; font-weight: 800; letter-spacing: .05em;
+    color: #86868B; text-transform: uppercase;
+}
+.crm-tw-rel-row .crm-tw-rel-value {
+    font-size: 0.84rem; font-weight: 600; color: #1D1D1F;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Subtareas plegadas: el cuadro chico solo dice que existen ──
+   La lista la pinta crm_main.js; aquí se oculta hasta que se hace clic en la
+   cabecera. Si no hay subtareas, crm_main.js deja la sección vacía y el
+   :empty la esconde entera. */
+.crm-tw-subtareas-card:empty { display: none; }
+.crm-tw-subtareas-card .crm-tw-section-title { cursor: pointer; user-select: none; }
+.crm-tw-subtareas-card .crm-tw-section-title::after {
+    content: ''; margin-left: auto; width: 7px; height: 7px;
+    border-right: 2px solid #C7C7CC; border-bottom: 2px solid #C7C7CC;
+    transform: rotate(-45deg); transition: transform .15s;
+}
+.crm-tw-subtareas-card.is-open .crm-tw-section-title::after { transform: rotate(45deg); }
+.crm-tw-subtareas-card .crm-tw-subtareas-list,
+.crm-tw-subtareas-card .crm-tw-subtarea-add { display: none; }
+.crm-tw-subtareas-card.is-open .crm-tw-subtareas-list { display: block; }
+.crm-tw-subtareas-card.is-open .crm-tw-subtarea-add { display: flex; }
+/* La card de "tarea principal" no se pliega: no tiene lista que esconder. */
+.crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title { cursor: default; }
+.crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title::after { display: none; }
 </style>
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">
@@ -81,29 +163,47 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
         </div>
         <button type="button" id="crmTaskBtnTerminar" onclick="crmTaskCompletar()" style="display:none;" aria-hidden="true"></button>
 
+        <!-- ═════ BARRA DE VENCIMIENTO ═════
+             Solo aparece cuando la tarea está vencida o vence pronto; en ese caso
+             ofrece reagendar de un clic, que es lo que hace que una tarea vencida
+             se atienda en vez de ignorarse. La acción principal (completar /
+             reabrir) vive aquí para estar siempre visible sin scroll. -->
+        <div class="crm-tw-duebar" id="crmTaskDueBar" style="display:none;">
+            <span class="crm-tw-due-pill" id="crmTaskDuePill">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span id="crmTaskDueTxt"></span>
+            </span>
+            <span class="crm-tw-due-lbl" id="crmTaskSnoozeLbl">MOVER A</span>
+            <span class="crm-tw-snooze-wrap" id="crmTaskSnoozeWrap">
+                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('manana')">Mañana</button>
+                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('lunes')">Lunes</button>
+                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('otra')">Otra fecha…</button>
+            </span>
+            <div class="crm-tw-duebar-right">
+                <button type="button" id="crmTaskBtnCompletarPrimary" class="crm-tw-complete-btn" onclick="crmTaskToggleCompletar()">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Completar tarea</span>
+                </button>
+                <button type="button" id="crmTaskBtnReabrir" class="crm-tw-reabrir-btn" onclick="crmTaskReabrir()" style="display:none;">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                    Reabrir tarea
+                </button>
+                <span class="crm-tw-completada-pill" id="crmTaskCompletadaPill" style="display:none;">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Completada
+                </span>
+            </div>
+        </div>
+
         <!-- ═════ CUERPO DIVIDIDO ═════ -->
         <div class="crm-tw-body">
             <!-- ═════ PANEL IZQUIERDO ═════ -->
             <div class="crm-tw-main">
                 <div class="crm-tw-main-scroll">
-                    <!-- Título + acción principal -->
+                    <!-- Título (las acciones se fueron a la barra de vencimiento) -->
                     <div class="crm-tw-title-row">
                         <div class="crm-tw-title-stack">
                             <h1 id="crm-task-titulo" class="crm-tw-title"></h1>
-                            <div class="crm-tw-title-actions">
-                                <button type="button" id="crmTaskBtnCompletarPrimary" class="crm-tw-complete-btn" onclick="crmTaskToggleCompletar()">
-                                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                    <span>Completar tarea</span>
-                                </button>
-                                <button type="button" id="crmTaskBtnReabrir" class="crm-tw-reabrir-btn" onclick="crmTaskReabrir()" style="display:none;">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-                                    Reabrir tarea
-                                </button>
-                                <span class="crm-tw-completada-pill" id="crmTaskCompletadaPill" style="display:none;">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                    Completada
-                                </span>
-                            </div>
                         </div>
                     </div>
 
@@ -116,8 +216,8 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                         <span id="crm-task-vence-badge" class="crm-task-status-pill vence"></span>
                     </div>
 
-                    <!-- DESCRIPCIÓN — protagonista visual -->
-                    <div class="crm-tw-section crm-tw-section-desc">
+                    <!-- DESCRIPCIÓN -->
+                    <div class="crm-tw-card crm-tw-section crm-tw-section-desc">
                         <h3 class="crm-tw-section-title">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
                             Descripción
@@ -128,24 +228,13 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                         </div>
                     </div>
 
-                    <!-- ENLACES / RELACIONES (chips) -->
-                    <div class="crm-tw-relations" id="crmTaskSidebarLinks" style="display:none;">
-                        <div class="crm-tw-rel-chip crm-tw-rel-opp" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;" title="Abrir oportunidad">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                            <span class="crm-tw-rel-value" id="crmTaskOppNombre">--</span>
-                            <span id="crmTaskOppCliente" style="display:none;"></span>
-                        </div>
-                        <div class="crm-tw-rel-chip crm-tw-rel-drive" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;" title="Abrir carpeta de archivos">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                            <span class="crm-tw-rel-value">Drive</span>
-                        </div>
-                    </div>
-
-                    <!-- SUBTAREAS (renderizado por JS) -->
-                    <div class="crm-tw-section" id="crmTaskSubtareasSection"></div>
+                    <!-- SUBTAREAS (renderizado por crm_main.js).
+                         Nace plegado: solo el título con su contador y la barra de
+                         avance. Un clic en la cabecera despliega la lista completa. -->
+                    <div class="crm-tw-card crm-tw-section crm-tw-subtareas-card" id="crmTaskSubtareasSection"></div>
 
                     <!-- TIMELINE DE ACTIVIDAD -->
-                    <div class="crm-tw-section crm-tw-activity">
+                    <div class="crm-tw-card crm-tw-section crm-tw-activity">
                         <div class="crm-tw-activity-head">
                             <h3 class="crm-tw-section-title">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -204,7 +293,7 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
             <aside class="crm-tw-sidebar">
                 <div class="crm-tw-sidebar-inner">
                     <!-- 1. Metadatos principales -->
-                    <div class="crm-tw-sb-props">
+                    <div class="crm-tw-card crm-tw-sb-props">
                         <!-- ESTADO -->
                         <div class="crm-tw-sb-prop">
                             <span class="crm-tw-sb-label">
@@ -236,49 +325,81 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                             <div class="crm-tw-sb-btn crm-tw-sb-btn-readonly" id="crm-task-creador-container"></div>
                         </div>
 
-                        <!-- FECHA LÍMITE -->
-                        <div class="crm-tw-sb-prop">
-                            <span class="crm-tw-sb-label">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                Fecha Límite
-                            </span>
-                            <button type="button" class="crm-tw-sb-btn">
-                                <svg class="crm-tw-sb-cal-ico" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <span id="crm-task-fecha-limite" class="crm-task-info-value"></span>
-                            </button>
-                        </div>
+                        <!-- FECHA LÍMITE + PRIORIDAD, a dos columnas -->
+                        <div class="crm-tw-sb-duo">
+                            <div class="crm-tw-sb-prop">
+                                <span class="crm-tw-sb-label">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    Fecha Límite
+                                </span>
+                                <button type="button" class="crm-tw-sb-btn">
+                                    <svg class="crm-tw-sb-cal-ico" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span id="crm-task-fecha-limite" class="crm-task-info-value"></span>
+                                </button>
+                            </div>
 
-                        <!-- PRIORIDAD -->
-                        <div class="crm-tw-sb-prop" id="crmTaskPrioridadSidebarWrap">
-                            <span class="crm-tw-sb-label">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                                Prioridad
-                            </span>
-                            <div class="crm-tw-sb-btn" id="crm-task-prioridad"></div>
+                            <!-- PRIORIDAD -->
+                            <div class="crm-tw-sb-prop" id="crmTaskPrioridadSidebarWrap">
+                                <span class="crm-tw-sb-label">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                    Prioridad
+                                </span>
+                                <div class="crm-tw-sb-btn" id="crm-task-prioridad"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="crm-tw-sb-divider"></div>
-
-                    <!-- 2. Participantes y Observadores -->
-                    <div class="crm-tw-sb-group">
-                        <h4 class="crm-tw-sb-group-title">
-                            Participantes
-                            <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('participantes')" title="Añadir">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            </button>
-                        </h4>
-                        <div id="crm-task-participantes-container" class="crm-tw-sb-list"></div>
+                    <!-- 2. RELACIONADO — antes eran chips sueltos bajo la descripción,
+                         donde pasaban desapercibidos. Como renglones con flecha se
+                         leen como navegación. -->
+                    <div class="crm-tw-card crm-tw-relcard" id="crmTaskSidebarLinks" style="display:none;">
+                        <h4 class="crm-tw-sb-group-title">Relacionado</h4>
+                        <div class="crm-tw-rel-row crm-tw-rel-opp" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;" title="Abrir oportunidad">
+                            <span class="crm-tw-rel-ico" style="background:rgba(0,82,212,.1);color:#0052D4;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>
+                            </span>
+                            <span class="crm-tw-rel-body">
+                                <span class="crm-tw-rel-lbl">Oportunidad</span>
+                                <span class="crm-tw-rel-value" id="crmTaskOppNombre">--</span>
+                                <span id="crmTaskOppCliente" style="display:none;"></span>
+                            </span>
+                            <svg width="13" height="13" fill="none" stroke="#C7C7CC" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
+                        <div class="crm-tw-rel-row crm-tw-rel-drive" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;" title="Abrir carpeta de archivos">
+                            <span class="crm-tw-rel-ico" style="background:rgba(52,199,89,.12);color:#1E9E4A;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </span>
+                            <span class="crm-tw-rel-body">
+                                <span class="crm-tw-rel-lbl">Archivos</span>
+                                <span class="crm-tw-rel-value">Drive de la oportunidad</span>
+                            </span>
+                            <svg width="13" height="13" fill="none" stroke="#C7C7CC" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
                     </div>
 
-                    <div class="crm-tw-sb-group">
-                        <h4 class="crm-tw-sb-group-title">
-                            Observadores
-                            <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('observadores')" title="Añadir">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            </button>
-                        </h4>
-                        <div id="crm-task-observadores-container" class="crm-tw-sb-list"></div>
+                    <!-- 3. Participantes y Observadores -->
+                    <div class="crm-tw-card">
+                        <div class="crm-tw-sb-group">
+                            <h4 class="crm-tw-sb-group-title">
+                                Participantes
+                                <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('participantes')" title="Añadir">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </button>
+                            </h4>
+                            <div id="crm-task-participantes-container" class="crm-tw-sb-list"></div>
+                        </div>
+
+                        <div class="crm-tw-sb-divider"></div>
+
+                        <div class="crm-tw-sb-group">
+                            <h4 class="crm-tw-sb-group-title">
+                                Observadores
+                                <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('observadores')" title="Añadir">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </button>
+                            </h4>
+                            <div id="crm-task-observadores-container" class="crm-tw-sb-list"></div>
+                        </div>
                     </div>
 
                     <!-- Cliente ya solo vive en el header (breadcrumb). Mantenemos stubs
@@ -287,10 +408,11 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                         <span id="crm-task-cliente-nombre"></span>
                     </div>
 
-                    <!-- 3. Footer: solo fecha de creación (creador ya vive arriba) -->
+                    <!-- 4. Footer: fecha de creación + acceso al historial -->
                     <div class="crm-tw-sb-footer">
                         <div>Creada el <span id="crm-task-fecha-creacion"></span></div>
                         <span id="crm-task-creado-por" style="display:none;"></span>
+                        <button type="button" class="crm-tw-sb-footlink" onclick="crmTaskAbrirHistorial()">Ver historial de cambios</button>
                     </div>
                 </div>
             </aside>
