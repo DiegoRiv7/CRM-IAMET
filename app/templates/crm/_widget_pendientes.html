@@ -27,55 +27,6 @@
     <button type="button" class="pend-mini-go" onclick="pendMiniAsk()" aria-label="Enviar">&#8593;</button>
   </div>
 </div>
-<!-- Modal de aprobación: borrador semi-automático de oportunidad desde un correo -->
-<div class="pend-oppd-ov" id="pendOppDraft" style="display:none;">
-  <div class="pend-oppd">
-    <div class="pend-oppd-head">
-      <div class="pend-oppd-title">Crear oportunidad</div>
-      <button type="button" class="pend-oppd-x" onclick="pendOppDraftCerrar()" title="Cancelar">&times;</button>
-    </div>
-    <div class="pend-oppd-sub" id="pendOppdSub">Revisa el borrador y aprueba.</div>
-    <div class="pend-oppd-body" id="pendOppdBody">
-      <div class="pend-oppd-f">
-        <label class="pend-oppd-lbl">Título</label>
-        <input type="text" id="pendOppdTitulo" class="pend-oppd-in">
-      </div>
-      <div class="pend-oppd-f">
-        <label class="pend-oppd-lbl">Cliente <span id="pendOppdCliTag" class="pend-oppd-tag" style="display:none;">detectado</span></label>
-        <input type="text" id="pendOppdCliente" class="pend-oppd-in" oninput="this.dataset.cid='';var t=el('pendOppdCliTag');if(t)t.style.display='none';">
-      </div>
-      <div class="pend-oppd-f">
-        <label class="pend-oppd-lbl">Tipo</label>
-        <div class="pend-oppd-seg" id="pendOppdTipo">
-          <button type="button" data-tipo="runrate" onclick="pendOppdSetTipo('runrate')">Runrate</button>
-          <button type="button" data-tipo="proyecto" onclick="pendOppdSetTipo('proyecto')">Proyecto</button>
-        </div>
-      </div>
-      <div class="pend-oppd-row">
-        <div class="pend-oppd-f" style="flex:1;">
-          <label class="pend-oppd-lbl">Probabilidad</label>
-          <input type="number" id="pendOppdProb" class="pend-oppd-in" min="0" max="100" value="10">
-        </div>
-        <div class="pend-oppd-f" style="flex:1;">
-          <label class="pend-oppd-lbl">Etapa</label>
-          <input type="text" id="pendOppdEtapa" class="pend-oppd-in" readonly>
-        </div>
-      </div>
-      <div class="pend-oppd-act">
-        <label class="pend-oppd-chk"><input type="checkbox" id="pendOppdActChk" checked> Crear actividad de seguimiento</label>
-        <div class="pend-oppd-row" id="pendOppdActRow" style="margin-top:8px;">
-          <input type="text" id="pendOppdActTit" class="pend-oppd-in" style="flex:2;">
-          <input type="date" id="pendOppdActFecha" class="pend-oppd-in" style="flex:1;">
-        </div>
-      </div>
-      <div class="pend-oppd-note">El monto, la fecha de cierre y otros datos quedan vacíos — los completas después.</div>
-    </div>
-    <div class="pend-oppd-foot">
-      <button type="button" class="pend-oppd-btn sec" onclick="pendOppDraftCerrar()">Cancelar</button>
-      <button type="button" class="pend-oppd-btn pri" id="pendOppdCrearBtn" onclick="pendOppDraftCrear()">Crear oportunidad</button>
-    </div>
-  </div>
-</div>
 <div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi Asistente">
   <div class="ww-card pend-card">
     <!-- Controles de ventana (— □ ×): esquina superior derecha, discretos -->
@@ -312,32 +263,29 @@
   .pend-mini-foot{border-top:1px solid #f0f1f3;padding:11px 14px;display:flex;align-items:center;gap:9px;}
   .pend-mini-in{flex:1;border:1px solid #e9eaee;background:#f7f8fa;border-radius:22px;padding:10px 15px;font-size:.85rem;color:#374151;outline:none;font-family:inherit;}
   .pend-mini-go{width:34px;height:34px;border-radius:50%;background:#16181d;color:#fff;border:none;font-size:.95rem;cursor:pointer;flex:none;}
-  /* ── Modal de aprobación: borrador de oportunidad ── */
-  .pend-oppd-ov{position:fixed;inset:0;background:rgba(17,20,26,.4);z-index:12500;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .pend-oppd{width:460px;max-width:calc(100vw - 40px);max-height:90vh;background:#fff;border-radius:18px;box-shadow:0 30px 70px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden;}
-  .pend-oppd-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px;}
-  .pend-oppd-title{font-size:1.15rem;font-weight:800;color:#16181d;letter-spacing:-.01em;}
-  .pend-oppd-x{border:none;background:none;color:#c2c6cd;cursor:pointer;font-size:1.3rem;line-height:1;padding:2px 6px;border-radius:6px;}
-  .pend-oppd-x:hover{background:#f2f3f6;color:#6b7280;}
-  .pend-oppd-sub{font-size:.8rem;color:#9a9ca3;padding:0 20px 10px;}
-  .pend-oppd-body{padding:6px 20px 4px;overflow-y:auto;}
-  .pend-oppd-f{margin-bottom:13px;}
-  .pend-oppd-row{display:flex;gap:10px;}
-  .pend-oppd-lbl{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#9a9ca3;margin-bottom:5px;}
-  .pend-oppd-tag{background:#eef8f1;color:#2b8a3e;font-size:.6rem;font-weight:800;border-radius:8px;padding:1px 6px;text-transform:none;letter-spacing:0;margin-left:6px;}
-  .pend-oppd-in{width:100%;border:1px solid #e2e4e8;border-radius:10px;padding:9px 12px;font-size:.9rem;color:#16181d;outline:none;font-family:inherit;box-sizing:border-box;}
-  .pend-oppd-in:focus{border-color:#0a84ff;}
-  .pend-oppd-in[readonly]{background:#f7f8fa;color:#6b7280;}
-  .pend-oppd-seg{display:inline-flex;background:#f0f1f3;border-radius:10px;padding:3px;gap:2px;}
-  .pend-oppd-seg button{border:none;background:none;font-size:.83rem;font-weight:700;color:#6b6d76;padding:7px 18px;border-radius:8px;cursor:pointer;}
-  .pend-oppd-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
-  .pend-oppd-act{background:#f7f8fa;border-radius:12px;padding:12px 14px;margin-top:4px;}
-  .pend-oppd-chk{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:#374151;cursor:pointer;}
-  .pend-oppd-note{font-size:.75rem;color:#9a9ca3;margin:12px 0 4px;line-height:1.4;}
-  .pend-oppd-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px 18px;border-top:1px solid #f0f1f3;margin-top:6px;}
-  .pend-oppd-btn{border:none;border-radius:11px;padding:10px 18px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
-  .pend-oppd-btn.pri{background:#0a84ff;color:#fff;} .pend-oppd-btn.pri:hover{background:#0060df;} .pend-oppd-btn.pri:disabled{opacity:.55;cursor:default;}
-  .pend-oppd-btn.sec{background:#f2f3f6;color:#374151;} .pend-oppd-btn.sec:hover{background:#e9eaee;}
+  /* ── Vista enfocada dentro del panel (borrador conversacional) ── */
+  .pend-foc-back{border:none;background:none;color:#6b7280;font-size:.82rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:12px;}
+  .pend-foc-back:hover{color:#16181d;}
+  .pend-foc-lbl{font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;margin-bottom:7px;}
+  .pend-foc-intro{font-size:.9rem;line-height:1.55;color:#374151;margin-bottom:14px;}
+  .pend-foc-intro b{color:#16181d;font-weight:700;}
+  .pend-foc-card{border:1px solid #e9eaee;border-radius:14px;padding:14px 15px;background:#fff;}
+  .pend-foc-fld{padding:9px 0;border-bottom:1px solid #f2f3f6;}
+  .pend-foc-fld:last-child{border-bottom:none;}
+  .pend-foc-k{font-size:.66rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#9a9ca3;margin-bottom:3px;display:flex;gap:6px;align-items:center;}
+  .pend-foc-tag{background:#eef8f1;color:#2b8a3e;font-size:.58rem;font-weight:800;border-radius:8px;padding:1px 6px;text-transform:none;letter-spacing:0;}
+  .pend-foc-in{width:100%;border:none;background:none;font-size:.98rem;font-weight:600;color:#16181d;outline:none;font-family:inherit;padding:1px 0;box-sizing:border-box;}
+  .pend-foc-in::placeholder{color:#c2c6cd;}
+  .pend-foc-seg{display:inline-flex;background:#f0f1f3;border-radius:9px;padding:3px;gap:2px;margin-top:2px;}
+  .pend-foc-seg button{border:none;background:none;font-size:.8rem;font-weight:700;color:#6b6d76;padding:6px 15px;border-radius:7px;cursor:pointer;font-family:inherit;}
+  .pend-foc-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
+  .pend-foc-meta{font-size:.83rem;color:#4b5563;line-height:1.55;margin-top:12px;}
+  .pend-foc-meta b{color:#16181d;font-weight:700;}
+  .pend-foc-acts{display:flex;gap:10px;margin-top:16px;}
+  .pend-foc-btn{border:none;border-radius:11px;padding:11px 18px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
+  .pend-foc-btn.pri{background:#0a84ff;color:#fff;flex:1;} .pend-foc-btn.pri:hover{background:#0060df;} .pend-foc-btn.pri:disabled{opacity:.55;cursor:default;}
+  .pend-foc-btn.sec{background:#f2f3f6;color:#374151;} .pend-foc-btn.sec:hover{background:#e9eaee;}
+  .pend-foc-note{font-size:.75rem;color:#9a9ca3;margin-top:12px;text-align:center;}
   /* Botonera de la tarjeta de correo */
   .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
   .pend-cor-btns .pend-sc-btn{margin-top:0;}
@@ -1258,56 +1206,83 @@
       })
       .catch(function () { alert('No se pudo generar la respuesta.'); });
   };
-  // Crear oportunidad SEMI-AUTOMÁTICA: pide el borrador (cliente por código, título
-  // + tipo por IA) y lo muestra en un modal para que el usuario apruebe/edite.
-  var _oppdCorreoId = null;
+  // Contenedor de feed activo (mini panel o columna derecha del panel grande),
+  // para pintar la vista enfocada donde el usuario está mirando.
+  function _activeFeedBox() {
+    var mini = el('pendMini');
+    if (mini && mini.style.display !== 'none') return el('pendMiniBody');
+    var ov = el('widgetPendientes');
+    if (ov && ov.classList.contains('active')) return el('pendAsisFeed');
+    return el('pendMiniBody');
+  }
+  var _MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function _fechaLegible(iso) {
+    if (!iso) return '';
+    var p = iso.split('-'); if (p.length !== 3) return iso;
+    return (+p[2]) + ' de ' + (_MESES_ES[(+p[1]) - 1] || '');
+  }
+  // Crear oportunidad SEMI-AUTOMÁTICA: el asistente PREPARA el borrador y se enfoca
+  // en él DENTRO del panel (nada de modal). Cliente por código, título+tipo por IA.
+  var _oppDraft = null;
   window.pendMiniCrearOpp = function (id) {
-    _oppdCorreoId = id;
-    var ov = el('pendOppDraft'); if (ov) ov.style.display = 'flex';
-    var sub = el('pendOppdSub'); if (sub) sub.textContent = 'Preparando el borrador…';
-    var btn = el('pendOppdCrearBtn'); if (btn) btn.disabled = true;
-    // valores base mientras carga
-    el('pendOppdTitulo').value = ''; el('pendOppdCliente').value = '';
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Preparando el borrador…</div>';
     fetch('/app/api/asistente/correo/' + id + '/oportunidad-draft/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (!(d && d.success)) { if (sub) sub.textContent = 'No se pudo preparar el borrador.'; return; }
-        el('pendOppdTitulo').value = d.titulo || '';
-        el('pendOppdCliente').value = d.cliente_nombre || '';
-        el('pendOppdCliente').dataset.cid = d.cliente_id || '';
-        var tag = el('pendOppdCliTag'); if (tag) tag.style.display = d.cliente_detectado ? '' : 'none';
-        pendOppdSetTipo(d.tipo || 'runrate');
-        el('pendOppdProb').value = (d.probabilidad != null ? d.probabilidad : 10);
-        el('pendOppdEtapa').value = d.etapa || '';
-        el('pendOppdActTit').value = d.actividad_titulo || '';
-        el('pendOppdActFecha').value = d.actividad_fecha || '';
-        if (sub) sub.textContent = 'Detecté esto del correo de ' + (d.remitente || '') + '. Revisa y aprueba.';
-        if (btn) btn.disabled = false;
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">No se pudo preparar el borrador.</div>'; return; }
+        _oppDraft = { correo_id: id, prob: d.probabilidad, etapa: d.etapa,
+          actividad_titulo: d.actividad_titulo, actividad_fecha: d.actividad_fecha };
+        _focusOppRender(box, d);
       })
-      .catch(function () { if (sub) sub.textContent = 'Error al preparar el borrador.'; });
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar el borrador.</div>'; });
   };
+  function _focusOppRender(box, d) {
+    var tag = d.cliente_detectado ? '<span class="pend-foc-tag" id="focOppTag">detectado</span>' : '';
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Nueva oportunidad</div>' +
+      '<div class="pend-foc-intro">Preparé esta oportunidad con lo del correo de <b>' + _esc(d.remitente || '') + '</b>. Revísala, cámbiala si quieres, y la creo.</div>' +
+      '<div class="pend-foc-card">' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Título</div>' +
+          '<input type="text" class="pend-foc-in" id="focOppTitulo" value="' + _esc(d.titulo || '') + '" placeholder="Título de la oportunidad"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Cliente ' + tag + '</div>' +
+          '<input type="text" class="pend-foc-in" id="focOppCliente" value="' + _esc(d.cliente_nombre || '') + '" data-cid="' + (d.cliente_id || '') + '" placeholder="Cliente" oninput="this.dataset.cid=\'\';var t=el(\'focOppTag\');if(t)t.style.display=\'none\';"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Tipo</div>' +
+          '<div class="pend-foc-seg" id="focOppTipo">' +
+            '<button type="button" data-tipo="runrate" onclick="pendOppdSetTipo(\'runrate\')">Runrate</button>' +
+            '<button type="button" data-tipo="proyecto" onclick="pendOppdSetTipo(\'proyecto\')">Proyecto</button>' +
+          '</div></div>' +
+      '</div>' +
+      '<div class="pend-foc-meta">La dejo en <b>' + _esc(d.etapa || '') + '</b> al <b>' + (d.probabilidad != null ? d.probabilidad : 10) + '%</b>, y te agendo un <b>seguimiento</b> para el <b>' + _fechaLegible(d.actividad_fecha) + '</b>. El monto y la fecha de cierre los completas después.</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focOppBtn" onclick="pendOppDraftCrear()">Crear oportunidad</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note">Nada se crea sin que lo confirmes.</div>';
+    pendOppdSetTipo(d.tipo || 'runrate');
+  }
   window.pendOppdSetTipo = function (t) {
-    document.querySelectorAll('#pendOppdTipo button').forEach(function (b) {
+    document.querySelectorAll('#focOppTipo button').forEach(function (b) {
       b.classList.toggle('on', b.getAttribute('data-tipo') === t);
     });
-    var seg = el('pendOppdTipo'); if (seg) seg.dataset.tipo = t;
+    var seg = el('focOppTipo'); if (seg) seg.dataset.tipo = t;
   };
-  window.pendOppDraftCerrar = function () {
-    var ov = el('pendOppDraft'); if (ov) ov.style.display = 'none';
-    _oppdCorreoId = null;
-  };
+  window.pendMiniFocusCerrar = function () { _oppDraft = null; _feedRedraw(); };
   window.pendOppDraftCrear = function () {
-    var btn = el('pendOppdCrearBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+    if (!_oppDraft) return;
+    var btn = el('focOppBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+    var seg = el('focOppTipo');
     var payload = {
-      correo_id: _oppdCorreoId,
-      titulo: (el('pendOppdTitulo').value || '').trim(),
-      cliente_id: el('pendOppdCliente').dataset.cid || '',
-      cliente_nombre: (el('pendOppdCliente').value || '').trim(),
-      tipo: (el('pendOppdTipo').dataset.tipo || 'runrate'),
-      probabilidad: parseInt(el('pendOppdProb').value || '10', 10),
-      crear_actividad: !!el('pendOppdActChk').checked,
-      actividad_titulo: (el('pendOppdActTit').value || '').trim(),
-      actividad_fecha: el('pendOppdActFecha').value || ''
+      correo_id: _oppDraft.correo_id,
+      titulo: (el('focOppTitulo').value || '').trim(),
+      cliente_id: el('focOppCliente').dataset.cid || '',
+      cliente_nombre: (el('focOppCliente').value || '').trim(),
+      tipo: ((seg && seg.dataset.tipo) || 'runrate'),
+      probabilidad: (_oppDraft.prob != null ? _oppDraft.prob : 10),
+      crear_actividad: true,
+      actividad_titulo: _oppDraft.actividad_titulo || '',
+      actividad_fecha: _oppDraft.actividad_fecha || ''
     };
     fetch('/app/api/asistente/oportunidad/crear/', {
       method: 'POST', credentials: 'same-origin',
@@ -1316,11 +1291,14 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
-        if (!(d && d.success)) { alert((d && d.error) || 'No se pudo crear la oportunidad.'); return; }
-        // Quitar el correo del feed (ya lo convertiste) y cerrar.
-        if (_oppdCorreoId != null) pendMiniDescartar('correo', _oppdCorreoId);
-        pendOppDraftCerrar();
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
+          alert((d && d.error) || 'No se pudo crear la oportunidad.'); return;
+        }
+        var cid = _oppDraft.correo_id;
+        _oppDraft = null;
+        if (cid != null) pendMiniDescartar('correo', cid);   // lo quita del feed + redibuja
+        else _feedRedraw();
         if (window.pendAbrirOpp) { try { window.pendAbrirOpp(d.opp_id); } catch (e) {} }
       })
       .catch(function () {
