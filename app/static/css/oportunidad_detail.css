@@ -339,8 +339,23 @@ body {
    oscuro en otros. */
 .opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
 
-/* El badge de pipeline ya no va sobre el título: sin el margen que traía. */
-.opp-v2 .wo-g-info .wo-type-badge { margin: 3px 0 0; }
+/* El badge de pipeline ya no va sobre el título, donde necesitaba pegar
+   fuerte contra un header oscuro. Aquí convive con Producto y Área, así que
+   se calla: mismo tono de texto que los demás valores y solo un contorno
+   fino que recuerda que se puede cambiar. Va con !important porque los
+   temas pintan .wo-type-badge sólido para el header (y ahí sí debe serlo,
+   es donde vive la pastilla del proyecto). */
+.opp-v2 .wo-g-info .wo-type-badge {
+    margin: 3px 0 0;
+    background: transparent !important;
+    border: 1px solid #DDE3EA !important;
+    color: #3A3A3C !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 4px 12px;
+}
+.opp-v2 .wo-g-info .wo-type-badge:hover { border-color: #BFD9FF !important; }
 
 /* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
    primera columna y las facturas ocupando las otras dos, con campos
@@ -392,13 +407,11 @@ body {
 .opp-v2 .wo-g-cot { display: flex; flex-direction: column; }
 .opp-v2 .wo-g-cot .wo-quote-list { flex: 1; min-height: 0; overflow-y: auto; }
 
-/* El bloque se lee como una pestaña pegada al pie de Cotizaciones: raya
-   oscura arriba y fondo más claro que la card, para que se distinga sin
-   despegarse. */
+/* Pestaña pegada al pie de Cotizaciones: la distinción la da el fondo más
+   claro que la card, sin línea divisoria. */
 .opp-v2 .wo-drive-block {
     margin: 0.9rem -1.5rem -1.5rem;   /* sangra hasta el borde de la card */
     padding: 0.85rem 1.5rem 1rem;
-    border-top: 2px solid #1D1D1F;
     background: #fff;
     border-radius: 0 0 18px 18px;
     flex-shrink: 0;
