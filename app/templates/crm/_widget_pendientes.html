@@ -1277,7 +1277,7 @@
     });
     var seg = el('focOppTipo'); if (seg) seg.dataset.tipo = t;
   };
-  window.pendMiniFocusCerrar = function () { _oppDraft = null; _updDraft = null; _feedRedraw(); };
+  window.pendMiniFocusCerrar = function () { _oppDraft = null; _updDraft = null; _segDraft = null; _feedRedraw(); };
   window.pendOppDraftCrear = function () {
     if (!_oppDraft) return;
     var btn = el('focOppBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
@@ -1386,50 +1386,77 @@
     if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
     pendAbrir();
   };
-  // Parche único: al crear una actividad desde el asistente, la ligamos a la
-  // oportunidad del contexto (POST /app/api/actividades/ acepta `opportunity`).
-  (function _pendActPatchOnce() {
-    if (window._pendActPatchApplied || typeof window.fetch !== 'function') return;
-    var origFetch = window.fetch;
-    window.fetch = function (url, opts) {
-      if (typeof url === 'string' && url.indexOf('/app/api/actividades/') !== -1
-          && opts && opts.method === 'POST' && window._pendContextoOpp) {
-        try {
-          var b = JSON.parse(opts.body || '{}');
-          if (!b.opportunity) { b.opportunity = window._pendContextoOpp; opts.body = JSON.stringify(b); }
-        } catch (e) {}
-      }
-      return origFetch.apply(this, arguments);
+  // Recarga el feed activo desde el servidor (para que caigan los ítems ya resueltos).
+  function _feedReloadActive() {
+    var mini = el('pendMini');
+    if (mini && mini.style.display !== 'none') { _miniData = null; _miniLoad(); return; }
+    if (window.pendAsisFeedLoad) pendAsisFeedLoad();
+  }
+  // ── Agendar seguimiento (sin IA): sugiere fecha/hora libre y crea la actividad ──
+  var _segDraft = null;
+  window.pendMiniAgendar = function (oppId) {
+    if (!oppId) return;
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Buscando un hueco en tu calendario…</div>';
+    fetch('/app/api/asistente/oportunidad/' + oppId + '/seguimiento-draft/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo preparar.') + '</div>'; return; }
+        _segDraft = { opp_id: d.opp_id };
+        _focusSegRender(box, d);
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar.</div>'; });
+  };
+  function _focusSegRender(box, d) {
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Agendar seguimiento</div>' +
+      '<div class="pend-foc-intro">Te agendo un seguimiento de <b>' + _esc(d.opp_nombre || '') + '</b> para dentro de 2 días, en el primer hueco libre de tu calendario. Ajústalo si quieres.</div>' +
+      '<div class="pend-foc-card">' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Título</div>' +
+          '<input type="text" class="pend-foc-in" id="focSegTit" value="' + _esc(d.titulo || 'Seguimiento') + '"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Nota</div>' +
+          '<textarea class="pend-foc-in pend-foc-sel" id="focSegDesc" rows="2">' + _esc(d.descripcion || '') + '</textarea></div>' +
+        '<div class="pend-foc-fld" style="display:flex;gap:10px;">' +
+          '<div style="flex:1;"><div class="pend-foc-k">Fecha</div><input type="date" class="pend-foc-in pend-foc-sel" id="focSegFecha" value="' + _esc(d.fecha || '') + '"></div>' +
+          '<div style="flex:1;"><div class="pend-foc-k">Hora</div><input type="time" class="pend-foc-in pend-foc-sel" id="focSegHora" value="' + _esc(d.hora || '09:00') + '"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pend-foc-meta">Queda en tu calendario y en la oportunidad, para que no se te pase.</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focSegBtn" onclick="pendSegCrear()">Agendar seguimiento</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note">Nada se agenda sin que lo confirmes.</div>';
+  }
+  window.pendSegCrear = function () {
+    if (!_segDraft) return;
+    var btn = el('focSegBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Agendando…'; }
+    var payload = {
+      opp_id: _segDraft.opp_id,
+      titulo: (el('focSegTit') || {}).value || 'Seguimiento',
+      descripcion: (el('focSegDesc') || {}).value || '',
+      fecha: (el('focSegFecha') || {}).value || '',
+      hora: (el('focSegHora') || {}).value || '09:00'
     };
-    window._pendActPatchApplied = true;
-  })();
-  // Agendar una actividad de seguimiento ligada a la oportunidad SIN abrirla:
-  // abre el modal global de crear actividad; al guardar queda en esa oportunidad.
-  window.pendMiniAgendar = function (id) {
-    if (typeof window.calGlobalAbrirCrearActividad !== 'function') {
-      // fallback: abrir la oportunidad si el modal global no está disponible
-      if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); } catch (e) {} }
-      return;
-    }
-    window._pendContextoOpp = id;
-    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
-    window.calGlobalAbrirCrearActividad();
-    var mod = document.getElementById('widgetGlobalCrearActividad');
-    if (mod) {
-      mod.style.zIndex = '12000';   // por encima del asistente
-      var obs = new MutationObserver(function () {
-        if (mod.style.display === 'none') {
-          obs.disconnect();
-          window._pendContextoOpp = null;
-          // La oportunidad "se movió": refrescamos el feed en ambos paneles.
-          _miniData = null;
-          pendFeedRefresh();
-          var ov = el('widgetPendientes');
-          if (ov && ov.classList.contains('active') && window.pendAsisFeedLoad) pendAsisFeedLoad();
+    fetch('/app/api/asistente/seguimiento/crear/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Agendar seguimiento'; }
+          alert((d && d.error) || 'No se pudo agendar.'); return;
         }
+        _segDraft = null;
+        _feedReloadActive();   // la oportunidad ya tiene actividad → sale de "sin moverse"
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Agendar seguimiento'; }
+        alert('No se pudo agendar.');
       });
-      obs.observe(mod, { attributes: true, attributeFilter: ['style'] });
-    }
   };
   window.pendMiniDescartar = function (tipo, id) {
     if (tipo === 'correo') {

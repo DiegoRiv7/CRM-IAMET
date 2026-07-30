@@ -8393,6 +8393,87 @@ def api_asistente_oportunidad_update_aplicar(request):
     return JsonResponse({'success': True, 'opp_id': opp.id})
 
 
+def _hora_disponible(user, fecha):
+    """Primera hora libre (9–17h) en el calendario del usuario para esa fecha."""
+    from django.db.models import Q
+    from django.utils import timezone
+    from .models import Actividad
+    busy = set()
+    acts = (Actividad.objects.filter(fecha_inicio__date=fecha)
+            .filter(Q(creado_por=user) | Q(participantes=user)).distinct()
+            .values_list('fecha_inicio', 'fecha_fin'))
+    for ini, fin in acts:
+        if not ini:
+            continue
+        h0 = timezone.localtime(ini).hour
+        h1 = timezone.localtime(fin).hour if fin else h0 + 1
+        for h in range(h0, max(h0 + 1, h1 + 1)):
+            busy.add(h)
+    for h in range(9, 18):
+        if h not in busy:
+            return h
+    return 9
+
+
+@login_required
+def api_asistente_seguimiento_draft(request, opp_id):
+    """GET — borrador de actividad de seguimiento para una oportunidad (sin IA):
+    sugiere +2 días a la primera hora libre del calendario."""
+    from django.utils import timezone
+    from datetime import timedelta
+    from .models import TodoItem
+    opp = TodoItem.objects.filter(id=opp_id).first()
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+    fecha = timezone.localdate() + timedelta(days=2)
+    hora = _hora_disponible(request.user, fecha)
+    return JsonResponse({
+        'success': True,
+        'opp_id': opp.id,
+        'opp_nombre': opp.oportunidad,
+        'titulo': 'Seguimiento',
+        'descripcion': 'Realizar seguimiento de ' + (opp.oportunidad or ''),
+        'fecha': fecha.isoformat(),
+        'hora': '%02d:00' % hora,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_seguimiento_crear(request):
+    """POST — crea la actividad de seguimiento ligada a la oportunidad."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import TodoItem, Actividad
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    opp = TodoItem.objects.filter(id=data.get('opp_id')).first()
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+    try:
+        y, m, d = (data.get('fecha') or '').split('-')
+        hh, mm = (data.get('hora') or '09:00').split(':')
+        naive = datetime(int(y), int(m), int(d), int(hh), int(mm))
+        ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+    except Exception:
+        ini = timezone.now() + timedelta(days=2)
+    try:
+        act = Actividad.objects.create(
+            titulo=(data.get('titulo') or 'Seguimiento')[:200],
+            descripcion=(data.get('descripcion') or ('Realizar seguimiento de ' + (opp.oportunidad or ''))),
+            tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+            creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
+        )
+        act.participantes.set([request.user.id])
+        return JsonResponse({'success': True, 'opp_id': opp.id, 'actividad_id': act.id})
+    except Exception as e:
+        logger.exception('Asistente: no se pudo agendar seguimiento: %s', e)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 @login_required
 def api_asistente_correo_cuerpo(request, correo_id):
     """Cuerpo de un correo para PREVISUALIZAR en el asistente SIN marcarlo como leído.
