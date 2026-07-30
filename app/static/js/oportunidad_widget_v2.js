@@ -1223,7 +1223,7 @@
             iconPath + '</svg>' + msg + '</div>';
     }
 
-    function verTodasBtn(inst, total) {
+    function verTodasBtn(inst, total, modo) {
         var more = document.createElement('div');
         more.style.cssText = 'text-align:center;padding:0.4rem;';
         var btn = document.createElement('button');
@@ -1233,7 +1233,7 @@
         btn.addEventListener('click', function () {
             setFocus(inst);
             if (typeof window.woAbrirTodasTareas === 'function') {
-                window.woAbrirTodasTareas(inst.oppId);
+                window.woAbrirTodasTareas(inst.oppId, modo);
                 openSubWindowed(inst, 'widgetTodasTareas');
             }
         });
@@ -1267,7 +1267,7 @@
                     });
                     container.appendChild(row);
                 });
-                if (tareas.length > TOPE_LISTA) container.appendChild(verTodasBtn(inst, tareas.length));
+                if (tareas.length > TOPE_LISTA) container.appendChild(verTodasBtn(inst, tareas.length, 'tareas'));
             })
             .catch(function () {
                 if (!alive(inst)) return;
@@ -1310,6 +1310,9 @@
                     });
                     container.appendChild(row);
                 });
+                // Las completadas se acumulan en el cuadro, así que el tope se
+                // alcanza tarde o temprano: mismo "Ver todas" que las tareas.
+                if (acts.length > TOPE_LISTA) container.appendChild(verTodasBtn(inst, acts.length, 'actividades'));
             })
             .catch(function () {
                 if (!alive(inst)) return;

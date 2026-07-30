@@ -312,7 +312,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
 <div class="widget-overlay" id="widgetTodasTareas" style="z-index:var(--z-widget);display:none;" onclick="if(event.target===this)woCerrarTodasTareas()"><!-- Nivel 1: lista global de tareas -->
     <div id="widgetTodasTareasCard" style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.18);width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;transform:scale(0.92) translateY(40px);opacity:0;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),opacity 0.22s ease;">
         <div style="padding:1.2rem 1.5rem;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-            <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Tareas de la oportunidad</div>
+            <div id="widgetTodasTareasTitulo" style="font-weight:700;font-size:1rem;color:#1D1D1F;">Tareas de la oportunidad</div>
             <button onclick="woCerrarTodasTareas()" style="background:none;border:none;font-size:1.4rem;color:#86868B;cursor:pointer;line-height:1;padding:0;">&times;</button>
         </div>
         <div id="widgetTodasTareasBody" style="overflow-y:auto;padding:0.75rem 1rem;display:flex;flex-direction:column;gap:4px;flex:1;">
@@ -2390,11 +2390,16 @@ matarían los bindings posteriores del mismo try-block. El markup original
         window.woCargarActividadReciente = woCargarActividadReciente;
 
         // ── Widget: todas las tareas ──
-        window.woAbrirTodasTareas = function(oppId) {
+        // modo: 'tareas' (por defecto) o 'actividades'. Mismo overlay para las
+        // dos listas — cambian el título, el endpoint y qué se abre al clic.
+        window.woAbrirTodasTareas = function(oppId, modo) {
+            var esAct = modo === 'actividades';
             var overlay = document.getElementById('widgetTodasTareas');
             var card = document.getElementById('widgetTodasTareasCard');
             var body = document.getElementById('widgetTodasTareasBody');
+            var titulo = document.getElementById('widgetTodasTareasTitulo');
             if (!overlay) return;
+            if (titulo) titulo.textContent = esAct ? 'Actividades de la oportunidad' : 'Tareas de la oportunidad';
             body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>';
             // Si la opp se abrió elevada (caso: tarea → opp), también
             // elevamos este sub-widget. Sin esto, queda por detrás del
@@ -2412,12 +2417,14 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     card.style.opacity = '1';
                 });
             });
-            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+            fetch(esAct ? ('/app/api/oportunidad/' + oppId + '/tareas/')
+                        : ('/app/api/tareas/?oportunidad_id=' + oppId))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     var tareas = data.tareas || data.results || [];
                     if (!tareas.length) {
-                        body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">Sin tareas</div>';
+                        body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">' +
+                            (esAct ? 'Sin actividades' : 'Sin tareas') + '</div>';
                         return;
                     }
                     var now = new Date();
@@ -2438,7 +2445,10 @@ matarían los bindings posteriores del mismo try-block. El markup original
                         var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
                         var rowBg = done ? 'rgba(52,199,89,0.06)' : (venc ? 'rgba(255,59,48,0.07)' : 'transparent');
                         var fechaStr = t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', {day:'numeric',month:'short'}) : '';
-                        return '<div onclick="woCerrarTodasTareas();if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:' + rowBg + ';cursor:pointer;">' +
+                        var abrir = esAct
+                            ? 'woCerrarTodasTareas();if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')'
+                            : 'woCerrarTodasTareas();if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')';
+                        return '<div onclick="' + abrir + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:' + rowBg + ';cursor:pointer;">' +
                             '<span style="width:8px;height:8px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
                             '<span style="flex:1;font-size:0.83rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.titulo || 'Sin título') + '</span>' +
                             '<span style="font-size:0.72rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' + fechaStr + '</span>' +
