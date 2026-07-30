@@ -8212,31 +8212,185 @@ def api_asistente_oportunidad_crear(request):
             correo.oportunidad = todo
             correo.save(update_fields=['oportunidad'])
 
-    # Actividad de seguimiento (para que no se le olvide).
-    actividad_id = None
+    # Actividad de seguimiento (para que no se le olvide). Mismo patrón que el
+    # endpoint oficial de actividades. Si algo falla, se reporta en la respuesta.
+    actividad_id, actividad_error = None, None
     if data.get('crear_actividad', True):
         try:
-            fecha = data.get('actividad_fecha')
+            fecha = (data.get('actividad_fecha') or '').strip()
+            ini = None
             if fecha:
-                y, m, d = fecha.split('-')
-                ini = timezone.make_aware(datetime(int(y), int(m), int(d), 9, 0))
-            else:
+                try:
+                    y, m, d = fecha.split('-')
+                    naive = datetime(int(y), int(m), int(d), 9, 0)
+                    ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+                except Exception:
+                    ini = None
+            if ini is None:
                 ini = timezone.now() + timedelta(days=2)
             act = Actividad.objects.create(
                 titulo=(data.get('actividad_titulo') or ('Dar seguimiento a %s' % cliente.nombre_empresa))[:200],
-                tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
-                creado_por=user, oportunidad=todo, color='#007AFF',
+                tipo_actividad='tarea', descripcion='',
+                fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+                creado_por=user, color='#007AFF', oportunidad_id=todo.id,
             )
-            try:
-                act.participantes.add(user)
-            except Exception:
-                pass
+            act.participantes.set([user.id])
             actividad_id = act.id
+        except Exception as e:
+            logger.exception('Asistente: no se pudo crear actividad de seguimiento: %s', e)
+            actividad_error = str(e)
+
+    return JsonResponse({'success': True, 'opp_id': todo.id, 'opp_nombre': todo.oportunidad,
+                         'actividad_id': actividad_id, 'actividad_error': actividad_error})
+
+
+def _update_draft_ia(opp, etapas, asunto, cuerpo):
+    """(etapa, probabilidad, resumen) propuestos por IA para actualizar la oportunidad
+    a partir del último correo. Fallback: deja etapa/prob igual y resume por heurística."""
+    import json as _json
+    etapa_out, prob_out, resumen_out = opp.etapa_corta, opp.probabilidad_cierre, ''
+    try:
+        from .models import AsistenteConfig
+        from .asistente_provider import chat
+        cfg = AsistenteConfig.get_singleton()
+        if cfg.activo and etapas:
+            sys_msg = {'role': 'system', 'content': (
+                'Eres un asistente que ACTUALIZA una oportunidad de venta a partir del último '
+                'correo del cliente. Te doy la etapa actual, la probabilidad actual y la lista de '
+                'etapas posibles EN ORDEN. Devuelve SOLO un JSON válido:\n'
+                '{"etapa": "<exactamente una de la lista, la que mejor refleje el estado tras este '
+                'correo>", "probabilidad": <entero 0-100>, "resumen": "<1-2 frases, en español, '
+                'resumiendo lo que dice el correo para la bitácora de la oportunidad>"}\n'
+                'No inventes datos. Si el correo no implica avance, deja la etapa igual y ajusta la '
+                'probabilidad solo si tiene sentido.')}
+            user_msg = {'role': 'user', 'content': (
+                'Oportunidad: %s\nEtapa actual: %s\nProbabilidad actual: %d%%\n'
+                'Etapas posibles (en orden): %s\n\nÚltimo correo — Asunto: %s\nCuerpo:\n%s'
+            ) % (opp.oportunidad, opp.etapa_corta or '-', opp.probabilidad_cierre or 0,
+                 ', '.join(etapas), asunto or '(sin asunto)', (cuerpo or '')[:2000])}
+            resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo, temperature=0.2, max_tokens=350)
+            raw = (resp.get('text') or '').strip()
+            if raw.startswith('```'):
+                raw = raw.strip('`')
+                if raw.lower().startswith('json'):
+                    raw = raw[4:]
+            i, j = raw.find('{'), raw.rfind('}')
+            if i >= 0 and j > i:
+                d = _json.loads(raw[i:j + 1])
+                et = (d.get('etapa') or '').strip()
+                if et:
+                    # match flexible contra la lista real de etapas
+                    for e in etapas:
+                        if e.lower() == et.lower() or et.lower() in e.lower():
+                            etapa_out = e
+                            break
+                try:
+                    p = int(d.get('probabilidad'))
+                    prob_out = max(0, min(100, p))
+                except Exception:
+                    pass
+                resumen_out = (d.get('resumen') or '').strip()
+    except Exception:
+        pass
+    if not resumen_out:
+        base = (cuerpo or asunto or '').strip().replace('\n', ' ')
+        resumen_out = ('Correo de seguimiento: ' + base[:200]) if base else 'Correo de seguimiento recibido.'
+    return etapa_out, prob_out, resumen_out
+
+
+@login_required
+def api_asistente_oportunidad_update_draft(request, correo_id):
+    """GET — borrador para ACTUALIZAR la oportunidad ligada a un correo. La IA analiza
+    el correo y propone etapa + probabilidad + resumen. NO aplica nada."""
+    from .models import MailCorreo, EtapaPipeline
+    try:
+        correo = MailCorreo.objects.select_related('oportunidad').get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+    opp = correo.oportunidad
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Este correo no está ligado a una oportunidad.'}, status=400)
+
+    etapas = list(EtapaPipeline.objects.filter(
+        pipeline=opp.tipo_negociacion, activo=True).order_by('orden').values_list('nombre', flat=True))
+    cuerpo = _correo_texto(correo, request.user)
+    etapa_sug, prob_sug, resumen = _update_draft_ia(opp, etapas, correo.asunto, cuerpo)
+
+    return JsonResponse({
+        'success': True,
+        'correo_id': correo.id,
+        'opp_id': opp.id,
+        'opp_nombre': opp.oportunidad,
+        'etapa_actual': opp.etapa_corta or '',
+        'etapa_sugerida': etapa_sug or (opp.etapa_corta or ''),
+        'prob_actual': opp.probabilidad_cierre or 0,
+        'prob_sugerida': prob_sug,
+        'resumen': resumen,
+        'etapas': etapas,
+        'remitente': (correo.remitente_nombre or correo.remitente_email or ''),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_oportunidad_update_aplicar(request):
+    """POST — aplica la actualización aprobada: cambia etapa + probabilidad de la
+    oportunidad y deja el resumen del correo en su conversación (bitácora)."""
+    import json as _json
+    from .models import TodoItem, EtapaPipeline, MensajeOportunidad, MailCorreo
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    try:
+        opp = TodoItem.objects.get(id=data.get('opp_id'), usuario=request.user)
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+
+    campos = []
+    etapa = (data.get('etapa') or '').strip()
+    if etapa and etapa != opp.etapa_corta:
+        ep = EtapaPipeline.objects.filter(pipeline=opp.tipo_negociacion, nombre=etapa).first()
+        opp.etapa_corta = etapa
+        opp.etapa_completa = etapa
+        if ep:
+            opp.etapa_color = ep.color
+        campos += ['etapa_corta', 'etapa_completa', 'etapa_color']
+    try:
+        prob = int(data.get('probabilidad'))
+        prob = max(0, min(100, prob))
+        if prob != opp.probabilidad_cierre:
+            opp.probabilidad_cierre = prob
+            campos.append('probabilidad_cierre')
+    except Exception:
+        pass
+    if campos:
+        opp.save(update_fields=list(set(campos)))
+        try:
+            from .views_automatizacion import ejecutar_automatizaciones
+            if 'etapa_corta' in campos:
+                ejecutar_automatizaciones(opp, opp.etapa_corta, request.user)
         except Exception:
             pass
 
-    return JsonResponse({'success': True, 'opp_id': todo.id, 'opp_nombre': todo.oportunidad,
-                         'actividad_id': actividad_id})
+    resumen = (data.get('resumen') or '').strip()
+    if resumen:
+        try:
+            MensajeOportunidad.objects.create(
+                oportunidad=opp, usuario=request.user,
+                texto='📩 Resumen del correo (asistente): ' + resumen)
+        except Exception:
+            pass
+
+    # Marcar el correo como atendido (ya lo procesaste actualizando la oportunidad).
+    correo = MailCorreo.objects.filter(id=data.get('correo_id'), usuario=request.user).first()
+    if correo:
+        from .models import CorreoAtendido
+        from django.utils import timezone
+        CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+
+    return JsonResponse({'success': True, 'opp_id': opp.id})
 
 
 @login_required
@@ -8648,7 +8802,7 @@ def _feed_correos_items(user, limite=6):
     cutoff = now - timedelta(hours=_COR_VENTANA_HORAS)
     inbox = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
-        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:300])
+        fecha_envio__gte=cutoff).select_related('oportunidad').order_by('-fecha_envio')[:300])
     if not inbox:
         return out
     # Última respuesta (SENT) por hilo → "sin responder" = NO hay enviado posterior
@@ -8693,20 +8847,26 @@ def _feed_correos_items(user, limite=6):
         dias = _dias(m)
         urgente = dias >= 2
         asunto = (m.asunto or '').strip()
-        if venta:
-            categoria = 'Posible venta nueva'
-        elif urgente:
-            categoria = 'Lleva %d días sin responder' % dias
-        else:
-            categoria = 'Correo sin responder'
-        out.append({
-            'tipo': 'correo', 'grupo': 'correo', 'categoria': categoria,
+        item = {
+            'tipo': 'correo', 'grupo': 'correo',
             'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
             'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
             'dias_espera': dias, 'urgente': urgente,
-            'acciones': (['crear_oportunidad', 'abrir_correo', 'no_importa'] if venta
-                         else ['ver_borrador', 'abrir_correo', 'no_importa']),
-        })
+        }
+        # 3 tipos de tarjeta de correo (botón azul siempre primero, sin botón "Abrir":
+        # se abre con clic en la tarjeta):
+        if m.oportunidad_id:                 # ya ligado a una oportunidad → actualizar
+            item['categoria'] = 'Actualiza esta oportunidad'
+            item['opp_id'] = m.oportunidad_id
+            item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
+            item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        elif venta:                          # posible venta nueva → crear oportunidad
+            item['categoria'] = 'Posible venta nueva'
+            item['acciones'] = ['crear_oportunidad', 'responder', 'no_importa']
+        else:                                # correo normal sin responder → responder
+            item['categoria'] = ('Lleva %d días sin responder' % dias) if urgente else 'Correo sin responder'
+            item['acciones'] = ['responder', 'no_importa']
+        out.append(item)
     return out
 
 
@@ -8743,7 +8903,7 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
             'opp_id': o.id, 'titulo': o.oportunidad or 'Oportunidad',
             'desc': ' · '.join([p for p in piezas if p]),
             'hace': '%d días' % dias, 'dias': dias,
-            'acciones': ['abrir', 'agendar', 'no_importa'],
+            'acciones': ['agendar', 'abrir', 'no_importa'],
         })
         if len(out) >= limite:
             break

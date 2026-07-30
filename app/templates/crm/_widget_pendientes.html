@@ -250,6 +250,8 @@
   .pend-mini-tab.on{background:#16181d;color:#fff;}
   .pend-mini-card{padding:15px 2px;border-bottom:1px solid #f0f1f3;}
   .pend-mini-card:last-child{border-bottom:none;}
+  .pend-mini-open{cursor:pointer;border-radius:8px;margin:-4px -6px 0;padding:4px 6px;transition:background .12s;}
+  .pend-mini-open:hover{background:#f7f8fa;}
   .pend-mini-clbl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:5px;}
   .pend-mini-clbl.urg{color:#c2410c;}
   .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
@@ -276,6 +278,9 @@
   .pend-foc-tag{background:#eef8f1;color:#2b8a3e;font-size:.58rem;font-weight:800;border-radius:8px;padding:1px 6px;text-transform:none;letter-spacing:0;}
   .pend-foc-in{width:100%;border:none;background:none;font-size:.98rem;font-weight:600;color:#16181d;outline:none;font-family:inherit;padding:1px 0;box-sizing:border-box;}
   .pend-foc-in::placeholder{color:#c2c6cd;}
+  .pend-foc-sel{border:1px solid #e2e4e8;border-radius:9px;padding:8px 10px;font-weight:500;font-size:.9rem;cursor:pointer;}
+  textarea.pend-foc-sel{cursor:text;line-height:1.5;resize:vertical;}
+  .pend-foc-sel:focus{border-color:#0a84ff;}
   .pend-foc-seg{display:inline-flex;background:#f0f1f3;border-radius:9px;padding:3px;gap:2px;margin-top:2px;}
   .pend-foc-seg button{border:none;background:none;font-size:.8rem;font-weight:700;color:#6b6d76;padding:6px 15px;border-radius:7px;cursor:pointer;font-family:inherit;}
   .pend-foc-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
@@ -1154,27 +1159,31 @@
   function _miniTabBtn(k, lbl, n) {
     return '<button type="button" class="pend-mini-tab' + (_miniTab === k ? ' on' : '') + '" onclick="pendMiniTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
   }
+  // Mapa de acciones: label + función que devuelve el onclick (con el id correcto
+  // por acción). La CLASE (color) se asigna por POSICIÓN: la 1ª siempre azul (pri).
   var _MINI_ACTS = {
-    ver_borrador: ['Ver borrador de respuesta', 'pri', 'pendMiniResponder'],
-    crear_oportunidad: ['Crear oportunidad', 'pri', 'pendMiniCrearOpp'],
-    abrir_correo: ['Abrir correo', 'sec', 'pendVerCorreo'],
-    abrir: ['Abrir', 'sec', 'pendMiniAbrirOpp'],
-    agendar: ['Agendar seguimiento', 'pri', 'pendMiniAgendar'],
-    no_importa: ['No importa', 'txt', '_NO']
+    crear_oportunidad: { l: 'Crear oportunidad', f: function (it) { return 'pendMiniCrearOpp(' + it.mail_id + ')'; } },
+    responder: { l: 'Responder', f: function (it) { return 'pendMiniResponder(' + it.mail_id + ')'; } },
+    actualizar_oportunidad: { l: 'Actualizar oportunidad', f: function (it) { return 'pendMiniActualizarOpp(' + it.mail_id + ')'; } },
+    agendar_seguimiento: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + (it.opp_id || 0) + ')'; } },
+    agendar: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + it.opp_id + ')'; } },
+    abrir: { l: 'Abrir', f: function (it) { return 'pendMiniAbrirOpp(' + it.opp_id + ')'; } },
+    no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + (it.tipo === 'correo' ? it.mail_id : it.opp_id) + ')'; } }
   };
   function _miniCard(it) {
-    var id = it.tipo === 'correo' ? it.mail_id : it.opp_id;
-    var acts = (it.acciones || []).map(function (a) {
+    // Abrir el ítem = clic en el cuadro (remitente + contenido), no un botón.
+    var openCall = it.tipo === 'correo' ? ('pendVerCorreo(' + it.mail_id + ')') : ('pendMiniAbrirOpp(' + it.opp_id + ')');
+    var acts = (it.acciones || []).map(function (a, i) {
       var c = _MINI_ACTS[a]; if (!c) return '';
-      var call = c[2] === '_NO'
-        ? ('pendMiniDescartar(\'' + it.tipo + '\',' + id + ')')
-        : (c[2] + '(' + id + ')');
-      return '<button type="button" class="pend-mini-btn ' + c[1] + '" onclick="' + call + '">' + c[0] + '</button>';
+      var cls = (a === 'no_importa') ? 'txt' : (i === 0 ? 'pri' : 'sec');
+      return '<button type="button" class="pend-mini-btn ' + cls + '" onclick="' + c.f(it) + '">' + _esc(c.l) + '</button>';
     }).join('');
     return '<div class="pend-mini-card">' +
-      '<div class="pend-mini-clbl' + (it.urgente ? ' urg' : '') + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
-      '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
-      '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
+      '<div class="pend-mini-open" onclick="' + openCall + '">' +
+        '<div class="pend-mini-clbl' + (it.urgente ? ' urg' : '') + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+        '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
+        '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
+      '</div>' +
       '<div class="pend-mini-acts">' + acts + '</div>' +
     '</div>';
   }
@@ -1268,7 +1277,7 @@
     });
     var seg = el('focOppTipo'); if (seg) seg.dataset.tipo = t;
   };
-  window.pendMiniFocusCerrar = function () { _oppDraft = null; _feedRedraw(); };
+  window.pendMiniFocusCerrar = function () { _oppDraft = null; _updDraft = null; _feedRedraw(); };
   window.pendOppDraftCrear = function () {
     if (!_oppDraft) return;
     var btn = el('focOppBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
@@ -1304,6 +1313,72 @@
       .catch(function () {
         if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
         alert('No se pudo crear la oportunidad.');
+      });
+  };
+  // ── Actualizar oportunidad desde un correo ligado (IA analiza y propone) ──
+  var _updDraft = null;
+  window.pendMiniActualizarOpp = function (mailId) {
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Analizando el correo…</div>';
+    fetch('/app/api/asistente/correo/' + mailId + '/oportunidad-update-draft/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo analizar.') + '</div>'; return; }
+        _updDraft = { correo_id: mailId, opp_id: d.opp_id };
+        _focusUpdRender(box, d);
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al analizar.</div>'; });
+  };
+  function _focusUpdRender(box, d) {
+    var opts = (d.etapas || []).map(function (e) {
+      return '<option value="' + _esc(e) + '"' + (e === d.etapa_sugerida ? ' selected' : '') + '>' + _esc(e) + '</option>';
+    }).join('');
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Actualizar oportunidad</div>' +
+      '<div class="pend-foc-intro">Leí el correo de <b>' + _esc(d.remitente || '') + '</b> sobre <b>' + _esc(d.opp_nombre || '') + '</b>. Propongo esto — revísalo y lo aplico.</div>' +
+      '<div class="pend-foc-card">' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Etapa</div>' +
+          '<select class="pend-foc-in pend-foc-sel" id="focUpdEtapa">' + (opts || '<option>Sin etapas</option>') + '</select></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Probabilidad de cierre</div>' +
+          '<input type="number" class="pend-foc-in" id="focUpdProb" min="0" max="100" value="' + (d.prob_sugerida != null ? d.prob_sugerida : (d.prob_actual || 0)) + '"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Resumen para la conversación</div>' +
+          '<textarea class="pend-foc-in pend-foc-sel" id="focUpdResumen" rows="3">' + _esc(d.resumen || '') + '</textarea></div>' +
+      '</div>' +
+      '<div class="pend-foc-meta">Ahora está en <b>' + _esc(d.etapa_actual || '-') + '</b> al <b>' + (d.prob_actual || 0) + '%</b>. El resumen quedará en la bitácora de la oportunidad.</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focUpdBtn" onclick="pendOppUpdAplicar()">Actualizar oportunidad</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note">Nada se guarda sin que lo confirmes.</div>';
+  }
+  window.pendOppUpdAplicar = function () {
+    if (!_updDraft) return;
+    var btn = el('focUpdBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
+    var payload = {
+      correo_id: _updDraft.correo_id, opp_id: _updDraft.opp_id,
+      etapa: (el('focUpdEtapa') || {}).value || '',
+      probabilidad: parseInt((el('focUpdProb') || {}).value || '0', 10),
+      resumen: (el('focUpdResumen') || {}).value || ''
+    };
+    fetch('/app/api/asistente/oportunidad/actualizar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Actualizar oportunidad'; }
+          alert((d && d.error) || 'No se pudo actualizar.'); return;
+        }
+        var cid = _updDraft.correo_id; _updDraft = null;
+        if (cid != null) pendMiniDescartar('correo', cid); else _feedRedraw();
+        if (window.pendAbrirOpp) { try { window.pendAbrirOpp(d.opp_id); } catch (e) {} }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Actualizar oportunidad'; }
+        alert('No se pudo actualizar.');
       });
   };
   window.pendMiniAbrirOpp = function (id) {
