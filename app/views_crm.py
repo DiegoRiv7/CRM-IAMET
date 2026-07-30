@@ -7988,6 +7988,257 @@ def api_asistente_correo_respuesta(request, correo_id):
     })
 
 
+def _correo_texto(correo, user, limite=2500):
+    """Texto de un correo (caché si ya se abrió; si no, PEEK readonly sin marcar leído)."""
+    import email as _email
+    from .models import MailConexion
+    txt = (correo.cuerpo_texto or '').strip()
+    if txt or correo.cuerpo_cargado:
+        return txt[:limite]
+    try:
+        from .views_mail import _get_imap
+        conexion = correo.conexion or MailConexion.objects.filter(usuario=user, activo=True).first()
+        if not conexion or not correo.uid_imap:
+            return ''
+        imap = _get_imap(conexion)
+        imap.select(correo.carpeta_imap or 'INBOX', readonly=True)
+        typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+        raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+        if raw:
+            msg = _email.message_from_bytes(raw)
+            for part in msg.walk():
+                if part.get_filename():
+                    continue
+                if part.get_content_type() == 'text/plain':
+                    cs = part.get_content_charset() or 'utf-8'
+                    txt = (part.get_payload(decode=True) or b'').decode(cs, errors='replace').strip()
+                    break
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    except Exception:
+        return (correo.cuerpo_texto or '').strip()[:limite]
+    return txt[:limite]
+
+
+def _cliente_por_correo(correo):
+    """Detecta el Cliente a partir del remitente del correo: por email exacto
+    (Cliente/Contacto) o por dominio (no público). Devuelve Cliente o None."""
+    from .models import Cliente, Contacto
+    rem = (correo.remitente_email or '').strip().lower()
+    if not rem or '@' not in rem:
+        return None
+    dom = rem.split('@')[-1]
+    # 1) Email exacto en Contacto → su cliente
+    c = Contacto.objects.filter(email__iexact=rem, cliente__isnull=False).select_related('cliente').first()
+    if c and c.cliente:
+        return c.cliente
+    # 2) Email exacto en Cliente
+    cli = Cliente.objects.filter(email__iexact=rem).first()
+    if cli:
+        return cli
+    # 3) Dominio (si no es público)
+    if dom and dom not in _COR_PUBLIC_DOM:
+        c = Contacto.objects.filter(email__iendswith='@' + dom, cliente__isnull=False).select_related('cliente').first()
+        if c and c.cliente:
+            return c.cliente
+        cli = Cliente.objects.filter(email__iendswith='@' + dom).first()
+        if cli:
+            return cli
+    return None
+
+
+def _oportunidad_draft_ia(asunto, cuerpo):
+    """(titulo, tipo) inferidos con IA a partir del correo. tipo ∈ {runrate, proyecto}.
+    Con fallback por heurística si la IA no está disponible o falla."""
+    import json as _json
+    titulo, tipo = '', ''
+    try:
+        from .models import AsistenteConfig
+        from .asistente_provider import chat
+        cfg = AsistenteConfig.get_singleton()
+        if cfg.activo:
+            sys_msg = {'role': 'system', 'content': (
+                'Eres un asistente que prepara el borrador de una OPORTUNIDAD de venta para '
+                'IAMET (integrador de tecnología) a partir de un correo de un cliente. Devuelve '
+                'SOLO un JSON válido, sin texto extra, con exactamente estas llaves:\n'
+                '{"titulo": "<título breve y claro de lo que el cliente solicita, sin \'Re:\' ni '
+                'corchetes, máx 8 palabras>", "tipo": "runrate" | "proyecto"}\n'
+                'Usa "proyecto" si implica instalación, levantamiento, integración, obra o servicio '
+                'con alcance; usa "runrate" si es compra/cotización de productos puntuales.')}
+            user_msg = {'role': 'user', 'content': 'Asunto: %s\n\nCuerpo:\n%s' % (asunto or '(sin asunto)', (cuerpo or '')[:2000])}
+            resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo, temperature=0.2, max_tokens=200)
+            raw = (resp.get('text') or '').strip()
+            if raw.startswith('```'):
+                raw = raw.strip('`')
+                if raw.lower().startswith('json'):
+                    raw = raw[4:]
+            i, j = raw.find('{'), raw.rfind('}')
+            if i >= 0 and j > i:
+                d = _json.loads(raw[i:j + 1])
+                titulo = (d.get('titulo') or '').strip()
+                t = (d.get('tipo') or '').strip().lower()
+                if t in ('runrate', 'proyecto'):
+                    tipo = t
+    except Exception:
+        pass
+    # Fallback heurístico
+    if not tipo:
+        base = _cor_norm((asunto or '') + ' ' + (cuerpo or '')[:600])
+        tipo = 'proyecto' if any(w in base for w in (
+            'proyecto', 'instalacion', 'levantamiento', 'integracion', 'obra', 'servicio')) else 'runrate'
+    if not titulo:
+        t = (asunto or 'Oportunidad').strip()
+        for pref in ('re:', 'rv:', 'fwd:', 'fw:'):
+            while t.lower().startswith(pref):
+                t = t[len(pref):].strip()
+        t = t.replace('[EXTERNAL]', '').replace('[EXTERNO]', '').strip(' -:').strip()
+        titulo = t[:80] or 'Oportunidad'
+    return titulo, tipo
+
+
+@login_required
+def api_asistente_oportunidad_draft(request, correo_id):
+    """GET — borrador SEMI-AUTOMÁTICO de oportunidad a partir de un correo. NO crea nada:
+    detecta cliente (código) e infiere título + proyecto/runrate (IA). El usuario aprueba."""
+    from django.utils import timezone
+    from datetime import timedelta
+    from .models import MailCorreo, EtapaPipeline
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+
+    cuerpo = _correo_texto(correo, request.user)
+    titulo, tipo = _oportunidad_draft_ia(correo.asunto, cuerpo)
+
+    cliente = _cliente_por_correo(correo)
+    if cliente:
+        cliente_id, cliente_nombre = cliente.id, cliente.nombre_empresa
+    else:
+        # Sugerir nombre a partir del remitente (nombre o dominio) para que el usuario confirme.
+        rem_nom = (correo.remitente_nombre or '').strip()
+        dom = (correo.remitente_email or '').split('@')[-1].split('.')[0]
+        cliente_id, cliente_nombre = None, (rem_nom or dom.capitalize() or '')
+
+    ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
+    etapa = ep.nombre if ep else ('Oportunidad' if tipo == 'proyecto' else 'En Solicitud')
+
+    fecha_seg = (timezone.localdate() + timedelta(days=2))
+    return JsonResponse({
+        'success': True,
+        'correo_id': correo.id,
+        'titulo': titulo,
+        'cliente_id': cliente_id,
+        'cliente_nombre': cliente_nombre,
+        'cliente_detectado': bool(cliente),
+        'vendedor': (request.user.get_full_name() or request.user.username),
+        'tipo': tipo,
+        'etapa': etapa,
+        'probabilidad': 10,
+        'actividad_titulo': ('Dar seguimiento a %s' % (cliente_nombre or 'este correo'))[:120],
+        'actividad_fecha': fecha_seg.isoformat(),
+        'remitente': (correo.remitente_nombre or correo.remitente_email or ''),
+        'asunto': correo.asunto or '',
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_oportunidad_crear(request):
+    """POST — crea la oportunidad ya aprobada por el usuario: TodoItem con defaults,
+    liga el correo (y su hilo) a la oportunidad, y crea la actividad de seguimiento."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import (MailCorreo, Cliente, TodoItem, EtapaPipeline, Actividad)
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    user = request.user
+
+    titulo = (data.get('titulo') or '').strip() or 'Oportunidad'
+    tipo = (data.get('tipo') or 'runrate').strip().lower()
+    if tipo not in ('runrate', 'proyecto'):
+        tipo = 'runrate'
+    try:
+        prob = int(data.get('probabilidad', 10))
+    except Exception:
+        prob = 10
+
+    # Cliente: por id, o por nombre (match / crear)
+    cliente = None
+    if data.get('cliente_id'):
+        cliente = Cliente.objects.filter(id=data['cliente_id']).first()
+    if not cliente:
+        nombre = (data.get('cliente_nombre') or '').strip()
+        if len(nombre) < 2:
+            return JsonResponse({'success': False, 'error': 'Falta el cliente.'}, status=400)
+        cliente = Cliente.objects.filter(nombre_empresa__iexact=nombre).order_by('id').first()
+        if not cliente:
+            cliente = Cliente.objects.create(nombre_empresa=nombre, asignado_a=user)
+
+    ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
+    if ep:
+        etapa_c, etapa_col = ep.nombre, ep.color
+    elif tipo == 'proyecto':
+        etapa_c, etapa_col = 'Oportunidad', '#FFFFFF'
+    else:
+        etapa_c, etapa_col = 'En Solicitud', '#FFFFFF'
+
+    now_dt = timezone.localtime()
+    todo = TodoItem.objects.create(
+        usuario=user, oportunidad=titulo[:200], cliente=cliente,
+        monto=0, probabilidad_cierre=prob,
+        mes_cierre=str(now_dt.month).zfill(2), anio_cierre=now_dt.year,
+        area='SISTEMAS', producto='SOFTWARE', tipo_negociacion=tipo,
+        etapa_corta=etapa_c, etapa_completa=etapa_c, etapa_color=etapa_col, po_number='',
+    )
+    try:
+        from .views_automatizacion import ejecutar_automatizaciones
+        ejecutar_automatizaciones(todo, etapa_c, user)
+    except Exception:
+        pass
+
+    # Ligar el correo (y todo su hilo) a la nueva oportunidad.
+    correo = MailCorreo.objects.filter(id=data.get('correo_id'), usuario=user).first()
+    if correo:
+        MailCorreo.objects.filter(
+            usuario=user, hilo_key=correo.hilo_key, oportunidad__isnull=True
+        ).update(oportunidad=todo) if correo.hilo_key else None
+        if correo.oportunidad_id is None:
+            correo.oportunidad = todo
+            correo.save(update_fields=['oportunidad'])
+
+    # Actividad de seguimiento (para que no se le olvide).
+    actividad_id = None
+    if data.get('crear_actividad', True):
+        try:
+            fecha = data.get('actividad_fecha')
+            if fecha:
+                y, m, d = fecha.split('-')
+                ini = timezone.make_aware(datetime(int(y), int(m), int(d), 9, 0))
+            else:
+                ini = timezone.now() + timedelta(days=2)
+            act = Actividad.objects.create(
+                titulo=(data.get('actividad_titulo') or ('Dar seguimiento a %s' % cliente.nombre_empresa))[:200],
+                tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+                creado_por=user, oportunidad=todo, color='#007AFF',
+            )
+            try:
+                act.participantes.add(user)
+            except Exception:
+                pass
+            actividad_id = act.id
+        except Exception:
+            pass
+
+    return JsonResponse({'success': True, 'opp_id': todo.id, 'opp_nombre': todo.oportunidad,
+                         'actividad_id': actividad_id})
+
+
 @login_required
 def api_asistente_correo_cuerpo(request, correo_id):
     """Cuerpo de un correo para PREVISUALIZAR en el asistente SIN marcarlo como leído.
