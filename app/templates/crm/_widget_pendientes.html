@@ -80,10 +80,7 @@
           <div class="pend-asis-sub">Lo importante que necesita tu atención</div>
         </div>
         <div class="pend-asis-body">
-          <div class="pend-asis-soon">
-            <div class="pend-asis-soon-t">Tus sugerencias, en camino</div>
-            <div class="pend-asis-soon-d">Pronto verás aquí tus correos importantes sin responder y las oportunidades que requieren atención — con acciones directas.</div>
-          </div>
+          <div id="pendAsisFeed" class="pend-asis-feed"></div>
           <div id="pendChatFlow" class="pend-chatflow"></div>
         </div>
         <div class="pend-chat" id="pendChat">
@@ -507,6 +504,7 @@
     var _st = el('pendSubtabs'); if (_st) _st.style.display = '';
     var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
     pendCargar();
+    if (window.pendAsisFeedLoad) pendAsisFeedLoad();   // mismo feed proactivo en la columna derecha
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
     if (!_ensureWindow(ov)) {
@@ -1224,7 +1222,7 @@
       _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
       _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
       _miniData.total = _miniData.items.length;
-      _miniDraw();
+      _feedRedraw();
     }
   };
   window.pendMiniAsk = function () {
@@ -1233,6 +1231,30 @@
     inp.value = '';
     // Fase 3: el chat vive en el panel grande. Por ahora expandimos ahí.
     pendMiniExpandir();
+  };
+
+  // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
+  function _asisDraw() {
+    var box = el('pendAsisFeed'); if (!box || !_miniData) return;
+    var d = _miniData, items = d.items || [];
+    var cards = items.length
+      ? items.map(_miniCard).join('')
+      : '<div class="pend-mini-empty">Nada urgente por ahora. Te aviso si llega algo.</div>';
+    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + cards;
+  }
+  function _feedRedraw() {
+    var mini = el('pendMini'); if (mini && mini.style.display !== 'none') _miniDraw();
+    var asis = el('pendAsisFeed'), ov = el('widgetPendientes');
+    if (asis && ov && ov.classList.contains('active')) _asisDraw();
+  }
+  window.pendAsisFeedLoad = function () {
+    var box = el('pendAsisFeed'); if (!box) return;
+    if (_miniData) _asisDraw();
+    else box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
+    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisDraw(); })
+      .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
   };
 
   // ── Chat con el asistente general (el "consultor") ──
