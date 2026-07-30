@@ -1134,8 +1134,8 @@
     ver_borrador: ['Ver borrador de respuesta', 'pri', 'pendMiniResponder'],
     crear_oportunidad: ['Crear oportunidad', 'pri', 'pendMiniCrearOpp'],
     abrir_correo: ['Abrir correo', 'sec', 'pendVerCorreo'],
-    cambiar_etapa: ['Cambiar etapa', 'pri', 'pendMiniAbrirOpp'],
-    agendar: ['Agendar', 'sec', 'pendMiniAbrirOpp'],
+    abrir: ['Abrir', 'sec', 'pendMiniAbrirOpp'],
+    agendar: ['Agendar seguimiento', 'pri', 'pendMiniAgendar'],
     no_importa: ['No importa', 'txt', '_NO']
   };
   function _miniCard(it) {
@@ -1205,6 +1205,51 @@
     var mini = el('pendMini'); if (mini) mini.style.display = 'none';
     if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
     pendAbrir();
+  };
+  // Parche único: al crear una actividad desde el asistente, la ligamos a la
+  // oportunidad del contexto (POST /app/api/actividades/ acepta `opportunity`).
+  (function _pendActPatchOnce() {
+    if (window._pendActPatchApplied || typeof window.fetch !== 'function') return;
+    var origFetch = window.fetch;
+    window.fetch = function (url, opts) {
+      if (typeof url === 'string' && url.indexOf('/app/api/actividades/') !== -1
+          && opts && opts.method === 'POST' && window._pendContextoOpp) {
+        try {
+          var b = JSON.parse(opts.body || '{}');
+          if (!b.opportunity) { b.opportunity = window._pendContextoOpp; opts.body = JSON.stringify(b); }
+        } catch (e) {}
+      }
+      return origFetch.apply(this, arguments);
+    };
+    window._pendActPatchApplied = true;
+  })();
+  // Agendar una actividad de seguimiento ligada a la oportunidad SIN abrirla:
+  // abre el modal global de crear actividad; al guardar queda en esa oportunidad.
+  window.pendMiniAgendar = function (id) {
+    if (typeof window.calGlobalAbrirCrearActividad !== 'function') {
+      // fallback: abrir la oportunidad si el modal global no está disponible
+      if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); } catch (e) {} }
+      return;
+    }
+    window._pendContextoOpp = id;
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    window.calGlobalAbrirCrearActividad();
+    var mod = document.getElementById('widgetGlobalCrearActividad');
+    if (mod) {
+      mod.style.zIndex = '12000';   // por encima del asistente
+      var obs = new MutationObserver(function () {
+        if (mod.style.display === 'none') {
+          obs.disconnect();
+          window._pendContextoOpp = null;
+          // La oportunidad "se movió": refrescamos el feed en ambos paneles.
+          _miniData = null;
+          pendFeedRefresh();
+          var ov = el('widgetPendientes');
+          if (ov && ov.classList.contains('active') && window.pendAsisFeedLoad) pendAsisFeedLoad();
+        }
+      });
+      obs.observe(mod, { attributes: true, attributeFilter: ['style'] });
+    }
   };
   window.pendMiniDescartar = function (tipo, id) {
     if (tipo === 'correo') {

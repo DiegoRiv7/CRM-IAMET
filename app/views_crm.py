@@ -8401,17 +8401,24 @@ def _feed_correos_items(user, limite=6):
 
 def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
     """Oportunidades ABIERTAS del usuario sin movimiento en >= dias_min (usa
-    fecha_actualizacion como 'última vez que se tocó')."""
+    fecha_actualizacion como 'última vez que se tocó'). Se excluyen las que ya
+    tienen una actividad reciente o futura agendada (ya no están 'sin moverse')."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import TodoItem
+    from .models import TodoItem, Actividad
     corte = timezone.now() - timedelta(days=dias_min)
-    qs = (TodoItem.objects.filter(usuario=user, fecha_actualizacion__lt=corte)
-          .select_related('cliente').order_by('fecha_actualizacion'))
+    cand = [o for o in (TodoItem.objects.filter(usuario=user, fecha_actualizacion__lt=corte)
+                        .select_related('cliente').order_by('fecha_actualizacion')[:80])
+            if _cli_abierta(o.etapa_corta, o.estado_crm)]
+    con_actividad = set()
+    if cand:
+        con_actividad = set(Actividad.objects.filter(
+            oportunidad_id__in=[o.id for o in cand], fecha_inicio__gte=corte
+        ).values_list('oportunidad_id', flat=True))
     out = []
-    for o in qs[:80]:
-        if not _cli_abierta(o.etapa_corta, o.estado_crm):
-            continue
+    for o in cand:
+        if o.id in con_actividad:
+            continue   # tiene actividad reciente/futura → ya no está "sin moverse"
         dias = (today - timezone.localtime(o.fecha_actualizacion).date()).days
         cliente = (o.cliente.nombre_empresa if o.cliente else '') or ''
         etapa = (o.etapa_corta or 'Sin etapa')
@@ -8425,7 +8432,7 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
             'opp_id': o.id, 'titulo': o.oportunidad or 'Oportunidad',
             'desc': ' · '.join([p for p in piezas if p]),
             'hace': '%d días' % dias, 'dias': dias,
-            'acciones': ['cambiar_etapa', 'agendar', 'no_importa'],
+            'acciones': ['abrir', 'agendar', 'no_importa'],
         })
         if len(out) >= limite:
             break
