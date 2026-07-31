@@ -8022,6 +8022,17 @@ def _correo_texto(correo, user, limite=2500):
     return txt[:limite]
 
 
+def _mas_dias_habiles(fecha, n=2):
+    """Suma n días HÁBILES (salta sábado y domingo). Jueves+2 → lunes; viernes+2 → martes."""
+    from datetime import timedelta
+    d, added = fecha, 0
+    while added < n:
+        d = d + timedelta(days=1)
+        if d.weekday() < 5:   # 0-4 = lunes a viernes
+            added += 1
+    return d
+
+
 def _cliente_por_correo(correo):
     """Detecta el Cliente a partir del remitente del correo: por email exacto
     (Cliente/Contacto) o por dominio (no público). Devuelve Cliente o None."""
@@ -8125,7 +8136,7 @@ def api_asistente_oportunidad_draft(request, correo_id):
     ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
     etapa = ep.nombre if ep else ('Oportunidad' if tipo == 'proyecto' else 'En Solicitud')
 
-    fecha_seg = (timezone.localdate() + timedelta(days=2))
+    fecha_seg = _mas_dias_habiles(timezone.localdate(), 2)
     return JsonResponse({
         'success': True,
         'correo_id': correo.id,
@@ -8425,7 +8436,7 @@ def api_asistente_seguimiento_draft(request, opp_id):
     opp = TodoItem.objects.filter(id=opp_id).first()
     if not opp:
         return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
-    fecha = timezone.localdate() + timedelta(days=2)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
     hora = _hora_disponible(request.user, fecha)
     return JsonResponse({
         'success': True,
