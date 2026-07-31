@@ -8299,9 +8299,10 @@ def api_asistente_oportunidad_crear(request):
                          'actividad_id': actividad_id, 'actividad_error': actividad_error})
 
 
-def _update_draft_ia(opp, etapas, asunto, cuerpo):
+def _update_draft_ia(opp, etapas, asunto, cuerpo, respuesta=''):
     """(etapa, probabilidad, resumen) propuestos por IA para actualizar la oportunidad
-    a partir del último correo. Fallback: deja etapa/prob igual y resume por heurística."""
+    a partir del correo del cliente Y la respuesta del vendedor (contexto completo del
+    intercambio). Fallback: deja etapa/prob igual y resume por heurística."""
     import json as _json
     etapa_out, prob_out, resumen_out = opp.etapa_corta, opp.probabilidad_cierre, ''
     try:
@@ -8310,19 +8311,24 @@ def _update_draft_ia(opp, etapas, asunto, cuerpo):
         cfg = AsistenteConfig.get_singleton()
         if cfg.activo and etapas:
             sys_msg = {'role': 'system', 'content': (
-                'Eres un asistente que ACTUALIZA una oportunidad de venta a partir del último '
-                'correo del cliente. Te doy la etapa actual, la probabilidad actual y la lista de '
+                'Eres un asistente que ACTUALIZA una oportunidad de venta a partir del intercambio '
+                'de correos entre el cliente y el vendedor (el correo del cliente y la respuesta que '
+                'le dio el vendedor). Te doy la etapa actual, la probabilidad actual y la lista de '
                 'etapas posibles EN ORDEN. Devuelve SOLO un JSON válido:\n'
                 '{"etapa": "<exactamente una de la lista, la que mejor refleje el estado tras este '
-                'correo>", "probabilidad": <entero 0-100>, "resumen": "<1-2 frases, en español, '
-                'resumiendo lo que dice el correo para la bitácora de la oportunidad>"}\n'
-                'No inventes datos. Si el correo no implica avance, deja la etapa igual y ajusta la '
-                'probabilidad solo si tiene sentido.')}
+                'intercambio>", "probabilidad": <entero 0-100>, "resumen": "<1-2 frases, en español, '
+                'resumiendo el intercambio para la bitácora de la oportunidad>"}\n'
+                'No inventes datos. Si el intercambio no implica avance, deja la etapa igual y ajusta '
+                'la probabilidad solo si tiene sentido.')}
+            intercambio = 'Correo del cliente — Asunto: %s\nCuerpo:\n%s' % (
+                asunto or '(sin asunto)', (cuerpo or '')[:2000])
+            if (respuesta or '').strip():
+                intercambio += '\n\nRespuesta del vendedor:\n%s' % (respuesta or '')[:1500]
             user_msg = {'role': 'user', 'content': (
                 'Oportunidad: %s\nEtapa actual: %s\nProbabilidad actual: %d%%\n'
-                'Etapas posibles (en orden): %s\n\nÚltimo correo — Asunto: %s\nCuerpo:\n%s'
+                'Etapas posibles (en orden): %s\n\n%s'
             ) % (opp.oportunidad, opp.etapa_corta or '-', opp.probabilidad_cierre or 0,
-                 ', '.join(etapas), asunto or '(sin asunto)', (cuerpo or '')[:2000])}
+                 ', '.join(etapas), intercambio)}
             resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo, temperature=0.2, max_tokens=350)
             raw = (resp.get('text') or '').strip()
             if raw.startswith('```'):
@@ -8356,20 +8362,45 @@ def _update_draft_ia(opp, etapas, asunto, cuerpo):
 @login_required
 def api_asistente_oportunidad_update_draft(request, correo_id):
     """GET — borrador para ACTUALIZAR la oportunidad ligada a un correo. La IA analiza
-    el correo y propone etapa + probabilidad + resumen. NO aplica nada."""
+    el correo del cliente Y la respuesta del vendedor, y propone etapa + probabilidad +
+    resumen. Sugiere también un seguimiento (+2 días hábiles). NO aplica nada."""
+    from django.utils import timezone
     from .models import MailCorreo, EtapaPipeline
     try:
         correo = MailCorreo.objects.select_related('oportunidad').get(id=correo_id, usuario=request.user)
     except MailCorreo.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
     opp = correo.oportunidad
+    if not opp and correo.hilo_key:
+        # Resolver por hilo: hereda el vínculo de otro correo del mismo hilo.
+        ligado = (MailCorreo.objects.filter(
+            usuario=request.user, oportunidad__isnull=False, hilo_key=correo.hilo_key)
+            .select_related('oportunidad').first())
+        opp = ligado.oportunidad if ligado else None
     if not opp:
         return JsonResponse({'success': False, 'error': 'Este correo no está ligado a una oportunidad.'}, status=400)
 
+    # Reunir el intercambio: correo del cliente (recibido) + respuesta del vendedor (enviado).
+    if correo.carpeta_display == 'SENT':
+        reply_correo = correo
+        client_correo = (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='INBOX', hilo_key=correo.hilo_key)
+            .order_by('-fecha_envio').first() if correo.hilo_key else None) or correo
+    else:
+        client_correo = correo
+        reply_correo = (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='SENT', hilo_key=correo.hilo_key)
+            .order_by('-fecha_envio').first() if correo.hilo_key else None)
+
     etapas = list(EtapaPipeline.objects.filter(
         pipeline=opp.tipo_negociacion, activo=True).order_by('orden').values_list('nombre', flat=True))
-    cuerpo = _correo_texto(correo, request.user)
-    etapa_sug, prob_sug, resumen = _update_draft_ia(opp, etapas, correo.asunto, cuerpo)
+    cuerpo = _correo_texto(client_correo, request.user)
+    respuesta = _correo_texto(reply_correo, request.user) if reply_correo else ''
+    etapa_sug, prob_sug, resumen = _update_draft_ia(
+        opp, etapas, client_correo.asunto, cuerpo, respuesta)
+
+    fecha_seg = _mas_dias_habiles(timezone.localdate(), 2)
+    hora_seg = _hora_disponible(request.user, fecha_seg)
 
     return JsonResponse({
         'success': True,
@@ -8382,7 +8413,9 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
         'prob_sugerida': prob_sug,
         'resumen': resumen,
         'etapas': etapas,
-        'remitente': (correo.remitente_nombre or correo.remitente_email or ''),
+        'remitente': (client_correo.remitente_nombre or client_correo.remitente_email or ''),
+        'seg_fecha': fecha_seg.isoformat(),
+        'seg_hora': '%02d:00' % hora_seg,
     })
 
 
@@ -8445,7 +8478,33 @@ def api_asistente_oportunidad_update_aplicar(request):
         CorreoAtendido.objects.get_or_create(
             usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
 
-    return JsonResponse({'success': True, 'opp_id': opp.id})
+    # El asistente lo hace todo: además de actualizar, agenda EN SILENCIO un seguimiento
+    # estándar (+2 días hábiles, primer hueco libre). Solo se le avisa por texto.
+    seg = {'creado': False}
+    if data.get('crear_seguimiento', True):
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        from .models import Actividad
+        try:
+            f = data.get('seg_fecha') or _mas_dias_habiles(timezone.localdate(), 2).isoformat()
+            h = data.get('seg_hora') or ('%02d:00' % _hora_disponible(request.user, _mas_dias_habiles(timezone.localdate(), 2)))
+            y, mo, d = f.split('-')
+            hh, mm = h.split(':')
+            naive = datetime(int(y), int(mo), int(d), int(hh), int(mm))
+            ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+            act = Actividad.objects.create(
+                titulo='Seguimiento',
+                descripcion='Realizar seguimiento de ' + (opp.oportunidad or ''),
+                tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+                creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
+            )
+            act.participantes.set([request.user.id])
+            seg = {'creado': True, 'actividad_id': act.id, 'fecha': f, 'hora': h}
+        except Exception as e:
+            logger.exception('Asistente: no se pudo agendar seguimiento al actualizar: %s', e)
+            seg = {'creado': False, 'error': str(e)}
+
+    return JsonResponse({'success': True, 'opp_id': opp.id, 'seguimiento': seg})
 
 
 def _hora_disponible(user, fecha):
@@ -8931,7 +8990,7 @@ def _feed_correos_items(user, limite=6):
     ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo, CorreoAtendido
+    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem
     out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
@@ -8940,8 +8999,8 @@ def _feed_correos_items(user, limite=6):
     inbox = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
         fecha_envio__gte=cutoff).select_related('oportunidad').order_by('-fecha_envio')[:300])
-    if not inbox:
-        return out
+    # Nota: no retornamos aunque INBOX esté vacío — el Caso 3-B (respondiste) se detecta
+    # desde los ENVIADOS y debe correr igual.
     # Última respuesta (SENT) por hilo → "sin responder" = NO hay enviado posterior
     # al último correo recibido (aunque ya hubieras respondido antes en el hilo).
     hks = set(m.hilo_key for m in inbox if m.hilo_key)
@@ -8974,7 +9033,7 @@ def _feed_correos_items(user, limite=6):
         }
 
     scored = []       # correos NO ligados, importantes, sin responder
-    ligados = []      # (estado, m): correos ya ligados a una oportunidad (llegó / respondiste)
+    llego = []        # Caso 3-A: correos ligados que LLEGARON y aún no respondes
     seen_hk = set()
     for m in inbox:
         hk = m.hilo_key
@@ -8986,18 +9045,12 @@ def _feed_correos_items(user, limite=6):
             continue
         ls = last_sent.get(hk) if hk else None
         respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
-        # ── Caso 3: correo LIGADO a una oportunidad (siempre relevante, sin umbral) ──
+        # ── Caso 3-A: correo LIGADO que llegó y aún NO respondes ──
         if m.oportunidad_id:
-            opp = m.oportunidad
-            if respondido:
-                # Ya respondiste: si la opp NO se ha actualizado desde tu respuesta,
-                # el asistente salta para ofrecer actualizarla / agendar seguimiento.
-                opp_upd = opp.fecha_actualizacion if opp else None
-                if opp_upd and ls and opp_upd >= ls:
-                    continue   # ya la actualizaste después de responder → nada que hacer
-                ligados.append(('respondido', m))
-            else:
-                ligados.append(('llego', m))   # llegó y aún no respondes → ofrecer actualizar
+            if not respondido:
+                llego.append(m)   # → responder / agendar seguimiento
+            # Si YA respondiste, no se maneja aquí sino desde los ENVIADOS (Caso 3-B),
+            # así aplica aunque el correo del cliente sea viejo o de la cola pasada.
             continue
         # ── Correos NO ligados ──
         if respondido:
@@ -9007,23 +9060,75 @@ def _feed_correos_items(user, limite=6):
         if score >= 3:
             scored.append((score, m, motivos))
 
-    # Urgencia: importancia (score) + antigüedad (los que llevan días suben).
-    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
-    # Los ligados a una oportunidad van primero (tocan un negocio real en curso);
-    # entre ellos, primero los que YA respondiste (acción reciente tuya) y luego por recencia.
-    ligados.sort(key=lambda t: (0 if t[0] == 'respondido' else 1, _dias(t[1])))
+    # ── Caso 3-B: RESPONDISTE un correo ligado a una oportunidad ──
+    # Se detecta desde los ENVIADOS (no desde INBOX): siempre que respondas un correo
+    # de una oportunidad ligada —sin importar la antigüedad del correo del cliente— el
+    # asistente ofrece actualizar. La oportunidad se resuelve POR HILO (el enviado casi
+    # nunca trae el vínculo directo; lo hereda del correo del cliente en el mismo hilo).
+    # Se calla si ya actualizaste la opp tras responder o si la oportunidad ya está cerrada.
+    respondiste = []   # (m_card, opp, reply_dt)
+    sent_recientes = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='SENT', fecha_envio__gte=cutoff)
+        .order_by('-fecha_envio')[:200])
+    s_hks = set(s.hilo_key for s in sent_recientes if s.hilo_key)
+    if s_hks:
+        # Oportunidad por hilo: cualquier correo (INBOX o SENT) ya ligado marca el hilo.
+        opp_por_hilo = {}
+        for c in (MailCorreo.objects.filter(
+                usuario=user, oportunidad__isnull=False, hilo_key__in=s_hks)
+                .values('hilo_key', 'oportunidad_id')):
+            opp_por_hilo.setdefault(c['hilo_key'], c['oportunidad_id'])
+        opp_ids = set(opp_por_hilo.values()) | set(s.oportunidad_id for s in sent_recientes if s.oportunidad_id)
+        opps = {o.id: o for o in TodoItem.objects.filter(id__in=opp_ids)} if opp_ids else {}
+        recibidos = {}
+        for r in (MailCorreo.objects.filter(
+                usuario=user, carpeta_display='INBOX', hilo_key__in=s_hks)
+                .order_by('fecha_envio')):
+            recibidos[r.hilo_key] = r          # el último recibido de cada hilo
+        vistos_opp = set()
+        cand, cand_ids = [], []
+        for s in sent_recientes:
+            opp_id = s.oportunidad_id or opp_por_hilo.get(s.hilo_key)
+            if not opp_id or opp_id in vistos_opp:
+                continue                        # una tarjeta por oportunidad (la respuesta más reciente)
+            opp = opps.get(opp_id)
+            if not opp or not _cli_abierta(opp.etapa_corta, opp.estado_crm):
+                continue                        # sin opp o ya cerrada → no molestar
+            vistos_opp.add(opp_id)
+            if opp.fecha_actualizacion and s.fecha_envio and opp.fecha_actualizacion >= s.fecha_envio:
+                continue                        # ya actualizaste la opp después de responder
+            m_card = recibidos.get(s.hilo_key) or s
+            cand.append((m_card, opp, s.fecha_envio))
+            cand_ids.append(m_card.id)
+        at_b = set(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=cand_ids).values_list('mail_id', flat=True)) if cand_ids else set()
+        respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand if mc.id not in at_b]
 
-    # Tarjetas de correos ligados (Caso 3) — botón azul primero, abrir con clic en la tarjeta.
-    for estado, m in ligados:
+    # Orden: los no ligados por urgencia (score + antigüedad); los "llegó" por recencia.
+    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
+    llego.sort(key=_dias)
+
+    # 1) Respondiste un correo ligado → ACTUALIZAR (con contexto de ambos correos).
+    for m_card, opp, reply_dt in respondiste:
+        item = _base_item(m_card)
+        if reply_dt:
+            item['hace'] = _cor_hace(timezone.localtime(reply_dt), timezone.localtime(now))
+        item['opp_id'] = opp.id
+        item['opp_nombre'] = opp.oportunidad or ''
+        item['categoria'] = 'Respondiste — ¿actualizo?'
+        item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        out.append(item)
+
+    # 2) Correo ligado que llegó y no respondes → RESPONDER / agendar seguimiento.
+    for m in llego:
         item = _base_item(m)
         item['opp_id'] = m.oportunidad_id
         item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
-        item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
-        item['categoria'] = ('Respondiste — ¿actualizo?' if estado == 'respondido'
-                             else 'Actualiza esta oportunidad')
+        item['categoria'] = 'Correo de una oportunidad'
+        item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
         out.append(item)
 
-    # Tarjetas de correos no ligados (Casos 1) — posible venta vs. correo importante.
+    # 3) Correos no ligados (Caso 1) — posible venta vs. correo importante.
     for score, m, motivos in scored:
         if len(out) >= limite:
             break
