@@ -7541,6 +7541,37 @@ def _cor_es_hito(asunto, cuerpo=''):
     """True si el correo parece una factura / orden de compra firmada / pago (hito de cierre)."""
     t = _cor_norm((asunto or '') + ' ' + (cuerpo or ''))
     return any(k in t for k in _COR_HITO)
+
+
+def _cor_extracto(texto, limite=150):
+    """Extracto citable del cuerpo de un correo para el toast: quita líneas citadas
+    (>, 'El ... escribió:'), firmas y despedidas, y devuelve el primer tramo con
+    sustancia. '' si no hay nada útil."""
+    import re as _re
+    if not (texto or '').strip():
+        return ''
+    corte = ['saludos', 'atentamente', 'atte', 'gracias de antemano', 'enviado desde',
+             'sent from', 'quedo atento', 'quedamos atentos', 'cordialmente']
+    lineas = []
+    for ln in (texto or '').splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', s, _re.IGNORECASE):
+            break                      # empieza el hilo citado → lo de arriba es lo nuevo
+        if _re.match(r'^-{2,}\s*$', s):
+            break                      # firma
+        low = _cor_norm(s)
+        if any(low.startswith(c) for c in corte):
+            break
+        lineas.append(s)
+        if sum(len(x) for x in lineas) >= limite * 2:
+            break
+    out = ' '.join(lineas).strip()
+    out = _re.sub(r'\s+', ' ', out)
+    if len(out) > limite:
+        out = out[:limite].rsplit(' ', 1)[0] + '…'
+    return out
 # Ventana para "importantes sin responder": no solo 24h — así el asistente sigue
 # insistiendo con los que se te van pasando (hasta 7 días).
 _COR_VENTANA_HORAS = 168
@@ -9001,7 +9032,7 @@ def _feed_correos_items(user, limite=6):
     ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem
+    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem, AvisoPospuesto
     out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
@@ -9028,6 +9059,19 @@ def _feed_correos_items(user, limite=6):
     atendidos = set(CorreoAtendido.objects.filter(
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
+    # "Mañana" del toast: avisos pospuestos siguen dormidos hasta su fecha.
+    hoy = timezone.localdate()
+    pospuestos = set(AvisoPospuesto.objects.filter(
+        usuario=user, tipo='correo', hasta__gt=hoy).values_list('ref_id', flat=True))
+    # ¿Cuántas veces ha insistido? = correos del hilo llegados DESPUÉS de tu última respuesta.
+    insiste = {}
+    for m in inbox:
+        hk = m.hilo_key
+        if not hk:
+            continue
+        ls = last_sent.get(hk)
+        if not ls or (m.fecha_envio and m.fecha_envio > ls):
+            insiste[hk] = insiste.get(hk, 0) + 1
 
     def _dias(m):
         return (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days if m.fecha_envio else 0
@@ -9043,6 +9087,37 @@ def _feed_correos_items(user, limite=6):
             'dias_espera': dias, 'urgente': dias >= 2,
         }
 
+    # ── Redacción del toast: titular-oración + línea de contexto + cita del correo ──
+    _ORDINAL = {2: 'segunda', 3: 'tercera', 4: 'cuarta', 5: 'quinta'}
+
+    def _asunto_corto(m):
+        import re as _re
+        s = _re.sub(r'^\s*((re|rv|fw|fwd)\s*:\s*)+', '', (m.asunto or '').strip(), flags=_re.IGNORECASE)
+        return s[:60]
+
+    def _ctx_insiste(m):
+        n = insiste.get(m.hilo_key or '', 0)
+        if n >= 2:
+            return 'Es la %s vez que te escribe sin respuesta.' % _ORDINAL.get(n, '%dª' % n)
+        return ''
+
+    def _ctx_opp(opp):
+        if not opp:
+            return ''
+        etapa = (opp.etapa_corta or '').strip()
+        try:
+            monto = float(opp.monto or 0)
+        except Exception:
+            monto = 0
+        if monto and etapa:
+            return 'La oportunidad de ${:,.0f} sigue en {}.'.format(monto, etapa)
+        if etapa:
+            return 'La oportunidad sigue en %s.' % etapa
+        return ''
+
+    def _quote(m):
+        return _cor_extracto(m.cuerpo_texto) if m.cuerpo_cargado else ''
+
     scored = []       # correos NO ligados, importantes, sin responder
     llego = []        # Caso 3-A: correos ligados que LLEGARON y aún no respondes
     seen_hk = set()
@@ -9052,7 +9127,7 @@ def _feed_correos_items(user, limite=6):
             if hk in seen_hk:
                 continue   # solo el correo más reciente de cada hilo
             seen_hk.add(hk)
-        if m.id in atendidos:
+        if m.id in atendidos or m.id in pospuestos:
             continue
         ls = last_sent.get(hk) if hk else None
         respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
@@ -9113,7 +9188,8 @@ def _feed_correos_items(user, limite=6):
             cand_ids.append(m_card.id)
         at_b = set(CorreoAtendido.objects.filter(
             usuario=user, mail_id__in=cand_ids).values_list('mail_id', flat=True)) if cand_ids else set()
-        respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand if mc.id not in at_b]
+        respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand
+                       if mc.id not in at_b and mc.id not in pospuestos]
 
     # Orden: los no ligados por urgencia (score + antigüedad); los "llegó" por recencia.
     scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
@@ -9128,6 +9204,9 @@ def _feed_correos_items(user, limite=6):
         item['opp_nombre'] = opp.oportunidad or ''
         item['categoria'] = 'Respondiste — ¿actualizo?'
         item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        item['headline'] = 'Respondiste a %s sobre %s' % (item['titulo'], opp.oportunidad or 'una oportunidad')
+        item['contexto'] = ('¿Actualizo la oportunidad con este intercambio? ' + _ctx_opp(opp)).strip()
+        item['quote'] = _quote(m_card)
         out.append(item)
 
     # 2) Correo ligado que llegó y no respondes → RESPONDER / agendar seguimiento.
@@ -9136,13 +9215,19 @@ def _feed_correos_items(user, limite=6):
     for m in llego:
         item = _base_item(m)
         item['opp_id'] = m.oportunidad_id
-        item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
+        opp = m.oportunidad
+        item['opp_nombre'] = (opp.oportunidad if opp else '')
         if _cor_es_hito(m.asunto, m.cuerpo_texto):
             item['categoria'] = 'Factura / orden recibida'
             item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+            item['headline'] = 'Llegó factura u orden sobre %s' % (item['opp_nombre'] or 'una oportunidad')
+            item['contexto'] = ('Buen momento para actualizarla. ' + _ctx_opp(opp)).strip()
         else:
             item['categoria'] = 'Correo de una oportunidad'
             item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
+            item['headline'] = '%s te escribió sobre %s' % (item['titulo'], item['opp_nombre'] or 'una oportunidad')
+            item['contexto'] = (' '.join(x for x in [_ctx_insiste(m), _ctx_opp(opp)] if x)).strip()
+        item['quote'] = _quote(m)
         out.append(item)
 
     # 3) Correos no ligados (Caso 1) — posible venta vs. correo importante.
@@ -9151,12 +9236,19 @@ def _feed_correos_items(user, limite=6):
             break
         item = _base_item(m)
         dias = item['dias_espera']
+        asunto_c = _asunto_corto(m)
         if 'negocio' in motivos:             # posible venta nueva → crear oportunidad
             item['categoria'] = 'Posible venta nueva'
             item['acciones'] = ['crear_oportunidad', 'responder', 'no_importa']
+            item['headline'] = '%s trae una posible venta' % item['titulo']
+            item['contexto'] = (' '.join(x for x in [
+                ('Escribió sobre «%s».' % asunto_c) if asunto_c else '', _ctx_insiste(m)] if x)).strip()
         else:                                # correo importante sin responder → responder
             item['categoria'] = ('Lleva %d días sin responder' % dias) if item['urgente'] else 'Correo sin responder'
             item['acciones'] = ['responder', 'no_importa']
+            item['headline'] = '%s espera tu respuesta' % item['titulo'] + ((' sobre %s' % asunto_c) if asunto_c else '')
+            item['contexto'] = _ctx_insiste(m)
+        item['quote'] = _quote(m)
         out.append(item)
     return out[:limite]
 
@@ -9188,7 +9280,7 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
     menor (pero levanta las rezagadas cuando no hay nada más urgente)."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import TodoItem, Actividad
+    from .models import TodoItem, Actividad, AvisoPospuesto
     corte = timezone.now() - timedelta(days=dias_min)
     cand = [o for o in (TodoItem.objects.filter(usuario=user, fecha_actualizacion__lt=corte)
                         .select_related('cliente').order_by('fecha_actualizacion')[:80])
@@ -9198,7 +9290,9 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
         con_actividad = set(Actividad.objects.filter(
             oportunidad_id__in=[o.id for o in cand], fecha_inicio__gte=corte
         ).values_list('oportunidad_id', flat=True))
-    cand = [o for o in cand if o.id not in con_actividad]
+    pospuestos = set(AvisoPospuesto.objects.filter(
+        usuario=user, tipo='oportunidad', hasta__gt=today).values_list('ref_id', flat=True))
+    cand = [o for o in cand if o.id not in con_actividad and o.id not in pospuestos]
     if not cand:
         return []
     avance = _etapa_avance_map()
@@ -9229,6 +9323,8 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
             'desc': ' · '.join([p for p in piezas if p]),
             'hace': '%d días' % dias, 'dias': dias,
             'acciones': ['agendar', 'abrir', 'no_importa'],
+            'headline': '%s lleva %d días sin moverse' % (o.oportunidad or 'Una oportunidad', dias),
+            'contexto': (' · '.join([p for p in [cliente, etapa, ('${:,.0f}'.format(float(monto)) if monto else '')] if p])),
         })
     return out
 
@@ -9298,6 +9394,28 @@ def api_asistente_feed(request):
         'hueco': hueco,
         'items': correos_items + opps_items,
     })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_posponer(request):
+    """POST — "Mañana" del toast: pospone el aviso al siguiente día HÁBIL.
+    A diferencia de "No importa" (descarte), esto es un snooze honesto: vuelve."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AvisoPospuesto
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    hasta = _mas_dias_habiles(timezone.localdate(), 1)
+    AvisoPospuesto.objects.update_or_create(
+        usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': hasta})
+    return JsonResponse({'success': True, 'hasta': hasta.isoformat()})
 
 
 @login_required

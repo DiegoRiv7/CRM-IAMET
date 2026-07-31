@@ -6785,6 +6785,27 @@ class CorreoAtendido(models.Model):
         return f'{self.usuario_id} · mail {self.mail_id} · {self.fecha}'
 
 
+class AvisoPospuesto(models.Model):
+    """"Mañana" en el toast del asistente: pospone un aviso (correo u oportunidad)
+    hasta una fecha. A diferencia de CorreoAtendido (descarte definitivo), esto es
+    un snooze honesto: el aviso vuelve a aparecer cuando llega `hasta`."""
+    TIPO_CHOICES = [('correo', 'Correo'), ('oportunidad', 'Oportunidad')]
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='avisos_pospuestos')
+    tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
+    ref_id = models.IntegerField()          # MailCorreo.id o TodoItem.id según tipo
+    hasta = models.DateField()              # vuelve a aparecer cuando localdate >= hasta
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'tipo', 'ref_id')]
+        indexes = [models.Index(fields=['usuario', 'hasta'])]
+        verbose_name = 'Aviso pospuesto'
+        verbose_name_plural = 'Avisos pospuestos'
+
+    def __str__(self):
+        return f'{self.usuario_id} · {self.tipo} {self.ref_id} → {self.hasta}'
+
+
 class ReplayMensual(models.Model):
     """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
     (usuario, mes, anio): el mes ya cerró, los datos son finales."""

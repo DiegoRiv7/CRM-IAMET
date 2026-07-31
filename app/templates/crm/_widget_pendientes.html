@@ -5,23 +5,25 @@
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
-<!-- Toast del asistente: aviso compacto abajo-derecha. Llega con la acción principal;
-     al elegirla se expande solo para mostrar la respuesta; al dar clic (sin botón) abre el panel. -->
+<!-- Toast del asistente (abajo-derecha), 2 estados:
+     · Píldora (reposo): presencia mínima; clic → aviso completo.
+     · Aviso (evento): categoría·hace | 1 de N | × / titular-oración / contexto /
+       cita del correo / [acción azul] [Mañana]. Clic fuera de botones → mini panel. -->
 <div class="pend-launcher" id="pendLauncher" style="display:none;">
-  <!-- Compacto: voz del asistente + aviso principal con más cuerpo + acción rápida -->
-  <div class="pend-toast-main" id="pendToastMain">
-    <div class="pend-toast-hd">
-      <span class="pend-lc-dot"></span> Mi Asistente
-      <span class="pend-toast-badge" id="pendToastBadge" style="display:none;">0</span>
+  <div class="pend-toast-pill" id="pendToastPill" style="display:none;" onclick="pendToastReabrir()">
+    <span class="pend-lc-dot"></span> Mi Asistente
+    <span class="pend-toast-pill-badge" id="pendToastPillBadge" style="display:none;">0</span>
+  </div>
+  <div class="pend-toast-main" id="pendToastMain" onclick="pendToastOpenBig(event)">
+    <div class="pend-toast-top">
+      <span class="pend-toast-cat" id="pendToastCat"></span>
+      <span class="pend-toast-pos" id="pendToastPos"></span>
+      <button type="button" class="pend-toast-x" onclick="pendToastCerrar(event)" title="Ocultar">&times;</button>
     </div>
-    <div class="pend-toast-brief" id="pendToastBrief">Revisando lo importante…</div>
-    <div class="pend-toast-card" id="pendToastCard" onclick="pendToastOpenBig(event)">
-      <div class="pend-toast-cat" id="pendToastCat"></div>
-      <div class="pend-toast-title" id="pendToastTitle"></div>
-      <div class="pend-toast-desc" id="pendToastDesc"></div>
-      <div class="pend-toast-acts" id="pendToastActs"></div>
-    </div>
-    <div class="pend-toast-more" id="pendToastMore" style="display:none;" onclick="pendToastOpenBig(event)"></div>
+    <div class="pend-toast-title" id="pendToastTitle"></div>
+    <div class="pend-toast-ctx" id="pendToastCtx" style="display:none;"></div>
+    <div class="pend-toast-quote" id="pendToastQuote" style="display:none;"></div>
+    <div class="pend-toast-acts" id="pendToastActs"></div>
   </div>
   <!-- Expandido: respuesta / plan de la acción elegida -->
   <div class="pend-toast-focus" id="pendLcFocus" style="display:none;"></div>
@@ -235,29 +237,34 @@
   .pend-des-kpi-lbl{font-size:.86rem;color:#6b6d76;font-weight:600;margin-top:9px;line-height:1.3;}
   @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
   /* ── Launcher (asistente reducido, siempre visible) ── */
-  .pend-launcher{position:fixed;right:22px;bottom:22px;width:400px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
-    border-radius:14px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:11px 13px;z-index:900;transition:box-shadow .2s,transform .2s;}
-  .pend-launcher.expanded{width:440px;padding:14px 16px;}
+  .pend-launcher{position:fixed;right:22px;bottom:22px;width:420px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
+    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:900;transition:box-shadow .2s,transform .2s;}
+  .pend-launcher.expanded{width:440px;}
+  .pend-launcher.pill{width:auto;padding:9px 15px;border-radius:999px;cursor:pointer;}
+  .pend-launcher.pill:hover{box-shadow:0 20px 46px rgba(15,23,42,.2);}
   .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
-  /* Toast (voz del asistente + aviso principal con cuerpo + acción) */
-  .pend-toast-hd{display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:800;color:#16181d;margin-bottom:4px;}
-  .pend-toast-badge{background:#16181d;color:#fff;font-size:.66rem;font-weight:800;border-radius:9px;padding:1px 6px;margin-left:auto;}
-  .pend-toast-brief{font-size:.8rem;color:#374151;line-height:1.4;margin-bottom:8px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .pend-toast-card{cursor:pointer;border:1px solid #eceef1;border-radius:10px;padding:8px 10px;background:#fbfcfd;transition:background .12s,border-color .12s;}
-  .pend-toast-card:hover{background:#f5f7f9;border-color:#e2e5ea;}
-  .pend-toast-cat{font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;margin-bottom:3px;}
+  /* Píldora (reposo) */
+  .pend-toast-pill{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:800;color:#16181d;white-space:nowrap;}
+  .pend-toast-pill-badge{background:#16181d;color:#fff;font-size:.68rem;font-weight:800;border-radius:10px;padding:1px 7px;}
+  /* Aviso (evento): categoría·hace | 1 de N | × / titular / contexto / cita / acciones */
+  .pend-toast-main{cursor:pointer;}
+  .pend-toast-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .pend-toast-cat{flex:1;min-width:0;font-size:.64rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pend-toast-cat.urg{color:#c2410c;} .pend-toast-cat.hueco{color:#0a7d3c;}
-  .pend-toast-title{font-size:.86rem;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:2px;}
-  .pend-toast-desc{font-size:.78rem;color:#5b5d63;line-height:1.4;margin-bottom:8px;
+  .pend-toast-pos{flex:none;font-size:.72rem;color:#9a9ca3;font-weight:600;}
+  .pend-toast-x{flex:none;border:none;background:none;color:#b3b5bb;font-size:1.05rem;line-height:1;cursor:pointer;padding:0 1px;}
+  .pend-toast-x:hover{color:#16181d;}
+  .pend-toast-title{font-size:1.02rem;font-weight:800;color:#16181d;line-height:1.3;letter-spacing:-.01em;margin-bottom:6px;}
+  .pend-toast-ctx{font-size:.82rem;color:#5b5d63;line-height:1.45;margin-bottom:9px;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .pend-toast-acts{display:flex;align-items:center;gap:7px;}
-  .pend-toast-btn{border:none;border-radius:9px;padding:7px 13px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .pend-toast-quote{background:#f4f5f7;border-radius:10px;padding:9px 12px;font-size:.8rem;color:#4b5563;line-height:1.45;margin-bottom:11px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .pend-toast-acts{display:flex;align-items:center;gap:8px;}
+  .pend-toast-btn{border:none;border-radius:999px;padding:8px 16px;font-size:.83rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .pend-toast-btn.pri{background:#0a84ff;color:#fff;} .pend-toast-btn.pri:hover{background:#0060df;}
-  .pend-toast-btn.txt{background:none;color:#8a8c93;padding:7px 5px;} .pend-toast-btn.txt:hover{color:#16181d;}
-  .pend-toast-more{font-size:.73rem;color:#9a9ca3;margin-top:8px;padding-top:7px;border-top:1px solid #f1f2f4;cursor:pointer;}
-  .pend-toast-more:hover{color:#6b7280;}
-  .pend-toast-focus{max-height:70vh;overflow:auto;}
+  .pend-toast-btn.sec{background:#f2f3f6;color:#374151;} .pend-toast-btn.sec:hover{background:#e9eaee;}
+  .pend-toast-focus{max-height:70vh;overflow:auto;cursor:default;}
   .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
   @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
   /* ── Mini panel del asistente (reducido) ── */
@@ -1132,16 +1139,37 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
-  // ── Launcher = TOAST (aviso compacto abajo-derecha: launcher → mini → panel grande) ──
+  // ── Launcher = TOAST (píldora en reposo / aviso completo cuando hay algo nuevo) ──
   var _lcTotal = -1, _lcTimer = null, _toastExpanded = false;
+  var _toastMode = (function () { try { return localStorage.getItem('pendToastMode') || 'full'; } catch (e) { return 'full'; } })();
+  function _toastSetMode(m) {
+    _toastMode = m;
+    try { localStorage.setItem('pendToastMode', m); } catch (e) {}
+    _toastApplyMode();
+  }
+  function _toastApplyMode() {
+    var lc = el('pendLauncher'); if (!lc) return;
+    var pill = el('pendToastPill'), main = el('pendToastMain'), f = el('pendLcFocus');
+    if (_toastExpanded) {
+      if (pill) pill.style.display = 'none';
+      if (main) main.style.display = 'none';
+      lc.classList.remove('pill');
+      return;
+    }
+    if (f) f.style.display = 'none';
+    var items = (_miniData && _miniData.items) || [];
+    var showPill = (_toastMode === 'pill') || !items.length;
+    if (pill) pill.style.display = showPill ? 'flex' : 'none';
+    if (main) main.style.display = showPill ? 'none' : '';
+    lc.classList.toggle('pill', showPill);
+  }
   function pendLauncherShow() {
     var ov = el('widgetPendientes'), lc = el('pendLauncher'); if (!lc) return;
     var abierto = ov && ov.classList.contains('active');
     lc.style.display = abierto ? 'none' : '';
-    // Siempre en modo compacto al mostrarse.
     _toastExpanded = false; lc.classList.remove('expanded');
     var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
-    var m = el('pendToastMain'); if (m) m.style.display = '';
+    _toastApplyMode();
   }
   window.pendLauncherShow = pendLauncherShow;
   function _toastTop() { return (_miniData && _miniData.items && _miniData.items[0]) || null; }
@@ -1153,57 +1181,77 @@
   function _toastDraw() {
     var lc = el('pendLauncher'); if (!lc) return;
     var d = _miniData, items = (d && d.items) || [];
-    var badge = el('pendToastBadge'), brief = el('pendToastBrief'), card = el('pendToastCard'),
-        catEl = el('pendToastCat'), titleEl = el('pendToastTitle'), descEl = el('pendToastDesc'),
-        actsEl = el('pendToastActs'), moreEl = el('pendToastMore');
     var total = (d && d.total) || 0;
-    if (badge) { if (total > 0) { badge.textContent = total; badge.style.display = ''; } else badge.style.display = 'none'; }
-    // Voz del asistente (resumen corto). Si no hay nada, mensaje tranquilo.
-    if (brief) brief.textContent = (d && d.resumen) || 'Revisando lo importante…';
-    if (!items.length) {
-      if (card) card.style.display = 'none';
-      if (moreEl) moreEl.style.display = 'none';
-      return;
-    }
+    var pb = el('pendToastPillBadge');
+    if (pb) { if (total > 0) { pb.textContent = total; pb.style.display = ''; } else pb.style.display = 'none'; }
+    _toastApplyMode();
+    if (!items.length) return;
     var it = items[0];
-    if (card) card.style.display = '';
+    var catEl = el('pendToastCat');
     if (catEl) {
-      catEl.textContent = it.categoria || '';
+      catEl.textContent = ((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase();
       catEl.className = 'pend-toast-cat' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : ''));
     }
-    if (titleEl) titleEl.textContent = _toastHeadline(it);
-    if (descEl) descEl.innerHTML = _esc(it.desc || '') + (it.hace ? (' · ' + _esc(it.hace)) : '');
+    var pos = el('pendToastPos'); if (pos) pos.textContent = items.length > 1 ? ('1 de ' + items.length) : '';
+    var titleEl = el('pendToastTitle'); if (titleEl) titleEl.textContent = it.headline || _toastHeadline(it);
+    var ctxEl = el('pendToastCtx');
+    if (ctxEl) {
+      var ctx = it.contexto || '';
+      if (ctx) { ctxEl.textContent = ctx; ctxEl.style.display = ''; } else ctxEl.style.display = 'none';
+    }
+    var qEl = el('pendToastQuote');
+    if (qEl) {
+      if (it.quote) { qEl.textContent = '“' + it.quote + '”'; qEl.style.display = ''; }
+      else qEl.style.display = 'none';
+    }
+    var actsEl = el('pendToastActs');
     if (actsEl) {
       var pri = (it.acciones || [])[0], acts = '';
       if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
-      acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastDespues()">Después</button>';
+      acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastManana()">Mañana</button>';
       actsEl.innerHTML = acts;
-    }
-    if (moreEl) {
-      var extra = items.length - 1;
-      if (extra > 0) { moreEl.style.display = ''; moreEl.textContent = extra + ' aviso' + (extra === 1 ? '' : 's') + ' más se guardaron en el panel para no interrumpirte.'; }
-      else moreEl.style.display = 'none';
     }
   }
   function _toastExpand() {
     _toastExpanded = true;
+    var lc = el('pendLauncher'); if (lc) { lc.classList.add('expanded'); lc.classList.remove('pill'); }
     var m = el('pendToastMain'); if (m) m.style.display = 'none';
+    var p = el('pendToastPill'); if (p) p.style.display = 'none';
     var f = el('pendLcFocus'); if (f) { f.style.display = ''; f.innerHTML = '<div class="pend-mini-empty">Un momento…</div>'; }
-    var lc = el('pendLauncher'); if (lc) lc.classList.add('expanded');
   }
   function _toastCollapse() {
     _toastExpanded = false;
     var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
-    var m = el('pendToastMain'); if (m) m.style.display = '';
     var lc = el('pendLauncher'); if (lc) lc.classList.remove('expanded');
     _toastDraw();
   }
   window.pendToastCollapse = _toastCollapse;
   window.pendToastOpenBig = function () { pendMiniAbrir(); };
-  window.pendToastDespues = function () {
+  window.pendToastCerrar = function (e) {
+    if (e) e.stopPropagation();
+    _toastSetMode('pill');
+  };
+  window.pendToastReabrir = function () { _toastSetMode('full'); _toastDraw(); };
+  // "Mañana": snooze honesto — lo pospone al siguiente día hábil y muestra el siguiente aviso.
+  window.pendToastManana = function () {
     var it = _toastTop(); if (!it) return;
-    var id = it.tipo === 'correo' ? it.mail_id : it.opp_id;
-    pendMiniDescartar(it.tipo, id);   // marca atendido (correo) + actualiza _miniData + _feedRedraw → _toastDraw
+    var ref = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    fetch('/app/api/asistente/aviso/posponer/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: it.tipo, ref_id: ref })
+    }).catch(function () {});
+    if (_miniData && _miniData.items) {
+      _miniData.items = _miniData.items.filter(function (x) {
+        var xid = x.tipo === 'correo' ? x.mail_id : x.opp_id;
+        return !(x.tipo === it.tipo && xid === ref);
+      });
+      _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
+      _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
+      _miniData.total = _miniData.items.length;
+      _lcTotal = _miniData.total;
+      _feedRedraw();
+    }
   };
   window.pendToastAct = function (actionName) {
     var it = _toastTop(); if (!it) return;
@@ -1252,8 +1300,9 @@
         var prev = _lcTotal;
         _miniData = d; _lcTotal = d.total;
         _toastDraw();
-        // Si aumentó (llegó algo nuevo), el toast late para llamar la atención.
+        // Si aumentó (llegó algo nuevo): despierta de la píldora y late para avisar.
         if (prev >= 0 && d.total > prev) {
+          if (_toastMode === 'pill') _toastSetMode('full');
           var lc = el('pendLauncher');
           if (lc && lc.style.display !== 'none') { lc.classList.remove('pulse'); void lc.offsetWidth; lc.classList.add('pulse'); }
         }
