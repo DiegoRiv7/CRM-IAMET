@@ -84,9 +84,11 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                     <div class="wo-grid">
 
                             <!-- Info card compacta (con Vendedor y Cliente integrados) -->
-                            <div class="wo-card wo-g-info" style="display:flex;flex-direction:column;">
-                                <!-- Fila grande: los números que se leen de un vistazo -->
-                                <div class="wo-info-grid wo-info-row-big">
+                            <div class="wo-card wo-g-info">
+                                <!-- Franja a todo lo ancho: los metadatos son datos de
+                                     consulta, no necesitan una card alta. Puestos en una
+                                     sola tira liberan el alto que se lleva la conversación. -->
+                                <div class="wo-info-strip">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Monto de Oportunidad</span>
                                         <span class="wo-info-value" data-wo="monto">$0</span>
@@ -104,9 +106,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- Clasificación + proyecto vinculado, en la misma retícula de 3 -->
-                                <div class="wo-info-grid wo-info-row-mid">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Producto</span>
                                         <span class="wo-info-value medium" data-wo="producto">-</span>
@@ -130,10 +129,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- PO y facturas en la misma fila: campos cortos en línea, para
-                                     que quepa más de una factura sin rehacer el bloque. -->
-                                <div class="wo-info-docs">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">PO</span>
                                         <input type="text" class="wo-doc-input" data-wo="poNumber" maxlength="15" placeholder="—" />
@@ -145,9 +140,9 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Vendedor + Cliente: anclados al fondo de la card -->
+                                <!-- Vendedor + Cliente, bajo la tira -->
                                 <div class="wo-divider wo-info-sep"></div>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                                <div class="wo-info-people">
                                     <div class="wo-stakeholder">
                                         <div class="wo-stakeholder-label">Vendedor</div>
                                         <div class="wo-stakeholder-info">

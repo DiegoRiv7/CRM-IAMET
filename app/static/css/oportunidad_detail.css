@@ -255,10 +255,21 @@ body {
    Todo sobre una misma retícula de 3 columnas para que las etiquetas
    queden alineadas entre filas. El tamaño lo da la jerarquía (monto >
    resto), no una tipografía enorme. */
-.opp-v2 .wo-g-info .wo-info-grid { gap: 0.3rem 1.4rem; }
-.opp-v2 .wo-info-row-big,
-.opp-v2 .wo-info-row-mid { grid-template-columns: 1fr 1fr 1fr; }
-.opp-v2 .wo-info-row-mid { margin-top: 0.95rem; }
+/* Los metadatos van en TIRA a todo lo ancho: son datos de consulta, se leen
+   una vez. Apilados en media card se comían ~380px de alto; en una tira
+   ocupan ~100px y ese alto se lo queda la conversación, que es donde se
+   trabaja a diario. */
+.opp-v2 .wo-info-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 0.9rem 1.6rem;
+}
+.opp-v2 .wo-info-people {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    max-width: 640px;
+}
 
 .opp-v2 .wo-g-info .wo-info-label { font-size: 0.63rem; }
 .opp-v2 .wo-g-info .wo-info-value { font-size: 1.45rem; }
@@ -360,13 +371,7 @@ body {
 /* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
    primera columna y las facturas ocupando las otras dos, con campos
    cortos en línea que envuelven — así cabe más de una. */
-.opp-v2 .wo-info-docs {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.3rem 1.4rem;
-    margin-top: 0.95rem;
-}
-.opp-v2 .wo-doc-fact { grid-column: 2 / span 2; }
+.opp-v2 .wo-doc-fact { grid-column: span 2; }
 .opp-v2 .wo-fact-row {
     display: flex;
     flex-wrap: wrap;
@@ -399,7 +404,7 @@ body {
 .opp-v2 .wo-g-info .wo-stakeholder-label { margin-bottom: 0.45rem; font-size: 0.63rem; }
 
 /* El separador se come el sobrante: vendedor y cliente quedan al fondo. */
-.opp-v2 .wo-info-sep { margin: auto 0 0.9rem; }
+.opp-v2 .wo-info-sep { margin: 1.1rem 0 0.9rem; }
 
 /* ═══ Drive embebido bajo Cotizaciones ═══
    Van juntos en la misma card: cotizaciones arriba, archivos abajo, con
@@ -494,16 +499,20 @@ body {
 /* ═══ Rejilla del contenido (widget v3) ═══
    2×2 explícitas en vez de dos columnas anidadas, para que las filas se
    alineen: Info ↔ Tareas y Cotizaciones ↔ Conversación comparten alto. */
+/* Composición asimétrica a propósito: cuatro cuadros del mismo tamaño decían
+   que las cuatro cosas pesan igual, y no es cierto. Los metadatos pasan a
+   franja superior; abajo, dos cuadros a la izquierda (lo que se consulta) y
+   la conversación sola a la derecha, alta, porque es donde ocurre el trabajo. */
 .opp-v2 .wo-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.08fr;
     gap: 1.25rem;
     align-items: start;
 }
-.opp-v2 .wo-g-info { grid-column: 1; grid-row: 1; align-self: stretch; }
-.opp-v2 .wo-g-tareas { grid-column: 2; grid-row: 1; align-self: stretch; }
-.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; align-self: stretch; }
-.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2; align-self: stretch; }
+.opp-v2 .wo-g-info { grid-column: 1 / -1; grid-row: 1; }
+.opp-v2 .wo-g-tareas { grid-column: 1; grid-row: 2; }
+.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 3; }
+.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2 / span 2; align-self: stretch; }
 
 @media (max-width: 900px) {
     .opp-v2 .wo-grid { grid-template-columns: 1fr; }
@@ -511,4 +520,5 @@ body {
     .opp-v2 .wo-g-tareas,
     .opp-v2 .wo-g-cot,
     .opp-v2 .wo-g-conv { grid-column: 1; grid-row: auto; }
+    .opp-v2 .wo-info-people { max-width: none; }
 }
