@@ -8319,12 +8319,15 @@ def api_asistente_oportunidad_crear(request):
             if fecha:
                 try:
                     y, m, d = fecha.split('-')
-                    naive = datetime(int(y), int(m), int(d), 9, 0)
+                    f_obj = datetime(int(y), int(m), int(d)).date()
+                    naive = datetime(int(y), int(m), int(d), _hora_disponible(user, f_obj), 0)
                     ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
                 except Exception:
                     ini = None
             if ini is None:
-                ini = timezone.now() + timedelta(days=2)
+                f_obj = _mas_dias_habiles(timezone.localdate(), 2)
+                naive = datetime(f_obj.year, f_obj.month, f_obj.day, _hora_disponible(user, f_obj), 0)
+                ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
             act = Actividad.objects.create(
                 titulo=(data.get('actividad_titulo') or ('Dar seguimiento a %s' % cliente.nombre_empresa))[:200],
                 tipo_actividad='tarea', descripcion='',
