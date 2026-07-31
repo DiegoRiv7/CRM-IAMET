@@ -8022,6 +8022,12 @@ def _correo_texto(correo, user, limite=2500):
     return txt[:limite]
 
 
+# Horario laboral GLOBAL del asistente: lunes–viernes, 8:00–18:00. Todo lo que el
+# asistente agenda o sugiere (seguimientos, actividades, huecos libres) vive aquí.
+_HORA_LAB_INI = 8
+_HORA_LAB_FIN = 18
+
+
 def _mas_dias_habiles(fecha, n=2):
     """Suma n días HÁBILES (salta sábado y domingo). Jueves+2 → lunes; viernes+2 → martes."""
     from datetime import timedelta
@@ -8031,6 +8037,44 @@ def _mas_dias_habiles(fecha, n=2):
         if d.weekday() < 5:   # 0-4 = lunes a viernes
             added += 1
     return d
+
+
+def _en_horario_laboral(dt):
+    """True si dt cae en horario laboral: lunes–viernes, 8:00–18:00."""
+    return dt.weekday() < 5 and _HORA_LAB_INI <= dt.hour < _HORA_LAB_FIN
+
+
+def _hueco_libre_ahora(user, now):
+    """¿El usuario tiene un rato libre AHORA para atender algo?
+    Libre = estamos en horario laboral (L–V 8–18) y no hay ninguna actividad
+    ocupando la hora actual. Devuelve (libre: bool, hasta_hora: int|None) donde
+    hasta_hora es la hora (0–24) hasta la que sigue libre (inicio de la próxima
+    actividad de hoy o el fin de la jornada)."""
+    from django.db.models import Q
+    from django.utils import timezone
+    from .models import Actividad
+    local = timezone.localtime(now)
+    if not _en_horario_laboral(local):
+        return (False, None)
+    hoy = local.date()
+    h_now = local.hour
+    ocupadas = set()
+    prox = _HORA_LAB_FIN
+    acts = (Actividad.objects.filter(fecha_inicio__date=hoy)
+            .filter(Q(creado_por=user) | Q(participantes=user)).distinct()
+            .values_list('fecha_inicio', 'fecha_fin'))
+    for ini, fin in acts:
+        if not ini:
+            continue
+        h0 = timezone.localtime(ini).hour
+        h1 = timezone.localtime(fin).hour if fin else h0 + 1
+        for h in range(h0, max(h0 + 1, h1 + 1)):
+            ocupadas.add(h)
+        if h0 > h_now:
+            prox = min(prox, h0)          # próxima actividad que empieza después de ahora
+    if h_now in ocupadas:
+        return (False, None)              # está en una actividad ahora mismo
+    return (True, prox)
 
 
 def _cliente_por_correo(correo):
@@ -8405,7 +8449,8 @@ def api_asistente_oportunidad_update_aplicar(request):
 
 
 def _hora_disponible(user, fecha):
-    """Primera hora libre (9–17h) en el calendario del usuario para esa fecha."""
+    """Primera hora libre dentro del horario laboral (L–V 8:00–18:00) en el
+    calendario del usuario para esa fecha."""
     from django.db.models import Q
     from django.utils import timezone
     from .models import Actividad
@@ -8420,10 +8465,10 @@ def _hora_disponible(user, fecha):
         h1 = timezone.localtime(fin).hour if fin else h0 + 1
         for h in range(h0, max(h0 + 1, h1 + 1)):
             busy.add(h)
-    for h in range(9, 18):
+    for h in range(_HORA_LAB_INI, _HORA_LAB_FIN):
         if h not in busy:
             return h
-    return 9
+    return _HORA_LAB_INI
 
 
 @login_required
@@ -8962,10 +9007,31 @@ def _feed_correos_items(user, limite=6):
     return out
 
 
+def _etapa_avance_map():
+    """Mapa nombre-de-etapa normalizado → avance 0..1 (0 = inicio del pipeline,
+    1 = a punto de cerrar). Usa EtapaPipeline.orden dentro de cada pipeline."""
+    from .models import EtapaPipeline
+    por_pipe = {}
+    for e in EtapaPipeline.objects.filter(activo=True).values('pipeline', 'nombre', 'orden'):
+        por_pipe.setdefault(e['pipeline'], []).append((e['nombre'], e['orden']))
+    out = {}
+    for etapas in por_pipe.values():
+        mx = max((o for _, o in etapas), default=0) or 1
+        for nombre, orden in etapas:
+            k = (nombre or '').strip().lower()
+            if k:
+                out[k] = max(out.get(k, 0.0), orden / mx)   # si repite en 2 pipelines, el más avanzado
+    return out
+
+
 def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
     """Oportunidades ABIERTAS del usuario sin movimiento en >= dias_min (usa
     fecha_actualizacion como 'última vez que se tocó'). Se excluyen las que ya
-    tienen una actividad reciente o futura agendada (ya no están 'sin moverse')."""
+    tienen una actividad reciente o futura agendada (ya no están 'sin moverse').
+
+    Prioridad (para recordar primero lo que más importa): MONTO alto + ETAPA
+    avanzada pesan como criterio principal; la antigüedad pesa como criterio
+    menor (pero levanta las rezagadas cuando no hay nada más urgente)."""
     from datetime import timedelta
     from django.utils import timezone
     from .models import TodoItem, Actividad
@@ -8978,11 +9044,24 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
         con_actividad = set(Actividad.objects.filter(
             oportunidad_id__in=[o.id for o in cand], fecha_inicio__gte=corte
         ).values_list('oportunidad_id', flat=True))
-    out = []
+    cand = [o for o in cand if o.id not in con_actividad]
+    if not cand:
+        return []
+    avance = _etapa_avance_map()
+    max_monto = max((float(o.monto or 0) for o in cand), default=0) or 1.0
+    ranked = []
     for o in cand:
-        if o.id in con_actividad:
-            continue   # tiene actividad reciente/futura → ya no está "sin moverse"
         dias = (today - timezone.localtime(o.fecha_actualizacion).date()).days
+        monto = float(o.monto or 0)
+        m_norm = monto / max_monto                                  # 0..1
+        e_norm = avance.get((o.etapa_corta or '').strip().lower(), 0.35)  # 0..1 (default medio)
+        a_norm = min(dias / 30.0, 1.0)                              # 0..1 (antigüedad, tope 30 días)
+        # Monto y etapa = principal (0.4 c/u); antigüedad = menor (0.2).
+        prioridad = 0.4 * m_norm + 0.4 * e_norm + 0.2 * a_norm
+        ranked.append((prioridad, dias, o))
+    ranked.sort(key=lambda t: (-t[0], -t[1]))
+    out = []
+    for prioridad, dias, o in ranked[:limite]:
         cliente = (o.cliente.nombre_empresa if o.cliente else '') or ''
         etapa = (o.etapa_corta or 'Sin etapa')
         monto = o.monto or 0
@@ -8997,8 +9076,6 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
             'hace': '%d días' % dias, 'dias': dias,
             'acciones': ['agendar', 'abrir', 'no_importa'],
         })
-        if len(out) >= limite:
-            break
     return out
 
 
@@ -9010,12 +9087,26 @@ def api_asistente_feed(request):
     (saludo del mini-panel), conteos por grupo e ítems con acciones."""
     from django.utils import timezone
     user = request.user
+    now = timezone.now()
     today = timezone.localdate()
 
     correos_items = _feed_correos_items(user)
     opps_items = _feed_opps_estancadas(user, today)
     n_cor, n_opp = len(correos_items), len(opps_items)
     total = n_cor + n_opp
+
+    # Caso 2: si el usuario tiene un rato libre AHORA (horario laboral, sin junta),
+    # es buen momento para atender la oportunidad clave (la primera, ya rankeada por
+    # monto + etapa avanzada). La elevamos con un marco de "aprovecha este hueco".
+    libre, hasta = _hueco_libre_ahora(user, now)
+    hueco = {'libre': bool(libre)}
+    if libre and opps_items:
+        top = opps_items[0]
+        hasta_txt = ('%02d:00' % hasta) if hasta else 'fin del día'
+        top['categoria'] = 'Buen momento — libre hasta las %s' % hasta_txt
+        top['hueco'] = True
+        hueco['hasta'] = hasta_txt
+        hueco['opp'] = top.get('titulo', '')
 
     nombre = (user.first_name or '').strip() or (user.get_full_name() or user.username or '').split(' ')[0]
     hora = timezone.localtime().hour
@@ -9034,6 +9125,9 @@ def api_asistente_feed(request):
         resumen = resumen[0].upper() + resumen[1:]
         brief = '%s%s. Revisé tu correo y tu pipeline: %s. Lo demás puede esperar.' % (
             saludo, (', ' + nombre) if nombre else '', cuerpo)
+        if libre and opps_items:
+            brief += ' Tienes un rato libre hasta las %s: buen momento para mover «%s».' % (
+                hueco.get('hasta', 'el fin del día'), hueco.get('opp', ''))
     else:
         resumen = 'Todo bajo control%s. Te aviso si algo necesita tu atención.' % (
             (', ' + nombre) if nombre else '')
@@ -9047,6 +9141,7 @@ def api_asistente_feed(request):
         'pipeline': n_opp,
         'resumen': resumen,
         'brief': brief,
+        'hueco': hueco,
         'items': correos_items + opps_items,
     })
 

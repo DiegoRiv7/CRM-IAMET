@@ -254,6 +254,7 @@
   .pend-mini-open:hover{background:#f7f8fa;}
   .pend-mini-clbl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:5px;}
   .pend-mini-clbl.urg{color:#c2410c;}
+  .pend-mini-clbl.hueco{color:#0a7d3c;}
   .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
   .pend-mini-cd{font-size:.83rem;color:#4b5563;line-height:1.5;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
@@ -1180,7 +1181,7 @@
     }).join('');
     return '<div class="pend-mini-card">' +
       '<div class="pend-mini-open" onclick="' + openCall + '">' +
-        '<div class="pend-mini-clbl' + (it.urgente ? ' urg' : '') + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+        '<div class="pend-mini-clbl' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
         '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
         '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
       '</div>' +
