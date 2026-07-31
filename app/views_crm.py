@@ -9419,6 +9419,88 @@ def api_asistente_aviso_posponer(request):
 
 
 @login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_agendar(request):
+    """POST — "Agendar" del toast: crea DIRECTO (sin formularios) una actividad de
+    seguimiento a +2 días hábiles en el primer hueco libre, y silencia el aviso hasta
+    ese día (si sigue pendiente, vuelve justo cuando toca darle seguimiento)."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import AvisoPospuesto, MailCorreo, TodoItem, Actividad
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
+    hora = _hora_disponible(request.user, fecha)
+    opp = None
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).select_related('oportunidad').first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        opp = m.oportunidad
+        rem = (m.remitente_nombre or m.remitente_email or '').strip()
+        desc = ('Dar seguimiento al correo de %s: %s' % (rem, (m.asunto or '').strip()))[:500]
+    else:
+        opp = TodoItem.objects.filter(id=ref_id).first()
+        if not opp:
+            return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+        desc = 'Realizar seguimiento de ' + (opp.oportunidad or '')
+    try:
+        naive = datetime(fecha.year, fecha.month, fecha.day, hora, 0)
+        ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+        act = Actividad.objects.create(
+            titulo='Seguimiento', descripcion=desc, tipo_actividad='tarea',
+            fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+            creado_por=request.user, color='#007AFF',
+            oportunidad_id=(opp.id if opp else None),
+        )
+        act.participantes.set([request.user.id])
+    except Exception as e:
+        logger.exception('Asistente: no se pudo agendar desde el toast: %s', e)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    AvisoPospuesto.objects.update_or_create(
+        usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': fecha})
+    return JsonResponse({'success': True, 'actividad_id': act.id,
+                         'fecha': fecha.isoformat(), 'hora': '%02d:00' % hora})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_revisado(request):
+    """POST — "Revisado" del toast: el usuario ya lo vio y no quiere ninguna acción.
+    Correos: descarte definitivo (CorreoAtendido). Oportunidades: se silencia una
+    semana hábil (la opp sigue abierta; si sigue estancada, reaparece)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AvisoPospuesto, MailCorreo, CorreoAtendido
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=m, defaults={'fecha': timezone.localdate()})
+    else:
+        AvisoPospuesto.objects.update_or_create(
+            usuario=request.user, tipo='oportunidad', ref_id=int(ref_id),
+            defaults={'hasta': _mas_dias_habiles(timezone.localdate(), 5)})
+    return JsonResponse({'success': True})
+
+
+@login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
     Sirve para refrescar el widget en el momento (sin recargar todo ni la IA)

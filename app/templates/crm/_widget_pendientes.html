@@ -264,6 +264,7 @@
   .pend-toast-btn{border:none;border-radius:999px;padding:8px 16px;font-size:.83rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .pend-toast-btn.pri{background:#0a84ff;color:#fff;} .pend-toast-btn.pri:hover{background:#0060df;}
   .pend-toast-btn.sec{background:#f2f3f6;color:#374151;} .pend-toast-btn.sec:hover{background:#e9eaee;}
+  .pend-toast-btn.txt{background:none;color:#8a8c93;padding:8px 7px;margin-left:auto;} .pend-toast-btn.txt:hover{color:#16181d;}
   .pend-toast-focus{max-height:70vh;overflow:auto;cursor:default;}
   .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
   @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
@@ -1208,7 +1209,11 @@
     if (actsEl) {
       var pri = (it.acciones || [])[0], acts = '';
       if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
-      acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastManana()">Mañana</button>';
+      // "Agendar" directo (sin formulario) — se omite si la acción azul ya es agendar.
+      if (pri !== 'agendar' && pri !== 'agendar_seguimiento') {
+        acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastAgendar()">Agendar</button>';
+      }
+      acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastRevisado()">Revisado</button>';
       actsEl.innerHTML = acts;
     }
   }
@@ -1232,26 +1237,53 @@
     _toastSetMode('pill');
   };
   window.pendToastReabrir = function () { _toastSetMode('full'); _toastDraw(); };
-  // "Mañana": snooze honesto — lo pospone al siguiente día hábil y muestra el siguiente aviso.
-  window.pendToastManana = function () {
+  // Quita el aviso indicado del feed local y redibuja (avanza al siguiente).
+  function _toastQuitar(tipo, ref) {
+    if (!(_miniData && _miniData.items)) return;
+    _miniData.items = _miniData.items.filter(function (x) {
+      var xid = x.tipo === 'correo' ? x.mail_id : x.opp_id;
+      return !(x.tipo === tipo && xid === ref);
+    });
+    _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
+    _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
+    _miniData.total = _miniData.items.length;
+    _lcTotal = _miniData.total;
+    _feedRedraw();
+  }
+  // "Agendar": crea DIRECTO el seguimiento (+2 días hábiles, hueco libre) y avanza.
+  window.pendToastAgendar = function () {
     var it = _toastTop(); if (!it) return;
-    var ref = it.tipo === 'correo' ? it.mail_id : it.opp_id;
-    fetch('/app/api/asistente/aviso/posponer/', {
+    var tipo = it.tipo, ref = tipo === 'correo' ? it.mail_id : it.opp_id;
+    fetch('/app/api/asistente/aviso/agendar/', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: it.tipo, ref_id: ref })
+      body: JSON.stringify({ tipo: tipo, ref_id: ref })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { alert((d && d.error) || 'No se pudo agendar.'); return; }
+        // Confirmación breve en el propio toast y luego el siguiente aviso.
+        var t = el('pendToastTitle'), c = el('pendToastCtx'), q = el('pendToastQuote'),
+            a = el('pendToastActs'), cat = el('pendToastCat');
+        if (cat) cat.textContent = 'LISTO';
+        if (t) t.textContent = '✓ Seguimiento agendado';
+        if (c) { c.textContent = 'Queda en tu calendario el ' + _fechaLegible(d.fecha) + ' a las ' + (d.hora || '') + '.'; c.style.display = ''; }
+        if (q) q.style.display = 'none';
+        if (a) a.innerHTML = '';
+        setTimeout(function () { _toastQuitar(tipo, ref); }, 2000);
+      })
+      .catch(function () { alert('No se pudo agendar.'); });
+  };
+  // "Revisado": ya lo vio, sin acción — quita el ruido y avanza.
+  window.pendToastRevisado = function () {
+    var it = _toastTop(); if (!it) return;
+    var tipo = it.tipo, ref = tipo === 'correo' ? it.mail_id : it.opp_id;
+    fetch('/app/api/asistente/aviso/revisado/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: tipo, ref_id: ref })
     }).catch(function () {});
-    if (_miniData && _miniData.items) {
-      _miniData.items = _miniData.items.filter(function (x) {
-        var xid = x.tipo === 'correo' ? x.mail_id : x.opp_id;
-        return !(x.tipo === it.tipo && xid === ref);
-      });
-      _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
-      _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
-      _miniData.total = _miniData.items.length;
-      _lcTotal = _miniData.total;
-      _feedRedraw();
-    }
+    _toastQuitar(tipo, ref);
   };
   window.pendToastAct = function (actionName) {
     var it = _toastTop(); if (!it) return;
