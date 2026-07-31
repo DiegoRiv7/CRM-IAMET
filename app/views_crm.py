@@ -8958,7 +8958,23 @@ def _feed_correos_items(user, limite=6):
     atendidos = set(CorreoAtendido.objects.filter(
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
-    scored = []
+
+    def _dias(m):
+        return (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days if m.fecha_envio else 0
+
+    def _base_item(m):
+        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+        asunto = (m.asunto or '').strip()
+        dias = _dias(m)
+        return {
+            'tipo': 'correo', 'grupo': 'correo',
+            'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
+            'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
+            'dias_espera': dias, 'urgente': dias >= 2,
+        }
+
+    scored = []       # correos NO ligados, importantes, sin responder
+    ligados = []      # (estado, m): correos ya ligados a una oportunidad (llegó / respondiste)
     seen_hk = set()
     for m in inbox:
         hk = m.hilo_key
@@ -8966,45 +8982,61 @@ def _feed_correos_items(user, limite=6):
             if hk in seen_hk:
                 continue   # solo el correo más reciente de cada hilo
             seen_hk.add(hk)
+        if m.id in atendidos:
+            continue
         ls = last_sent.get(hk) if hk else None
         respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
-        if respondido or m.id in atendidos:
+        # ── Caso 3: correo LIGADO a una oportunidad (siempre relevante, sin umbral) ──
+        if m.oportunidad_id:
+            opp = m.oportunidad
+            if respondido:
+                # Ya respondiste: si la opp NO se ha actualizado desde tu respuesta,
+                # el asistente salta para ofrecer actualizarla / agendar seguimiento.
+                opp_upd = opp.fecha_actualizacion if opp else None
+                if opp_upd and ls and opp_upd >= ls:
+                    continue   # ya la actualizaste después de responder → nada que hacer
+                ligados.append(('respondido', m))
+            else:
+                ligados.append(('llego', m))   # llegó y aún no respondes → ofrecer actualizar
+            continue
+        # ── Correos NO ligados ──
+        if respondido:
             continue
         score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
                                         known_emails, known_domains, cliente_nombres)
         if score >= 3:
             scored.append((score, m, motivos))
-    def _dias(m):
-        return (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days if m.fecha_envio else 0
+
     # Urgencia: importancia (score) + antigüedad (los que llevan días suben).
     scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
-    for score, m, motivos in scored[:limite]:
-        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
-        venta = ('negocio' in motivos)
-        dias = _dias(m)
-        urgente = dias >= 2
-        asunto = (m.asunto or '').strip()
-        item = {
-            'tipo': 'correo', 'grupo': 'correo',
-            'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
-            'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
-            'dias_espera': dias, 'urgente': urgente,
-        }
-        # 3 tipos de tarjeta de correo (botón azul siempre primero, sin botón "Abrir":
-        # se abre con clic en la tarjeta):
-        if m.oportunidad_id:                 # ya ligado a una oportunidad → actualizar
-            item['categoria'] = 'Actualiza esta oportunidad'
-            item['opp_id'] = m.oportunidad_id
-            item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
-            item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
-        elif venta:                          # posible venta nueva → crear oportunidad
+    # Los ligados a una oportunidad van primero (tocan un negocio real en curso);
+    # entre ellos, primero los que YA respondiste (acción reciente tuya) y luego por recencia.
+    ligados.sort(key=lambda t: (0 if t[0] == 'respondido' else 1, _dias(t[1])))
+
+    # Tarjetas de correos ligados (Caso 3) — botón azul primero, abrir con clic en la tarjeta.
+    for estado, m in ligados:
+        item = _base_item(m)
+        item['opp_id'] = m.oportunidad_id
+        item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
+        item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        item['categoria'] = ('Respondiste — ¿actualizo?' if estado == 'respondido'
+                             else 'Actualiza esta oportunidad')
+        out.append(item)
+
+    # Tarjetas de correos no ligados (Casos 1) — posible venta vs. correo importante.
+    for score, m, motivos in scored:
+        if len(out) >= limite:
+            break
+        item = _base_item(m)
+        dias = item['dias_espera']
+        if 'negocio' in motivos:             # posible venta nueva → crear oportunidad
             item['categoria'] = 'Posible venta nueva'
             item['acciones'] = ['crear_oportunidad', 'responder', 'no_importa']
-        else:                                # correo normal sin responder → responder
-            item['categoria'] = ('Lleva %d días sin responder' % dias) if urgente else 'Correo sin responder'
+        else:                                # correo importante sin responder → responder
+            item['categoria'] = ('Lleva %d días sin responder' % dias) if item['urgente'] else 'Correo sin responder'
             item['acciones'] = ['responder', 'no_importa']
         out.append(item)
-    return out
+    return out[:limite]
 
 
 def _etapa_avance_map():
