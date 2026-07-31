@@ -209,11 +209,21 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
    Actividad no crecía y el hueco se lo comía el fondo. Ahora la columna es
    flex y Actividad se estira hasta el compositor. */
 .crm-tw-main-scroll { display: flex; flex-direction: column; }
-.crm-tw-card.crm-tw-activity {
-    flex: 1;
+/* La descripción manda: es la instrucción de la tarea, lo que se entra a
+   leer. Se lleva el doble del espacio libre que Actividad, y ambas parten
+   de su contenido (flex-basis auto) para no estirar textos cortos. */
+.crm-tw-card.crm-tw-section-desc {
+    flex: 2 1 auto;
     display: flex;
     flex-direction: column;
-    min-height: 200px;
+    min-height: 190px;
+}
+.crm-tw-card.crm-tw-section-desc .crm-task-desc-wrap { flex: 1; }
+.crm-tw-card.crm-tw-activity {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
 }
 .crm-tw-card.crm-tw-activity .crm-tw-feed { flex: 1; }
 /* El "sin comentarios" se centra en el espacio libre en vez de quedar
