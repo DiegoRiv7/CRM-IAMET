@@ -8299,7 +8299,8 @@ def api_asistente_oportunidad_crear(request):
     except Exception:
         pass
 
-    # Ligar el correo (y todo su hilo) a la nueva oportunidad.
+    # Ligar el correo (y todo su hilo) a la nueva oportunidad. Con la FK puesta, la
+    # conversación de la opp pinta los correos sola (api_chat_oportunidad los inyecta).
     correo = MailCorreo.objects.filter(id=data.get('correo_id'), usuario=user).first()
     if correo:
         MailCorreo.objects.filter(
@@ -8308,6 +8309,22 @@ def api_asistente_oportunidad_crear(request):
         if correo.oportunidad_id is None:
             correo.oportunidad = todo
             correo.save(update_fields=['oportunidad'])
+        # Timeline de la oportunidad — mismo registro que el vinculado manual de Correo.
+        try:
+            from .models import OportunidadActividad
+            OportunidadActividad.objects.create(
+                oportunidad=todo, tipo='creacion', usuario=user,
+                titulo='Oportunidad creada desde correo (asistente)',
+                descripcion='Asunto del correo: %s  |  De: %s' % (
+                    (correo.asunto or '')[:200], correo.remitente_email or ''),
+            )
+            OportunidadActividad.objects.create(
+                oportunidad=todo, tipo='email', usuario=user,
+                titulo=('Correo vinculado: %s' % (correo.asunto or ''))[:100],
+                descripcion='De: %s <%s>' % (correo.remitente_nombre or '', correo.remitente_email or ''),
+            )
+        except Exception:
+            pass
 
     # Actividad de seguimiento (para que no se le olvide). Mismo patrón que el
     # endpoint oficial de actividades. Si algo falla, se reporta en la respuesta.
