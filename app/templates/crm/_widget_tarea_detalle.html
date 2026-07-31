@@ -162,6 +162,47 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 /* El sidebar traía gap:32 pensado para bloques sueltos; ahora cada cuadro
    lleva su propio margen y ese gap duplicaba la separación. */
 .crm-tw-sidebar-inner { padding: 22px 20px; gap: 0; }
+
+/* ═══ Cuadros sólidos ═══
+   El fondo del widget era blanco, así que cuadros blancos sobre blanco se
+   desvanecían. Con el lienzo en gris claro los cuadros por fin se leen como
+   cuadros. */
+.crm-tw-body, .crm-tw-main, .crm-tw-sidebar, .crm-tw-tray { background: #F4F5F7; }
+.crm-tw-card {
+    border-color: #E4E7EC;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+}
+/* El compositor es un cuadro más, no una franja pegada al borde. */
+.crm-tw-tray { border-top: none; }
+.crm-tw-tray-box {
+    border: 1px solid #E4E7EC;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+}
+
+/* Estado y responsable SÍ llevan recuadro: son selectores, y el borde es lo
+   que avisa que se pueden cambiar. Fecha y prioridad se quedan como texto. */
+.crm-tw-card #crmTaskEstadoValue,
+.crm-tw-card #crm-task-responsable-container {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 9px;
+    padding: 8px 11px; width: 100%; box-sizing: border-box;
+}
+.crm-tw-card #crmTaskEstadoValue:hover,
+.crm-tw-card #crm-task-responsable-container:hover { border-color: #BFD9FF; }
+
+/* ═══ Editar la fecha sin descuadrar ═══
+   El campo datetime-local tiene un ancho mínimo propio que no cabe en media
+   columna: se salía de la tarjeta y empujaba a Prioridad. Mientras se edita,
+   la fila pasa a una sola columna y el campo se ajusta al ancho disponible. */
+.crm-tw-sb-duo, .crm-tw-sb-duo > .crm-tw-sb-prop { min-width: 0; }
+.crm-tw-card input[type="datetime-local"] {
+    width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;
+    padding: 7px 9px;
+}
+.crm-tw-sb-duo:has(input[type="datetime-local"]) {
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
 </style>
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">
