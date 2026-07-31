@@ -7530,6 +7530,17 @@ _COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'solicitud
 _COR_ESPERA = ['quedo a la espera', 'en espera de su respuesta', 'en espera de tu respuesta', 'favor de',
                'me confirmas', 'quedo atento', 'quedamos atentos', 'esperamos su respuesta',
                'agradezco su pronta', 'me puedes', 'nos pueden', 'podrias', 'me apoyas']
+# HITOS que cierran/avanzan una venta: si llega un correo LIGADO a una oportunidad con
+# esto, no hay que esperar a responder — conviene ofrecer actualizar la opp de una vez.
+_COR_HITO = ['factura', 'orden de compra', 'orden de compra firmada', 'oc firmada', 'orden firmada',
+             'purchase order', 'po firmada', 'contrato firmado', 'pedido confirmado', 'pedido en firme',
+             'anticipo', 'comprobante de pago', 'pago realizado', 'complemento de pago']
+
+
+def _cor_es_hito(asunto, cuerpo=''):
+    """True si el correo parece una factura / orden de compra firmada / pago (hito de cierre)."""
+    t = _cor_norm((asunto or '') + ' ' + (cuerpo or ''))
+    return any(k in t for k in _COR_HITO)
 # Ventana para "importantes sin responder": no solo 24h — así el asistente sigue
 # insistiendo con los que se te van pasando (hasta 7 días).
 _COR_VENTANA_HORAS = 168
@@ -9120,12 +9131,18 @@ def _feed_correos_items(user, limite=6):
         out.append(item)
 
     # 2) Correo ligado que llegó y no respondes → RESPONDER / agendar seguimiento.
+    #    Excepción: si es un HITO (factura / OC firmada / pago), ofrecer actualizar de una
+    #    vez (con seguimiento), sin esperar a que respondas.
     for m in llego:
         item = _base_item(m)
         item['opp_id'] = m.oportunidad_id
         item['opp_nombre'] = (m.oportunidad.oportunidad if m.oportunidad else '')
-        item['categoria'] = 'Correo de una oportunidad'
-        item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
+        if _cor_es_hito(m.asunto, m.cuerpo_texto):
+            item['categoria'] = 'Factura / orden recibida'
+            item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        else:
+            item['categoria'] = 'Correo de una oportunidad'
+            item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
         out.append(item)
 
     # 3) Correos no ligados (Caso 1) — posible venta vs. correo importante.

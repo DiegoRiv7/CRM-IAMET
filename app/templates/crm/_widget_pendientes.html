@@ -5,11 +5,22 @@
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
-<!-- Launcher del asistente: versión reducida, siempre visible abajo-derecha cuando el panel grande está cerrado -->
-<div class="pend-launcher" id="pendLauncher" onclick="pendMiniAbrir()" style="display:none;">
-  <div class="pend-lc-head"><span class="pend-lc-dot"></span> Mi Asistente <span class="pend-lc-badge" id="pendLcBadge" style="display:none;">0</span></div>
-  <div class="pend-lc-msg" id="pendLcMsg">Revisando lo importante…</div>
-  <div class="pend-lc-cta">Ver sugerencias ›</div>
+<!-- Toast del asistente: aviso compacto abajo-derecha. Llega con la acción principal;
+     al elegirla se expande solo para mostrar la respuesta; al dar clic (sin botón) abre el panel. -->
+<div class="pend-launcher" id="pendLauncher" style="display:none;">
+  <!-- Compacto: aviso principal + acción rápida -->
+  <div class="pend-toast-main" id="pendToastMain">
+    <div class="pend-toast-card" id="pendToastCard" onclick="pendToastOpenBig(event)">
+      <div class="pend-toast-title" id="pendToastTitle">Revisando lo importante…</div>
+      <div class="pend-toast-row">
+        <div class="pend-toast-desc" id="pendToastDesc"></div>
+        <div class="pend-toast-acts" id="pendToastActs"></div>
+      </div>
+    </div>
+    <div class="pend-toast-more" id="pendToastMore" style="display:none;" onclick="pendToastOpenBig(event)"></div>
+  </div>
+  <!-- Expandido: respuesta / plan de la acción elegida -->
+  <div class="pend-toast-focus" id="pendLcFocus" style="display:none;"></div>
 </div>
 <!-- Mini panel del asistente: se abre al dar clic al launcher; brief + tarjetas con acciones rápidas -->
 <div class="pend-mini" id="pendMini" style="display:none;">
@@ -220,15 +231,25 @@
   .pend-des-kpi-lbl{font-size:.86rem;color:#6b6d76;font-weight:600;margin-top:9px;line-height:1.3;}
   @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
   /* ── Launcher (asistente reducido, siempre visible) ── */
-  .pend-launcher{position:fixed;right:22px;bottom:22px;width:360px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
-    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:15px 17px;cursor:pointer;z-index:900;transition:box-shadow .2s,transform .2s;}
-  .pend-launcher:hover{box-shadow:0 22px 50px rgba(15,23,42,.22);transform:translateY(-2px);}
-  .pend-lc-head{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:800;color:#16181d;margin-bottom:8px;}
+  .pend-launcher{position:fixed;right:22px;bottom:22px;width:440px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
+    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:900;transition:box-shadow .2s,transform .2s;}
+  .pend-launcher.expanded{width:460px;}
   .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
-  .pend-lc-badge{background:#16181d;color:#fff;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;margin-left:auto;}
-  .pend-lc-msg{font-size:.86rem;color:#374151;line-height:1.5;}
-  .pend-lc-msg b{color:#16181d;}
-  .pend-lc-cta{font-size:.78rem;color:#0a84ff;font-weight:700;margin-top:11px;}
+  /* Toast compacto (aviso principal + acción) */
+  .pend-toast-card{cursor:pointer;border-radius:10px;margin:-4px -6px 0;padding:4px 6px;transition:background .12s;}
+  .pend-toast-card:hover{background:#f7f8fa;}
+  .pend-toast-title{font-size:.94rem;font-weight:800;color:#16181d;line-height:1.35;margin-bottom:5px;}
+  .pend-toast-row{display:flex;align-items:center;gap:12px;}
+  .pend-toast-desc{flex:1;min-width:0;font-size:.83rem;color:#5b5d63;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pend-toast-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;margin-right:6px;vertical-align:middle;}
+  .pend-toast-acts{flex:none;display:flex;align-items:center;gap:6px;}
+  .pend-toast-btn{border:none;border-radius:10px;padding:9px 15px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .pend-toast-btn.pri{background:#0a84ff;color:#fff;} .pend-toast-btn.pri:hover{background:#0060df;}
+  .pend-toast-btn.txt{background:none;color:#8a8c93;padding:9px 6px;} .pend-toast-btn.txt:hover{color:#16181d;}
+  .pend-toast-more{font-size:.78rem;color:#9a9ca3;margin-top:11px;padding-top:10px;border-top:1px solid #f1f2f4;cursor:pointer;}
+  .pend-toast-more:hover{color:#6b7280;}
+  .pend-toast-focus{max-height:70vh;overflow:auto;}
   .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
   @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
   /* ── Mini panel del asistente (reducido) ── */
@@ -1103,28 +1124,124 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
-  // ── Launcher (asistente reducido, siempre presente abajo-derecha) ──
-  var _lcTotal = -1, _lcTimer = null;
+  // ── Launcher = TOAST (aviso compacto abajo-derecha: launcher → mini → panel grande) ──
+  var _lcTotal = -1, _lcTimer = null, _toastExpanded = false;
   function pendLauncherShow() {
     var ov = el('widgetPendientes'), lc = el('pendLauncher'); if (!lc) return;
     var abierto = ov && ov.classList.contains('active');
     lc.style.display = abierto ? 'none' : '';
+    // Siempre en modo compacto al mostrarse.
+    _toastExpanded = false; lc.classList.remove('expanded');
+    var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
+    var m = el('pendToastMain'); if (m) m.style.display = '';
   }
   window.pendLauncherShow = pendLauncherShow;
+  function _toastTop() { return (_miniData && _miniData.items && _miniData.items[0]) || null; }
+  function _toastHeadline(it) {
+    var t = it.titulo || 'Aviso';
+    if (it.tipo === 'correo' && it.opp_nombre) return t + ' · ' + it.opp_nombre;
+    return t;
+  }
+  function _toastDraw() {
+    var lc = el('pendLauncher'); if (!lc) return;
+    var d = _miniData, items = (d && d.items) || [];
+    var titleEl = el('pendToastTitle'), descEl = el('pendToastDesc'),
+        actsEl = el('pendToastActs'), moreEl = el('pendToastMore');
+    if (!items.length) {
+      if (titleEl) titleEl.textContent = (d && d.resumen) ? d.resumen : 'Todo bajo control';
+      if (descEl) descEl.innerHTML = '';
+      if (actsEl) actsEl.innerHTML = '';
+      if (moreEl) moreEl.style.display = 'none';
+      return;
+    }
+    var it = items[0];
+    if (titleEl) titleEl.textContent = _toastHeadline(it);
+    if (descEl) descEl.innerHTML = '<span class="pend-toast-dot"></span>' + _esc(it.desc || '') +
+      (it.hace ? (' · ' + _esc(it.hace)) : '');
+    if (actsEl) {
+      var pri = (it.acciones || [])[0], acts = '';
+      if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
+      acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastDespues()">Después</button>';
+      actsEl.innerHTML = acts;
+    }
+    if (moreEl) {
+      var extra = items.length - 1;
+      if (extra > 0) { moreEl.style.display = ''; moreEl.textContent = extra + ' aviso' + (extra === 1 ? '' : 's') + ' más se guardaron en el panel para no interrumpirte.'; }
+      else moreEl.style.display = 'none';
+    }
+  }
+  function _toastExpand() {
+    _toastExpanded = true;
+    var m = el('pendToastMain'); if (m) m.style.display = 'none';
+    var f = el('pendLcFocus'); if (f) { f.style.display = ''; f.innerHTML = '<div class="pend-mini-empty">Un momento…</div>'; }
+    var lc = el('pendLauncher'); if (lc) lc.classList.add('expanded');
+  }
+  function _toastCollapse() {
+    _toastExpanded = false;
+    var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
+    var m = el('pendToastMain'); if (m) m.style.display = '';
+    var lc = el('pendLauncher'); if (lc) lc.classList.remove('expanded');
+    _toastDraw();
+  }
+  window.pendToastCollapse = _toastCollapse;
+  window.pendToastOpenBig = function () { pendMiniAbrir(); };
+  window.pendToastDespues = function () {
+    var it = _toastTop(); if (!it) return;
+    var id = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    pendMiniDescartar(it.tipo, id);   // marca atendido (correo) + actualiza _miniData + _feedRedraw → _toastDraw
+  };
+  window.pendToastAct = function (actionName) {
+    var it = _toastTop(); if (!it) return;
+    if (actionName === 'responder') { _toastResponder(it.mail_id); return; }
+    var c = _MINI_ACTS[actionName]; if (!c) return;
+    if (actionName === 'abrir') { try { new Function(c.f(it))(); } catch (e) {} return; }  // navega, no expande
+    _toastExpand();
+    try { new Function(c.f(it))(); } catch (e) { _toastCollapse(); }
+  };
+  function _toastResponder(mailId) {
+    _toastExpand();
+    var box = el('pendLcFocus'); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Redactando una respuesta…</div>';
+    fetch('/app/api/asistente/correo/' + mailId + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo generar.') + '</div>'; return; }
+        box.innerHTML =
+          '<button type="button" class="pend-foc-back" onclick="pendToastCollapse()">‹ Volver</button>' +
+          '<div class="pend-foc-lbl">Respuesta sugerida</div>' +
+          '<textarea class="pend-foc-in pend-foc-sel" id="toastReplyTxt" rows="7">' + _esc(d.borrador || '') + '</textarea>' +
+          '<div class="pend-foc-acts">' +
+            '<button type="button" class="pend-foc-btn pri" onclick="pendToastAbrirCorreo(' + mailId + ')">Abrir en correo</button>' +
+            '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse()">Cancelar</button>' +
+          '</div>' +
+          '<div class="pend-foc-note">Revísala; se abre en Correo para enviarla.</div>';
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al redactar.</div>'; });
+  }
+  window.pendToastAbrirCorreo = function (mailId) {
+    var t = el('toastReplyTxt'), draft = t ? t.value : '';
+    _toastCollapse();
+    _abrirMailConBorrador(mailId, draft);
+  };
   function pendFeedRefresh() {
+    // No pisar datos si el usuario está en el mini/panel o en una vista enfocada.
+    var mini = el('pendMini'); if (mini && mini.style.display !== 'none') return;
+    if (_toastExpanded || _oppDraft || _updDraft || _segDraft) return;
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.success) return;
-        var msg = el('pendLcMsg'); if (msg) msg.textContent = d.resumen || '';
-        var b = el('pendLcBadge');
-        if (b) { if (d.total > 0) { b.textContent = d.total; b.style.display = ''; } else b.style.display = 'none'; }
-        // Si aumentó (llegó algo nuevo), el launcher late para llamar la atención.
-        if (_lcTotal >= 0 && d.total > _lcTotal) {
+        var prev = _lcTotal;
+        _miniData = d; _lcTotal = d.total;
+        _toastDraw();
+        // Si aumentó (llegó algo nuevo), el toast late para llamar la atención.
+        if (prev >= 0 && d.total > prev) {
           var lc = el('pendLauncher');
           if (lc && lc.style.display !== 'none') { lc.classList.remove('pulse'); void lc.offsetWidth; lc.classList.add('pulse'); }
         }
-        _lcTotal = d.total;
       }).catch(function () {});
   }
   window.pendFeedRefresh = pendFeedRefresh;
@@ -1145,7 +1262,8 @@
   // ── Mini panel del asistente (nivel intermedio: launcher → mini → panel grande) ──
   var _miniData = null, _miniTab = 'todo';
   window.pendMiniAbrir = function () {
-    var lc = el('pendLauncher'); if (lc) lc.style.display = 'none';
+    _toastExpanded = false;
+    var lc = el('pendLauncher'); if (lc) { lc.style.display = 'none'; lc.classList.remove('expanded'); }
     var mini = el('pendMini'); if (!mini) return;
     mini.style.display = 'flex';
     if (_miniData) { _miniDraw(); }
@@ -1232,6 +1350,7 @@
   // Contenedor de feed activo (mini panel o columna derecha del panel grande),
   // para pintar la vista enfocada donde el usuario está mirando.
   function _activeFeedBox() {
+    if (_toastExpanded) return el('pendLcFocus');
     var mini = el('pendMini');
     if (mini && mini.style.display !== 'none') return el('pendMiniBody');
     var ov = el('widgetPendientes');
@@ -1455,7 +1574,10 @@
   function _feedReloadActive() {
     var mini = el('pendMini');
     if (mini && mini.style.display !== 'none') { _miniData = null; _miniLoad(); return; }
-    if (window.pendAsisFeedLoad) pendAsisFeedLoad();
+    var ov = el('widgetPendientes');
+    if (ov && ov.classList.contains('active')) { if (window.pendAsisFeedLoad) pendAsisFeedLoad(); return; }
+    // Toast: recargar y redibujar el aviso compacto.
+    _toastExpanded = false; pendFeedRefresh();
   }
   // ── Agendar seguimiento (sin IA): sugiere fecha/hora libre y crea la actividad ──
   var _segDraft = null;
@@ -1560,6 +1682,9 @@
     box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + cards;
   }
   function _feedRedraw() {
+    if (_toastExpanded) { _toastCollapse(); return; }
+    var lc = el('pendLauncher');
+    if (lc && lc.style.display !== 'none') _toastDraw();
     var mini = el('pendMini'); if (mini && mini.style.display !== 'none') _miniDraw();
     var asis = el('pendAsisFeed'), ov = el('widgetPendientes');
     if (asis && ov && ov.classList.contains('active')) _asisDraw();
