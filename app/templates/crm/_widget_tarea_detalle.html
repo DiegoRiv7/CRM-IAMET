@@ -203,6 +203,41 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     grid-template-columns: 1fr;
     gap: 14px;
 }
+
+/* ═══ Que no sobre lienzo ═══
+   Antes quedaba una franja gris muerta entre las tarjetas y el compositor:
+   Actividad no crecía y el hueco se lo comía el fondo. Ahora la columna es
+   flex y Actividad se estira hasta el compositor. */
+.crm-tw-main-scroll { display: flex; flex-direction: column; }
+.crm-tw-card.crm-tw-activity {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+.crm-tw-card.crm-tw-activity .crm-tw-feed { flex: 1; }
+/* El "sin comentarios" se centra en el espacio libre en vez de quedar
+   pegado arriba con un vacío enorme debajo. */
+.crm-tw-feed-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    font-size: 0.85rem;
+    padding: 1rem;
+}
+
+/* ═══ Compositor con más cuerpo ═══
+   Era una franja delgada; siendo el lugar donde se escribe merece presencia. */
+.crm-tw-tray { padding: 6px 24px 20px; }
+.crm-tw-tray-box { padding: 12px 14px; border-radius: 16px; }
+.crm-tw-tray-input, .crm-task-comment-textarea { font-size: 14px; min-height: 48px; }
+.crm-tw-tray-bottom { padding-top: 4px; }
+
+/* La barra de arriba se alinea con el contenido: el botón termina justo
+   donde terminan los cuadros de la derecha. */
+.crm-tw-duebar { padding: 11px 20px 11px 24px; }
 </style>
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">

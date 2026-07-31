@@ -10338,7 +10338,7 @@
                         };
                         document.addEventListener('click', feed._menuClose);
                     } else {
-                        feed.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.85rem;">No hay comentarios aún.</div>';
+                        feed.innerHTML = '<div class="crm-tw-feed-empty">No hay comentarios aún.</div>';
                     }
                 })
                 .catch(function (err) {
