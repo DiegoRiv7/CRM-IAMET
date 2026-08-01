@@ -6806,6 +6806,39 @@ class AvisoPospuesto(models.Model):
         return f'{self.usuario_id} · {self.tipo} {self.ref_id} → {self.hasta}'
 
 
+class CorreoAnalisis(models.Model):
+    """Veredicto del asistente sobre un correo recibido — se calcula UNA sola vez
+    y se persiste (nunca se re-analiza en cada refresh del feed).
+
+    fuente 'reglas' = filtros deterministas gratis (spam/promo/auto-respuesta o
+    fallback si la IA está apagada); 'ia' = clasificado por el LLM leyendo
+    remitente + asunto + cuerpo. El feed del asistente consume `categoria` para
+    decidir qué tarjeta mostrar y `resumen` como línea de contexto."""
+    CATEGORIA_CHOICES = [
+        ('venta', 'Posible venta nueva'),
+        ('hito', 'Factura / orden / pago'),
+        ('respuesta', 'Requiere respuesta'),
+        ('info', 'Informativo'),
+        ('ruido', 'Ruido'),
+    ]
+    correo = models.OneToOneField(MailCorreo, on_delete=models.CASCADE, related_name='analisis')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='correos_analizados')
+    categoria = models.CharField(max_length=12, choices=CATEGORIA_CHOICES)
+    resumen = models.CharField(max_length=200, blank=True, default='')
+    requiere_respuesta = models.BooleanField(default=False)
+    confianza = models.FloatField(default=0.0)
+    fuente = models.CharField(max_length=8, default='reglas')   # 'reglas' | 'ia'
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['usuario', 'categoria'])]
+        verbose_name = 'Análisis de correo'
+        verbose_name_plural = 'Análisis de correos'
+
+    def __str__(self):
+        return f'mail {self.correo_id} → {self.categoria} ({self.fuente})'
+
+
 class ReplayMensual(models.Model):
     """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
     (usuario, mes, anio): el mes ya cerró, los datos son finales."""

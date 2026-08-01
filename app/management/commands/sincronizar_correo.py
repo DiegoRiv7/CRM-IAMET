@@ -59,6 +59,19 @@ class Command(BaseCommand):
                         f'{conexion.correo_electronico}: {nuevos} nuevos, '
                         f'{acciones} acciones aplicadas, {flags} flags actualizados'
                     )
+                    # Mi Asistente: clasificar lo recién llegado (IA con tope, 1 sola
+                    # vez por correo) para que el veredicto ya esté listo cuando el
+                    # widget pregunte por el feed.
+                    if nuevos:
+                        try:
+                            from app.views_crm import analizar_correos_recientes
+                            analizados = analizar_correos_recientes(conexion.usuario)
+                            if analizados:
+                                self.stdout.write(
+                                    f'{conexion.correo_electronico}: {analizados} correos analizados'
+                                )
+                        except Exception as e:
+                            self.stderr.write(f'{conexion.correo_electronico}: análisis falló ({e})')
                 except Exception as e:
                     self.stderr.write(f'{conexion.correo_electronico}: error ({e})')
                 finally:

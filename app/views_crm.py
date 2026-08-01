@@ -7750,6 +7750,218 @@ def _cor_fetch_cuerpos(user, correos):
     return out
 
 
+def _cor_limpiar_asunto(asunto):
+    """Asunto sin ruido: quita etiquetas tipo [EXTERNAL]/[EXTERNO]/[SPAM] y
+    prefijos Re:/RV:/Fw: aunque vengan encadenados ("[EXTERNAL]Re: RV: ...")."""
+    import re as _re
+    s = (asunto or '').strip()
+    prev = None
+    while s != prev:
+        prev = s
+        s = _re.sub(r'^\s*\[[^\]]{0,24}\]\s*', '', s)
+        s = _re.sub(r'^\s*((re|rv|fw|fwd)\s*:\s*)+', '', s, flags=_re.IGNORECASE)
+    return s.strip()
+
+
+# ── Análisis persistente de correos (precisión del asistente) ─────────────────
+# Pipeline de 3 etapas para que la IA NO queme créditos:
+#   0. Filtros deterministas gratis (spam / auto-respuesta / promo) → 'ruido'.
+#   1. Candidatos: se baja el cuerpo UNA vez (PEEK) y se guarda en cuerpo_texto.
+#   2. UN solo llamado de IA por LOTE clasifica los candidatos; el veredicto se
+#      persiste en CorreoAnalisis y ese correo no se vuelve a analizar jamás.
+# Si la IA está apagada (AsistenteConfig.activo) o falla, cae a las reglas por
+# keywords de siempre (fuente='reglas', confianza baja).
+
+_COR_ANA_MAX_IA = 8          # correos nuevos que clasifica la IA por ciclo del feed
+
+
+def _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres):
+    """Veredicto SOLO con reglas (fallback sin IA). Devuelve (categoria, requiere, conf)."""
+    score, motivos, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                     known_emails, known_domains, cliente_nombres)
+    if score <= 0:
+        return 'ruido', False, 0.6
+    if _cor_es_hito(m.asunto, m.cuerpo_texto):
+        return 'hito', True, 0.5
+    if score >= 3 and 'negocio' in motivos:
+        return 'venta', True, 0.4
+    if score >= 3:
+        return 'respuesta', True, 0.4
+    return 'info', False, 0.3
+
+
+def _cor_analisis_ia(lote, modelo=None):
+    """Clasifica un LOTE de correos en UNA sola llamada al LLM.
+    lote = [{'id', 'de', 'asunto', 'cuerpo'}]. Devuelve {id: verdict} o {} si falla."""
+    import json as _json
+    if not lote:
+        return {}
+    try:
+        from .asistente_provider import chat
+    except Exception:
+        return {}
+    sys = (
+        "Eres el clasificador de correos del asistente de un CRM de ventas industriales. "
+        "Para CADA correo (clave = su id) decide UNA categoría:\n"
+        "- 'venta': el remitente pide cotización, precios, disponibilidad o quiere comprar algo "
+        "NUEVO — amerita crear una oportunidad de venta.\n"
+        "- 'hito': factura, orden de compra (firmada o no), confirmación o liberación de un "
+        "pedido, pago, anticipo o comprobante — es el AVANCE de una venta que ya va en curso, "
+        "NO una venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito.\n"
+        "- 'respuesta': correo legítimo de negocio que espera respuesta del vendedor, pero no "
+        "es venta nueva ni hito (dudas, coordinación, información solicitada, quejas).\n"
+        "- 'info': legítimo pero solo informa; no requiere acción del vendedor.\n"
+        "- 'ruido': promoción, newsletter, notificación automática, spam.\n"
+        "Además escribe 'resumen': UNA frase corta en español (máx 140 caracteres), natural, "
+        "que diga qué pide o informa el remitente. Sin prefijos 'Re:' ni etiquetas "
+        "'[EXTERNAL]'. No inventes nada que no esté en el correo.\n"
+        "Devuelve SOLO JSON válido: {\"items\": {\"<id>\": {\"categoria\": \"...\", "
+        "\"resumen\": \"...\", \"requiere_respuesta\": true, \"confianza\": 0.0}}}"
+    )
+    facts = [{'id': d['id'], 'de': d['de'], 'asunto': d['asunto'], 'cuerpo': d['cuerpo']}
+             for d in lote]
+    usr = 'Correos (JSON):\n' + _json.dumps(facts, ensure_ascii=False)
+    try:
+        resp = chat(messages=[{'role': 'system', 'content': sys},
+                              {'role': 'user', 'content': usr}],
+                    model=modelo, temperature=0.1, max_tokens=1500)
+        txt = (resp.get('text') or '').strip()
+        if txt.startswith('```'):
+            txt = txt.strip('`')
+            if txt.lower().startswith('json'):
+                txt = txt[4:]
+        data = _json.loads(txt)
+        items = data.get('items') or {}
+    except Exception:
+        return {}
+    validas = {'venta', 'hito', 'respuesta', 'info', 'ruido'}
+    out = {}
+    for k, v in items.items():
+        try:
+            mid = int(k)
+        except (TypeError, ValueError):
+            continue
+        cat = (v.get('categoria') or '').strip().lower()
+        if cat not in validas:
+            continue
+        try:
+            conf = max(0.0, min(1.0, float(v.get('confianza') or 0)))
+        except (TypeError, ValueError):
+            conf = 0.0
+        out[mid] = {'categoria': cat, 'resumen': (v.get('resumen') or '').strip()[:200],
+                    'requiere_respuesta': bool(v.get('requiere_respuesta')), 'confianza': conf}
+    return out
+
+
+def _cor_asegurar_analisis(user, correos, known, max_ia=_COR_ANA_MAX_IA):
+    """Garantiza que los correos dados tengan CorreoAnalisis y devuelve {mail_id: analisis}.
+
+    Solo trabaja sobre los que aún NO tienen análisis: filtros gratis primero, cuerpo
+    por IMAP (con tope) para los candidatos, y UNA llamada de IA por lote. Los que no
+    alcancen el cupo de IA en este ciclo quedan para el siguiente (el feed mientras
+    tanto usa las reglas de siempre)."""
+    from .models import CorreoAnalisis, AsistenteConfig
+    known_emails, known_domains, cliente_nombres = known
+    ids = [m.id for m in correos]
+    if not ids:
+        return {}
+    res = {a.correo_id: a for a in CorreoAnalisis.objects.filter(correo_id__in=ids)}
+    pendientes = [m for m in correos if m.id not in res]
+    if not pendientes:
+        return res
+
+    def _guardar(m, cat, resumen, req, conf, fuente):
+        try:
+            a, _ = CorreoAnalisis.objects.get_or_create(
+                correo=m, defaults={'usuario': user, 'categoria': cat, 'resumen': resumen,
+                                    'requiere_respuesta': req, 'confianza': conf, 'fuente': fuente})
+            res[m.id] = a
+        except Exception:
+            pass
+
+    # Etapa 0 — filtros deterministas gratis: ruido evidente NO gasta cuerpo ni IA.
+    candidatos = []
+    for m in pendientes:
+        rem = _cor_norm(m.remitente_email or '').strip()
+        asu = _cor_norm(m.asunto or '')
+        if any(bad in rem for bad in _COR_SPAM_SENDER) or any(a in asu for a in _COR_AUTO):
+            _guardar(m, 'ruido', '', False, 0.9, 'reglas')
+            continue
+        candidatos.append(m)
+
+    # Etapa 1 — cuerpo: bajar por IMAP (PEEK, con tope) los que no lo tengan y
+    # PERSISTIRLO en cuerpo_texto (sin marcar cuerpo_cargado: al abrir el correo
+    # se baja completo con HTML y adjuntos como siempre).
+    sin_cuerpo = [m for m in candidatos if not (m.cuerpo_texto or '').strip()]
+    con_intento = set(m.id for m in sin_cuerpo[:_COR_BODY_FETCH_CAP])
+    if sin_cuerpo:
+        cuerpos = _cor_fetch_cuerpos(user, sin_cuerpo[:_COR_BODY_FETCH_CAP])
+        for m in sin_cuerpo:
+            texto = cuerpos.get(m.id)
+            if texto:
+                m.cuerpo_texto = texto[:100000]
+                try:
+                    m.save(update_fields=['cuerpo_texto'])
+                except Exception:
+                    pass
+
+    # Etapa 2 — IA por lote (solo si está activa). Fallback: reglas.
+    ia_activa, modelo = False, None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        ia_activa = bool(cfg and cfg.activo)
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        ia_activa = False
+    if ia_activa:
+        lote_ms = candidatos[:max_ia]
+        lote = []
+        for m in lote_ms:
+            cuerpo = _cor_extracto(m.cuerpo_texto or '', limite=600) or (m.cuerpo_texto or '')[:600]
+            lote.append({'id': m.id,
+                         'de': '%s <%s>' % (m.remitente_nombre or '', m.remitente_email or ''),
+                         'asunto': _cor_limpiar_asunto(m.asunto), 'cuerpo': cuerpo})
+        verdicts = _cor_analisis_ia(lote, modelo)
+        for m in lote_ms:
+            v = verdicts.get(m.id)
+            if v:
+                _guardar(m, v['categoria'], v['resumen'], v['requiere_respuesta'],
+                         v['confianza'], 'ia')
+            else:
+                # La IA no contestó por este correo (o falló el lote) → reglas,
+                # para no reintentar cada 60s y no dejar el feed colgado.
+                cat, req, conf = _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres)
+                _guardar(m, cat, '', req, conf, 'reglas')
+        # Los candidatos que no cupieron en el lote quedan SIN análisis: el feed
+        # los muestra con reglas y la IA los alcanza en el siguiente ciclo.
+    else:
+        for m in candidatos:
+            # Sin cuerpo y sin haberlo intentado bajar aún → dejarlo para el
+            # siguiente ciclo (no fijar un veredicto a ciegas).
+            if not (m.cuerpo_texto or '').strip() and m.id not in con_intento:
+                continue
+            cat, req, conf = _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres)
+            _guardar(m, cat, '', req, conf, 'reglas')
+    return res
+
+
+def analizar_correos_recientes(user, horas=_COR_VENTANA_HORAS, max_ia=_COR_ANA_MAX_IA):
+    """Analiza (si falta) los correos recientes del usuario y devuelve cuántos quedaron
+    con veredicto. La llama el worker de sync justo después de bajar correos nuevos,
+    para que cuando el feed del asistente pregunte el análisis YA esté hecho."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailCorreo
+    cutoff = timezone.now() - timedelta(hours=horas)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff, analisis__isnull=True).order_by('-fecha_envio')[:60])
+    if not inbox:
+        return 0
+    res = _cor_asegurar_analisis(user, inbox, _cor_conocidos(), max_ia=max_ia)
+    return sum(1 for m in inbox if m.id in res)
+
+
 def _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos):
     """Construye el dict de un correo importante para el frontend.
     respondido_hoy: ya lo respondiste HOY (hay un SENT de hoy posterior a este correo)."""
@@ -7837,6 +8049,7 @@ def api_asistente_correos(request):
 
     pend, done = [], []
     borderline = []   # (m, score_prelim): casi importantes SIN cuerpo aún → leerlo por IMAP
+    considerar = []
     seen_hk = set()
     for m in inbox:
         hk = m.hilo_key
@@ -7847,6 +8060,36 @@ def api_asistente_correos(request):
         mostrar, respondido_hoy = _estado_hilo(m)
         if not mostrar:
             continue
+        considerar.append((m, respondido_hoy))
+
+    # Análisis persistente — el MISMO veredicto que usa el toast (1 vez por correo).
+    ana = _cor_asegurar_analisis(user, [m for m, _r in considerar],
+                                 (known_emails, known_domains, cliente_nombres))
+
+    for m, respondido_hoy in considerar:
+        a = ana.get(m.id)
+        if a is not None:
+            if a.categoria in ('ruido', 'info'):
+                continue
+            score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                            known_emails, known_domains, cliente_nombres)
+            item, completada = _cor_item(m, max(score, 3), motivos, kw, m.cuerpo_texto,
+                                         now, respondido_hoy, atendidos)
+            # La redacción del análisis (IA leyó el correo) manda sobre la de keywords.
+            if a.fuente == 'ia':
+                msg = a.resumen or item['mensaje']
+                if a.categoria == 'venta':
+                    msg = ((a.resumen + ' ') if a.resumen else '') + 'Podría ser una venta — no la dejes esperando.'
+                    item['accion'] = 'Responde hoy y, si aplica, crea la oportunidad.'
+                elif a.categoria == 'hito':
+                    msg = a.resumen or 'Llegó una factura u orden de compra.'
+                    item['accion'] = 'Confírmale de recibido y actualiza la venta.'
+                if item['urgente']:
+                    msg = 'Lleva %d días esperando tu respuesta. %s' % (item['dias_espera'], msg)
+                item['mensaje'] = msg
+            (done if completada else pend).append(item)
+            continue
+        # Fallback (aún sin análisis — no alcanzó el cupo de IA): reglas de siempre.
         score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
                                         known_emails, known_domains, cliente_nombres)
         if score >= 3:
@@ -9098,7 +9341,7 @@ def _feed_correos_items(user, limite=6):
 
     def _base_item(m):
         remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
-        asunto = (m.asunto or '').strip()
+        asunto = _cor_limpiar_asunto(m.asunto)
         dias = _dias(m)
         return {
             'tipo': 'correo', 'grupo': 'correo',
@@ -9111,9 +9354,7 @@ def _feed_correos_items(user, limite=6):
     _ORDINAL = {2: 'segunda', 3: 'tercera', 4: 'cuarta', 5: 'quinta'}
 
     def _asunto_corto(m):
-        import re as _re
-        s = _re.sub(r'^\s*((re|rv|fw|fwd)\s*:\s*)+', '', (m.asunto or '').strip(), flags=_re.IGNORECASE)
-        return s[:60]
+        return _cor_limpiar_asunto(m.asunto)[:60]
 
     def _ctx_insiste(m):
         n = insiste.get(m.hilo_key or '', 0)
@@ -9136,9 +9377,9 @@ def _feed_correos_items(user, limite=6):
         return ''
 
     def _quote(m):
-        return _cor_extracto(m.cuerpo_texto) if m.cuerpo_cargado else ''
+        return _cor_extracto(m.cuerpo_texto or '')
 
-    scored = []       # correos NO ligados, importantes, sin responder
+    sueltos = []      # correos NO ligados sin responder (candidatos a analizar)
     llego = []        # Caso 3-A: correos ligados que LLEGARON y aún no respondes
     seen_hk = set()
     for m in inbox:
@@ -9161,10 +9402,26 @@ def _feed_correos_items(user, limite=6):
         # ── Correos NO ligados ──
         if respondido:
             continue
-        score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
-                                        known_emails, known_domains, cliente_nombres)
-        if score >= 3:
-            scored.append((score, m, motivos))
+        sueltos.append(m)
+
+    # Análisis persistente (IA una vez por correo; ver _cor_asegurar_analisis).
+    ana = _cor_asegurar_analisis(user, llego + sueltos,
+                                 (known_emails, known_domains, cliente_nombres))
+
+    scored = []       # (prio, m, analisis|None, motivos)
+    for m in sueltos:
+        a = ana.get(m.id)
+        if a is not None:
+            if a.categoria in ('ruido', 'info'):
+                continue
+            prio = 4 if a.categoria in ('venta', 'hito') else 3
+            scored.append((prio, m, a, set()))
+        else:
+            # Sin análisis todavía (no alcanzó el cupo de IA) → reglas de siempre.
+            score, motivos, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                             known_emails, known_domains, cliente_nombres)
+            if score >= 3:
+                scored.append((min(score, 4), m, None, motivos))
 
     # ── Caso 3-B: RESPONDISTE un correo ligado a una oportunidad ──
     # Se detecta desde los ENVIADOS (no desde INBOX): siempre que respondas un correo
@@ -9237,37 +9494,50 @@ def _feed_correos_items(user, limite=6):
         item['opp_id'] = m.oportunidad_id
         opp = m.oportunidad
         item['opp_nombre'] = (opp.oportunidad if opp else '')
-        if _cor_es_hito(m.asunto, m.cuerpo_texto):
+        a = ana.get(m.id)
+        resumen = (a.resumen if a else '') or ''
+        # ¿Es hito? La IA manda cuando ya leyó el correo; si no, keywords.
+        es_hito = (a.categoria == 'hito') if (a and a.fuente == 'ia') else _cor_es_hito(m.asunto, m.cuerpo_texto)
+        if es_hito:
             item['categoria'] = 'Factura / orden recibida'
             item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
             item['headline'] = 'Llegó factura u orden sobre %s' % (item['opp_nombre'] or 'una oportunidad')
-            item['contexto'] = ('Buen momento para actualizarla. ' + _ctx_opp(opp)).strip()
+            item['contexto'] = (' '.join(x for x in [
+                resumen, 'Buen momento para actualizarla.', _ctx_opp(opp)] if x)).strip()
         else:
             item['categoria'] = 'Correo de una oportunidad'
             item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
             item['headline'] = '%s te escribió sobre %s' % (item['titulo'], item['opp_nombre'] or 'una oportunidad')
-            item['contexto'] = (' '.join(x for x in [_ctx_insiste(m), _ctx_opp(opp)] if x)).strip()
+            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m), _ctx_opp(opp)] if x)).strip()
         item['quote'] = _quote(m)
         out.append(item)
 
-    # 3) Correos no ligados (Caso 1) — posible venta vs. correo importante.
-    for score, m, motivos in scored:
+    # 3) Correos no ligados (Caso 1) — el análisis manda: venta / hito / respuesta.
+    for _prio, m, a, motivos in scored:
         if len(out) >= limite:
             break
         item = _base_item(m)
         dias = item['dias_espera']
         asunto_c = _asunto_corto(m)
-        if 'negocio' in motivos:             # posible venta nueva → crear oportunidad
+        resumen = (a.resumen if a else '') or ''
+        cat = a.categoria if a else ('venta' if 'negocio' in motivos else 'respuesta')
+        if cat == 'venta':                   # posible venta nueva → crear oportunidad
             item['categoria'] = 'Posible venta nueva'
             item['acciones'] = ['crear_oportunidad', 'responder', 'no_importa']
             item['headline'] = '%s trae una posible venta' % item['titulo']
             item['contexto'] = (' '.join(x for x in [
-                ('Escribió sobre «%s».' % asunto_c) if asunto_c else '', _ctx_insiste(m)] if x)).strip()
+                resumen or (('Escribió sobre «%s».' % asunto_c) if asunto_c else ''),
+                _ctx_insiste(m)] if x)).strip()
+        elif cat == 'hito':                  # factura/orden/pago SIN oportunidad ligada
+            item['categoria'] = 'Factura / orden recibida'
+            item['acciones'] = ['responder', 'no_importa']
+            item['headline'] = '%s te envió una factura u orden' % item['titulo']
+            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m)] if x)).strip()
         else:                                # correo importante sin responder → responder
             item['categoria'] = ('Lleva %d días sin responder' % dias) if item['urgente'] else 'Correo sin responder'
             item['acciones'] = ['responder', 'no_importa']
             item['headline'] = '%s espera tu respuesta' % item['titulo'] + ((' sobre %s' % asunto_c) if asunto_c else '')
-            item['contexto'] = _ctx_insiste(m)
+            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m)] if x)).strip()
         item['quote'] = _quote(m)
         out.append(item)
     return out[:limite]
