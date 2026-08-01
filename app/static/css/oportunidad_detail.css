@@ -371,9 +371,19 @@ body {
 }
 .opp-v2 .wo-proy-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .opp-v2 .wo-proy-badge:hover { filter: brightness(1.12); }
-/* El badge de pipeline, ya junto al nombre: sin el margen que traía de
-   cuando vivía encima del título. */
-.opp-v2 .wo-badge-titulo { margin: 0; flex-shrink: 0; }
+/* El badge de pipeline, ya junto al nombre: más discreto para no competir
+   con el título. Se reduce por tamaño y peso, no por color — los temas le
+   asignan el suyo con !important y pelearles rompería su paleta. */
+.opp-v2 .wo-badge-titulo {
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 0.58rem;
+    padding: 3px 9px;
+    letter-spacing: 0.06em;
+    opacity: 0.82;
+}
+.opp-v2 .wo-badge-titulo svg { width: 10px; height: 10px; }
+.opp-v2 .wo-badge-titulo:hover { opacity: 1; }
 /* Placeholder de carga: gris neutro, el header es claro en unos temas y
    oscuro en otros. */
 .opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
@@ -537,10 +547,13 @@ body {
     gap: 1.25rem;
     align-items: start;
 }
-.opp-v2 .wo-g-tareas { grid-column: 1; grid-row: 1; }
+.opp-v2 .wo-g-info { grid-column: 1; grid-row: 1; }
+.opp-v2 .wo-g-tareas { grid-column: 2; grid-row: 1; }
 .opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; }
-.opp-v2 .wo-g-info { grid-column: 1; grid-row: 3; }
-.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 1 / span 3; align-self: stretch; }
+.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2; align-self: stretch; }
+/* La conversación deja de ocupar toda la columna (quedaba desproporcionada)
+   pero sigue siendo el cuadro más alto: es donde se trabaja. */
+.opp-v2 .wo-g-conv { min-height: 440px; }
 
 @media (max-width: 900px) {
     .opp-v2 .wo-grid { grid-template-columns: 1fr; }
