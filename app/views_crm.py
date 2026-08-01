@@ -10069,3 +10069,250 @@ def api_pendientes_replay(request):
     return JsonResponse({'success': True, **data})
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULADOR DE CORREOS — banco de pruebas del asistente (solo datos del usuario).
+# Inyecta correos realistas directo a MailCorreo (sin IMAP) para probar los 4
+# casos del asistente y ver el veredicto del análisis en vivo. Los correos usan
+# el dominio simulacion.iamet; api_mail_responder NO manda SMTP a ese dominio.
+# Limpieza total con un botón. Nada de esto toca correos reales.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_SIM_DOMINIO = 'simulacion.iamet'   # mismo literal en views_mail.api_mail_responder
+
+
+def _sim_cliente(user):
+    """Cliente demo (remitente 'conocido' para el análisis). Se crea una vez."""
+    from .models import Cliente
+    c = Cliente.objects.filter(nombre_empresa='[DEMO] Aceros del Norte').first()
+    if not c:
+        c = Cliente.objects.create(
+            nombre_empresa='[DEMO] Aceros del Norte', asignado_a=user,
+            email='compras@%s' % _SIM_DOMINIO)
+    return c
+
+
+def _sim_correo(user, nombre, email, asunto, cuerpo, opp=None, minutos_atras=0):
+    """Inyecta un correo 'recibido' con cuerpo listo (no requiere IMAP)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailCorreo, MailConexion
+    cx = MailConexion.objects.filter(usuario=user, activo=True).first()
+    now = timezone.now() - timedelta(minutes=minutos_atras)
+    stamp = int(now.timestamp() * 1000)
+    return MailCorreo.objects.create(
+        usuario=user, conexion=cx,
+        uid_imap='sim_%d' % stamp,                      # no numérico → el worker lo ignora
+        message_id='<sim-%d@%s>' % (stamp, _SIM_DOMINIO),
+        carpeta_imap='INBOX', carpeta_display='INBOX',
+        remitente_nombre=nombre, remitente_email=email,
+        destinatarios_json='[]', asunto=asunto,
+        cuerpo_texto=cuerpo, cuerpo_html='', cuerpo_cargado=True,
+        leido=False, fecha_envio=now, oportunidad=opp,
+    )
+
+
+def _sim_opp(user, titulo, monto=185000, prob=60):
+    """Oportunidad demo en etapa avanzada (para escenarios ligados)."""
+    from django.utils import timezone
+    from .models import TodoItem, EtapaPipeline
+    existente = TodoItem.objects.filter(usuario=user, oportunidad=titulo).first()
+    if existente:
+        return existente
+    etapas = list(EtapaPipeline.objects.filter(pipeline='runrate', activo=True).order_by('orden'))
+    if etapas:
+        ep = etapas[len(etapas) // 2]           # etapa intermedia-avanzada
+        etapa_c, etapa_col = ep.nombre, ep.color
+    else:
+        etapa_c, etapa_col = 'Cotización', '#FFFFFF'
+    now_dt = timezone.localtime()
+    return TodoItem.objects.create(
+        usuario=user, oportunidad=titulo, cliente=_sim_cliente(user),
+        monto=monto, probabilidad_cierre=prob,
+        mes_cierre=str(now_dt.month).zfill(2), anio_cierre=now_dt.year,
+        area='SISTEMAS', producto='SOFTWARE', tipo_negociacion='runrate',
+        etapa_corta=etapa_c, etapa_completa=etapa_c, etapa_color=etapa_col, po_number='',
+    )
+
+
+# Escenarios: cada uno inyecta datos y declara qué DEBERÍA hacer el asistente,
+# para comparar contra lo que realmente haga.
+_SIM_ESCENARIOS = {
+    'venta': {
+        'nombre': 'Posible venta nueva',
+        'esperado': "Toast 'Posible venta nueva' con botón Crear oportunidad. Veredicto IA: venta.",
+    },
+    'duda': {
+        'nombre': 'Cliente con duda (menciona "pedido")',
+        'esperado': "Toast 'espera tu respuesta' (Responder). Veredicto: respuesta — NO venta ni hito aunque diga 'pedido'.",
+    },
+    'liberacion': {
+        'nombre': 'Liberación de pedido (el caso real)',
+        'esperado': "Veredicto: hito ('Factura / orden recibida'), NO 'Posible venta nueva'. Antes fallaba.",
+    },
+    'ligado': {
+        'nombre': 'Correo ligado a oportunidad (caso 3-A)',
+        'esperado': "Toast 'X te escribió sobre [opp]' con Responder. Al RESPONDERLO desde Correo → 'Respondiste — ¿actualizo?' (3-B).",
+    },
+    'hito_ligado': {
+        'nombre': 'OC firmada ligada a oportunidad',
+        'esperado': "Toast 'Factura / orden recibida' con Actualizar oportunidad de inmediato (sin esperar respuesta).",
+    },
+    'insiste': {
+        'nombre': 'Cliente insiste (2do correo del hilo)',
+        'esperado': "Toast con contexto 'Es la segunda vez que te escribe sin respuesta.'",
+    },
+    'ruido': {
+        'nombre': 'Promoción / newsletter',
+        'esperado': "NADA: veredicto ruido, no debe salir notificación. Si sale, hay fuga de precisión.",
+    },
+}
+
+
+def _sim_ejecutar(user, esc):
+    """Crea los datos del escenario. Devuelve descripción de lo inyectado."""
+    dom = _SIM_DOMINIO
+    _sim_cliente(user)   # asegura remitente conocido
+    if esc == 'venta':
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Solicitud de cotización — refacciones prensa hidráulica',
+            'Buenas tardes:\n\nPor este medio le solicito cotización de 12 pzas de sellos '
+            'hidráulicos serie HD-220 y 4 juegos de empaques para nuestra prensa Schuler. '
+            '¿Podría indicarnos precio, tiempo de entrega y condiciones de pago?\n\n'
+            'Quedo pendiente de su pronta respuesta.\n\nLaura Mendoza\nCompras — Aceros del Norte')
+        return {'correo_id': m.id, 'detalle': 'Correo de cotización inyectado (remitente conocido).'}
+    if esc == 'duda':
+        m = _sim_correo(
+            user, 'Jorge Salas', 'jsalas@%s' % dom,
+            'Duda sobre nuestro pedido en curso',
+            'Estimado proveedor:\n\nSobre el pedido que levantamos la semana pasada, '
+            '¿me confirma si la entrega sigue programada para el viernes? Necesitamos '
+            'coordinar al personal de recibo en planta.\n\nSaludos,\nJorge Salas')
+        return {'correo_id': m.id, 'detalle': 'Duda de cliente inyectada (dice "pedido" pero NO es venta ni hito).'}
+    if esc == 'liberacion':
+        m = _sim_correo(
+            user, 'Patricia Núñez', 'pnunez@%s' % dom,
+            'Confirmo la liberación de su pedido',
+            'Buen día:\n\nLe confirmo que su pedido No. 88412 quedó liberado por nuestro '
+            'departamento de calidad y ya puede programar el embarque. El material fue '
+            'aprobado sin observaciones.\n\nSaludos cordiales,\nPatricia Núñez')
+        return {'correo_id': m.id, 'detalle': 'El caso real que antes salía como "posible venta". A ver qué dice ahora.'}
+    if esc == 'ligado':
+        opp = _sim_opp(user, '[DEMO] Suministro de rodamientos SKF')
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Cotización rodamientos SKF — comentarios',
+            'Buenas tardes:\n\nRevisamos su cotización de los rodamientos SKF. El precio nos '
+            'parece competitivo pero necesitamos confirmar si el tiempo de entrega puede '
+            'bajar a 3 semanas; es condición de nuestra gerencia para autorizar.\n\n'
+            '¿Lo ve factible?\n\nLaura Mendoza', opp=opp)
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'Oportunidad demo + correo ligado. Respóndelo desde Correo para disparar el 3-B.'}
+    if esc == 'hito_ligado':
+        opp = _sim_opp(user, '[DEMO] Bandas transportadoras L4', monto=420000, prob=80)
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Orden de compra OC-4512 firmada',
+            'Estimado proveedor:\n\nAdjunto encontrará la orden de compra OC-4512 debidamente '
+            'firmada por nuestra dirección, correspondiente a las bandas transportadoras de la '
+            'línea 4. Favor de confirmar recepción y fecha estimada de entrega.\n\n'
+            'Saludos,\nLaura Mendoza', opp=opp)
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'OC firmada ligada a oportunidad de $420,000. Debe ofrecer actualizar YA.'}
+    if esc == 'insiste':
+        asunto = 'Seguimiento a muestra de material'
+        _sim_correo(
+            user, 'Marco Treviño', 'mtrevino@%s' % dom, asunto,
+            'Buen día:\n\n¿Tuvo oportunidad de revisar lo de la muestra de material que le '
+            'comenté? Nos urge definir para arrancar pruebas.\n\nMarco Treviño',
+            minutos_atras=60 * 24 * 3)
+        m = _sim_correo(
+            user, 'Marco Treviño', 'mtrevino@%s' % dom, 'Re: ' + asunto,
+            'Estimado:\n\nLe reitero el correo anterior sobre la muestra de material. '
+            'Seguimos sin respuesta y el proyecto está detenido por este tema. '
+            'Agradezco me confirme cualquier avance.\n\nMarco Treviño')
+        return {'correo_id': m.id, 'detalle': 'Hilo con 2 correos sin responder (el 1º hace 3 días).'}
+    if esc == 'ruido':
+        m = _sim_correo(
+            user, 'Boletín Industrial MX', 'newsletter@promo-%s' % dom,
+            'Webinar gratuito: ahorre 30% en mantenimiento predictivo',
+            'No te pierdas nuestro próximo evento. Aprovecha esta oferta exclusiva y '
+            'regístrate gratis. Da clic para dejar de recibir estos correos o darse de baja.')
+        return {'correo_id': m.id, 'detalle': 'Promo inyectada. NO debería generar notificación.'}
+    return None
+
+
+@login_required
+def vista_simulador_correo(request):
+    """GET /app/simulador-correo/ — banco de pruebas del asistente."""
+    return render(request, 'simulador_correo.html', {})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_inyectar(request):
+    """POST {escenario} — inyecta el escenario y analiza al instante."""
+    import json as _json
+    try:
+        esc = (_json.loads(request.body or '{}').get('escenario') or '').strip()
+    except Exception:
+        esc = ''
+    if esc not in _SIM_ESCENARIOS:
+        return JsonResponse({'success': False, 'error': 'Escenario desconocido.'}, status=400)
+    r = _sim_ejecutar(request.user, esc)
+    # Análisis inmediato (mismo pipeline que el worker) para no esperar 3 min.
+    try:
+        analizar_correos_recientes(request.user)
+    except Exception:
+        pass
+    return JsonResponse({'success': True, 'escenario': esc,
+                         'esperado': _SIM_ESCENARIOS[esc]['esperado'], **(r or {})})
+
+
+@login_required
+def api_sim_estado(request):
+    """GET — correos simulados con su veredicto (auditoría en vivo)."""
+    from .models import MailCorreo
+    rows = []
+    qs = (MailCorreo.objects.filter(
+            usuario=request.user, remitente_email__icontains=_SIM_DOMINIO,
+            carpeta_display='INBOX')
+          .select_related('analisis', 'oportunidad').order_by('-fecha_envio')[:30])
+    for m in qs:
+        a = getattr(m, 'analisis', None)
+        rows.append({
+            'mail_id': m.id, 'de': m.remitente_nombre or m.remitente_email,
+            'asunto': m.asunto, 'ligado': (m.oportunidad.oportunidad if m.oportunidad_id else ''),
+            'veredicto': (a.categoria if a else '— pendiente —'),
+            'resumen': (a.resumen if a else ''),
+            'fuente': (a.fuente if a else ''),
+            'confianza': (round(a.confianza, 2) if a else None),
+        })
+    return JsonResponse({'success': True, 'items': rows})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_limpiar(request):
+    """POST — borra TODO lo simulado del usuario (correos, análisis, opps y cliente demo)."""
+    from django.db.models import Q
+    from .models import MailCorreo, TodoItem, Cliente, Actividad
+    user = request.user
+    correos = MailCorreo.objects.filter(usuario=user).filter(
+        Q(remitente_email__icontains=_SIM_DOMINIO) |
+        Q(uid_imap__startswith='sim_') |
+        Q(destinatarios_json__icontains=_SIM_DOMINIO))
+    n_correos = correos.count()
+    correos.delete()                     # CorreoAnalisis y adjuntos caen en cascada
+    opps = TodoItem.objects.filter(usuario=user, oportunidad__startswith='[DEMO]')
+    opp_ids = list(opps.values_list('id', flat=True))
+    n_acts = 0
+    if opp_ids:
+        n_acts = Actividad.objects.filter(oportunidad_id__in=opp_ids).count()
+        Actividad.objects.filter(oportunidad_id__in=opp_ids).delete()
+    n_opps = len(opp_ids)
+    opps.delete()
+    n_cli = Cliente.objects.filter(nombre_empresa__startswith='[DEMO]').count()
+    Cliente.objects.filter(nombre_empresa__startswith='[DEMO]').delete()
+    return JsonResponse({'success': True, 'correos': n_correos, 'oportunidades': n_opps,
+                         'actividades': n_acts, 'clientes': n_cli})

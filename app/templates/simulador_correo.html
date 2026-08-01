@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de correos — Mi Asistente</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         background: #f4f5f7; color: #1c1c1e; padding: 28px 24px 120px; }
+  .sim-wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+  .sim-sub { color: #6b7280; font-size: 13.5px; margin: 6px 0 22px; max-width: 640px; line-height: 1.5; }
+  .sim-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .sim-btn-clean { background: #fff; border: 1px solid #e5e7eb; color: #b91c1c; border-radius: 10px;
+                   padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .sim-btn-clean:hover { background: #fef2f2; border-color: #fecaca; }
+  .sim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+  .sim-card { background: #fff; border: 1px solid #e8e9ec; border-radius: 14px; padding: 16px;
+              display: flex; flex-direction: column; gap: 8px; }
+  .sim-card h3 { font-size: 14.5px; font-weight: 700; }
+  .sim-card p { font-size: 12.5px; color: #6b7280; line-height: 1.45; flex: 1; }
+  .sim-card button { align-self: flex-start; background: #007AFF; color: #fff; border: 0; border-radius: 9px;
+                     padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .sim-card button:hover { background: #0068d9; }
+  .sim-card button:disabled { opacity: 0.5; cursor: default; }
+  .sim-log { margin-top: 10px; font-size: 12px; color: #0a7d3c; min-height: 15px; }
+  h2 { font-size: 16px; font-weight: 800; margin: 30px 0 4px; }
+  .sim-aud-sub { color: #6b7280; font-size: 12.5px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e8e9ec;
+          border-radius: 14px; overflow: hidden; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+       color: #9ca3af; padding: 10px 12px; border-bottom: 1px solid #eef0f2; background: #fafbfc; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f2f3f5; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  .v-pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700; }
+  .v-venta { background: #e8f5ee; color: #0a7d3c; }
+  .v-hito { background: #fef3e2; color: #b45309; }
+  .v-respuesta { background: #e8f0fe; color: #1a56c4; }
+  .v-info { background: #f3f4f6; color: #6b7280; }
+  .v-ruido { background: #fee2e2; color: #b91c1c; }
+  .v-pend { background: #f3f4f6; color: #9ca3af; }
+  .aud-resumen { color: #4b5563; font-size: 12.5px; margin-top: 3px; }
+  .aud-meta { color: #9ca3af; font-size: 11px; margin-top: 2px; }
+  .aud-ligado { color: #6d28d9; font-size: 11.5px; font-weight: 600; }
+  .sim-vacio { text-align: center; color: #9ca3af; padding: 26px; font-size: 13px; }
+  .sim-nota { margin-top: 18px; font-size: 12px; color: #9ca3af; line-height: 1.5; }
+  a.sim-link { color: #007AFF; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="sim-wrap">
+  <div class="sim-top">
+    <div>
+      <h1>🧪 Simulador de correos — Mi Asistente</h1>
+      <div class="sim-sub">Inyecta correos de prueba directo al sistema (dominio <b>simulacion.iamet</b>, sin
+        tocar tu correo real). El asistente los analiza al instante; abajo ves el veredicto de cada uno y el
+        toast salta aquí mismo. Responde desde <a class="sim-link" href="/app/?tab=correo">Correo</a> para
+        probar el caso "Respondiste — ¿actualizo?".</div>
+    </div>
+    <button class="sim-btn-clean" onclick="simLimpiar()">🗑 Limpiar todo lo simulado</button>
+  </div>
+
+  <div class="sim-grid" id="simGrid"></div>
+
+  <h2>Veredictos del análisis</h2>
+  <div class="sim-aud-sub">Lo que la IA (o las reglas) decidió de cada correo simulado. Se actualiza solo.</div>
+  <table>
+    <thead><tr><th style="width:38%">Correo</th><th style="width:14%">Veredicto</th><th>Qué entendió</th></tr></thead>
+    <tbody id="simAud"><tr><td colspan="3" class="sim-vacio">Aún no hay correos simulados.</td></tr></tbody>
+  </table>
+
+  <div class="sim-nota">
+    · El escenario "ruido" NO debe generar notificación — si el toast salta con él, encontramos una fuga.<br>
+    · "fuente: ia" = el LLM leyó el correo; "fuente: reglas" = lo decidieron los filtros gratis (p. ej. el ruido nunca gasta IA).<br>
+    · "Limpiar" borra correos simulados, sus análisis, las oportunidades [DEMO], sus actividades y el cliente demo.
+  </div>
+</div>
+
+{% include "crm/_widget_pendientes.html" %}
+
+<script>
+(function () {
+  var CSRF = '{{ csrf_token }}';
+  var ESC = [
+    { id: 'venta',       t: 'Posible venta nueva',                 d: 'Cliente conocido pide cotización de refacciones. Debe salir "Posible venta nueva" con botón Crear oportunidad.' },
+    { id: 'duda',        t: 'Cliente con duda (dice "pedido")',    d: 'Pregunta por la entrega de un pedido en curso. Debe ser "espera tu respuesta" — NO venta ni hito aunque diga "pedido".' },
+    { id: 'liberacion',  t: 'Liberación de pedido ⭐',             d: 'El caso real que antes salía como "posible venta". Ahora debe ser hito (Factura / orden recibida).' },
+    { id: 'ligado',      t: 'Correo ligado a oportunidad (3-A)',   d: 'Crea oportunidad demo + correo ligado. Sale "te escribió sobre…". Respóndelo desde Correo y a los ~60s debe salir "Respondiste — ¿actualizo?".' },
+    { id: 'hito_ligado', t: 'OC firmada ligada (hito)',            d: 'Orden de compra firmada sobre una oportunidad de $420,000. Debe ofrecer Actualizar de inmediato, sin esperar tu respuesta.' },
+    { id: 'insiste',     t: 'Cliente insiste (2º correo)',         d: 'Hilo con un correo de hace 3 días + uno de ahora, sin responder. El contexto debe decir "Es la segunda vez que te escribe".' },
+    { id: 'ruido',       t: 'Promoción / newsletter',              d: 'Webinar promocional. NO debe pasar nada: veredicto ruido por filtro gratis, cero notificación, cero gasto de IA.' }
+  ];
+
+  var grid = document.getElementById('simGrid');
+  ESC.forEach(function (e) {
+    var card = document.createElement('div');
+    card.className = 'sim-card';
+    card.innerHTML = '<h3>' + e.t + '</h3><p>' + e.d + '</p>' +
+      '<button id="simB_' + e.id + '" onclick="simInyectar(\'' + e.id + '\')">Inyectar correo</button>' +
+      '<div class="sim-log" id="simL_' + e.id + '"></div>';
+    grid.appendChild(card);
+  });
+
+  window.simInyectar = function (esc) {
+    var b = document.getElementById('simB_' + esc), l = document.getElementById('simL_' + esc);
+    b.disabled = true; l.textContent = 'Inyectando y analizando…'; l.style.color = '#6b7280';
+    fetch('/app/api/simulador/inyectar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ escenario: esc })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      b.disabled = false;
+      if (d.success) { l.style.color = '#0a7d3c'; l.textContent = '✓ ' + (d.detalle || 'Inyectado.'); simRefrescar(); }
+      else { l.style.color = '#b91c1c'; l.textContent = d.error || 'Error'; }
+    }).catch(function () { b.disabled = false; l.style.color = '#b91c1c'; l.textContent = 'Error de red'; });
+  };
+
+  window.simLimpiar = function () {
+    if (!confirm('¿Borrar todos los correos, oportunidades y datos simulados?')) return;
+    fetch('/app/api/simulador/limpiar/', {
+      method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': CSRF }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.success) alert('Limpio: ' + d.correos + ' correos, ' + d.oportunidades + ' oportunidades, ' +
+                           d.actividades + ' actividades, ' + d.clientes + ' cliente(s) demo.');
+      simRefrescar();
+    });
+  };
+
+  function esc_(s) { var x = document.createElement('span'); x.textContent = s || ''; return x.innerHTML; }
+
+  window.simRefrescar = function () {
+    fetch('/app/api/simulador/estado/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); }).then(function (d) {
+        var tb = document.getElementById('simAud');
+        if (!d.success || !d.items || !d.items.length) {
+          tb.innerHTML = '<tr><td colspan="3" class="sim-vacio">Aún no hay correos simulados.</td></tr>'; return;
+        }
+        tb.innerHTML = d.items.map(function (it) {
+          var v = it.veredicto || '';
+          var cls = { venta: 'v-venta', hito: 'v-hito', respuesta: 'v-respuesta', info: 'v-info', ruido: 'v-ruido' }[v] || 'v-pend';
+          var meta = it.fuente ? ('fuente: ' + it.fuente + (it.confianza != null ? ' · confianza: ' + it.confianza : '')) : '';
+          return '<tr><td><b>' + esc_(it.de) + '</b><div class="aud-resumen">' + esc_(it.asunto) + '</div>' +
+                 (it.ligado ? '<div class="aud-ligado">⛓ ' + esc_(it.ligado) + '</div>' : '') + '</td>' +
+                 '<td><span class="v-pill ' + cls + '">' + esc_(v) + '</span></td>' +
+                 '<td>' + (it.resumen ? esc_(it.resumen) : '<span style="color:#c3c7cd">—</span>') +
+                 (meta ? '<div class="aud-meta">' + meta + '</div>' : '') + '</td></tr>';
+        }).join('');
+      });
+  };
+
+  simRefrescar();
+  setInterval(simRefrescar, 5000);
+})();
+</script>
+</body>
+</html>

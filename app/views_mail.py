@@ -1824,14 +1824,17 @@ def api_mail_responder(request, correo_id):
         msg['References'] = original.message_id
 
     try:
-        smtp = _get_smtp(conexion)
         recipients = [para]
         if cc:
             recipients += [a.strip() for a in cc.split(',') if a.strip()]
         if bcc:
             recipients += [a.strip() for a in bcc.split(',') if a.strip()]
-        smtp.sendmail(conexion.correo_electronico, recipients, msg.as_bytes())
-        smtp.quit()
+        # Simulador del asistente (views_crm): los correos @simulacion.iamet son de
+        # prueba — no hay SMTP real, solo se guarda el SENT para disparar los flujos.
+        if not all('simulacion.iamet' in r.lower() for r in recipients):
+            smtp = _get_smtp(conexion)
+            smtp.sendmail(conexion.correo_electronico, recipients, msg.as_bytes())
+            smtp.quit()
     except Exception as e:
         logger.exception('SMTP responder falló: %s', e)
         return JsonResponse({'ok': False, 'error': f'Error al enviar respuesta: {e}'}, status=500)
