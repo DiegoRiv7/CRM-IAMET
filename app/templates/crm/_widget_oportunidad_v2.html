@@ -33,8 +33,18 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
             <div class="wo-header">
                 <div class="wo-header-top">
                     <div style="flex:1;min-width:0;">
-                        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                        <!-- Proyecto e IDENTIDAD, no metadatos: describen qué ES esta
+                             oportunidad, igual que su nombre. Por eso viven aquí y no
+                             en la tarjeta de detalles. -->
+                        <div class="wo-proy-head" data-wo="proyectoHeader" style="display:none;"></div>
+                        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;">
                             <h1 class="wo-title" data-wo="title" style="margin:0;min-width:0;"></h1>
+                            <div class="wo-type-badge runrate wo-badge-titulo" data-wo="typeBadge">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                </svg>
+                                <span>VENTA RUNRATE</span>
+                            </div>
                             <button type="button" data-wo="btnAsistente" data-action="abrir-asistente" class="wo-asist-btn-title"
                                 title="Asistente AI de esta oportunidad"
                                 style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease;">
@@ -80,10 +90,17 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                     <div class="wo-grid">
 
                             <!-- Info card compacta (con Vendedor y Cliente integrados) -->
-                            <div class="wo-card wo-g-info">
-                                <!-- Franja a todo lo ancho: los metadatos son datos de
-                                     consulta, no necesitan una card alta. Puestos en una
-                                     sola tira liberan el alto que se lleva la conversación. -->
+                            <!-- Detalles: dato de consulta, no de trabajo. Se queda al
+                                 pie con lo que de verdad se mira (monto, cierre, PO,
+                                 facturas, vendedor, cliente) y lo demás tras "Ver más". -->
+                            <div class="wo-card wo-g-info" data-wo="infoCard">
+                                <div class="wo-info-head">
+                                    <h3 class="wo-section-title">Detalles</h3>
+                                    <button class="wo-btn-mini" data-action="toggle-info" type="button">
+                                        <span data-wo="infoToggleTxt">Ver más</span>
+                                        <svg class="wo-info-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </button>
+                                </div>
                                 <div class="wo-info-strip">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Monto</span>
@@ -94,29 +111,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-value medium" data-wo="fechaCierre">-</span>
                                     </div>
                                     <div class="wo-info-item">
-                                        <span class="wo-info-label">Producto</span>
-                                        <span class="wo-info-value medium" data-wo="producto">-</span>
-                                    </div>
-                                    <div class="wo-info-item">
-                                        <span class="wo-info-label">Area</span>
-                                        <span class="wo-info-value medium" data-wo="area">-</span>
-                                    </div>
-                                    <!-- Pipeline (tipo de venta): valor corto y categórico,
-                                         igual que Producto y Área, así que vive aquí. El
-                                         clic sigue abriendo el modal de confirmación. -->
-                                    <div class="wo-info-item">
-                                        <span class="wo-info-label">Pipeline</span>
-                                        <div>
-                                            <div class="wo-type-badge runrate" data-wo="typeBadge">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path
-                                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                                </svg>
-                                                <span>VENTA RUNRATE</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="wo-info-item">
                                         <span class="wo-info-label">PO</span>
                                         <input type="text" class="wo-doc-input" data-wo="poNumber" maxlength="15" placeholder="—" />
                                     </div>
@@ -124,17 +118,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Facturas</span>
                                         <div class="wo-fact-row">
                                             <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
-                                        </div>
-                                    </div>
-                                    <!-- Probabilidad al final: su barra es el único elemento
-                                         gráfico de la tira y en medio rompía el ritmo. -->
-                                    <div class="wo-info-item">
-                                        <span class="wo-info-label">Probabilidad</span>
-                                        <div style="display:flex;align-items:center;gap:0.5rem;">
-                                            <span class="wo-prob-value" data-wo="probValue">0%</span>
-                                            <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
-                                                <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -160,13 +143,27 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Proyecto: mismo grupo que vendedor y cliente — es la
-                                         otra entidad a la que la oportunidad está amarrada — y
-                                         aquí tiene el ancho que sus nombres largos piden. -->
-                                    <div class="wo-stakeholder" data-wo="proyectoItem"
-                                         style="display:none;border-left:1px solid #E5E5EA;padding-left:0.9rem;">
-                                        <div class="wo-stakeholder-label">Proyecto</div>
-                                        <div data-wo="proyectoSlot" style="margin-top:6px;"></div>
+                                </div>
+                                <!-- Lo que casi no se consulta, pero sigue siendo editable
+                                     a un clic: probabilidad se arrastra, producto y área
+                                     son desplegables. -->
+                                <div class="wo-info-extra" data-wo="infoExtra">
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Producto</span>
+                                        <span class="wo-info-value medium" data-wo="producto">-</span>
+                                    </div>
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Area</span>
+                                        <span class="wo-info-value medium" data-wo="area">-</span>
+                                    </div>
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Probabilidad</span>
+                                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                                            <span class="wo-prob-value" data-wo="probValue">0%</span>
+                                            <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
+                                                <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

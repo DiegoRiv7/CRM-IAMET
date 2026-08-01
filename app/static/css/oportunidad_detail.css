@@ -266,6 +266,28 @@ body {
     gap: 0.9rem 1.6rem;
     align-items: start;
 }
+/* Cabecera de la tarjeta de detalles, con el "Ver más". */
+.opp-v2 .wo-info-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 0.9rem;
+}
+.opp-v2 .wo-info-chev { width: 11px; height: 11px; transition: transform .15s; }
+.opp-v2 .wo-g-info.is-open .wo-info-chev { transform: rotate(180deg); }
+/* Lo poco consultado nace plegado; sigue a un clic porque las tres son
+   editables (probabilidad se arrastra, producto y área son desplegables). */
+.opp-v2 .wo-info-extra { display: none; }
+.opp-v2 .wo-g-info.is-open .wo-info-extra {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 0.9rem 1.6rem;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #E2E8F0;
+}
+
 /* Que la tira se lea como una fila y no como ocho bloques sueltos: las
    etiquetas nunca envuelven (una que se partía en dos renglones hundía su
    valor y descuadraba toda la fila) y todos los valores arrancan a la misma
@@ -328,32 +350,30 @@ body {
 .opp-v2 .wo-btn-solid:hover { filter: brightness(1.12); }
 .opp-v2 .wo-btn-solid svg { width: 11px; height: 11px; }
 
-/* Proyecto: comparte fila con vendedor y cliente — son las tres entidades a
-   las que la oportunidad está amarrada. Aquí vive sobre card clara, así que
-   vuelve a ser enlace y no la pastilla sólida que necesitaba en el header. */
-.opp-v2 .wo-proy-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+/* Proyecto e IDENTIDAD: viven en el header, sobre fondo oscuro o con
+   degradado según el tema, así que van como pastilla SÓLIDA. Al llevar
+   también .wo-type-badge heredan el color que cada tema ya define. */
+.opp-v2 .wo-proy-head { display: flex; align-items: center; min-width: 0; margin-bottom: 0.45rem; }
+.opp-v2 .wo-proy-badge {
     max-width: 100%;
     border: none;
-    background: none;
-    padding: 0;
+    background: #0052D4;
+    color: #fff;
+    padding: 5px 14px;
+    margin: 0;
     font-family: inherit;
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    color: #0052D4;
+    text-transform: none;
+    letter-spacing: 0;
     cursor: pointer;
     text-align: left;
 }
-.opp-v2 .wo-proy-link span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.opp-v2 .wo-proy-link:hover { text-decoration: underline; }
-.opp-v2 .wo-proy-link.is-vincular { font-weight: 600; opacity: .8; }
-.opp-v2 .wo-proy-link.is-vincular:hover { opacity: 1; }
+.opp-v2 .wo-proy-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-v2 .wo-proy-badge:hover { filter: brightness(1.12); }
+/* El badge de pipeline, ya junto al nombre: sin el margen que traía de
+   cuando vivía encima del título. */
+.opp-v2 .wo-badge-titulo { margin: 0; flex-shrink: 0; }
 /* Placeholder de carga: gris neutro, el header es claro en unos temas y
    oscuro en otros. */
 .opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
@@ -517,10 +537,10 @@ body {
     gap: 1.25rem;
     align-items: start;
 }
-.opp-v2 .wo-g-info { grid-column: 1 / -1; grid-row: 1; }
-.opp-v2 .wo-g-tareas { grid-column: 1; grid-row: 2; }
-.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 3; }
-.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2 / span 2; align-self: stretch; }
+.opp-v2 .wo-g-tareas { grid-column: 1; grid-row: 1; }
+.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; }
+.opp-v2 .wo-g-info { grid-column: 1; grid-row: 3; }
+.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 1 / span 3; align-self: stretch; }
 
 @media (max-width: 900px) {
     .opp-v2 .wo-grid { grid-template-columns: 1fr; }

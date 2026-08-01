@@ -414,6 +414,12 @@
             case 'conv-enviar':
                 enviarNotaConv(inst);
                 break;
+            case 'toggle-info':
+                var card = q(inst, 'infoCard');
+                var abierto = card.classList.toggle('is-open');
+                var txt = q(inst, 'infoToggleTxt');
+                if (txt) txt.textContent = abierto ? 'Ver menos' : 'Ver más';
+                break;
             case 'drive-subir':
                 setFocus(inst);
                 var driveEl = q(inst, 'driveFile');
@@ -1513,15 +1519,15 @@
        mostrar el nombre completo. Clic → abre el proyecto; si no hay ninguno
        vinculado, el atajo para vincularlo. */
     function renderProyecto(inst, d) {
-        var item = q(inst, 'proyectoItem');
+        var head = q(inst, 'proyectoHeader');
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
-        item.style.display = esProyecto ? '' : 'none';
+        head.style.display = esProyecto ? 'flex' : 'none';
         if (esProyecto) cargarProyectos(inst);
     }
 
     function cargarProyectos(inst) {
-        var slot = q(inst, 'proyectoSlot');
+        var slot = q(inst, 'proyectoHeader');
         var oppId = inst.oppId;
         slot.innerHTML = '<span class="wo-proy-vacio">Cargando…</span>';
 
@@ -1529,7 +1535,9 @@
             slot.innerHTML = '';
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'wo-proy-link is-vincular';
+            // wo-type-badge además: hereda el color que cada tema define
+            // para el badge del header, que es oscuro o con degradado.
+            b.className = 'wo-type-badge wo-proy-badge';
             b.setAttribute('data-action', 'vincular-proyecto');
             b.innerHTML =
                 '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
@@ -1543,7 +1551,7 @@
             slot.innerHTML = '';
             var link = document.createElement('button');
             link.type = 'button';
-            link.className = 'wo-proy-link';
+            link.className = 'wo-type-badge wo-proy-badge';
             link.title = 'Abrir proyecto: ' + (p.nombre || '');
             link.innerHTML =
                 '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
