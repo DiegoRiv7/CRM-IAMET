@@ -86,21 +86,12 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                      sola tira liberan el alto que se lleva la conversación. -->
                                 <div class="wo-info-strip">
                                     <div class="wo-info-item">
-                                        <span class="wo-info-label">Monto de Oportunidad</span>
+                                        <span class="wo-info-label">Monto</span>
                                         <span class="wo-info-value" data-wo="monto">$0</span>
                                     </div>
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Fecha de Cierre</span>
                                         <span class="wo-info-value medium" data-wo="fechaCierre">-</span>
-                                    </div>
-                                    <div class="wo-info-item">
-                                        <span class="wo-info-label">Probabilidad de Cierre</span>
-                                        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
-                                            <span class="wo-prob-value" data-wo="probValue">0%</span>
-                                            <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
-                                                <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Producto</span>
@@ -133,6 +124,17 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Facturas</span>
                                         <div class="wo-fact-row">
                                             <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
+                                        </div>
+                                    </div>
+                                    <!-- Probabilidad al final: su barra es el único elemento
+                                         gráfico de la tira y en medio rompía el ritmo. -->
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Probabilidad</span>
+                                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                                            <span class="wo-prob-value" data-wo="probValue">0%</span>
+                                            <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
+                                                <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

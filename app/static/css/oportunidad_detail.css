@@ -185,7 +185,8 @@ body {
    y conectores. Lo único que se toca aquí es el aire — header compacto y
    menos padding alrededor — para que el pipeline suba y quede alto libre
    para la información de abajo. */
-.opp-v2 .wo-header { padding: 1.35rem 2rem 0.55rem; }
+.opp-v2 .wo-header { padding: 1.7rem 2rem 0.75rem; }
+.opp-v2 .wo-title { font-size: 2rem; }
 .opp-v2 .wo-tab-panel { padding-top: 0; }
 .opp-v2 .wo-pipeline { padding: 0.55rem 2rem 0.7rem; }
 
@@ -263,7 +264,21 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
     gap: 0.9rem 1.6rem;
+    align-items: start;
 }
+/* Que la tira se lea como una fila y no como ocho bloques sueltos: las
+   etiquetas nunca envuelven (una que se partía en dos renglones hundía su
+   valor y descuadraba toda la fila) y todos los valores arrancan a la misma
+   altura. */
+.opp-v2 .wo-info-strip .wo-info-item { gap: 7px; min-width: 0; }
+.opp-v2 .wo-info-strip .wo-info-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+}
+.opp-v2 .wo-info-strip .wo-info-value,
+.opp-v2 .wo-info-strip .wo-prob-value { line-height: 1.2; }
 .opp-v2 .wo-info-people {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
