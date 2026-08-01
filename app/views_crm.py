@@ -8498,6 +8498,27 @@ def api_asistente_oportunidad_draft(request, correo_id):
 
 @login_required
 @require_http_methods(["POST"])
+def _seg_espejo_expediente(user, opp, act):
+    """La sección 'Actividades' del detalle de la oportunidad lee TareaOportunidad,
+    no el calendario. Mismo doble registro que hace el '+Nueva' del detalle
+    (api_tareas_oportunidad): TareaOportunidad ligada a la Actividad del calendario."""
+    if not opp or not act:
+        return None
+    try:
+        from .models import TareaOportunidad
+        t = TareaOportunidad.objects.create(
+            oportunidad=opp, titulo=act.titulo,
+            descripcion=act.descripcion or '', prioridad='normal',
+            fecha_limite=act.fecha_fin or act.fecha_inicio,
+            creado_por=user, actividad_calendario=act,
+        )
+        t.participantes.set([user.id])
+        return t
+    except Exception:
+        logger.exception('Asistente: no se pudo espejar el seguimiento en el expediente')
+        return None
+
+
 def api_asistente_oportunidad_crear(request):
     """POST — crea la oportunidad ya aprobada por el usuario: TodoItem con defaults,
     liga el correo (y su hilo) a la oportunidad, y crea la actividad de seguimiento."""
@@ -8607,6 +8628,7 @@ def api_asistente_oportunidad_crear(request):
                 creado_por=user, color='#007AFF', oportunidad_id=todo.id,
             )
             act.participantes.set([user.id])
+            _seg_espejo_expediente(user, todo, act)
             actividad_id = act.id
         except Exception as e:
             logger.exception('Asistente: no se pudo crear actividad de seguimiento: %s', e)
@@ -8816,6 +8838,7 @@ def api_asistente_oportunidad_update_aplicar(request):
                 creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
             )
             act.participantes.set([request.user.id])
+            _seg_espejo_expediente(request.user, opp, act)
             seg = {'creado': True, 'actividad_id': act.id, 'fecha': f, 'hora': h}
         except Exception as e:
             logger.exception('Asistente: no se pudo agendar seguimiento al actualizar: %s', e)
@@ -8900,6 +8923,7 @@ def api_asistente_seguimiento_crear(request):
             creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
         )
         act.participantes.set([request.user.id])
+        _seg_espejo_expediente(request.user, opp, act)
         return JsonResponse({'success': True, 'opp_id': opp.id, 'actividad_id': act.id})
     except Exception as e:
         logger.exception('Asistente: no se pudo agendar seguimiento: %s', e)
@@ -9771,6 +9795,7 @@ def api_asistente_aviso_agendar(request):
             oportunidad_id=(opp.id if opp else None),
         )
         act.participantes.set([request.user.id])
+        _seg_espejo_expediente(request.user, opp, act)
     except Exception as e:
         logger.exception('Asistente: no se pudo agendar desde el toast: %s', e)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
