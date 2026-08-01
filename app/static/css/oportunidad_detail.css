@@ -266,9 +266,8 @@ body {
 }
 .opp-v2 .wo-info-people {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    max-width: 640px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.75rem 1.2rem;
 }
 
 .opp-v2 .wo-g-info .wo-info-label { font-size: 0.63rem; }
@@ -314,38 +313,32 @@ body {
 .opp-v2 .wo-btn-solid:hover { filter: brightness(1.12); }
 .opp-v2 .wo-btn-solid svg { width: 11px; height: 11px; }
 
-/* Proyecto vinculado, arriba junto al título.
-   Va como pastilla SÓLIDA de la misma familia que el badge de pipeline: el
-   header es oscuro o con degradado en varios temas, y como texto suelto no
-   se leía. Al llevar también la clase .wo-type-badge, hereda gratis el
-   color que cada tema ya define para ese badge. */
-.opp-v2 .wo-proy-head {
-    display: flex;
+/* Proyecto: comparte fila con vendedor y cliente — son las tres entidades a
+   las que la oportunidad está amarrada. Aquí vive sobre card clara, así que
+   vuelve a ser enlace y no la pastilla sólida que necesitaba en el header. */
+.opp-v2 .wo-proy-link {
+    display: inline-flex;
     align-items: center;
-    min-width: 0;
-    margin-bottom: 0.4rem;
-}
-.opp-v2 .wo-proy-badge {
+    gap: 6px;
     max-width: 100%;
     border: none;
-    background: #0052D4;
-    color: #fff;
-    padding: 5px 14px;
-    margin: 0;
+    background: none;
+    padding: 0;
     font-family: inherit;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    text-transform: none;
-    letter-spacing: 0;
+    color: #0052D4;
     cursor: pointer;
     text-align: left;
 }
-.opp-v2 .wo-proy-badge span {
+.opp-v2 .wo-proy-link span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.opp-v2 .wo-proy-badge:hover { filter: brightness(1.12); }
+.opp-v2 .wo-proy-link:hover { text-decoration: underline; }
+.opp-v2 .wo-proy-link.is-vincular { font-weight: 600; opacity: .8; }
+.opp-v2 .wo-proy-link.is-vincular:hover { opacity: 1; }
 /* Placeholder de carga: gris neutro, el header es claro en unos temas y
    oscuro en otros. */
 .opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
@@ -520,5 +513,4 @@ body {
     .opp-v2 .wo-g-tareas,
     .opp-v2 .wo-g-cot,
     .opp-v2 .wo-g-conv { grid-column: 1; grid-row: auto; }
-    .opp-v2 .wo-info-people { max-width: none; }
 }

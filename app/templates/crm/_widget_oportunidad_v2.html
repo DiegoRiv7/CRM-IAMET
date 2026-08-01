@@ -33,10 +33,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
             <div class="wo-header">
                 <div class="wo-header-top">
                     <div style="flex:1;min-width:0;">
-                        <!-- Proyecto vinculado: aquí arriba tiene el ancho para mostrar
-                             el nombre completo (suelen ser largos). El tipo de venta
-                             que vivía en este hueco se fue a los metadatos. -->
-                        <div class="wo-proy-head" data-wo="proyectoHeader" style="display:none;"></div>
                         <div style="display:flex;align-items:center;gap:14px;min-width:0;">
                             <h1 class="wo-title" data-wo="title" style="margin:0;min-width:0;"></h1>
                             <button type="button" data-wo="btnAsistente" data-action="abrir-asistente" class="wo-asist-btn-title"
@@ -161,6 +157,14 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                                 <div class="wo-stakeholder-company" data-wo="contactoName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                                             </div>
                                         </div>
+                                    </div>
+                                    <!-- Proyecto: mismo grupo que vendedor y cliente — es la
+                                         otra entidad a la que la oportunidad está amarrada — y
+                                         aquí tiene el ancho que sus nombres largos piden. -->
+                                    <div class="wo-stakeholder" data-wo="proyectoItem"
+                                         style="display:none;border-left:1px solid #E5E5EA;padding-left:0.9rem;">
+                                        <div class="wo-stakeholder-label">Proyecto</div>
+                                        <div data-wo="proyectoSlot" style="margin-top:6px;"></div>
                                     </div>
                                 </div>
                             </div>

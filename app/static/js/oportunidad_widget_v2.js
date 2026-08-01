@@ -1513,15 +1513,15 @@
        mostrar el nombre completo. Clic → abre el proyecto; si no hay ninguno
        vinculado, el atajo para vincularlo. */
     function renderProyecto(inst, d) {
-        var head = q(inst, 'proyectoHeader');
+        var item = q(inst, 'proyectoItem');
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
-        head.style.display = esProyecto ? 'flex' : 'none';
+        item.style.display = esProyecto ? '' : 'none';
         if (esProyecto) cargarProyectos(inst);
     }
 
     function cargarProyectos(inst) {
-        var slot = q(inst, 'proyectoHeader');
+        var slot = q(inst, 'proyectoSlot');
         var oppId = inst.oppId;
         slot.innerHTML = '<span class="wo-proy-vacio">Cargando…</span>';
 
@@ -1529,9 +1529,7 @@
             slot.innerHTML = '';
             var b = document.createElement('button');
             b.type = 'button';
-            // wo-type-badge además de la clase propia: así hereda el color que
-            // cada tema ya define para el badge del header.
-            b.className = 'wo-type-badge wo-proy-badge';
+            b.className = 'wo-proy-link is-vincular';
             b.setAttribute('data-action', 'vincular-proyecto');
             b.innerHTML =
                 '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
@@ -1545,7 +1543,7 @@
             slot.innerHTML = '';
             var link = document.createElement('button');
             link.type = 'button';
-            link.className = 'wo-type-badge wo-proy-badge';
+            link.className = 'wo-proy-link';
             link.title = 'Abrir proyecto: ' + (p.nombre || '');
             link.innerHTML =
                 '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
