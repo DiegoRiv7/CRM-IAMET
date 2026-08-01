@@ -16,6 +16,11 @@
   .sim-btn-clean { background: #fff; border: 1px solid #e5e7eb; color: #b91c1c; border-radius: 10px;
                    padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .sim-btn-clean:hover { background: #fef2f2; border-color: #fecaca; }
+  .sim-btn-rean { background: #fff; border: 1px solid #e5e7eb; color: #1a56c4; border-radius: 10px;
+                  padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .sim-btn-rean:hover { background: #eff6ff; border-color: #bfdbfe; }
+  .sim-btn-rean:disabled { opacity: 0.5; cursor: default; }
+  .sim-check { font-size: 12.5px; color: #4b5563; user-select: none; cursor: pointer; }
   .sim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
   .sim-card { background: #fff; border: 1px solid #e8e9ec; border-radius: 14px; padding: 16px;
               display: flex; flex-direction: column; gap: 8px; }
@@ -59,13 +64,20 @@
         toast salta aquí mismo. Responde desde <a class="sim-link" href="/app/?tab=correo">Correo</a> para
         probar el caso "Respondiste — ¿actualizo?".</div>
     </div>
-    <button class="sim-btn-clean" onclick="simLimpiar()">🗑 Limpiar todo lo simulado</button>
+    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+      <button class="sim-btn-clean" onclick="simLimpiar()">🗑 Limpiar todo lo simulado</button>
+      <button class="sim-btn-rean" onclick="simReanalizar()" id="simBtnRean">🔄 Re-analizar bandeja (7 días)</button>
+    </div>
   </div>
 
   <div class="sim-grid" id="simGrid"></div>
 
   <h2>Veredictos del análisis</h2>
-  <div class="sim-aud-sub">Lo que la IA (o las reglas) decidió de cada correo simulado. Se actualiza solo.</div>
+  <div class="sim-aud-sub" style="display:flex; align-items:center; gap:14px;">
+    <span>Lo que la IA (o las reglas) decidió de cada correo. Se actualiza solo.</span>
+    <label class="sim-check"><input type="checkbox" id="simChkTodos" onchange="simRefrescar()">
+      Auditar toda mi bandeja (últimos 7 días), no solo simulados</label>
+  </div>
   <table>
     <thead><tr><th style="width:38%">Correo</th><th style="width:14%">Veredicto</th><th>Qué entendió</th></tr></thead>
     <tbody id="simAud"><tr><td colspan="3" class="sim-vacio">Aún no hay correos simulados.</td></tr></tbody>
@@ -130,8 +142,23 @@
 
   function esc_(s) { var x = document.createElement('span'); x.textContent = s || ''; return x.innerHTML; }
 
+  window.simReanalizar = function () {
+    if (!confirm('¿Borrar los veredictos de la última semana y re-clasificar todo con el prompt vigente?')) return;
+    var b = document.getElementById('simBtnRean');
+    b.disabled = true; b.textContent = '🔄 Re-analizando…';
+    fetch('/app/api/simulador/reanalizar/', {
+      method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': CSRF }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      b.disabled = false; b.textContent = '🔄 Re-analizar bandeja (7 días)';
+      if (d.success) alert('Se borraron ' + d.borrados + ' veredictos y se re-clasificaron ' + d.reanalizados + ' correos.');
+      else alert(d.error || 'Error');
+      simRefrescar();
+    }).catch(function () { b.disabled = false; b.textContent = '🔄 Re-analizar bandeja (7 días)'; });
+  };
+
   window.simRefrescar = function () {
-    fetch('/app/api/simulador/estado/', { credentials: 'same-origin' })
+    var todos = document.getElementById('simChkTodos').checked ? '?todos=1' : '';
+    fetch('/app/api/simulador/estado/' + todos, { credentials: 'same-origin' })
       .then(function (r) { return r.json(); }).then(function (d) {
         var tb = document.getElementById('simAud');
         if (!d.success || !d.items || !d.items.length) {

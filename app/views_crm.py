@@ -7801,22 +7801,28 @@ def _cor_analisis_ia(lote, modelo=None):
     except Exception:
         return {}
     sys = (
-        "Eres el clasificador de correos del asistente de un CRM de ventas industriales. "
-        "Para CADA correo (clave = su id) decide UNA categoría:\n"
-        "- 'venta': el remitente pide cotización, precios, disponibilidad o quiere comprar algo "
-        "NUEVO — amerita crear una oportunidad de venta.\n"
-        "- 'hito': factura, orden de compra (firmada o no), confirmación o liberación de un "
-        "pedido, pago, anticipo o comprobante — es el AVANCE de una venta que ya va en curso, "
-        "NO una venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito.\n"
-        "- 'respuesta': correo legítimo de negocio que espera respuesta del vendedor, pero no "
-        "es venta nueva ni hito (dudas, coordinación, información solicitada, quejas).\n"
+        "Eres el clasificador de correos del asistente de un CRM. El usuario es un VENDEDOR "
+        "que atiende a SUS clientes. Para CADA correo (clave = su id) decide UNA categoría:\n"
+        "- 'venta': el remitente pide cotización, precios, disponibilidad o quiere comprarNOS "
+        "algo NUEVO — amerita crear una oportunidad de venta.\n"
+        "- 'hito': un CLIENTE (persona real) nos manda factura, orden de compra (firmada o no), "
+        "confirmación o liberación de un pedido, pago, anticipo o comprobante de una venta "
+        "NUESTRA en curso. NO es venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito. "
+        "OJO: las confirmaciones AUTOMÁTICAS de compras en línea, recibos de tiendas o "
+        "plataformas y correos de remitentes no-reply NO son hito — son 'ruido'.\n"
+        "- 'respuesta': correo legítimo de un cliente o socio que espera respuesta del vendedor, "
+        "pero no es venta nueva ni hito (dudas, coordinación, información solicitada, quejas).\n"
         "- 'info': legítimo pero solo informa; no requiere acción del vendedor.\n"
-        "- 'ruido': promoción, newsletter, notificación automática, spam.\n"
+        "- 'ruido': promoción, newsletter, notificación automática, spam, y TAMBIÉN quien nos "
+        "quiere vender algo a NOSOTROS (prospección de terceros, cold outreach, invitaciones a "
+        "webinars/eventos/partnerships) — eso no es un cliente del vendedor.\n"
         "Además escribe 'resumen': UNA frase corta en español (máx 140 caracteres), natural, "
         "que diga qué pide o informa el remitente. Sin prefijos 'Re:' ni etiquetas "
         "'[EXTERNAL]'. No inventes nada que no esté en el correo.\n"
+        "'confianza' es TU certeza real en la categoría, un número entre 0 y 1 (no copies el "
+        "del ejemplo).\n"
         "Devuelve SOLO JSON válido: {\"items\": {\"<id>\": {\"categoria\": \"...\", "
-        "\"resumen\": \"...\", \"requiere_respuesta\": true, \"confianza\": 0.0}}}"
+        "\"resumen\": \"...\", \"requiere_respuesta\": true, \"confianza\": 0.85}}}"
     )
     facts = [{'id': d['id'], 'de': d['de'], 'asunto': d['asunto'], 'cuerpo': d['cuerpo']}
              for d in lote]
@@ -7883,8 +7889,14 @@ def _cor_asegurar_analisis(user, correos, known, max_ia=_COR_ANA_MAX_IA):
     candidatos = []
     for m in pendientes:
         rem = _cor_norm(m.remitente_email or '').strip()
+        # El NOMBRE del remitente también delata ("Zebra (Do Not Reply)"): se
+        # compacta sin espacios/guiones para cazar noreply/donotreply/no-reply.
+        nom = _cor_norm(m.remitente_nombre or '')
+        nom_c = nom.replace(' ', '').replace('-', '').replace('_', '').replace('.', '')
         asu = _cor_norm(m.asunto or '')
-        if any(bad in rem for bad in _COR_SPAM_SENDER) or any(a in asu for a in _COR_AUTO):
+        if (any(bad in rem for bad in _COR_SPAM_SENDER)
+                or 'noreply' in nom_c or 'donotreply' in nom_c
+                or any(a in asu for a in _COR_AUTO)):
             _guardar(m, 'ruido', '', False, 0.9, 'reglas')
             continue
         candidatos.append(m)
@@ -9468,8 +9480,16 @@ def _feed_correos_items(user, limite=6):
         respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand
                        if mc.id not in at_b and mc.id not in pospuestos]
 
-    # Orden: los no ligados por urgencia (score + antigüedad); los "llegó" por recencia.
-    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.6))
+    # Orden: lo que ACABA de llegar va primero (el asistente avisa en cuanto llega);
+    # después pesa la urgencia (prioridad + días esperando). Sin el bono de frescura,
+    # los correos viejos acumulan puntos y entierran al recién llegado (visto en pruebas).
+    def _frescura(m):
+        if not m.fecha_envio:
+            return 0.0
+        horas = (now - m.fecha_envio).total_seconds() / 3600.0
+        return 3.0 if horas <= 4 else (1.0 if horas <= 24 else 0.0)
+
+    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.4 + _frescura(t[1])))
     llego.sort(key=_dias)
 
     # 1) Respondiste un correo ligado → ACTUALIZAR (con contexto de ambos correos).
@@ -10271,13 +10291,19 @@ def api_sim_inyectar(request):
 
 @login_required
 def api_sim_estado(request):
-    """GET — correos simulados con su veredicto (auditoría en vivo)."""
+    """GET — correos con su veredicto (auditoría en vivo). Por default solo los
+    simulados; con ?todos=1 audita TODA la bandeja reciente (últimos 7 días)."""
+    from datetime import timedelta
+    from django.utils import timezone
     from .models import MailCorreo
     rows = []
-    qs = (MailCorreo.objects.filter(
-            usuario=request.user, remitente_email__icontains=_SIM_DOMINIO,
-            carpeta_display='INBOX')
-          .select_related('analisis', 'oportunidad').order_by('-fecha_envio')[:30])
+    qs = MailCorreo.objects.filter(
+        usuario=request.user, carpeta_display='INBOX', eliminado=False)
+    if request.GET.get('todos') == '1':
+        qs = qs.filter(fecha_envio__gte=timezone.now() - timedelta(hours=_COR_VENTANA_HORAS))
+    else:
+        qs = qs.filter(remitente_email__icontains=_SIM_DOMINIO)
+    qs = qs.select_related('analisis', 'oportunidad').order_by('-fecha_envio')[:50]
     for m in qs:
         a = getattr(m, 'analisis', None)
         rows.append({
@@ -10316,3 +10342,24 @@ def api_sim_limpiar(request):
     Cliente.objects.filter(nombre_empresa__startswith='[DEMO]').delete()
     return JsonResponse({'success': True, 'correos': n_correos, 'oportunidades': n_opps,
                          'actividades': n_acts, 'clientes': n_cli})
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_reanalizar(request):
+    """POST — borra los veredictos de la última semana (INBOX) y re-clasifica todo
+    con el prompt vigente. Es el ciclo de corrección: se afina el prompt → se
+    re-analiza → se comparan veredictos. Solo toca los análisis del usuario."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import CorreoAnalisis
+    cutoff = timezone.now() - timedelta(hours=_COR_VENTANA_HORAS)
+    borrados = CorreoAnalisis.objects.filter(
+        usuario=request.user, correo__carpeta_display='INBOX',
+        correo__fecha_envio__gte=cutoff).delete()[0]
+    total = 0
+    for _ in range(8):        # drena por lotes de IA; tope de seguridad
+        hechos = analizar_correos_recientes(request.user)
+        total += hechos
+        if not hechos:
+            break
+    return JsonResponse({'success': True, 'borrados': borrados, 'reanalizados': total})

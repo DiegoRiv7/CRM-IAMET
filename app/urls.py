@@ -176,6 +176,7 @@ urlpatterns = [
     path('api/simulador/inyectar/', views.api_sim_inyectar, name='api_sim_inyectar'),
     path('api/simulador/estado/', views.api_sim_estado, name='api_sim_estado'),
     path('api/simulador/limpiar/', views.api_sim_limpiar, name='api_sim_limpiar'),
+    path('api/simulador/reanalizar/', views.api_sim_reanalizar, name='api_sim_reanalizar'),
     path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
     path('api/desglose-facturacion/', views.api_desglose_facturacion, name='api_desglose_facturacion'),
     path('api/subir-cobrado/', views.api_subir_cobrado, name='api_subir_cobrado'),
