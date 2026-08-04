@@ -10593,7 +10593,10 @@ def api_sim_reanalizar(request):
         usuario=request.user, correo__carpeta_display='INBOX',
         correo__fecha_envio__gte=cutoff).delete()[0]
     total = 0
-    for _ in range(8):        # drena por lotes de IA; tope de seguridad
+    # Drena por lotes de IA hasta terminar la bandeja de la semana. 40 rondas × 8
+    # correos = 320 correos (~$0.04) — con 8 rondas los correos viejos se quedaban
+    # con las reglas gratis y los veredictos "no cambiaban" tras afinar el prompt.
+    for _ in range(40):
         hechos = analizar_correos_recientes(request.user)
         total += hechos
         if not hechos:
