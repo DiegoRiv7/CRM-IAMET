@@ -363,6 +363,12 @@
                 ev.stopPropagation();
                 close(inst, false);
                 break;
+            case 'pipeline-izq':
+                q(inst, 'pipelineScroll').scrollBy({ left: -150, behavior: 'smooth' });
+                break;
+            case 'pipeline-der':
+                q(inst, 'pipelineScroll').scrollBy({ left: 150, behavior: 'smooth' });
+                break;
             case 'nueva-tarea':
                 setFocus(inst);
                 if (typeof window.crmTaskAbrirCrear === 'function') window.crmTaskAbrirCrear(inst.oppId);
@@ -671,21 +677,43 @@
         q(inst, 'etapaMeta').textContent =
             'Etapa ' + (currentIdx + 1) + ' de ' + etapas.length + diasSinCambios(d);
 
-        var segs = q(inst, 'etapaSegs');
-        segs.innerHTML = '';
+        var stagesContainer = q(inst, 'pipelineStages');
+        stagesContainer.innerHTML = '';
+
         etapas.forEach(function (et, idx) {
-            var b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'wo4-seg' +
-                (idx < currentIdx ? ' done' : '') +
-                (idx === currentIdx ? ' now' : '') +
-                (esRama(et) ? ' rama' : '');
-            b.textContent = et;
-            b.title = esRama(et) ? et + ' (rama: no sigue el orden lineal)' : 'Mover a ' + et;
-            if (ing || idx === currentIdx) b.disabled = true;
-            else b.addEventListener('click', function () { changeStage(inst, et); });
-            segs.appendChild(b);
+            if (idx > 0) {
+                var conn = document.createElement('span');
+                conn.className = 'wo-stage-connector' + (idx <= currentIdx ? ' completed' : '');
+                stagesContainer.appendChild(conn);
+            }
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            if (idx < currentIdx) {
+                btn.className = 'wo-stage-btn completed';
+                btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ' + esc(et);
+            } else if (idx === currentIdx) {
+                btn.className = 'wo-stage-btn active';
+                btn.textContent = et;
+            } else {
+                btn.className = 'wo-stage-btn';
+                btn.textContent = et;
+            }
+            if (ing) {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.7';
+            } else {
+                btn.addEventListener('click', function () { changeStage(inst, et); });
+            }
+            stagesContainer.appendChild(btn);
         });
+
+        setTimeout(function () {
+            var activeBtn = stagesContainer.querySelector('.wo-stage-btn.active');
+            if (activeBtn) {
+                var scroll = q(inst, 'pipelineScroll');
+                scroll.scrollLeft = activeBtn.offsetLeft - scroll.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+            }
+        }, 50);
 
         // ── Info card ──
         var montoNum = Number(d.monto) || 0;

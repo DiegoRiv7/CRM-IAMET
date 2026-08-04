@@ -201,33 +201,18 @@ body {
 .opp-v4 .wo4-tipo.is-fijo:hover { background: #F3F4F6; }
 
 /* ── Barra de etapa ──
-   Sin botones aparte: los rectángulos SON el control. Cada uno lleva su
-   nombre y al hacer clic mueve la oportunidad. Con el ancho completo los
-   nombres caben; con 18 etapas la fila envuelve, que se lee mejor que una
-   tira con scroll horizontal. */
+   El pipeline usa las clases de siempre (.wo-pipeline-container, .wo-stage-btn…)
+   de crm.css: la versión con nombres en rectángulos envolvía a dos renglones
+   con 18 etapas y se leía peor. Aquí solo la línea de contexto encima y el
+   aire alrededor. */
 .opp-v4 .wo4-etapa {
     padding: 12px 26px 14px; border-bottom: 1px solid var(--w4-linea); flex-shrink: 0;
 }
 .opp-v4 .wo4-etapa-line {
-    display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; flex-wrap: wrap;
 }
 .opp-v4 .wo4-etapa-nom { font-size: 1.02rem; font-weight: 700; }
 .opp-v4 .wo4-etapa-meta { font-size: .81rem; color: var(--w4-gris); }
-.opp-v4 .wo4-segs { display: flex; flex-wrap: wrap; gap: 5px; }
-.opp-v4 .wo4-seg {
-    flex: 1 1 auto; min-width: 0; max-width: 100%;
-    border: 1px solid transparent; border-radius: 6px;
-    background: var(--w4-track); color: var(--w4-gris);
-    padding: 7px 10px; font: inherit; font-size: .68rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .02em; text-align: center;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    cursor: pointer; transition: background .12s, color .12s, border-color .12s;
-}
-.opp-v4 .wo4-seg.done { background: #DBEAFE; color: #1D4ED8; }
-.opp-v4 .wo4-seg.now { background: var(--w4-azul); color: #fff; }
-.opp-v4 .wo4-seg.rama { background: transparent; border-color: #D5D9DF; }
-.opp-v4 .wo4-seg:hover:not(:disabled) { background: #BFDBFE; color: #1D4ED8; border-color: #BFDBFE; }
-.opp-v4 .wo4-seg:disabled { cursor: default; }
 
 /* ── Cuerpo ── */
 /* Un solo scroll a la vez: el cuerpo NO scrollea (si lo hacía, se sumaba al
