@@ -163,7 +163,7 @@ body {
 /* ── Encabezado ── */
 /* El encabezado conserva la franja de cada tema (lleva también .wo-header,
    que es lo que los cinco temas pintan). Solo el CUERPO es neutro. */
-.opp-v4 .wo4-head { padding: 18px 26px 14px !important; flex-shrink: 0; }
+.opp-v4 .wo4-head { padding: 16px 26px 12px !important; flex-shrink: 0; }
 .opp-v4 .wo4-title { color: inherit; }
 .opp-v4 .wo4-crumb {
     display: flex; align-items: center; gap: 8px;
@@ -205,14 +205,11 @@ body {
    de crm.css: la versión con nombres en rectángulos envolvía a dos renglones
    con 18 etapas y se leía peor. Aquí solo la línea de contexto encima y el
    aire alrededor. */
+/* Pegado a la franja del encabezado: sin línea de contexto encima y con el
+   aire justo, el pipeline queda contra la barra de arriba. */
 .opp-v4 .wo4-etapa {
-    padding: 12px 26px 14px; border-bottom: 1px solid var(--w4-linea); flex-shrink: 0;
+    padding: 8px 26px 10px; border-bottom: 1px solid var(--w4-linea); flex-shrink: 0;
 }
-.opp-v4 .wo4-etapa-line {
-    display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; flex-wrap: wrap;
-}
-.opp-v4 .wo4-etapa-nom { font-size: 1.02rem; font-weight: 700; }
-.opp-v4 .wo4-etapa-meta { font-size: .81rem; color: var(--w4-gris); }
 
 /* ── Cuerpo ── */
 /* Un solo scroll a la vez: el cuerpo NO scrollea (si lo hacía, se sumaba al
@@ -220,7 +217,7 @@ body {
    de lo suyo y solo aparece la que hace falta. */
 .opp-v4 .wo4-body {
     flex: 1; min-height: 0; overflow: hidden; background: var(--w4-lienzo);
-    display: grid; grid-template-columns: 1fr 372px; gap: 18px; padding: 18px 26px;
+    display: grid; grid-template-columns: 1fr 372px; gap: 14px; padding: 12px 26px 16px;
     align-items: stretch;
 }
 .opp-v4 .wo4-main, .opp-v4 .wo4-side {
@@ -231,7 +228,10 @@ body {
    scrollea lo suyo si se pasa. Así nunca hay una barra "general". */
 .opp-v4 .wo4-side { overflow: hidden; }
 .opp-v4 .wo4-side > .wo4-card:first-child { flex: 0 0 auto; }
-.opp-v4 .wo4-side > .wo4-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* flex 0 1 auto (no 1 1): las tarjetas toman SU alto y solo se encogen si la
+   columna no alcanza. Con 1 1 crecían siempre y salía scroll aunque hubiera
+   dos cotizaciones. */
+.opp-v4 .wo4-side > .wo4-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .opp-v4 .wo4-side [data-wo="quoteList"],
 .opp-v4 .wo4-side .wo4-drive { flex: 1; min-height: 0; overflow-y: auto; }
 /* Las barras no ocupan sitio ni se ven hasta que el cursor entra en la
@@ -442,7 +442,13 @@ body {
 .opp-v4 .wo4-cot-a { display: flex; gap: 1px; flex-shrink: 0; }
 /* Los iconos de la cotización se salían del lateral: van más chicos y la
    tarjeta cede padding, que es lo que sobraba. */
-.opp-v4 .wo4-cot-a .wo4-ic { width: 26px; height: 26px; }
+/* Se veían fantasma: ahora llevan fondo propio, y la lista reserva el ancho
+   de su barra para que no los tape. */
+.opp-v4 .wo4-cot-a .wo4-ic {
+    width: 26px; height: 26px; background: var(--w4-panel); color: var(--w4-texto);
+}
+.opp-v4 .wo4-cot-a .wo4-ic:hover { background: #E5E7EB; color: var(--w4-tinta); }
+.opp-v4 [data-wo="quoteList"] { padding-right: 2px; }
 .opp-v4 .wo4-cot-t { min-width: 0; }
 .opp-v4 .wo4-cot-t, .opp-v4 .wo4-cot-m { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

@@ -100,18 +100,6 @@
         return ETAPAS_RAMA.indexOf(String(nombre || '').toLowerCase()) !== -1;
     }
 
-    /* El sistema no guarda cuándo cambió de etapa, solo la última vez que se
-       tocó la oportunidad. Así que se reporta eso, que es lo que el dato
-       significa de verdad. */
-    function diasSinCambios(d) {
-        if (!d || !d.fecha_actualizacion) return '';
-        var t = new Date(d.fecha_actualizacion);
-        if (isNaN(t.getTime())) return '';
-        var dias = Math.floor((Date.now() - t.getTime()) / 86400000);
-        if (dias < 1) return ' · sin cambios hoy';
-        return ' · ' + dias + (dias === 1 ? ' día' : ' días') + ' sin cambios';
-    }
-
     function alive(inst) {
         return inst && inst.alive && document.body.contains(inst.root);
     }
@@ -672,10 +660,6 @@
         var pipelineWrap = q(inst, 'pipelineWrap');
         var sinPipeline = (tipo === 'bitrix_proyecto');
         pipelineWrap.style.display = sinPipeline ? 'none' : '';
-
-        q(inst, 'etapaNombre').textContent = etapas[currentIdx] || currentEtapa;
-        q(inst, 'etapaMeta').textContent =
-            'Etapa ' + (currentIdx + 1) + ' de ' + etapas.length + diasSinCambios(d);
 
         var stagesContainer = q(inst, 'pipelineStages');
         stagesContainer.innerHTML = '';
