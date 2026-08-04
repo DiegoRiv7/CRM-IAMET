@@ -284,23 +284,6 @@
                 this.value = '';
             });
         }
-        /* Buscadores de cotizaciones y drive: filtran las filas ya pintadas,
-           sin volver a pedir al servidor. */
-        function filtrarLista(listaEl, texto) {
-            var t = (texto || '').trim().toLowerCase();
-            Array.prototype.forEach.call(listaEl.children, function (fila) {
-                var ok = !t || (fila.textContent || '').toLowerCase().indexOf(t) !== -1;
-                fila.style.display = ok ? '' : 'none';
-            });
-        }
-        [['cotSearch', 'quoteList'], ['driveSearch', 'driveList']].forEach(function (par) {
-            var inp = q(inst, par[0]);
-            if (!inp) return;
-            inp.addEventListener('input', function () {
-                filtrarLista(q(inst, par[1]), this.value);
-            });
-        });
-
         var convFileEl = q(inst, 'convFile');
         if (convFileEl) {
             convFileEl.addEventListener('change', function () {
@@ -422,19 +405,10 @@
                 var txt = q(inst, 'infoToggleTxt');
                 if (txt) txt.textContent = abierto ? 'Ver menos' : 'Ver más';
                 break;
-            case 'toggle-cot': {
-                var cardCot = q(inst, 'quoteList').closest('.wo4-card');
-                cardCot.classList.toggle('is-expandido');
+            case 'abrir-cotizaciones':
+                setFocus(inst);
+                abrirTodasCotizaciones(inst);
                 break;
-            }
-            case 'toggle-drive': {
-                var cardDr = q(inst, 'driveList').closest('.wo4-card');
-                var abierto = cardDr.classList.toggle('is-expandido');
-                // Expandido trae TODOS los archivos; plegado vuelve a los ultimos.
-                inst.driveTodos = abierto;
-                renderDrive(inst);
-                break;
-            }
             case 'drive-subir':
                 setFocus(inst);
                 var driveEl = q(inst, 'driveFile');
@@ -758,33 +732,41 @@
         quoteList.innerHTML = '';
         q(inst, 'btnNuevaCot').style.display = ing ? 'none' : '';
         if (d.cotizaciones && d.cotizaciones.length > 0) {
-            d.cotizaciones.forEach(function (cot) {
-                var card = document.createElement('div');
-                card.className = 'wo4-cot';
-                var cotId = String(cot.id == null ? '' : cot.id).padStart(3, '0');
-                var totalStr = (Number(cot.total) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 });
-                card.innerHTML =
-                    '<div class="wo4-cot-b" data-cot-open>' +
-                    '<div class="wo4-cot-t">COT-' + new Date().getFullYear() + '-' + cotId + ' <span class="wo4-v10">v1.0</span></div>' +
-                    '<div class="wo4-cot-m">' + esc(cot.fecha) + ' &middot; $' + totalStr + '</div>' +
-                    '</div>' +
-                    '<div class="wo4-cot-a">' +
-                    '<button type="button" class="wo4-ic" data-cot-edit title="Editar"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></button>' +
-                    '<a class="wo4-ic" href="/app/cotizacion/pdf/' + cot.id + '/" title="Descargar"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
-                    '</div>';
-                card.querySelector('[data-cot-open]').addEventListener('click', function () {
-                    window.open('/app/cotizacion/view/' + cot.id + '/', '_blank');
-                });
-                card.querySelector('[data-cot-edit]').addEventListener('click', function (e) {
-                    e.preventDefault();
-                    setFocus(inst);
-                    openEditCotizacionV2(cot.id, inst);
-                });
-                quoteList.appendChild(card);
-            });
+            pintarCotizaciones(inst, quoteList, d.cotizaciones);
         } else {
             quoteList.innerHTML = '<div class="wo4-vacio">Sin cotizaciones aún</div>';
         }
+    }
+
+    /* Pinta las tarjetas de cotización en cualquier contenedor: la lista del
+       lateral y la ventana de "ver todas" comparten el mismo render. */
+    function pintarCotizaciones(inst, contenedor, cots) {
+        cots.forEach(function (cot) {
+            var card = document.createElement('div');
+            card.className = 'wo4-cot';
+            var cotId = String(cot.id == null ? '' : cot.id).padStart(3, '0');
+            var totalStr = (Number(cot.total) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+            card.innerHTML =
+                '<div class="wo4-cot-b" data-cot-open>' +
+                '<div class="wo4-cot-t">COT-' + new Date().getFullYear() + '-' + cotId + ' <span class="wo4-v10">v1.0</span></div>' +
+                '<div class="wo4-cot-m">' + esc(cot.fecha) + ' &middot; $' + totalStr + '</div>' +
+                '</div>' +
+                '<div class="wo4-cot-a">' +
+                '<button type="button" class="wo4-cot-btn" data-cot-edit title="Editar">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></button>' +
+                '<a class="wo4-cot-btn" href="/app/cotizacion/pdf/' + cot.id + '/" title="Descargar">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
+                '</div>';
+            card.querySelector('[data-cot-open]').addEventListener('click', function () {
+                window.open('/app/cotizacion/view/' + cot.id + '/', '_blank');
+            });
+            card.querySelector('[data-cot-edit]').addEventListener('click', function (e) {
+                e.preventDefault();
+                setFocus(inst);
+                openEditCotizacionV2(cot.id, inst);
+            });
+            contenedor.appendChild(card);
+        });
     }
 
     /* ── Cambio de tipo (modal de confirmación singleton) ─────────── */
@@ -1613,6 +1595,55 @@
             });
     }
 
+    /* Ventana de cotizaciones: lista completa con buscador, al estilo del
+       gestor de Drive. Se construye al vuelo y se destruye al cerrar, así
+       cada oportunidad abierta muestra las suyas sin pisarse. */
+    function abrirTodasCotizaciones(inst) {
+        var previo = document.getElementById('wo4CotOverlay');
+        if (previo) previo.remove();
+
+        var cots = (inst.data && inst.data.cotizaciones) || [];
+        var ov = document.createElement('div');
+        ov.id = 'wo4CotOverlay';
+        ov.className = 'wo4-modal';
+        ov.innerHTML =
+            '<div class="wo4-modal-card">' +
+            '<div class="wo4-modal-head">' +
+            '<h3>Cotizaciones de la oportunidad</h3>' +
+            '<button type="button" class="wo4-ic" data-cerrar title="Cerrar">' +
+            '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+            '</div>' +
+            '<div class="wo4-modal-tools">' +
+            '<div class="wo4-buscar">' +
+            '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+            '<input type="text" data-buscar placeholder="Buscar cotización"></div>' +
+            '<span class="wo4-modal-n">' + cots.length + (cots.length === 1 ? ' cotización' : ' cotizaciones') + '</span>' +
+            '</div>' +
+            '<div class="wo4-modal-body" data-lista></div>' +
+            '</div>';
+        document.body.appendChild(ov);
+
+        var lista = ov.querySelector('[data-lista]');
+        if (!cots.length) {
+            lista.innerHTML = '<div class="wo4-vacio" style="padding:2rem;text-align:center;">Sin cotizaciones aún</div>';
+        } else {
+            pintarCotizaciones(inst, lista, cots);
+        }
+
+        ov.querySelector('[data-buscar]').addEventListener('input', function () {
+            var t = this.value.trim().toLowerCase();
+            Array.prototype.forEach.call(lista.children, function (fila) {
+                fila.style.display = (!t || (fila.textContent || '').toLowerCase().indexOf(t) !== -1) ? '' : 'none';
+            });
+        });
+        function cerrar() { ov.remove(); }
+        ov.querySelector('[data-cerrar]').addEventListener('click', cerrar);
+        ov.addEventListener('click', function (e) { if (e.target === ov) cerrar(); });
+        document.addEventListener('keydown', function esc(e) {
+            if (e.key === 'Escape') { cerrar(); document.removeEventListener('keydown', esc); }
+        });
+    }
+
     /* ── Drive embebido bajo Cotizaciones ─────────────────────────────
        Los primeros archivos a la vista, con atajo para subir y para abrir
        la carpeta completa (el gestor singleton sigue siendo el que manda). */
@@ -1626,8 +1657,7 @@
 
         // "recientes": los últimos archivos estén donde estén. Pedir solo la
         // raíz dejaba el bloque vacío en oportunidades con todo en carpetas.
-        var tope = inst.driveTodos ? 100 : TOPE_DRIVE;
-        fetch('/app/api/oportunidad/' + oppId + '/drive/?recientes=' + tope, { credentials: 'same-origin' })
+        fetch('/app/api/oportunidad/' + oppId + '/drive/?recientes=' + TOPE_DRIVE, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;

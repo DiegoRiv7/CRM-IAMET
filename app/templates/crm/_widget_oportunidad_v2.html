@@ -205,22 +205,18 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <div class="wo4-card wo4-pad">
                         <div class="wo4-chead">
                             <!-- El título expande: muestra todas y saca el buscador -->
-                            <button type="button" class="wo4-htitle" data-action="toggle-cot">
+                            <button type="button" class="wo4-htitle" data-action="abrir-cotizaciones" title="Ver todas las cotizaciones">
                                 <h3>Cotizaciones</h3>
                                 <svg class="wo4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <button type="button" class="wo4-link" data-wo="btnNuevaCot" data-action="nueva-cot">+ Nueva</button>
-                        </div>
-                        <div class="wo4-buscar wo4-buscar-card">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-                            <input type="text" data-wo="cotSearch" placeholder="Buscar cotización">
                         </div>
                         <div data-wo="quoteList"></div>
                     </div>
 
                     <div class="wo4-card wo4-pad">
                         <div class="wo4-chead">
-                            <button type="button" class="wo4-htitle" data-action="toggle-drive">
+                            <button type="button" class="wo4-htitle" data-action="abrir-drive" title="Abrir la carpeta completa">
                                 <h3>Archivos en Drive</h3>
                                 <svg class="wo4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
@@ -234,10 +230,6 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
                                 </button>
                             </div>
-                        </div>
-                        <div class="wo4-buscar wo4-buscar-card">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-                            <input type="text" data-wo="driveSearch" placeholder="Buscar archivo">
                         </div>
                         <div class="wo4-drive" data-wo="driveList"></div>
                     </div>
