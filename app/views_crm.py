@@ -8104,7 +8104,6 @@ def api_asistente_correos(request):
         return True, respondido
 
     pend, done = [], []
-    borderline = []   # (m, score_prelim): casi importantes SIN cuerpo aún → leerlo por IMAP
     considerar = []
     seen_hk = set()
     for m in inbox:
@@ -8145,34 +8144,10 @@ def api_asistente_correos(request):
                 item['mensaje'] = msg
             (done if completada else pend).append(item)
             continue
-        # Fallback (aún sin análisis — no alcanzó el cupo de IA): reglas de siempre.
-        score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
-                                        known_emails, known_domains, cliente_nombres)
-        if score >= 3:
-            item, completada = _cor_item(m, score, motivos, kw, m.cuerpo_texto, now, respondido_hoy, atendidos)
-            (done if completada else pend).append(item)
-        elif score >= 1 and not (m.cuerpo_texto or '').strip() and not m.cuerpo_cargado:
-            # No alcanza con asunto/remitente/dominio y NO tenemos el cuerpo:
-            # candidato a leerlo para confirmar o descartar.
-            borderline.append((m, score))
-
-    # Segundo paso: leer el cuerpo SOLO de los borderline con más potencial (tope),
-    # re-evaluar con el cuerpo real y rescatar los que crucen el umbral.
-    if borderline:
-        borderline.sort(key=lambda t: -t[1])
-        objetivo = [m for (m, _s) in borderline[:_COR_BODY_FETCH_CAP]]
-        cuerpos = _cor_fetch_cuerpos(user, objetivo)
-        for m in objetivo:
-            cuerpo = cuerpos.get(m.id, '')
-            if not cuerpo:
-                continue
-            score, motivos, kw = _cor_score(m.remitente_email, m.asunto, cuerpo,
-                                            known_emails, known_domains, cliente_nombres)
-            if score < 3:
-                continue   # el cuerpo confirmó que no es importante → descartar
-            _mostrar, respondido_hoy = _estado_hilo(m)
-            item, completada = _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos)
-            (done if completada else pend).append(item)
+        # Sin análisis todavía (no alcanzó el cupo de IA en este ciclo): NO se
+        # muestra — aparece en el siguiente ciclo ya con veredicto. Confianza
+        # primero: una tarjeta provisional equivocada cuesta más que 1-2 min
+        # de espera (misma política que el toast).
 
     # Orden por urgencia: mezcla importancia (score) + antigüedad (los que llevan
     # días sin responder suben, para que el asistente insista con lo que se te pasa).
@@ -9531,20 +9506,19 @@ def _feed_correos_items(user, limite=6):
     ana = _cor_asegurar_analisis(user, llego + sueltos,
                                  (known_emails, known_domains, cliente_nombres))
 
-    scored = []       # (prio, m, analisis|None, motivos)
+    scored = []       # (prio, m, analisis, motivos)
     for m in sueltos:
         a = ana.get(m.id)
-        if a is not None:
-            if a.categoria in ('ruido', 'info'):
-                continue
-            prio = 4 if a.categoria in ('venta', 'hito') else 3
-            scored.append((prio, m, a, set()))
-        else:
-            # Sin análisis todavía (no alcanzó el cupo de IA) → reglas de siempre.
-            score, motivos, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
-                                             known_emails, known_domains, cliente_nombres)
-            if score >= 3:
-                scored.append((min(score, 4), m, None, motivos))
+        if a is None:
+            # Confianza primero: sin veredicto todavía (la IA no lo alcanzó en este
+            # ciclo) NO se notifica — la tarjeta aparece en cuanto tenga análisis
+            # (1-2 min después). La primera impresión del asistente debe ser
+            # correcta, no provisional; una tarjeta equivocada cuesta la confianza.
+            continue
+        if a.categoria in ('ruido', 'info'):
+            continue
+        prio = 4 if a.categoria in ('venta', 'hito') else 3
+        scored.append((prio, m, a, set()))
 
     # ── Caso 3-B: RESPONDISTE un correo ligado a una oportunidad ──
     # Se detecta desde los ENVIADOS (no desde INBOX): siempre que respondas un correo
@@ -9679,8 +9653,10 @@ def _feed_correos_items(user, limite=6):
         item['opp_nombre'] = (opp.oportunidad if opp else '')
         a = ana.get(m.id)
         resumen = (a.resumen if a else '') or ''
-        # ¿Es hito? La IA manda cuando ya leyó el correo; si no, keywords.
-        es_hito = (a.categoria == 'hito') if (a and a.fuente == 'ia') else _cor_es_hito(m.asunto, m.cuerpo_texto)
+        # ¿Es hito? Solo con veredicto guardado (IA o reglas); sin análisis aún,
+        # tarjeta neutra de "responder" — no arriesgar una etiqueta de factura
+        # por puras palabras clave (confianza primero).
+        es_hito = bool(a and a.categoria == 'hito')
         if es_hito:
             item['categoria'] = 'Factura / orden recibida'
             item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
