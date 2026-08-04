@@ -8200,8 +8200,12 @@ def api_asistente_correo_listo(request, correo_id):
         body = {}
     marcar = body.get('marcar', True)
     if marcar:
-        CorreoAtendido.objects.get_or_create(
+        at, creado = CorreoAtendido.objects.get_or_create(
             usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+        if not creado:
+            at.fecha = timezone.localdate()
+            at.created_at = timezone.now()
+            at.save(update_fields=['fecha', 'created_at'])
         _asis_log_accion(request.user, 'revisado',
                          _cor_limpiar_asunto(correo.asunto or '') or (correo.remitente_nombre or correo.remitente_email or 'Correo'),
                          'De %s' % (correo.remitente_nombre or correo.remitente_email or ''), mail=correo)
@@ -9561,10 +9565,19 @@ def _feed_correos_items(user, limite=6):
             m_card = recibidos.get(s.hilo_key) or s
             cand.append((m_card, opp, s.fecha_envio))
             cand_ids.append(m_card.id)
-        at_b = set(CorreoAtendido.objects.filter(
-            usuario=user, mail_id__in=cand_ids).values_list('mail_id', flat=True)) if cand_ids else set()
+        # "Revisado" ANTES de responder NO calla estas tarjetas: aquel descarte fue
+        # sobre el aviso de llegada; tu RESPUESTA es un evento nuevo que re-evalúa.
+        # Solo se calla si el descarte es POSTERIOR a la respuesta (le dijiste
+        # "Revisado" al propio "¿actualizo?" / "¿agendo seguimiento?").
+        at_b = dict(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=cand_ids).values_list('mail_id', 'created_at')) if cand_ids else {}
+
+        def _descartado_tras(at_map, mid, rt):
+            at = at_map.get(mid)
+            return bool(at and (not rt or at >= rt))
+
         respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand
-                       if mc.id not in at_b and mc.id not in pospuestos]
+                       if not _descartado_tras(at_b, mc.id, rt) and mc.id not in pospuestos]
 
         # ── Caso 3-C: RESPONDISTE un correo SUELTO (sin oportunidad ligada) ──
         # Mismo detector desde los ENVIADOS, pero en hilos sin oportunidad: al
@@ -9594,13 +9607,14 @@ def _feed_correos_items(user, limite=6):
                 continue                        # te volvieron a escribir después → pendiente normal
             cand_c.append((m_card, s.fecha_envio))
         ids_c = [mc.id for mc, _ in cand_c]
-        at_c = set(CorreoAtendido.objects.filter(
-            usuario=user, mail_id__in=ids_c).values_list('mail_id', flat=True)) if ids_c else set()
+        at_c = dict(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=ids_c).values_list('mail_id', 'created_at')) if ids_c else {}
         ya_agendados = set(Actividad.objects.filter(
             creado_por=user, correo_id__in=ids_c).values_list('correo_id', flat=True)) if ids_c else set()
         respondiste_sueltos = [
             (mc, rt) for (mc, rt) in cand_c
-            if mc.id not in at_c and mc.id not in pospuestos and mc.id not in ya_agendados][:6]
+            if not _descartado_tras(at_c, mc.id, rt) and mc.id not in pospuestos
+            and mc.id not in ya_agendados][:6]
 
     # Orden: lo que ACABA de llegar va primero (el asistente avisa en cuanto llega);
     # después pesa la urgencia (prioridad + días esperando). Sin el bono de frescura,
@@ -9948,8 +9962,14 @@ def api_asistente_aviso_revisado(request):
         m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
         if not m:
             return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
-        CorreoAtendido.objects.get_or_create(
+        at, creado = CorreoAtendido.objects.get_or_create(
             usuario=request.user, mail=m, defaults={'fecha': timezone.localdate()})
+        if not creado:
+            # Re-marcar refresca el sello de tiempo: un "Revisado" viejo (previo a tu
+            # respuesta) ya no silencia las tarjetas de "respondiste" — este sí debe.
+            at.fecha = timezone.localdate()
+            at.created_at = timezone.now()
+            at.save(update_fields=['fecha', 'created_at'])
         _asis_log_accion(request.user, 'revisado',
                          _cor_limpiar_asunto(m.asunto or '') or (m.remitente_nombre or m.remitente_email or 'Correo'),
                          'De %s' % (m.remitente_nombre or m.remitente_email or ''), mail=m)
