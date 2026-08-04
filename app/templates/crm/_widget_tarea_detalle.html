@@ -26,255 +26,337 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 .crm-ce-uploading { opacity: 0.5; filter: grayscale(0.2); }
 .crm-ce-dragover { outline: 2px dashed #4f6ef7 !important; outline-offset: 2px; background: #F8FAFF; }
 
-/* ═══════════ REDISEÑO v3 ═══════════
-   Mismo lenguaje que el widget de Oportunidad: todo en cuadros sólidos, la
-   acción principal siempre visible arriba y la barra de reagendar solo
-   cuando urge. */
+/* ═══════════ REDISEÑO v4 ═══════════
+   Una sola tarjeta al centro y un lateral sin cajas, separado por líneas.
+   Todo cuelga de `.tw4` (el overlay) para no tocar otros widgets. */
 
-/* ── Barra de vencimiento ── */
-.crm-tw-duebar {
-    display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
-    padding: 11px 18px; background: #fff; border-bottom: 1px solid #E2E8F0;
+.tw4 .crm-task-modal {
+    max-width: 1320px;
+    height: 88vh;
+    max-height: 92vh;
+    background: #F7F8FA;
+}
+
+/* ── Encabezado: franja delgada, migaja a la izquierda, iconos a la derecha ── */
+.tw4 .tw4-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 14px 0 20px; min-height: 48px;
+    background: #fff; border-bottom: 1px solid #E9EBEF;
     flex-shrink: 0;
 }
-.crm-tw-due-pill {
-    display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
-    padding: 5px 13px; font-size: 0.78rem; font-weight: 700;
-    background: #F2F2F7; color: #3A3A3C;
+.tw4 .tw4-crumb { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.tw4 .tw4-chip {
+    display: inline-flex; align-items: center; max-width: 220px;
+    padding: 3px 10px; border-radius: 999px;
+    background: #F1F3F7; border: 1px solid #E4E7EC;
+    font: inherit; font-size: 12px; font-weight: 600; color: #475569;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
 }
-.crm-tw-due-pill.vencida { background: rgba(255,59,48,.1); color: #FF3B30; }
-.crm-tw-due-pill.urgente { background: rgba(255,149,0,.13); color: #B45309; }
-.crm-tw-due-lbl { font-size: 0.66rem; font-weight: 800; letter-spacing: .06em; color: #86868B; }
-.crm-tw-snooze-wrap { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.crm-tw-snooze {
-    border: 1px solid #E2E8F0; background: #fff; border-radius: 999px;
-    padding: 5px 13px; font: inherit; font-size: 0.75rem; font-weight: 600;
-    color: #1D1D1F; cursor: pointer; transition: border-color .12s, color .12s;
-}
-.crm-tw-snooze:hover { border-color: #BFD9FF; color: #0052D4; }
-.crm-tw-duebar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.tw4 span.tw4-chip { cursor: default; }
+.tw4 .tw4-chip:hover { border-color: #C7D7F5; color: #0052D4; }
+.tw4 .tw4-chev-sep { color: #C7CBD1; flex-shrink: 0; }
+.tw4 .tw4-num { font-size: 12px; font-weight: 600; color: #94A3B8; white-space: nowrap; }
 
-/* ── Cuadros sólidos ── */
-.crm-tw-card {
-    background: #fff; border: 1px solid #E2E8F0; border-radius: 18px;
-    padding: 18px 20px; margin-bottom: 16px;
+.tw4 .tw4-head-acts { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.tw4 .tw4-ic {
+    width: 30px; height: 30px; border: none; background: none; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #64748B; cursor: pointer; transition: background .12s, color .12s;
 }
-.crm-tw-main-scroll > .crm-tw-card:last-child { margin-bottom: 0; }
-.crm-tw-sidebar-inner > .crm-tw-card { margin-bottom: 14px; }
-.crm-tw-sb-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.crm-tw-sb-footlink {
-    display: block; margin-top: 6px; padding: 0; border: none; background: none;
-    font: inherit; font-size: 0.72rem; font-weight: 600; color: #0052D4; cursor: pointer;
+.tw4 .tw4-ic:hover { background: #F1F3F7; color: #1D1D1F; }
+.tw4 .tw4-sep { width: 1px; height: 18px; background: #E4E7EC; margin: 0 6px; }
+.tw4 .tw4-share-wrap, .tw4 .tw4-menu-wrap { position: relative; display: inline-flex; }
+/* El panel del menú de 3 puntos y el toast de "enlace copiado" traían su caja
+   de una clase del header viejo; aquí se la damos de nuevo. */
+.tw4 .tw4-menu-wrap .crm-tw-menu {
+    min-width: 220px; padding: 6px;
+    background: #fff; border: 1px solid #E4E7EC; border-radius: 12px;
+    box-shadow: 0 12px 32px -8px rgba(15, 23, 42, .16), 0 2px 6px -2px rgba(15, 23, 42, .06);
+    z-index: 50; animation: crmTwMenuIn 140ms ease-out;
 }
-.crm-tw-sb-footlink:hover { text-decoration: underline; }
 
-/* ── Relacionado: renglones navegables ── */
-.crm-tw-rel-row {
-    display: flex; align-items: center; gap: 11px; padding: 9px 10px;
-    margin: 0 -10px; border-radius: 11px; cursor: pointer; transition: background .12s;
+/* ── Cuerpo: columna principal + lateral ── */
+.tw4 .tw4-body {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 1fr 320px;
+    overflow: hidden;
 }
-.crm-tw-rel-row:hover { background: rgba(0,82,212,.05); }
-.crm-tw-rel-ico {
-    width: 32px; height: 32px; border-radius: 9px; display: flex;
-    align-items: center; justify-content: center; flex-shrink: 0;
+.tw4 .tw4-main {
+    min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 14px 18px 18px;
+    overflow: hidden;
 }
-.crm-tw-rel-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.crm-tw-rel-lbl {
-    font-size: 0.62rem; font-weight: 800; letter-spacing: .05em;
-    color: #86868B; text-transform: uppercase;
+
+/* ── Barra de acción ── */
+.tw4 .tw4-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px; flex-shrink: 0;
 }
-.crm-tw-rel-row .crm-tw-rel-value {
-    font-size: 0.84rem; font-weight: 600; color: #1D1D1F;
+.tw4 .tw4-due {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 13px; border-radius: 999px;
+    background: #FFF8E8; border: 1px solid #FBE3B0; color: #B45309;
+    font-size: 12.5px; font-weight: 600;
+}
+.tw4 .tw4-due.vencida { background: #FFF1F2; border-color: #FECDD3; color: #BE123C; }
+.tw4 .tw4-due.completada { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
+.tw4 .tw4-due.normal { background: #F1F3F7; border-color: #E4E7EC; color: #475569; }
+.tw4 .tw4-bar-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+.tw4 .tw4-ghost {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 9px;
+    border: 1px solid #E4E7EC; background: #fff; color: #334155;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: border-color .12s, color .12s;
+}
+.tw4 .tw4-ghost:hover { border-color: #BFD9FF; color: #0052D4; }
+.tw4 .tw4-pri {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 15px; border-radius: 9px; border: none;
+    background: #2563EB; color: #fff;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, .25);
+    transition: background .12s;
+}
+.tw4 .tw4-pri:hover { background: #1D4ED8; }
+.tw4 .tw4-completada {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px; border-radius: 999px;
+    background: #ECFDF5; color: #047857; font-size: 12.5px; font-weight: 700;
+}
+
+/* ── Tarjeta única: título, descripción, subtareas, actividad y compositor ── */
+.tw4 .tw4-card {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    overflow-y: auto;
+    padding: 22px 24px 0;
+}
+.tw4 .tw4-titulo-wrap { flex-shrink: 0; }
+.tw4 .tw4-titulo {
+    margin: 0 0 18px; font-size: 22px; font-weight: 700;
+    color: #0F172A; letter-spacing: -.01em; line-height: 1.3;
+}
+.tw4 .tw4-sec { flex-shrink: 0; padding-bottom: 20px; }
+.tw4 .tw4-sec-t {
+    display: flex; align-items: center; gap: 7px;
+    margin: 0 0 10px; font-size: 12.5px; font-weight: 700;
+    color: #64748B; letter-spacing: .01em;
+}
+.tw4 .tw4-sec-t svg { color: #94A3B8; }
+.tw4 .tw4-card .crm-task-desc-content {
+    padding: 0; margin: 0; background: transparent; border: none;
+    border-radius: 0; font-size: 14.5px; line-height: 1.7; color: #334155;
+}
+
+/* Actividad: se estira hasta el compositor para que no quede lienzo muerto */
+.tw4 .tw4-actividad {
+    flex: 1 1 auto; min-height: 150px;
+    display: flex; flex-direction: column;
+}
+.tw4 .tw4-feed { flex: 1; min-height: 0; }
+.tw4 .crm-tw-feed-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    color: #A0AAB8; font-size: 13px; text-align: center; padding: 24px 0;
+}
+.tw4 .crm-tw-feed-empty .crm-tw-feed-empty-sub { font-size: 12px; color: #B6BECB; }
+
+/* ── Compositor: pegado abajo dentro de la misma tarjeta ── */
+.tw4 .tw4-tray {
+    position: sticky; bottom: 0; z-index: 2;
+    flex-shrink: 0; margin: 0 -24px; padding: 12px 24px 16px;
+    background: #fff; border-top: 1px solid #F1F3F7;
+}
+.tw4 .tw4-tray-form { display: block; }
+.tw4 .tw4-tray-top { display: flex; gap: 10px; align-items: flex-start; }
+.tw4 .tw4-tray-av {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: #2563EB; color: #fff; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+}
+.tw4 .tw4-tray-av img { width: 100%; height: 100%; object-fit: cover; }
+.tw4 .tw4-tray-inp-wrap { flex: 1; min-width: 0; position: relative; }
+.tw4 .tw4-tray-inp {
+    width: 100%; box-sizing: border-box; resize: none;
+    min-height: 38px; max-height: 160px; padding: 9px 12px;
+    border: 1px solid #E4E7EC; border-radius: 11px; background: #FBFCFD;
+    font: inherit; font-size: 14px; color: #1D1D1F; outline: none;
+    transition: border-color .12s, background .12s;
+}
+.tw4 .tw4-tray-inp:focus { border-color: #BFD9FF; background: #fff; }
+.tw4 .tw4-tray-bottom {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 8px; padding-left: 40px;
+}
+.tw4 .tw4-tray-tools { display: flex; align-items: center; gap: 2px; }
+.tw4 .tw4-tool {
+    width: 28px; height: 28px; border: none; background: none; border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #94A3B8; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: background .12s, color .12s;
+}
+.tw4 .tw4-tool:hover { background: #F1F3F7; color: #475569; }
+.tw4 .tw4-tray-send { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.tw4 .tw4-hint { font-size: 11.5px; color: #A0AAB8; white-space: nowrap; }
+.tw4 .tw4-enviar { padding: 7px 16px; }
+
+/* ── Lateral: sin cajas, secciones separadas por líneas ── */
+.tw4 .tw4-side {
+    min-width: 0; min-height: 0; overflow-y: auto;
+    background: #fff; border-left: 1px solid #E9EBEF;
+    padding: 6px 20px 24px;
+}
+.tw4 .tw4-side-sec { padding: 16px 0; border-bottom: 1px solid #F1F3F7; }
+.tw4 .tw4-side-sec:last-of-type { border-bottom: none; }
+.tw4 .tw4-lbl {
+    display: block; margin-bottom: 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: #94A3B8; text-transform: uppercase;
+}
+.tw4 .tw4-lbl-row { display: flex; align-items: center; justify-content: space-between; }
+.tw4 .tw4-lbl-row .tw4-lbl { margin-bottom: 7px; }
+.tw4 .tw4-add {
+    width: 22px; height: 22px; margin-bottom: 5px; border-radius: 6px;
+    border: 1px dashed #D8DDE5; background: none; color: #94A3B8;
+    font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+    transition: border-color .12s, color .12s;
+}
+.tw4 .tw4-add:hover { border-color: #BFD9FF; color: #0052D4; }
+
+.tw4 .tw4-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tw4 .tw4-duo > div { min-width: 0; }
+.tw4 .tw4-sel, .tw4 .tw4-fecha {
+    display: flex; align-items: center; gap: 7px;
+    width: 100%; box-sizing: border-box; min-height: 34px;
+    padding: 6px 10px; border: 1px solid #E4E7EC; border-radius: 9px;
+    background: #fff; font: inherit; font-size: 13px; font-weight: 600;
+    color: #334155; text-align: left;
+}
+.tw4 button.tw4-sel, .tw4 .tw4-fecha { cursor: pointer; transition: border-color .12s; }
+.tw4 button.tw4-sel:hover, .tw4 .tw4-fecha:hover { border-color: #BFD9FF; }
+.tw4 .tw4-sel > span:not(.crm-tw-sb-dot) {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tw4 .tw4-fecha svg { color: #F43F5E; flex-shrink: 0; }
+.tw4 .tw4-fecha .crm-tw-fecha-main { font-size: 13px; font-weight: 600; }
+.tw4 .tw4-fecha .crm-tw-fecha-meta { display: none; }
+/* El campo datetime-local trae ancho propio: que se ajuste a la columna. */
+.tw4 .tw4-side input[type="datetime-local"] {
+    width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;
+    padding: 6px 9px; font-size: 13px;
+}
+
+.tw4 .tw4-persona {
+    display: flex; align-items: center; gap: 9px;
+    min-height: 32px; padding: 5px 0;
+}
+.tw4 .tw4-persona[style*="cursor: pointer"]:hover { color: #0052D4; }
+.tw4 .tw4-persona-ro { cursor: default; }
+.tw4 .tw4-gente { display: flex; flex-direction: column; gap: 6px; }
+
+/* Relacionado: renglones navegables con flecha */
+.tw4 .tw4-rel {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; margin: 0 -10px 2px;
+    border-radius: 10px; cursor: pointer; transition: background .12s;
+}
+.tw4 .tw4-rel:hover { background: #F5F8FF; }
+.tw4 .tw4-rel-ic {
+    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.tw4 .tw4-rel-b { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tw4 .tw4-rel-l {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    color: #94A3B8; text-transform: uppercase;
+}
+.tw4 .tw4-rel-v {
+    font-size: 13px; font-weight: 600; color: #1D1D1F;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Subtareas plegadas: el cuadro chico solo dice que existen ──
-   La lista la pinta crm_main.js; aquí se oculta hasta que se hace clic en la
-   cabecera. Si no hay subtareas, crm_main.js deja la sección vacía y el
-   :empty la esconde entera. */
-.crm-tw-subtareas-card:empty { display: none; }
-.crm-tw-subtareas-card .crm-tw-section-title { cursor: pointer; user-select: none; }
-.crm-tw-subtareas-card .crm-tw-section-title::after {
+/* ── Subtareas: nacen plegadas; la lista la pinta crm_main.js ── */
+.tw4 .crm-tw-subtareas-card:empty { display: none; }
+.tw4 .crm-tw-subtareas-card .crm-tw-section-title {
+    display: flex; align-items: center; gap: 7px;
+    margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: #64748B;
+    cursor: pointer; user-select: none;
+}
+.tw4 .crm-tw-subtareas-card .crm-tw-section-title::after {
     content: ''; margin-left: auto; width: 7px; height: 7px;
-    border-right: 2px solid #C7C7CC; border-bottom: 2px solid #C7C7CC;
+    border-right: 2px solid #C7CBD1; border-bottom: 2px solid #C7CBD1;
     transform: rotate(-45deg); transition: transform .15s;
 }
-.crm-tw-subtareas-card.is-open .crm-tw-section-title::after { transform: rotate(45deg); }
-.crm-tw-subtareas-card .crm-tw-subtareas-list,
-.crm-tw-subtareas-card .crm-tw-subtarea-add { display: none; }
-.crm-tw-subtareas-card.is-open .crm-tw-subtareas-list { display: block; }
-.crm-tw-subtareas-card.is-open .crm-tw-subtarea-add { display: flex; }
-/* La card de "tarea principal" no se pliega: no tiene lista que esconder. */
-.crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title { cursor: default; }
-.crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title::after { display: none; }
+.tw4 .crm-tw-subtareas-card.is-open .crm-tw-section-title::after { transform: rotate(45deg); }
+.tw4 .crm-tw-subtareas-card .crm-tw-subtareas-list,
+.tw4 .crm-tw-subtareas-card .crm-tw-subtarea-add { display: none; }
+.tw4 .crm-tw-subtareas-card.is-open .crm-tw-subtareas-list { display: block; }
+.tw4 .crm-tw-subtareas-card.is-open .crm-tw-subtarea-add { display: flex; }
+/* La tarjeta de "tarea principal" no se pliega: no tiene lista que esconder. */
+.tw4 .crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title { cursor: default; }
+.tw4 .crm-tw-subtareas-card:has(.crm-tw-parent-card) .crm-tw-section-title::after { display: none; }
 
-/* ═══ Pulido: fuera las cajas dentro de las cajas ═══
-   El diseño anterior encerraba cada valor en su propio recuadro. Ahora que
-   todo vive dentro de un cuadro, ese segundo borde solo hace ruido: los
-   valores pasan a ser texto separado por líneas finas. */
-.crm-tw-card .crm-tw-sb-btn {
-    background: transparent; border: none; border-radius: 0;
-    padding: 2px 0; width: auto; min-height: 0;
+/* ── La barra de guardar se apoya sobre el encabezado ── */
+.tw4 .crm-tw-savebar { flex-shrink: 0; }
+
+/* ── Responsive: el widget vive en ventanas que se encogen, así que se mide
+      el contenedor, no la pantalla. ── */
+.tw4 .crm-task-modal { container-type: inline-size; container-name: tw4; }
+@container tw4 (max-width: 900px) {
+    .tw4 .tw4-body { grid-template-columns: 1fr; overflow-y: auto; }
+    .tw4 .tw4-main { overflow: visible; }
+    .tw4 .tw4-card { overflow: visible; }
+    .tw4 .tw4-side { border-left: none; border-top: 1px solid #E9EBEF; overflow: visible; }
+    .tw4 .tw4-tray { position: static; }
 }
-.crm-tw-card .crm-tw-sb-btn:hover { background: transparent; color: #0052D4; }
-.crm-tw-card .crm-tw-sb-props { gap: 0; }
-.crm-tw-card .crm-tw-sb-prop { padding: 11px 0; border-bottom: 1px solid #F1F5F9; }
-.crm-tw-card .crm-tw-sb-prop:first-child { padding-top: 0; }
-.crm-tw-card .crm-tw-sb-props > .crm-tw-sb-prop:last-child,
-.crm-tw-card .crm-tw-sb-duo { border-bottom: none; }
-.crm-tw-card .crm-tw-sb-duo { padding-bottom: 0; }
-.crm-tw-card .crm-tw-sb-duo .crm-tw-sb-prop { padding: 11px 0 0; border-bottom: none; }
-
-/* Fecha límite: la barra de arriba ya canta la urgencia con su color y su
-   "vence en 2 horas". Repetirlo aquí en un recuadro amarillo partía el texto
-   en tres renglones y desbalanceaba la pareja con Prioridad. */
-.crm-tw-card .crm-tw-fecha-meta { display: none; }
-.crm-tw-card .crm-tw-sb-btn.fecha-vencida,
-.crm-tw-card .crm-tw-sb-btn.fecha-urgente { background: transparent; border-color: transparent; }
-.crm-tw-card .crm-tw-fecha-main { white-space: nowrap; }
-
-/* Descripción: el gris interior sobraba teniendo ya el cuadro. */
-.crm-tw-card .crm-task-desc-content,
-.crm-tw-card .crm-tw-desc {
-    padding: 0; margin: 0; background: transparent; border: none;
-    border-radius: 0; font-size: 15px; line-height: 1.7;
+@container tw4 (max-width: 560px) {
+    .tw4 .tw4-main { padding: 12px; }
+    .tw4 .tw4-card { padding: 16px 16px 0; }
+    .tw4 .tw4-tray { margin: 0 -16px; padding: 10px 16px 14px; }
+    .tw4 .tw4-bar-acts { margin-left: 0; width: 100%; }
+    .tw4 .tw4-pri, .tw4 .tw4-ghost { flex: 1; justify-content: center; }
+    .tw4 .tw4-duo { grid-template-columns: 1fr; }
+    .tw4 .tw4-hint { display: none; }
 }
-
-/* Cabeceras de sección: sin la línea extra, el cuadro ya delimita. */
-.crm-tw-card .crm-tw-section-title { margin-bottom: 12px; }
-.crm-tw-card .crm-tw-activity-head {
-    margin-bottom: 12px; padding-bottom: 0; border-bottom: none;
-}
-.crm-tw-card.crm-tw-activity { padding-top: 18px; }
-.crm-tw-card.crm-tw-section { margin-bottom: 16px; }
-
-/* Personas: "Ninguno" como texto tenue y separación real entre los grupos. */
-.crm-tw-card .crm-tw-sb-divider { margin: 14px 0; }
-.crm-tw-card .crm-tw-sb-list:empty::after,
-.crm-tw-card .crm-tw-sb-list .crm-tw-sb-empty { font-size: 0.78rem; color: #9CA3AF; }
-.crm-tw-card .crm-tw-sb-group-title { margin-bottom: 8px; }
-
-/* El aire de arriba lo daba el título solo; ahora manda la barra de
-   vencimiento, así que el cuerpo arranca más cerca. */
-.crm-tw-main-scroll { padding: 22px 24px 28px; }
-.crm-tw-title-row { margin-bottom: 18px; }
-.crm-tw-title { font-size: 27px; font-weight: 800; }
-/* El sidebar traía gap:32 pensado para bloques sueltos; ahora cada cuadro
-   lleva su propio margen y ese gap duplicaba la separación. */
-.crm-tw-sidebar-inner { padding: 22px 20px; gap: 0; }
-
-/* ═══ Cuadros sólidos ═══
-   El fondo del widget era blanco, así que cuadros blancos sobre blanco se
-   desvanecían. Con el lienzo en gris claro los cuadros por fin se leen como
-   cuadros. */
-.crm-tw-body, .crm-tw-main, .crm-tw-sidebar, .crm-tw-tray { background: #F4F5F7; }
-.crm-tw-card {
-    border-color: #E4E7EC;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
-}
-/* El compositor es un cuadro más, no una franja pegada al borde. */
-.crm-tw-tray { border-top: none; }
-.crm-tw-tray-box {
-    border: 1px solid #E4E7EC;
-    border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
-}
-
-/* Estado y responsable SÍ llevan recuadro: son selectores, y el borde es lo
-   que avisa que se pueden cambiar. Fecha y prioridad se quedan como texto. */
-.crm-tw-card #crmTaskEstadoValue,
-.crm-tw-card #crm-task-responsable-container {
-    background: #fff; border: 1px solid #E2E8F0; border-radius: 9px;
-    padding: 8px 11px; width: 100%; box-sizing: border-box;
-}
-.crm-tw-card #crmTaskEstadoValue:hover,
-.crm-tw-card #crm-task-responsable-container:hover { border-color: #BFD9FF; }
-
-/* ═══ Editar la fecha sin descuadrar ═══
-   El campo datetime-local tiene un ancho mínimo propio que no cabe en media
-   columna: se salía de la tarjeta y empujaba a Prioridad. Mientras se edita,
-   la fila pasa a una sola columna y el campo se ajusta al ancho disponible. */
-.crm-tw-sb-duo, .crm-tw-sb-duo > .crm-tw-sb-prop { min-width: 0; }
-.crm-tw-card input[type="datetime-local"] {
-    width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;
-    padding: 7px 9px;
-}
-.crm-tw-sb-duo:has(input[type="datetime-local"]) {
-    grid-template-columns: 1fr;
-    gap: 14px;
-}
-
-/* ═══ Que no sobre lienzo ═══
-   Antes quedaba una franja gris muerta entre las tarjetas y el compositor:
-   Actividad no crecía y el hueco se lo comía el fondo. Ahora la columna es
-   flex y Actividad se estira hasta el compositor. */
-.crm-tw-main-scroll { display: flex; flex-direction: column; }
-/* La descripción manda: es la instrucción de la tarea, lo que se entra a
-   leer. Se lleva el doble del espacio libre que Actividad, y ambas parten
-   de su contenido (flex-basis auto) para no estirar textos cortos. */
-.crm-tw-card.crm-tw-section-desc {
-    flex: 2 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 190px;
-}
-.crm-tw-card.crm-tw-section-desc .crm-task-desc-wrap { flex: 1; }
-.crm-tw-card.crm-tw-activity {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 170px;
-}
-.crm-tw-card.crm-tw-activity .crm-tw-feed { flex: 1; }
-/* El "sin comentarios" se centra en el espacio libre en vez de quedar
-   pegado arriba con un vacío enorme debajo. */
-.crm-tw-feed-empty {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9CA3AF;
-    font-size: 0.85rem;
-    padding: 1rem;
-}
-
-/* ═══ Compositor con más cuerpo ═══
-   Era una franja delgada; siendo el lugar donde se escribe merece presencia. */
-.crm-tw-tray { padding: 6px 24px 20px; }
-.crm-tw-tray-box { padding: 12px 14px; border-radius: 16px; }
-.crm-tw-tray-input, .crm-task-comment-textarea { font-size: 14px; min-height: 48px; }
-.crm-tw-tray-bottom { padding-top: 4px; }
-
-/* La barra de arriba se alinea con el contenido: el botón termina justo
-   donde terminan los cuadros de la derecha. */
-.crm-tw-duebar { padding: 11px 20px 11px 24px; }
 </style>
-<div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
+<div class="crm-task-modal-overlay tw4" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">
-        <!-- ═════ HEADER SUPERIOR (Global Tools) ═════ -->
-        <header class="crm-tw-header">
-            <div class="crm-tw-header-left">
-                <button type="button" class="crm-tw-crumb-pill" id="crmTaskCrumbProyecto" style="display:none;">
-                    <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg>
+
+        <!-- ═════ ENCABEZADO ═════ -->
+        <header class="tw4-head">
+            <div class="tw4-crumb">
+                <button type="button" class="tw4-chip" id="crmTaskCrumbProyecto" style="display:none;">
                     <span id="crm-task-breadcrumb-proyecto">Proyecto</span>
                 </button>
-                <svg class="crm-tw-chev" id="crmTaskCrumbChev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="crm-tw-cliente-crumb" id="crm-task-breadcrumb-cliente" style="display:none;" title="Cliente"></span>
+                <svg class="tw4-chev-sep" id="crmTaskCrumbChev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><polyline points="9 18 15 12 9 6"/></svg>
+                <span class="tw4-chip" id="crm-task-breadcrumb-cliente" style="display:none;" title="Cliente"></span>
                 <span class="crm-task-breadcrumb-sep" style="display:none;"></span>
-                <!-- Compartir enlace (acción rápida, fuera del menú) -->
-                <div class="crm-tw-share-wrap">
-                    <button type="button" class="crm-tw-icon-btn" id="crmTaskShareBtn" title="Copiar enlace para compartir" onclick="crmTaskCompartirPreview()">
+                <span class="tw4-num">Tarea · <span id="crm-task-numero">—</span></span>
+            </div>
+
+            <div class="tw4-head-acts">
+                <div class="tw4-share-wrap">
+                    <button type="button" class="tw4-ic" id="crmTaskShareBtn" title="Copiar enlace para compartir" onclick="crmTaskCompartirPreview()">
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                     </button>
-                    <!-- Toast de confirmación: chip verde abajo del botón -->
                     <div class="crm-tw-share-toast" id="crmTaskShareToast">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                         <span>Enlace copiado</span>
                     </div>
                 </div>
-                <div class="crm-tw-menu-wrap">
-                    <button type="button" class="crm-tw-icon-btn" id="crmTaskMenuBtn" title="Más acciones" onclick="crmTaskToggleMenu(event)" aria-haspopup="true" aria-expanded="false">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                <button type="button" class="tw4-ic" id="crmTaskHistorialBtn" title="Historial de cambios" onclick="crmTaskAbrirHistorial()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+                </button>
+                <div class="tw4-menu-wrap">
+                    <button type="button" class="tw4-ic" id="crmTaskMenuBtn" title="Más acciones" onclick="crmTaskToggleMenu(event)" aria-haspopup="true" aria-expanded="false">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                     </button>
                     <div class="crm-tw-menu" id="crmTaskMenu" role="menu" style="display:none;">
                         <button type="button" class="crm-tw-menu-item danger" id="crmTaskMenuEliminar" onclick="crmTaskEliminarTarea()" role="menuitem" style="display:none;">
@@ -283,20 +365,14 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="crm-tw-header-right">
-                {# Botón Historial de cambios — abre overlay con timeline de versiones de la Tarea #}
-                <button type="button" class="crm-tw-icon-btn" id="crmTaskHistorialBtn" title="Historial de cambios" onclick="crmTaskAbrirHistorial()">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
-                </button>
-                <div class="crm-tw-header-divider"></div>
-                <button type="button" class="crm-tw-icon-btn" data-widget-close onclick="crmTaskCerrarModal()" title="Cerrar (Esc)">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <div class="tw4-sep"></div>
+                <button type="button" class="tw4-ic" data-widget-close onclick="crmTaskCerrarModal()" title="Cerrar (Esc)">
+                    <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
         </header>
 
-        <!-- Hidden: save bar + botones Terminar/Reabrir (JS compat, algunos aparecen en UI) -->
+        <!-- Save bar + botón oculto (compat JS) -->
         <div id="crmTaskSaveBar" class="crm-tw-savebar" style="display:none;">
             <span class="crm-tw-savebar-text">Cambios sin guardar</span>
             <button type="button" onclick="crmTaskCancelarEdicion()" class="crm-tw-savebar-cancel">Cancelar</button>
@@ -304,51 +380,45 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
         </div>
         <button type="button" id="crmTaskBtnTerminar" onclick="crmTaskCompletar()" style="display:none;" aria-hidden="true"></button>
 
-        <!-- ═════ BARRA DE VENCIMIENTO ═════
-             Solo aparece cuando la tarea está vencida o vence pronto; en ese caso
-             ofrece reagendar de un clic, que es lo que hace que una tarea vencida
-             se atienda en vez de ignorarse. La acción principal (completar /
-             reabrir) vive aquí para estar siempre visible sin scroll. -->
-        <div class="crm-tw-duebar" id="crmTaskDueBar" style="display:none;">
-            <span class="crm-tw-due-pill" id="crmTaskDuePill">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                <span id="crmTaskDueTxt"></span>
-            </span>
-            <span class="crm-tw-due-lbl" id="crmTaskSnoozeLbl">MOVER A</span>
-            <span class="crm-tw-snooze-wrap" id="crmTaskSnoozeWrap">
-                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('manana')">Mañana</button>
-                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('lunes')">Lunes</button>
-                <button type="button" class="crm-tw-snooze" onclick="crmTaskReagendar('otra')">Otra fecha…</button>
-            </span>
-            <div class="crm-tw-duebar-right">
-                <button type="button" id="crmTaskBtnCompletarPrimary" class="crm-tw-complete-btn" onclick="crmTaskToggleCompletar()">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span>Completar tarea</span>
-                </button>
-                <button type="button" id="crmTaskBtnReabrir" class="crm-tw-reabrir-btn" onclick="crmTaskReabrir()" style="display:none;">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-                    Reabrir tarea
-                </button>
-                <span class="crm-tw-completada-pill" id="crmTaskCompletadaPill" style="display:none;">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Completada
-                </span>
-            </div>
-        </div>
+        <!-- ═════ CUERPO ═════ -->
+        <div class="tw4-body">
 
-        <!-- ═════ CUERPO DIVIDIDO ═════ -->
-        <div class="crm-tw-body">
-            <!-- ═════ PANEL IZQUIERDO ═════ -->
-            <div class="crm-tw-main">
-                <div class="crm-tw-main-scroll">
-                    <!-- Título (las acciones se fueron a la barra de vencimiento) -->
-                    <div class="crm-tw-title-row">
-                        <div class="crm-tw-title-stack">
-                            <h1 id="crm-task-titulo" class="crm-tw-title"></h1>
-                        </div>
+            <!-- ── Columna principal ── -->
+            <div class="tw4-main">
+                <!-- Barra de acción: vencimiento a la izquierda, acciones a la derecha -->
+                <div class="tw4-bar" id="crmTaskDueBar" style="display:none;">
+                    <span class="tw4-due" id="crmTaskDuePill">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                        <span id="crmTaskDueTxt"></span>
+                    </span>
+                    <span id="crmTaskSnoozeLbl" style="display:none;"></span>
+                    <div class="tw4-bar-acts" id="crmTaskSnoozeWrap">
+                        <button type="button" class="tw4-ghost" onclick="crmTaskReagendar('otra')">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                            Reprogramar
+                        </button>
+                        <button type="button" id="crmTaskBtnCompletarPrimary" class="tw4-pri" onclick="crmTaskToggleCompletar()">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Completar tarea</span>
+                        </button>
+                        <button type="button" id="crmTaskBtnReabrir" class="tw4-ghost" onclick="crmTaskReabrir()" style="display:none;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                            Reabrir tarea
+                        </button>
+                        <span class="tw4-completada" id="crmTaskCompletadaPill" style="display:none;">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            Completada
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Tarjeta única: título, descripción y actividad -->
+                <div class="tw4-card">
+                    <div class="tw4-titulo-wrap">
+                        <h1 id="crm-task-titulo" class="tw4-titulo"></h1>
                     </div>
 
-                    <!-- Hidden badges (JS compat) -->
+                    <!-- Badges ocultos (compat JS) -->
                     <div class="crm-tw-hidden-badges" style="display:none;">
                         <span id="crm-task-estado-badge" class="crm-task-status-pill estado">Pendiente</span>
                         <span id="crm-task-prioridad-badge" class="crm-task-status-pill prioridad">
@@ -357,44 +427,32 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                         <span id="crm-task-vence-badge" class="crm-task-status-pill vence"></span>
                     </div>
 
-                    <!-- DESCRIPCIÓN -->
-                    <div class="crm-tw-card crm-tw-section crm-tw-section-desc">
-                        <h3 class="crm-tw-section-title">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
-                            Descripción
-                        </h3>
+                    <div class="tw4-sec">
+                        <h3 class="tw4-sec-t">Descripción</h3>
                         <div class="crm-task-desc-wrap">
                             <div id="crm-task-descripcion" class="crm-task-desc-content crm-tw-desc"></div>
                             <button id="crm-task-desc-toggle" class="crm-task-desc-toggle" onclick="crmTaskToggleDesc()">Mostrar más</button>
                         </div>
                     </div>
 
-                    <!-- SUBTAREAS (renderizado por crm_main.js).
-                         Nace plegado: solo el título con su contador y la barra de
-                         avance. Un clic en la cabecera despliega la lista completa. -->
-                    <div class="crm-tw-card crm-tw-section crm-tw-subtareas-card" id="crmTaskSubtareasSection"></div>
+                    <!-- Subtareas: nace plegada, la pinta crm_main.js -->
+                    <div class="tw4-sec crm-tw-subtareas-card" id="crmTaskSubtareasSection"></div>
 
-                    <!-- TIMELINE DE ACTIVIDAD -->
-                    <div class="crm-tw-card crm-tw-section crm-tw-activity">
-                        <div class="crm-tw-activity-head">
-                            <h3 class="crm-tw-section-title">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                Actividad
-                            </h3>
-                        </div>
-                        <div id="crm-task-activity-feed" class="crm-tw-feed"></div>
+                    <div class="tw4-sec tw4-actividad">
+                        <h3 class="tw4-sec-t">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Actividad
+                        </h3>
+                        <div id="crm-task-activity-feed" class="tw4-feed"></div>
                     </div>
-                </div>
 
-                <!-- TRAY DE CHAT INFERIOR -->
-                <div class="crm-tw-tray">
-                    <div class="crm-tw-tray-box">
-                        <form id="crm-task-comment-form" class="crm-tw-tray-form">
-                            <div class="crm-tw-tray-top">
-                                <div id="crm-task-comment-avatar" class="crm-tw-tray-avatar"></div>
-                                <div class="crm-tw-tray-input-wrap">
-                                    <textarea id="crm-task-comment-input" class="crm-tw-tray-input" rows="1"
-                                        placeholder="Añade un comentario..."></textarea>
+                    <!-- Compositor -->
+                    <div class="tw4-tray">
+                        <form id="crm-task-comment-form" class="tw4-tray-form">
+                            <div class="tw4-tray-top">
+                                <div id="crm-task-comment-avatar" class="tw4-tray-av"></div>
+                                <div class="tw4-tray-inp-wrap">
+                                    <textarea id="crm-task-comment-input" class="tw4-tray-inp" rows="1" placeholder="Añade un comentario..."></textarea>
                                     <div id="crm-mention-dropdown" class="crm-tw-mention-dd" style="display:none;"></div>
                                 </div>
                             </div>
@@ -404,24 +462,24 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                                 <input type="file" id="crm-task-file-input" multiple style="display:none;">
                             </div>
                             <div id="crm-task-files-preview" class="crm-tw-files-preview"></div>
-                            <div class="crm-tw-tray-bottom">
-                                <div class="crm-tw-tray-tools">
-                                    <button type="button" class="crm-tw-tray-tool" title="Adjuntar archivo"
+                            <div class="tw4-tray-bottom">
+                                <div class="tw4-tray-tools">
+                                    <button type="button" class="tw4-tool" title="Adjuntar archivo"
                                         onclick="var dz=document.getElementById('crm-task-drop-zone');dz.style.display=dz.style.display==='none'?'block':'none';">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                                     </button>
-                                    <button type="button" class="crm-tw-tray-tool" title="Mencionar"
+                                    <button type="button" class="tw4-tool" title="Mencionar"
                                         onclick="(function(t){t.value=(t.value||'')+'@';t.focus();})(document.getElementById('crm-task-comment-input'))">@</button>
-                                    <button type="button" class="crm-tw-tray-tool" title="Añadir subtarea"
+                                    <button type="button" class="tw4-tool" title="Añadir subtarea"
                                         onclick="if(typeof crmTaskCrearSubtarea==='function')crmTaskCrearSubtarea();">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                                     </button>
                                 </div>
-                                <div class="crm-tw-tray-send">
-                                    <span class="crm-tw-tray-hint">Presiona <kbd>⌘ Enter</kbd></span>
-                                    <button type="submit" id="crm-task-btn-enviar" class="crm-tw-tray-submit">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                <div class="tw4-tray-send">
+                                    <span class="tw4-hint">&#8984; + Enter para enviar</span>
+                                    <button type="submit" id="crm-task-btn-enviar" class="tw4-pri tw4-enviar">
                                         <span>Enviar</span>
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                                     </button>
                                 </div>
                             </div>
@@ -430,131 +488,88 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
                 </div>
             </div>
 
-            <!-- ═════ PANEL DERECHO (SIDEBAR) ═════ -->
-            <aside class="crm-tw-sidebar">
-                <div class="crm-tw-sidebar-inner">
-                    <!-- 1. Metadatos principales -->
-                    <div class="crm-tw-card crm-tw-sb-props">
-                        <!-- ESTADO -->
-                        <div class="crm-tw-sb-prop">
-                            <span class="crm-tw-sb-label">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                                Estado
-                            </span>
-                            <button type="button" class="crm-tw-sb-btn" id="crmTaskEstadoValue">
-                                <span class="crm-tw-sb-dot" id="crm-tw-estado-dot"></span>
-                                <span id="crm-task-estado-sidebar-pill">Pendiente</span>
-                            </button>
-                            <div id="crm-task-estado" style="display:none;"></div>
-                        </div>
-
-                        <!-- RESPONSABLE -->
-                        <div class="crm-tw-sb-prop">
-                            <span class="crm-tw-sb-label">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                Responsable
-                            </span>
-                            <div class="crm-tw-sb-btn crm-tw-sb-btn-resp" id="crm-task-responsable-container"></div>
-                        </div>
-
-                        <!-- CREADOR -->
-                        <div class="crm-tw-sb-prop">
-                            <span class="crm-tw-sb-label">
-                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                                Creador
-                            </span>
-                            <div class="crm-tw-sb-btn crm-tw-sb-btn-readonly" id="crm-task-creador-container"></div>
-                        </div>
-
-                        <!-- FECHA LÍMITE + PRIORIDAD, a dos columnas -->
-                        <div class="crm-tw-sb-duo">
-                            <div class="crm-tw-sb-prop">
-                                <span class="crm-tw-sb-label">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    Fecha Límite
-                                </span>
-                                <button type="button" class="crm-tw-sb-btn">
-                                    <svg class="crm-tw-sb-cal-ico" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    <span id="crm-task-fecha-limite" class="crm-task-info-value"></span>
-                                </button>
-                            </div>
-
-                            <!-- PRIORIDAD -->
-                            <div class="crm-tw-sb-prop" id="crmTaskPrioridadSidebarWrap">
-                                <span class="crm-tw-sb-label">
-                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                                    Prioridad
-                                </span>
-                                <div class="crm-tw-sb-btn" id="crm-task-prioridad"></div>
-                            </div>
-                        </div>
+            <!-- ── Lateral ── -->
+            <aside class="tw4-side">
+                <!-- Estado y prioridad, lado a lado -->
+                <div class="tw4-side-sec tw4-duo">
+                    <div>
+                        <span class="tw4-lbl">Estado</span>
+                        <button type="button" class="tw4-sel" id="crmTaskEstadoValue">
+                            <span class="crm-tw-sb-dot" id="crm-tw-estado-dot"></span>
+                            <span id="crm-task-estado-sidebar-pill">Pendiente</span>
+                        </button>
+                        <div id="crm-task-estado" style="display:none;"></div>
                     </div>
-
-                    <!-- 2. RELACIONADO — antes eran chips sueltos bajo la descripción,
-                         donde pasaban desapercibidos. Como renglones con flecha se
-                         leen como navegación. -->
-                    <div class="crm-tw-card crm-tw-relcard" id="crmTaskSidebarLinks" style="display:none;">
-                        <h4 class="crm-tw-sb-group-title">Relacionado</h4>
-                        <div class="crm-tw-rel-row crm-tw-rel-opp" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;" title="Abrir oportunidad">
-                            <span class="crm-tw-rel-ico" style="background:rgba(0,82,212,.1);color:#0052D4;">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>
-                            </span>
-                            <span class="crm-tw-rel-body">
-                                <span class="crm-tw-rel-lbl">Oportunidad</span>
-                                <span class="crm-tw-rel-value" id="crmTaskOppNombre">--</span>
-                                <span id="crmTaskOppCliente" style="display:none;"></span>
-                            </span>
-                            <svg width="13" height="13" fill="none" stroke="#C7C7CC" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                        </div>
-                        <div class="crm-tw-rel-row crm-tw-rel-drive" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;" title="Abrir carpeta de archivos">
-                            <span class="crm-tw-rel-ico" style="background:rgba(52,199,89,.12);color:#1E9E4A;">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                            </span>
-                            <span class="crm-tw-rel-body">
-                                <span class="crm-tw-rel-lbl">Archivos</span>
-                                <span class="crm-tw-rel-value">Drive de la oportunidad</span>
-                            </span>
-                            <svg width="13" height="13" fill="none" stroke="#C7C7CC" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                        </div>
+                    <div id="crmTaskPrioridadSidebarWrap">
+                        <span class="tw4-lbl">Prioridad</span>
+                        <div class="tw4-sel" id="crm-task-prioridad"></div>
                     </div>
+                </div>
 
-                    <!-- 3. Participantes y Observadores -->
-                    <div class="crm-tw-card">
-                        <div class="crm-tw-sb-group">
-                            <h4 class="crm-tw-sb-group-title">
-                                Participantes
-                                <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('participantes')" title="Añadir">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                </button>
-                            </h4>
-                            <div id="crm-task-participantes-container" class="crm-tw-sb-list"></div>
-                        </div>
+                <div class="tw4-side-sec">
+                    <span class="tw4-lbl">Fecha límite</span>
+                    <button type="button" class="tw4-fecha">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                        <span id="crm-task-fecha-limite" class="crm-task-info-value"></span>
+                    </button>
+                </div>
 
-                        <div class="crm-tw-sb-divider"></div>
+                <!-- Personas -->
+                <div class="tw4-side-sec">
+                    <span class="tw4-lbl">Responsable</span>
+                    <div class="tw4-persona" id="crm-task-responsable-container"></div>
+                    <span class="tw4-lbl" style="margin-top:14px;">Creador</span>
+                    <div class="tw4-persona tw4-persona-ro" id="crm-task-creador-container"></div>
+                </div>
 
-                        <div class="crm-tw-sb-group">
-                            <h4 class="crm-tw-sb-group-title">
-                                Observadores
-                                <button type="button" class="crm-tw-sb-plus" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('observadores')" title="Añadir">
-                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                </button>
-                            </h4>
-                            <div id="crm-task-observadores-container" class="crm-tw-sb-list"></div>
-                        </div>
+                <!-- Relacionado -->
+                <div class="tw4-side-sec" id="crmTaskSidebarLinks" style="display:none;">
+                    <span class="tw4-lbl">Relacionado</span>
+                    <div class="tw4-rel" id="crmTaskOppCard" onclick="crmTaskAbrirOportunidad()" style="display:none;" title="Abrir oportunidad">
+                        <span class="tw4-rel-ic" style="background:rgba(37,99,235,.1);color:#2563EB;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>
+                        </span>
+                        <span class="tw4-rel-b">
+                            <span class="tw4-rel-l">Oportunidad</span>
+                            <span class="tw4-rel-v" id="crmTaskOppNombre">--</span>
+                            <span id="crmTaskOppCliente" style="display:none;"></span>
+                        </span>
+                        <svg width="13" height="13" fill="none" stroke="#C7CBD1" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
-
-                    <!-- Cliente ya solo vive en el header (breadcrumb). Mantenemos stubs
-                         ocultos para compatibilidad con handlers JS legacy -->
-                    <div id="crmTaskClienteRow" style="display:none !important;" aria-hidden="true">
-                        <span id="crm-task-cliente-nombre"></span>
+                    <div class="tw4-rel" id="crmTaskDriveCard" onclick="crmTaskAbrirDrive()" style="display:none;" title="Abrir carpeta de archivos">
+                        <span class="tw4-rel-ic" style="background:rgba(52,199,89,.12);color:#1E9E4A;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </span>
+                        <span class="tw4-rel-b">
+                            <span class="tw4-rel-l">Archivos</span>
+                            <span class="tw4-rel-v">Drive de la oportunidad</span>
+                        </span>
+                        <svg width="13" height="13" fill="none" stroke="#C7CBD1" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
+                </div>
 
-                    <!-- 4. Footer: fecha de creación + acceso al historial -->
-                    <div class="crm-tw-sb-footer">
-                        <div>Creada el <span id="crm-task-fecha-creacion"></span></div>
-                        <span id="crm-task-creado-por" style="display:none;"></span>
-                        <button type="button" class="crm-tw-sb-footlink" onclick="crmTaskAbrirHistorial()">Ver historial de cambios</button>
+                <!-- Participantes y observadores -->
+                <div class="tw4-side-sec">
+                    <div class="tw4-lbl-row">
+                        <span class="tw4-lbl">Participantes</span>
+                        <button type="button" class="tw4-add" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('participantes')" title="Añadir">+</button>
                     </div>
+                    <div id="crm-task-participantes-container" class="tw4-gente crm-tw-sb-list"></div>
+
+                    <div class="tw4-lbl-row" style="margin-top:16px;">
+                        <span class="tw4-lbl">Observadores</span>
+                        <button type="button" class="tw4-add" onclick="if(typeof crmTaskAgregarInvolucrado==='function')crmTaskAgregarInvolucrado('observadores')" title="Añadir">+</button>
+                    </div>
+                    <div id="crm-task-observadores-container" class="tw4-gente crm-tw-sb-list"></div>
+                </div>
+
+                <!-- Stubs ocultos por compatibilidad con handlers legacy -->
+                <div id="crmTaskClienteRow" style="display:none !important;" aria-hidden="true">
+                    <span id="crm-task-cliente-nombre"></span>
+                </div>
+                <div style="display:none;">
+                    <span id="crm-task-fecha-creacion"></span>
+                    <span id="crm-task-creado-por"></span>
                 </div>
             </aside>
         </div>

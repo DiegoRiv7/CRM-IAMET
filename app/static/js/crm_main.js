@@ -8756,7 +8756,7 @@
             if (titleEl && titleEl.tagName !== 'H1') {
                 var h1 = document.createElement('h1');
                 h1.id = 'crm-task-titulo';
-                h1.className = 'crm-tw-title';
+                h1.className = 'tw4-titulo';
                 titleEl.replaceWith(h1);
             }
             var descEl = document.getElementById('crm-task-descripcion');
@@ -8921,7 +8921,7 @@
 
             // Info sidebar — fecha límite inteligente (relativa + color auto)
             var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
-            var fechaBtn = fechaLimiteEl ? fechaLimiteEl.closest('.crm-tw-sb-btn') : null;
+            var fechaBtn = fechaLimiteEl ? fechaLimiteEl.closest('.tw4-fecha, .crm-tw-sb-btn') : null;
             if (fechaBtn) fechaBtn.classList.remove('fecha-vencida', 'fecha-urgente');
             if (fechaLimiteEl) {
                 fechaLimiteEl.style.color = '';
@@ -8942,34 +8942,34 @@
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
 
-            // ── Barra de vencimiento (rediseño v3) ──
-            // Siempre visible porque sostiene la acción principal, pero los
-            // botones de reagendar solo salen cuando la tarea urge: en una que
-            // vence en tres semanas serían ruido.
+            // ── Barra de acción (rediseño v4) ──
+            // A la izquierda cuándo vence, a la derecha Reprogramar y la acción
+            // principal. Las acciones van siempre; lo que cambia con la urgencia
+            // es el color de la píldora.
             var dueBar = document.getElementById('crmTaskDueBar');
             if (dueBar) {
                 var _completada = tarea.estado === 'completada';
                 var _smart = tarea.fecha_limite
                     ? crmTaskFechaInteligente(tarea.fecha_limite, tarea.estado)
                     : null;
-                var _tone = _smart ? _smart.tone : '';
-                var _urge = !_completada && (_tone === 'vencida' || _tone === 'urgente');
+                var _tone = _smart ? _smart.tone : 'normal';
+                if (_completada) _tone = 'completada';
 
                 var _pill = document.getElementById('crmTaskDuePill');
                 var _txt = document.getElementById('crmTaskDueTxt');
-                var _snoozeWrap = document.getElementById('crmTaskSnoozeWrap');
-                var _snoozeLbl = document.getElementById('crmTaskSnoozeLbl');
 
-                if (_pill) _pill.className = 'crm-tw-due-pill' + (_urge ? ' ' + _tone : '');
+                if (_pill) _pill.className = 'tw4-due ' + _tone;
                 if (_txt) {
                     if (!_smart) _txt.textContent = 'Sin fecha límite';
                     else if (_completada) _txt.textContent = _smart.main;
                     else _txt.textContent = _smart.meta + ' · ' + _smart.main;
                 }
-                if (_snoozeWrap) _snoozeWrap.style.display = _urge ? '' : 'none';
-                if (_snoozeLbl) _snoozeLbl.style.display = _urge ? '' : 'none';
                 dueBar.style.display = 'flex';
             }
+
+            // Número de tarea en el encabezado (junto a la migaja)
+            var _numEl = document.getElementById('crm-task-numero');
+            if (_numEl) _numEl.textContent = '#' + (tarea.id || '—');
 
             // ── Subtareas plegadas ──
             // El contenido lo pinta este mismo render más abajo; el listener va
@@ -10338,7 +10338,10 @@
                         };
                         document.addEventListener('click', feed._menuClose);
                     } else {
-                        feed.innerHTML = '<div class="crm-tw-feed-empty">No hay comentarios aún.</div>';
+                        feed.innerHTML = '<div class="crm-tw-feed-empty">' +
+                            '<span>No hay actividad todavía.</span>' +
+                            '<span class="crm-tw-feed-empty-sub">Los comentarios y cambios aparecerán aquí.</span>' +
+                            '</div>';
                     }
                 })
                 .catch(function (err) {
