@@ -1608,7 +1608,9 @@
 
         var ov = document.createElement('div');
         ov.id = 'wo4CotOverlay';
-        ov.className = 'widget-overlay opp-v4 wo4-cotwin';
+        // .widget-overlay nace con display:none — la clase 'active' es la que
+        // lo muestra, convención del resto de overlays del CRM.
+        ov.className = 'widget-overlay active opp-v4 wo4-cotwin';
         ov.innerHTML =
             '<div class="widget-card widget-card-md wo4-cotwin-card">' +
             '<div class="wo-header wo4-cotwin-head">' +
