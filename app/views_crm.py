@@ -9543,7 +9543,20 @@ def _feed_correos_items(user, limite=6):
                 usuario=user, oportunidad__isnull=False, hilo_key__in=s_hks)
                 .values('hilo_key', 'oportunidad_id')):
             opp_por_hilo.setdefault(c['hilo_key'], c['oportunidad_id'])
-        opp_ids = set(opp_por_hilo.values()) | set(s.oportunidad_id for s in sent_recientes if s.oportunidad_id)
+        # Camino PRINCIPAL: el encabezado In-Reply-To de tu enviado apunta al
+        # Message-ID exacto del correo que respondiste — no falla aunque cambien
+        # el asunto. El hilo por asunto queda de RESPALDO (correos sin encabezado).
+        # Mismo doble chequeo que ya usa el vinculado automático al sincronizar.
+        refs = set((s.in_reply_to or '').strip() for s in sent_recientes)
+        refs.discard('')
+        por_msgid = {}
+        if refs:
+            for r in MailCorreo.objects.filter(
+                    usuario=user, carpeta_display='INBOX', message_id__in=refs):
+                por_msgid[r.message_id] = r
+        opp_ids = (set(opp_por_hilo.values())
+                   | set(s.oportunidad_id for s in sent_recientes if s.oportunidad_id)
+                   | set(r.oportunidad_id for r in por_msgid.values() if r.oportunidad_id))
         opps = {o.id: o for o in TodoItem.objects.filter(id__in=opp_ids)} if opp_ids else {}
         recibidos = {}
         for r in (MailCorreo.objects.filter(
@@ -9553,7 +9566,9 @@ def _feed_correos_items(user, limite=6):
         vistos_opp = set()
         cand, cand_ids = [], []
         for s in sent_recientes:
-            opp_id = s.oportunidad_id or opp_por_hilo.get(s.hilo_key)
+            m_dir = por_msgid.get((s.in_reply_to or '').strip())
+            opp_id = ((m_dir.oportunidad_id if m_dir else None)
+                      or s.oportunidad_id or opp_por_hilo.get(s.hilo_key))
             if not opp_id or opp_id in vistos_opp:
                 continue                        # una tarjeta por oportunidad (la respuesta más reciente)
             opp = opps.get(opp_id)
@@ -9562,7 +9577,7 @@ def _feed_correos_items(user, limite=6):
             vistos_opp.add(opp_id)
             if opp.fecha_actualizacion and s.fecha_envio and opp.fecha_actualizacion >= s.fecha_envio:
                 continue                        # ya actualizaste la opp después de responder
-            m_card = recibidos.get(s.hilo_key) or s
+            m_card = m_dir or recibidos.get(s.hilo_key) or s
             cand.append((m_card, opp, s.fecha_envio))
             cand_ids.append(m_card.id)
         # "Revisado" ANTES de responder NO calla estas tarjetas: aquel descarte fue
@@ -9598,9 +9613,10 @@ def _feed_correos_items(user, limite=6):
             vistos_hilo_c.add(hk)
             if not s.fecha_envio or s.fecha_envio < estado_asis.activado_en:
                 continue                        # respondido antes de activar el asistente
-            if s.oportunidad_id or opp_por_hilo.get(hk):
+            m_dir = por_msgid.get((s.in_reply_to or '').strip())
+            if s.oportunidad_id or opp_por_hilo.get(hk) or (m_dir and m_dir.oportunidad_id):
                 continue                        # ligado a oportunidad → es del 3-B
-            m_card = recibidos.get(hk)
+            m_card = m_dir or recibidos.get(hk)
             if m_card is None:
                 continue                        # sin recibido en el hilo: no es respuesta
             if s.fecha_envio and m_card.fecha_envio and s.fecha_envio < m_card.fecha_envio:
