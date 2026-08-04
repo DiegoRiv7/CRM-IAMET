@@ -7849,6 +7849,9 @@ def _cor_analisis_ia(lote, modelo=None):
         "- 'hito': un CLIENTE (persona real) nos manda factura, orden de compra (firmada o no), "
         "confirmación o liberación de un pedido, pago, anticipo o comprobante de una venta "
         "NUESTRA en curso. NO es venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito. "
+        "OJO dirección: la factura u orden ligada a algo que NOSOTROS compramos (un PROVEEDOR "
+        "nos factura, nos confirma nuestro pedido de compra, nos cobra) NO es hito — nosotros "
+        "somos el que paga; eso es 'respuesta' si espera acción nuestra, o 'info'. "
         "OJO: las confirmaciones AUTOMÁTICAS de compras en línea, recibos de tiendas o "
         "plataformas y correos de remitentes no-reply NO son hito — son 'ruido'.\n"
         "- 'respuesta': correo legítimo de un cliente o socio que espera respuesta del vendedor, "
@@ -7860,6 +7863,10 @@ def _cor_analisis_ia(lote, modelo=None):
         "- 'ruido': promoción, newsletter, notificación automática, spam, y TAMBIÉN quien nos "
         "quiere vender algo a NOSOTROS (prospección de terceros, cold outreach, invitaciones a "
         "webinars/eventos/partnerships) — eso no es un cliente del vendedor.\n"
+        "Cada correo trae 'cliente_conocido': true = el remitente (o su dominio) está "
+        "registrado como CLIENTE nuestro en el CRM — señal fuerte de que nos compra a "
+        "nosotros; false = no está registrado — sospecha de proveedor, prospección de "
+        "terceros o automatismo. Úsalo para decidir la dirección del negocio.\n"
         "Además escribe 'resumen': UNA frase corta en español (máx 140 caracteres), natural, "
         "que diga qué pide o informa el remitente. Sin prefijos 'Re:' ni etiquetas "
         "'[EXTERNAL]'. No inventes nada que no esté en el correo.\n"
@@ -7974,9 +7981,13 @@ def _cor_asegurar_analisis(user, correos, known, max_ia=_COR_ANA_MAX_IA):
         lote = []
         for m in lote_ms:
             cuerpo = _cor_extracto(m.cuerpo_texto or '', limite=600) or (m.cuerpo_texto or '')[:600]
+            rem_e = _cor_norm(m.remitente_email or '').strip()
+            dom_e = rem_e.split('@')[-1] if '@' in rem_e else ''
+            conocido = bool(rem_e in known_emails or (dom_e and dom_e in known_domains))
             lote.append({'id': m.id,
                          'de': '%s <%s>' % (m.remitente_nombre or '', m.remitente_email or ''),
-                         'asunto': _cor_limpiar_asunto(m.asunto), 'cuerpo': cuerpo})
+                         'asunto': _cor_limpiar_asunto(m.asunto), 'cuerpo': cuerpo,
+                         'cliente_conocido': conocido})
         verdicts = _cor_analisis_ia(lote, modelo)
         for m in lote_ms:
             v = verdicts.get(m.id)
