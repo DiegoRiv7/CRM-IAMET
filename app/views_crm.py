@@ -7561,8 +7561,10 @@ def _cor_extracto(texto, limite=150):
             continue
         if s.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', s, _re.IGNORECASE):
             break                      # empieza el hilo citado → lo de arriba es lo nuevo
-        if _re.match(r'^-{2,}\s*$', s):
-            break                      # firma
+        if _re.match(r'^[-_]{2,}\s*$', s):
+            break                      # firma o separador de hilo citado (Outlook usa ____)
+        if _re.match(r'^(from|de|sent|enviado(?:\sel)?|to|para|cc)\s*:', s, _re.IGNORECASE):
+            break                      # encabezado del mensaje citado (From:/Sent:/To:)
         low = _cor_norm(s)
         if any(low.startswith(c) for c in corte):
             break
@@ -7591,8 +7593,10 @@ def _cor_extracto_parrafos(texto, limite=1400):
         st = s.strip()
         if st.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', st, _re.IGNORECASE):
             break                      # empieza el hilo citado → lo de arriba es lo nuevo
-        if _re.match(r'^-{2,}\s*$', st):
-            break                      # firma
+        if _re.match(r'^[-_]{2,}\s*$', st):
+            break                      # firma o separador de hilo citado (Outlook usa ____)
+        if _re.match(r'^(from|de|sent|enviado(?:\sel)?|to|para|cc)\s*:', st, _re.IGNORECASE):
+            break                      # encabezado del mensaje citado (From:/Sent:/To:)
         low = _cor_norm(st)
         if any(low.startswith(c) for c in corte):
             break
@@ -7848,7 +7852,10 @@ def _cor_analisis_ia(lote, modelo=None):
         "OJO: las confirmaciones AUTOMÁTICAS de compras en línea, recibos de tiendas o "
         "plataformas y correos de remitentes no-reply NO son hito — son 'ruido'.\n"
         "- 'respuesta': correo legítimo de un cliente o socio que espera respuesta del vendedor, "
-        "pero no es venta nueva ni hito (dudas, coordinación, información solicitada, quejas).\n"
+        "pero no es venta nueva ni hito (dudas, coordinación, información solicitada, quejas). "
+        "AQUÍ va también el cliente que pide ESTATUS, avance o fecha de entrega/terminación de "
+        "un pedido u orden EXISTENTE (aunque cite números de orden) — esa venta ya se hizo, "
+        "NO es 'venta'.\n"
         "- 'info': legítimo pero solo informa; no requiere acción del vendedor.\n"
         "- 'ruido': promoción, newsletter, notificación automática, spam, y TAMBIÉN quien nos "
         "quiere vender algo a NOSOTROS (prospección de terceros, cold outreach, invitaciones a "
