@@ -94,9 +94,12 @@
                El chat (flujo + barra) se MUEVE aquí desde la columna derecha al entrar. -->
           <div id="pendAsisBig" style="display:none;">
             <div class="abig-status" id="asisBigStatus"></div>
-            <div class="pend-abig-brief" id="asisBigBrief"></div>
-            <div class="pend-mini-tabs abig-tabs" id="asisBigTabs"></div>
-            <div id="asisBigCards"></div>
+            <div class="abig-inner">
+              <div class="pend-abig-brief" id="asisBigBrief"></div>
+              <div class="abig-chips" id="asisBigChips"></div>
+              <div class="pend-mini-tabs abig-tabs" id="asisBigTabs"></div>
+              <div id="asisBigCards"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -328,34 +331,52 @@
   /* Mensaje de la IA en la tarjeta: COMPLETO, nunca recortado (el correo puede
      recortarse; la voz del asistente no). */
   .pend-mini-ctx{font-size:.8rem;color:#5a5c63;line-height:1.5;margin-top:4px;}
-  /* ── Vista "Asistente" en grande (centro del panel) ── */
+  /* ── Vista "Asistente" en grande (centro del panel) — diseño del mockup 3-A ── */
   .pend-shell.asis-mode .pend-asis{display:none;}          /* la columna derecha se retira: el asistente ya es el centro */
   .pend-shell.asis-mode .pend-maintop{display:none;}
-  #pendAsisBig{max-width:960px;margin:0 auto;padding:6px 12px 8px;}
-  .abig-status{display:flex;align-items:center;gap:7px;font-size:.8rem;color:#5a5c63;padding:2px 2px 12px;}
+  .pend-shell.asis-mode .pend-main{background:#fff;}
+  .pend-shell.asis-mode .pend-body{padding:0;}
+  #pendAsisBig{padding:0;}
+  .abig-status{display:flex;align-items:center;gap:7px;font-size:.84rem;color:#6b7280;
+    padding:14px 28px;border-bottom:1px solid #eef0f3;background:#fff;position:sticky;top:0;z-index:5;}
   .abig-status b{color:#16181d;}
   .abig-dot{width:8px;height:8px;background:#34c759;border-radius:50%;flex:none;}
-  .abig-refresh{margin-left:auto;border:1px solid #e9eaee;background:#fff;border-radius:9px;padding:5px 12px;
-    font-size:.76rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
-  .abig-refresh:hover{background:#f2f3f6;}
-  .pend-abig-brief{font-size:.98rem;line-height:1.6;color:#1d1d1f;padding:0 2px 4px;}
-  .abig-tabs{align-items:center;}
-  .abig-orden{margin-left:auto;font-size:.75rem;color:#9a9ca3;font-weight:600;}
-  /* Tarjetas del asistente en grande: blancas, con avatar de iniciales y chips */
-  .abig-card{background:#fff;border:1px solid #e9eaee;border-radius:14px;padding:14px 16px;margin-bottom:12px;
+  .abig-refresh{margin-left:auto;border:1px solid #e2e4e9;background:#fff;border-radius:10px;padding:6px 14px;
+    font-size:.8rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
+  .abig-refresh:hover{background:#f6f7f9;}
+  .abig-inner{max-width:1060px;margin:0 auto;padding:18px 28px 8px;}
+  .pend-abig-brief{font-size:1.02rem;line-height:1.65;color:#1d1d1f;}
+  .abig-chips{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+  .abig-chips .abig-chip{font-size:.76rem;font-weight:600;padding:5px 12px;background:#f2f3f6;color:#4b5563;}
+  .abig-tabs{align-items:center;margin:14px 0 4px;}
+  .abig-tabs .pend-mini-tab{border:1px solid transparent;}
+  .abig-tabs .pend-mini-tab.on{background:#fff;color:#16181d;border-color:#e2e4e9;box-shadow:0 1px 2px rgba(15,23,42,.06);}
+  .abig-orden{margin-left:auto;font-size:.78rem;color:#9a9ca3;font-weight:500;}
+  /* Tarjetas: blancas, borde fino, avatar de iniciales, chips y botonería sobria */
+  .abig-card{background:#fff;border:1px solid #e7e9ee;border-radius:14px;padding:16px 18px;margin-bottom:14px;
     box-shadow:0 1px 2px rgba(15,23,42,.04);}
-  .abig-row{display:flex;gap:12px;cursor:pointer;}
-  .abig-ava{width:38px;height:38px;border-radius:50%;color:#fff;font-weight:700;font-size:.82rem;
+  .abig-row{display:flex;gap:13px;cursor:pointer;}
+  .abig-ava{width:40px;height:40px;border-radius:50%;color:#fff;font-weight:700;font-size:.84rem;
     display:flex;align-items:center;justify-content:center;flex:none;letter-spacing:.02em;}
   .abig-mainc{flex:1;min-width:0;}
   .abig-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .abig-name{font-weight:700;font-size:.95rem;color:#16181d;}
-  .abig-chip{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:999px;background:#f2f3f6;color:#5a5c63;white-space:nowrap;}
-  .abig-hace{margin-left:auto;font-size:.72rem;color:#9a9ca3;font-weight:600;white-space:nowrap;}
-  .abig-subj{font-weight:600;font-size:.9rem;color:#1d1d1f;margin-top:3px;}
-  .abig-ctx{font-size:.85rem;color:#4b5563;line-height:1.55;margin-top:3px;}
-  .abig-acts{display:flex;gap:8px;margin-top:11px;margin-left:50px;flex-wrap:wrap;}
-  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fafbfc;padding:10px 0 2px;margin-top:10px;}
+  .abig-name{font-weight:700;font-size:.98rem;color:#16181d;}
+  .abig-chip{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#f2f3f6;color:#5a5c63;white-space:nowrap;}
+  .abig-hace{margin-left:auto;font-size:.78rem;color:#9a9ca3;font-weight:500;white-space:nowrap;}
+  .abig-subj{font-weight:600;font-size:.92rem;color:#1d1d1f;margin-top:4px;}
+  .abig-ctx{font-size:.88rem;color:#4b5563;line-height:1.6;margin-top:3px;}
+  .abig-acts{display:flex;gap:8px;margin-top:12px;margin-left:53px;flex-wrap:wrap;align-items:center;}
+  /* Botonería estilo mockup: blancos con borde; "No importa" como texto */
+  #asisBigCards .pend-mini-btn{background:#fff;border:1px solid #e2e4e9;color:#1d1d1f;border-radius:10px;
+    padding:7px 15px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}
+  #asisBigCards .pend-mini-btn:hover{background:#f6f7f9;}
+  #asisBigCards .pend-mini-btn.pri{border-color:#c7ddff;background:#f0f6ff;color:#0a5bd3;}
+  #asisBigCards .pend-mini-btn.pri:hover{background:#e2eeff;}
+  #asisBigCards .pend-mini-btn.txt{border:none;background:none;color:#9a9ca3;box-shadow:none;}
+  #asisBigCards .pend-mini-btn.txt:hover{color:#5a5c63;background:none;}
+  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fff;padding:12px 28px 14px;margin-top:8px;
+    border-top:1px solid #eef0f3;}
+  #pendAsisBig .pend-chatflow{padding:0 28px;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
   .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
   .pend-mini-btn.pri{background:#0a84ff;color:#fff;} .pend-mini-btn.pri:hover{background:#0060df;}
@@ -2144,6 +2165,13 @@
     var d = _miniData;
     if (!d) { cardsEl.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>'; return; }
     if (brief) brief.innerHTML = _abigBriefHtml(d.brief || '');
+    var chipsEl = el('asisBigChips');
+    if (chipsEl) {
+      chipsEl.innerHTML =
+        '<span class="abig-chip">&#9993; Bandeja de {{ request.user.first_name|default:"tu correo"|escapejs }}</span>' +
+        '<span class="abig-chip">&#9671; Pipeline · ' + (d.pipeline || 0) + ' por atender</span>' +
+        '<span class="abig-chip">&#128197; Tu agenda de hoy</span>';
+    }
     if (tabsEl) {
       tabsEl.innerHTML =
         _asisBigTabBtn('todo', 'Todo', d.total) +
