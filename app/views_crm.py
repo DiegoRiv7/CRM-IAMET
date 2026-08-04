@@ -8496,8 +8496,6 @@ def api_asistente_oportunidad_draft(request, correo_id):
     })
 
 
-@login_required
-@require_http_methods(["POST"])
 def _seg_espejo_expediente(user, opp, act):
     """La sección 'Actividades' del detalle de la oportunidad lee TareaOportunidad,
     no el calendario. Mismo doble registro que hace el '+Nueva' del detalle
@@ -8519,6 +8517,8 @@ def _seg_espejo_expediente(user, opp, act):
         return None
 
 
+@login_required
+@require_http_methods(["POST"])
 def api_asistente_oportunidad_crear(request):
     """POST — crea la oportunidad ya aprobada por el usuario: TodoItem con defaults,
     liga el correo (y su hilo) a la oportunidad, y crea la actividad de seguimiento."""
