@@ -8837,7 +8837,10 @@ def api_asistente_oportunidad_update_aplicar(request):
     except Exception:
         data = {}
     try:
-        opp = TodoItem.objects.get(id=data.get('opp_id'), usuario=request.user)
+        # Sin candado de dueño: igual que el borrador y el resto del asistente
+        # (agendar, tareas). Si el usuario pudo vincular su correo a la opp y ver
+        # la propuesta, puede aplicarla — las opps se comparten entre el equipo.
+        opp = TodoItem.objects.get(id=data.get('opp_id'))
     except TodoItem.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
 
