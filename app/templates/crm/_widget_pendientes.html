@@ -57,7 +57,8 @@
       <!-- Mini-sidebar -->
       <nav class="pend-side">
         <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi Asistente</div>
-        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Resumen</button>
+        <button type="button" class="pend-side-item active" data-nav="asistente" onclick="pendNav('asistente')">Asistente</button>
+        <button type="button" class="pend-side-item" data-nav="dia" onclick="pendNav('dia')">Resumen</button>
         <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes</button>
         <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correo</button>
         <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
@@ -89,6 +90,13 @@
         </div>
         <div class="pend-body" id="pendBody">
           <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
+          <!-- Vista "Asistente" en grande: el mini panel como protagonista del centro.
+               El chat (flujo + barra) se MUEVE aquí desde la columna derecha al entrar. -->
+          <div id="pendAsisBig" style="display:none;">
+            <div class="pend-abig-brief" id="asisBigBrief"></div>
+            <div class="pend-mini-tabs" id="asisBigTabs"></div>
+            <div id="asisBigCards"></div>
+          </div>
         </div>
       </div>
 
@@ -316,6 +324,18 @@
   .pend-mini-clbl.hueco{color:#0a7d3c;}
   .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
   .pend-mini-cd{font-size:.83rem;color:#4b5563;line-height:1.5;}
+  /* Mensaje de la IA en la tarjeta: COMPLETO, nunca recortado (el correo puede
+     recortarse; la voz del asistente no). */
+  .pend-mini-ctx{font-size:.8rem;color:#5a5c63;line-height:1.5;margin-top:4px;}
+  /* ── Vista "Asistente" en grande (centro del panel) ── */
+  .pend-shell.asis-mode .pend-asis{display:none;}          /* la columna derecha se retira: el asistente ya es el centro */
+  .pend-shell.asis-mode .pend-maintop{display:none;}
+  #pendAsisBig{max-width:900px;margin:0 auto;padding:6px 10px 8px;}
+  .pend-abig-brief{font-size:1rem;line-height:1.6;color:#1d1d1f;padding:6px 2px 2px;}
+  #asisBigCards .pend-mini-card{padding:17px 8px;}
+  #asisBigCards .pend-mini-ch{font-size:1rem;}
+  #asisBigCards .pend-mini-cd,#asisBigCards .pend-mini-ctx{font-size:.87rem;}
+  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fafbfc;padding:10px 0 2px;margin-top:10px;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
   .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
   .pend-mini-btn.pri{background:#0a84ff;color:#fff;} .pend-mini-btn.pri:hover{background:#0060df;}
@@ -599,14 +619,11 @@
     ov.classList.add('active');
     var _lc = el('pendLauncher'); if (_lc) _lc.style.display = 'none';   // ocultar launcher al expandir
     var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
-    // Abrir siempre en "Mi día" (por si se cerró en otra sección). Conserva el recap 18:00.
-    _section = 'dia'; _tab = 'resumen';
-    document.querySelectorAll('#widgetPendientes .pend-side-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-nav') === 'dia'); });
-    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'resumen'); });
-    var _st = el('pendSubtabs'); if (_st) _st.style.display = '';
+    // Abrir siempre en "Asistente" (el protagonista del módulo). Conserva el recap 18:00.
+    _tab = 'resumen';
     var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
-    pendCargar();
-    if (window.pendAsisFeedLoad) pendAsisFeedLoad();   // mismo feed proactivo en la columna derecha
+    pendCargar();               // los datos de "Mi día" se precargan para las otras secciones
+    pendNav('asistente');       // sección inicial: el asistente en grande (feed + chat)
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
     if (!_ensureWindow(ov)) {
@@ -614,10 +631,15 @@
     }
     // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
     if (_pollTimer) clearInterval(_pollTimer);
+    var _asisTick = 0;
     _pollTimer = setInterval(function () {
       if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado();
       else if (_section === 'clientes') pendRefreshClientes();
       else if (_section === 'correo') pendRefreshCorreos();
+      else if (_section === 'asistente') {
+        _asisTick++;
+        if (_asisTick % 20 === 0 && window.pendAsisFeedLoad) pendAsisFeedLoad();   // ~60s
+      }
     }, 3000);
   };
   window.pendCerrar = function () {
@@ -654,7 +676,12 @@
     // El selector de vendedor solo aplica a secciones por-vendedor (Mi día / Clientes).
     var vw = el('pendVendedorWrap');
     if (vw) { var canSel = _data && _data.puede_seleccionar; vw.style.display = ((section === 'dia' || section === 'clientes' || section === 'reportes') && canSel) ? '' : 'none'; }
-    if (section === 'dia') {
+    _asisModo(section === 'asistente');
+    if (section === 'asistente') {
+      if (subtabs) subtabs.style.display = 'none';
+      _asisBigDraw();
+      if (window.pendAsisFeedLoad) pendAsisFeedLoad();   // refresca el feed al entrar
+    } else if (section === 'dia') {
       if (subtabs) subtabs.style.display = '';
       pendSetTab('resumen');
     } else if (section === 'mes') {
@@ -1331,7 +1358,9 @@
       '<div class="pend-n2-acts">' + btns + '</div>' +
       '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (total > 1 ? ' (' + total + ')' : '') + ' →</div>';
   };
-  window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
+  // "Ver todo lo pendiente" abre la sección Asistente del panel grande — ahí
+  // viven los pendientes (decisión de producto: promocionar esa vista).
+  window.pendToastVerTodo = function () { _toastCollapse(); if (typeof window.pendAbrir === 'function') pendAbrir(); else pendMiniAbrir(); };
   window.pendToastAbrirSolo = function (mailId) { _toastCollapse(); _abrirMailConBorrador(mailId, ''); };
   // ── Vincular correo → oportunidad desde el aviso (arranque en frío) ──
   // Funciona desde el toast (nivel 1 o 2) Y desde el mini panel: pinta en la
@@ -1630,9 +1659,10 @@
     }).join('');
     return '<div class="pend-mini-card">' +
       '<div class="pend-mini-open" onclick="' + openCall + '">' +
-        '<div class="pend-mini-clbl' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+        '<div class="pend-mini-clbl' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '"><span style="color:' + _catColor(it) + ';">' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
         '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
         '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
+        (it.contexto ? '<div class="pend-mini-ctx">' + _esc(it.contexto) + '</div>' : '') +
       '</div>' +
       '<div class="pend-mini-acts">' + acts + '</div>' +
     '</div>';
@@ -1682,7 +1712,11 @@
     var mini = el('pendMini');
     if (mini && mini.style.display !== 'none') return el('pendMiniBody');
     var ov = el('widgetPendientes');
-    if (ov && ov.classList.contains('active')) return el('pendAsisFeed');
+    if (ov && ov.classList.contains('active')) {
+      var big = el('pendAsisBig');
+      if (big && big.style.display !== 'none') return el('asisBigCards');
+      return el('pendAsisFeed');
+    }
     return el('pendMiniBody');
   }
   var _MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -2006,6 +2040,62 @@
     pendMiniExpandir();
   };
 
+  // ── Vista "Asistente" EN GRANDE (protagonista del centro del panel) ──
+  // El mini panel a escala completa: brief + pestañas + tarjetas con el mensaje
+  // de la IA entero + el chat (los nodos del chat se MUEVEN aquí, mismos ids).
+  var _asisBigTab = 'todo';
+  function _asisModo(on) {
+    var shell = document.querySelector('#widgetPendientes .pend-shell');
+    if (shell) shell.classList.toggle('asis-mode', !!on);
+    var big = el('pendAsisBig'), res = el('pendResArea');
+    if (big) big.style.display = on ? '' : 'none';
+    if (res) res.style.display = on ? 'none' : '';
+    var flow = el('pendChatFlow'), chat = el('pendChat');
+    if (on) {
+      if (big && flow) big.appendChild(flow);
+      if (big && chat) big.appendChild(chat);
+    } else {
+      var asideBody = document.querySelector('#widgetPendientes .pend-asis-body');
+      var aside = document.querySelector('#widgetPendientes .pend-asis');
+      if (asideBody && flow) asideBody.appendChild(flow);
+      if (aside && chat) aside.appendChild(chat);
+    }
+  }
+  window.pendAsisBigTab = function (t) {
+    _asisBigTab = t;
+    if (t === 'atendido') _atFetch();
+    _asisBigDraw();
+  };
+  function _asisBigTabBtn(k, lbl, n) {
+    return '<button type="button" class="pend-mini-tab' + (_asisBigTab === k ? ' on' : '') + '" onclick="pendAsisBigTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
+  }
+  function _asisBigDraw() {
+    var brief = el('asisBigBrief'), tabsEl = el('asisBigTabs'), cardsEl = el('asisBigCards');
+    if (!cardsEl) return;
+    var d = _miniData;
+    if (!d) { cardsEl.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>'; return; }
+    if (brief) brief.textContent = d.brief || '';
+    if (tabsEl) {
+      tabsEl.innerHTML =
+        _asisBigTabBtn('todo', 'Todo', d.total) +
+        _asisBigTabBtn('correo', 'Correo', d.correos) +
+        _asisBigTabBtn('pipeline', 'Pipeline', d.pipeline) +
+        _asisBigTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0);
+    }
+    if (_asisBigTab === 'atendido') {
+      var ats = (_atendidos && _atendidos.items) || [];
+      cardsEl.innerHTML = ats.length
+        ? ats.map(_atCard).join('')
+        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
+    } else {
+      var items = (d.items || []).filter(function (it) { return _asisBigTab === 'todo' || it.grupo === _asisBigTab; });
+      cardsEl.innerHTML = items.length
+        ? items.map(_miniCard).join('')
+        : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
+    }
+    if (_atendidos === null) _atFetch();
+  }
+
   // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
   function _asisDraw() {
     var box = el('pendAsisFeed'); if (!box || !_miniData) return;
@@ -2022,14 +2112,16 @@
     var mini = el('pendMini'); if (mini && mini.style.display !== 'none') _miniDraw();
     var asis = el('pendAsisFeed'), ov = el('widgetPendientes');
     if (asis && ov && ov.classList.contains('active')) _asisDraw();
+    var big = el('pendAsisBig');
+    if (big && big.style.display !== 'none' && ov && ov.classList.contains('active')) _asisBigDraw();
   }
   window.pendAsisFeedLoad = function () {
     var box = el('pendAsisFeed'); if (!box) return;
-    if (_miniData) _asisDraw();
+    if (_miniData) { _asisDraw(); _asisBigDraw(); }
     else box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisDraw(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisDraw(); _asisBigDraw(); })
       .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
   };
 
