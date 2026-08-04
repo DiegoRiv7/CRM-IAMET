@@ -250,7 +250,7 @@
   .pend-toast-quote.pend-n2-quote{display:block;-webkit-line-clamp:unset;max-height:56vh;
     overflow:auto;white-space:pre-wrap;font-size:.83rem;line-height:1.55;}
   .pend-n2-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center;}
-  .pend-n2-acts .pend-foc-btn{padding:7px 13px;font-size:.8rem;border-radius:9px;}
+  .pend-n2-acts .pend-foc-btn{padding:7px 13px;font-size:.8rem;border-radius:9px;white-space:nowrap;}
   .pend-n2-acts .pend-foc-btn.pri{flex:none;}
   .pend-n2-cat{display:block;margin-bottom:8px;}
   .pend-launcher.pill{width:auto;padding:9px 15px;border-radius:999px;cursor:pointer;}
@@ -1256,30 +1256,38 @@
     var esCorreo = it.tipo === 'correo';
     var total = (_miniData && _miniData.total) || 0;
     var cuerpo = it.quote_full || it.quote || '';
-    // Acciones del aviso (sin "no importa") + Responder en todos los correos.
-    var accs = (it.acciones || []).filter(function (a) { return a !== 'no_importa' && a !== 'responder' && _MINI_ACTS[a]; });
-    // Correo LIGADO a oportunidad: el aviso chico es conservador (actualizar solo
-    // se ofrece después de responder), pero expandido SIEMPRE ofrece actualizar.
-    if (esCorreo && it.opp_id && accs.indexOf('actualizar_oportunidad') === -1) {
-      accs.push('actualizar_oportunidad');
+    function _btn(cls, onclick, label) {
+      return '<button type="button" class="pend-foc-btn ' + cls + '" onclick="' + onclick + '">' + label + '</button>';
     }
-    var btns = accs.map(function (a, i) {
-      return '<button type="button" class="pend-foc-btn ' + (i === 0 ? 'pri' : 'sec') + '" onclick="pendToastAct(\'' + a + '\')">' + _esc(_MINI_ACTS[a].l) + '</button>';
-    }).join('');
-    if (esCorreo) {
-      btns += '<button type="button" class="pend-foc-btn ' + (accs.length ? 'sec' : 'pri') + '" onclick="pendToastAct(\'responder\')">Responder</button>';
-      btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastAbrirSolo(' + it.mail_id + ')">Abrir en Correo</button>';
-      if (it.opp_id) {
-        btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')">Abrir oportunidad</button>';
+    var btns = '';
+    if (esCorreo && it.opp_id) {
+      // Correo LIGADO a oportunidad: botonera fija de UNA fila (orden acordado):
+      // · llegó y no respondes (3-A): Agendar | Abrir en Correo | Actualizar | Revisado
+      // · ya respondiste / hito (3-B): Actualizar | Agendar | Abrir en Correo | Revisado
+      var priActualizar = ((it.acciones || [])[0] === 'actualizar_oportunidad');
+      var bAbrir = _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir en Correo');
+      var bAct = _btn(priActualizar ? 'pri' : 'sec', "pendToastAct('actualizar_oportunidad')", 'Actualizar oportunidad');
+      var bAgen = _btn(priActualizar ? 'sec' : 'pri', "pendToastAct('agendar_seguimiento')", 'Agendar seguimiento');
+      btns = (priActualizar ? (bAct + bAgen + bAbrir) : (bAgen + bAbrir + bAct))
+        + _btn('sec', 'pendToastCollapse();pendToastRevisado()', 'Revisado');
+    } else {
+      // Correos sueltos y avisos de oportunidad: acciones del aviso + Responder/Abrir.
+      var accs = (it.acciones || []).filter(function (a) { return a !== 'no_importa' && a !== 'responder' && _MINI_ACTS[a]; });
+      btns = accs.map(function (a, i) {
+        return _btn(i === 0 ? 'pri' : 'sec', "pendToastAct('" + a + "')", _esc(_MINI_ACTS[a].l));
+      }).join('');
+      if (esCorreo) {
+        btns += _btn(accs.length ? 'sec' : 'pri', "pendToastAct('responder')", 'Responder');
+        btns += _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir en Correo');
+      } else if (it.opp_id) {
+        btns += _btn('sec', 'pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
       }
-    } else if (it.opp_id) {
-      btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')">Abrir oportunidad</button>';
+      var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
+      if (!tieneAgendar) {
+        btns += _btn('sec', 'pendToastCollapse();pendToastAgendar()', 'Agendar');
+      }
+      btns += _btn('sec', 'pendToastCollapse();pendToastRevisado()', 'Revisado');
     }
-    var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
-    if (!tieneAgendar) {
-      btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendToastAgendar()">Agendar</button>';
-    }
-    btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendToastRevisado()">Revisado</button>';
     box.innerHTML =
       '<button type="button" class="pend-foc-back" onclick="pendToastCollapse()">‹ Volver</button>' +
       '<span class="pend-toast-cat pend-n2-cat' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '">' + _esc(((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase()) + '</span>' +

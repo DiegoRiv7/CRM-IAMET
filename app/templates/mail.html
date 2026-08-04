@@ -1070,7 +1070,10 @@
             body: JSON.stringify({ cuerpo_texto: cuerpo, cuerpo_html: '<pre style="font-family:inherit;white-space:pre-wrap;">' + x(cuerpo) + '</pre>' })
         }).then(function(r){ return r.json(); }).then(function(d){
             setBtnLoading('btnRespEnviar', false, 'Enviar respuesta');
-            if (d.ok) { cerrarModal('modalResponder'); toast('Respuesta enviada', 'ok'); }
+            if (d.ok) {
+                cerrarModal('modalResponder'); toast('Respuesta enviada', 'ok');
+                if (typeof window.pendFeedRefresh === 'function') { try { window.pendFeedRefresh(); } catch (e) {} }
+            }
             else { err.textContent = d.error || 'Error.'; err.classList.add('show'); }
         }).catch(function(){ setBtnLoading('btnRespEnviar', false, 'Enviar respuesta'); });
     };

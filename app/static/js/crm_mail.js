@@ -1614,6 +1614,12 @@
                         _mailReplyAttachments = [];
                         mailCerrarReply();
                         _showToastMail('Respuesta enviada', true);
+                        // El asistente reacciona AL INSTANTE a tu respuesta (casos
+                        // "¿actualizo?" / "¿agendo seguimiento?") sin esperar su
+                        // ciclo de 60s.
+                        if (typeof window.pendFeedRefresh === 'function') {
+                            try { window.pendFeedRefresh(); } catch (e) {}
+                        }
                     } else {
                         _showToastMail(data.error || 'Error al enviar', false);
                     }
