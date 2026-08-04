@@ -410,6 +410,8 @@ body {
 .opp-v4 .wo4-prob { font-size: 1.02rem; font-weight: 700; margin: 0; }
 .opp-v4 .wo4-barra { height: 6px; background: var(--w4-track); border-radius: 99px; overflow: hidden; }
 .opp-v4 .wo4-persona { display: flex; align-items: center; gap: 11px; margin-top: 13px; }
+/* En su propia tarjeta, la primera persona no necesita el margen de arriba. */
+.opp-v4 .wo4-personas .wo4-persona:first-child { margin-top: 0; }
 .opp-v4 .wo4-av {
     width: 35px; height: 35px; border-radius: 50%; color: #fff;
     font-size: .76rem; font-weight: 700;
