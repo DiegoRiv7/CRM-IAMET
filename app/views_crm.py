@@ -9373,7 +9373,7 @@ def _feed_correos_items(user, limite=6):
     ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem, AvisoPospuesto
+    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem, AvisoPospuesto, Actividad
     out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
@@ -9426,6 +9426,8 @@ def _feed_correos_items(user, limite=6):
             'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
             'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
             'dias_espera': dias, 'urgente': dias >= 2,
+            # Cuerpo extendido para el nivel 2 del toast (clic = expandir en el lugar).
+            'quote_full': _cor_extracto(m.cuerpo_texto or '', limite=1400),
         }
 
     # ── Redacción del toast: titular-oración + línea de contexto + cita del correo ──
@@ -9507,7 +9509,8 @@ def _feed_correos_items(user, limite=6):
     # asistente ofrece actualizar. La oportunidad se resuelve POR HILO (el enviado casi
     # nunca trae el vínculo directo; lo hereda del correo del cliente en el mismo hilo).
     # Se calla si ya actualizaste la opp tras responder o si la oportunidad ya está cerrada.
-    respondiste = []   # (m_card, opp, reply_dt)
+    respondiste = []           # (m_card, opp, reply_dt)
+    respondiste_sueltos = []   # (m_card, reply_dt) — Caso 3-C: respondiste sin oportunidad
     sent_recientes = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='SENT', fecha_envio__gte=cutoff)
         .order_by('-fecha_envio')[:200])
@@ -9546,6 +9549,36 @@ def _feed_correos_items(user, limite=6):
         respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand
                        if mc.id not in at_b and mc.id not in pospuestos]
 
+        # ── Caso 3-C: RESPONDISTE un correo SUELTO (sin oportunidad ligada) ──
+        # Mismo detector desde los ENVIADOS, pero en hilos sin oportunidad: al
+        # responder, el asistente ofrece agendar un seguimiento para que la
+        # conversación no se pierda. Se calla si ya hay un seguimiento agendado
+        # sobre ese correo, si descartaste el aviso, o si el hilo no tiene correo
+        # RECIBIDO (un correo que iniciaste tú no es una respuesta).
+        vistos_hilo_c = set()
+        cand_c = []
+        for s in sent_recientes:
+            hk = s.hilo_key
+            if not hk or hk in vistos_hilo_c:
+                continue
+            vistos_hilo_c.add(hk)
+            if s.oportunidad_id or opp_por_hilo.get(hk):
+                continue                        # ligado a oportunidad → es del 3-B
+            m_card = recibidos.get(hk)
+            if m_card is None:
+                continue                        # sin recibido en el hilo: no es respuesta
+            if s.fecha_envio and m_card.fecha_envio and s.fecha_envio < m_card.fecha_envio:
+                continue                        # te volvieron a escribir después → pendiente normal
+            cand_c.append((m_card, s.fecha_envio))
+        ids_c = [mc.id for mc, _ in cand_c]
+        at_c = set(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=ids_c).values_list('mail_id', flat=True)) if ids_c else set()
+        ya_agendados = set(Actividad.objects.filter(
+            creado_por=user, correo_id__in=ids_c).values_list('correo_id', flat=True)) if ids_c else set()
+        respondiste_sueltos = [
+            (mc, rt) for (mc, rt) in cand_c
+            if mc.id not in at_c and mc.id not in pospuestos and mc.id not in ya_agendados][:6]
+
     # Orden: lo que ACABA de llegar va primero (el asistente avisa en cuanto llega);
     # después pesa la urgencia (prioridad + días esperando). Sin el bono de frescura,
     # los correos viejos acumulan puntos y entierran al recién llegado (visto en pruebas).
@@ -9569,6 +9602,21 @@ def _feed_correos_items(user, limite=6):
         item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
         item['headline'] = 'Respondiste a %s sobre %s' % (item['titulo'], opp.oportunidad or 'una oportunidad')
         item['contexto'] = ('¿Actualizo la oportunidad con este intercambio? ' + _ctx_opp(opp)).strip()
+        item['quote'] = _quote(m_card)
+        out.append(item)
+
+    # 1-bis) Respondiste un correo suelto → ofrecer AGENDAR seguimiento (Caso 3-C).
+    for m_card, reply_dt in respondiste_sueltos:
+        item = _base_item(m_card)
+        if reply_dt:
+            item['hace'] = _cor_hace(timezone.localtime(reply_dt), timezone.localtime(now))
+        a_c = getattr(m_card, 'analisis', None)
+        resumen_c = ((a_c.resumen if a_c else '') or '').strip()
+        item['categoria'] = 'Respondiste — ¿agendo seguimiento?'
+        item['acciones'] = ['agendar_correo', 'no_importa']
+        item['headline'] = 'Respondiste a %s — ¿le agendo un seguimiento?' % item['titulo']
+        item['contexto'] = (' '.join(x for x in [
+            resumen_c, 'Así no se te pierde si no te contesta.'] if x)).strip()
         item['quote'] = _quote(m_card)
         out.append(item)
 
