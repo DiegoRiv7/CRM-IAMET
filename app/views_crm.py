@@ -7574,6 +7574,37 @@ def _cor_extracto(texto, limite=150):
     if len(out) > limite:
         out = out[:limite].rsplit(' ', 1)[0] + '…'
     return out
+
+
+def _cor_extracto_parrafos(texto, limite=1400):
+    """Como _cor_extracto pero CONSERVANDO los saltos de línea — para el nivel 2
+    del toast, donde el cuerpo se muestra amplio y en bloque se lee horrible.
+    Quita citas del hilo y firmas, respeta párrafos, corta sin partir palabras."""
+    import re as _re
+    if not (texto or '').strip():
+        return ''
+    corte = ['saludos', 'atentamente', 'atte', 'gracias de antemano', 'enviado desde',
+             'sent from', 'quedo atento', 'quedamos atentos', 'cordialmente']
+    lineas, total = [], 0
+    for ln in (texto or '').splitlines():
+        s = ln.rstrip()
+        st = s.strip()
+        if st.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', st, _re.IGNORECASE):
+            break                      # empieza el hilo citado → lo de arriba es lo nuevo
+        if _re.match(r'^-{2,}\s*$', st):
+            break                      # firma
+        low = _cor_norm(st)
+        if any(low.startswith(c) for c in corte):
+            break
+        lineas.append(s)
+        total += len(s)
+        if total >= limite * 2:
+            break
+    out = '\n'.join(lineas)
+    out = _re.sub(r'\n{3,}', '\n\n', out).strip()
+    if len(out) > limite:
+        out = out[:limite].rsplit(' ', 1)[0] + '…'
+    return out
 # Ventana para "importantes sin responder": no solo 24h — así el asistente sigue
 # insistiendo con los que se te van pasando (hasta 7 días).
 _COR_VENTANA_HORAS = 168
@@ -7806,7 +7837,11 @@ def _cor_analisis_ia(lote, modelo=None):
         "Eres el clasificador de correos del asistente de un CRM. El usuario es un VENDEDOR "
         "que atiende a SUS clientes. Para CADA correo (clave = su id) decide UNA categoría:\n"
         "- 'venta': el remitente pide cotización, precios, disponibilidad o quiere comprarNOS "
-        "algo NUEVO — amerita crear una oportunidad de venta.\n"
+        "algo NUEVO — amerita crear una oportunidad de venta. OJO con la dirección: si el "
+        "remitente nos ENVÍA una cotización o propuesta (un PROVEEDOR cotizándonos algo que "
+        "NOSOTROS pedimos, 'adjunto la cotización solicitada', 'favor de validar la propuesta') "
+        "NO es venta — nosotros somos el comprador; eso es 'respuesta' (hay que validarla o "
+        "contestar).\n"
         "- 'hito': un CLIENTE (persona real) nos manda factura, orden de compra (firmada o no), "
         "confirmación o liberación de un pedido, pago, anticipo o comprobante de una venta "
         "NUESTRA en curso. NO es venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito. "
@@ -9428,7 +9463,7 @@ def _feed_correos_items(user, limite=6):
             'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
             'dias_espera': dias, 'urgente': dias >= 2,
             # Cuerpo extendido para el nivel 2 del toast (clic = expandir en el lugar).
-            'quote_full': _cor_extracto(m.cuerpo_texto or '', limite=1400),
+            'quote_full': _cor_extracto_parrafos(m.cuerpo_texto or '', limite=1400),
         }
 
     # ── Redacción del toast: titular-oración + línea de contexto + cita del correo ──
