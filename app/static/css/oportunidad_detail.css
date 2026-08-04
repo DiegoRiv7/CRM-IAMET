@@ -122,455 +122,332 @@ body {
     transition: width 0.5s ease-in-out;
 }
 
-/* ═══ Conversación embebida (widget v3) ═══ */
-.wo-conv-chip {
-    border: 1px solid #E5E5EA;
-    background: #fff;
-    color: #6B7280;
-    border-radius: 999px;
-    padding: 4px 10px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.12s;
-}
-.wo-conv-chip:hover { border-color: #BFDBFE; color: #0052D4; }
-.wo-conv-chip.is-active {
-    background: #0052D4;
-    border-color: #0052D4;
-    color: #fff;
-}
+/* Pin de mensajes fijados — lo usa el feed del v4 */
 .wo-conv-pinbtn {
-    border: none;
-    background: none;
-    color: #C7C7CC;
-    cursor: pointer;
-    padding: 3px;
-    border-radius: 6px;
-    opacity: 0;
-    transition: opacity 0.12s, color 0.12s;
-    flex-shrink: 0;
+    border: none; background: none; color: #C7C7CC; cursor: pointer;
+    padding: 3px; border-radius: 6px; opacity: 0;
+    transition: opacity .12s, color .12s; flex-shrink: 0;
 }
-.wo-conv-msg:hover .wo-conv-pinbtn { opacity: 1; }
 .wo-conv-pinbtn:hover { color: #B45309; }
 .wo-conv-pinbtn.is-pinned { opacity: 1; color: #B45309; }
 
-/* Botones del composer embebido: agendar · adjuntar · correo */
-.opp-v2 .wo-conv-act {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #F2F2F7;
-    border: 1px solid #E5E5EA;
-    color: #86868B;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 0;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
+/* ═══════════════════════════════════════════════════════════════════
+   OPORTUNIDAD v4 — rediseño 2026-07-31
+   Prefijo wo4-* a propósito: los cinco temas pintan .wo-header y .wo-card
+   con degradados y !important. Este diseño no tiene header de color, así
+   que con nombres propios queda neutro sin pelearle a ningún tema.
+   ═══════════════════════════════════════════════════════════════════ */
+.opp-v4 {
+    --w4-azul: #2563EB;
+    --w4-azul-dark: #1D4ED8;
+    --w4-tinta: #111827;
+    --w4-texto: #374151;
+    --w4-gris: #6B7280;
+    --w4-tenue: #9CA3AF;
+    --w4-linea: #E8EAED;
+    --w4-track: #E5E7EB;
+    --w4-panel: #F9FAFB;
+    --w4-lienzo: #F4F5F7;
 }
-.opp-v2 .wo-conv-act:hover { background: #E9EBEF; color: #1D1D1F; }
-.opp-v2 .wo-conv-act.is-mail {
-    background: rgba(0, 82, 212, 0.08);
-    border-color: rgba(0, 82, 212, 0.2);
-    color: #0052D4;
-}
-.opp-v2 .wo-conv-act.is-mail:hover { background: rgba(0, 82, 212, 0.16); }
-
-/* ═══ Pipeline arriba (widget v3) ═══
-   El diseño de las etapas es el original de crm.css: caja gris, cápsulas
-   y conectores. Lo único que se toca aquí es el aire — header compacto y
-   menos padding alrededor — para que el pipeline suba y quede alto libre
-   para la información de abajo. */
-.opp-v2 .wo-header { padding: 1.7rem 2rem 0.75rem; }
-.opp-v2 .wo-title { font-size: 2rem; }
-.opp-v2 .wo-tab-panel { padding-top: 0; }
-.opp-v2 .wo-pipeline { padding: 0.55rem 2rem 0.7rem; }
-
-/* ═══ Botón "Nueva" discreto (mitades de Tareas / Actividades) ═══ */
-.opp-v2 .wo-btn-mini {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: none;
-    background: transparent;
-    color: #0052D4;
-    font-family: inherit;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 7px;
-    cursor: pointer;
-    opacity: 0.7;
-    flex-shrink: 0;
-    transition: background 0.12s, opacity 0.12s;
-}
-.opp-v2 .wo-btn-mini:hover { background: rgba(0, 82, 212, 0.09); opacity: 1; }
-.opp-v2 .wo-btn-mini svg { width: 10px; height: 10px; }
-
-/* ═══ Card partida: Tareas | Actividades ═══ */
-.opp-v2 .wo-g-tareas { display: flex; flex-direction: column; }
-.opp-v2 .wo-ta-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    flex: 1;
-    min-height: 0;
-}
-.opp-v2 .wo-ta-col {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    padding-right: 1.1rem;
-}
-.opp-v2 .wo-ta-col + .wo-ta-col {
-    border-left: 1px solid #E2E8F0;
-    padding-right: 0;
-    padding-left: 1.1rem;
-}
-.opp-v2 .wo-ta-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 0.5rem;
-}
-.opp-v2 .wo-ta-head h3 {
-    margin: 0;
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: #86868B;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.opp-v2 .wo-ta-col .wo-tareas-inline-list {
-    flex: 1;
-    min-height: 140px;
-    max-height: none;   /* la lista la limita la card, no un tope fijo */
-    overflow-y: auto;
-}
-
-/* ═══ Card de metadatos ═══
-   Todo sobre una misma retícula de 3 columnas para que las etiquetas
-   queden alineadas entre filas. El tamaño lo da la jerarquía (monto >
-   resto), no una tipografía enorme. */
-/* Los metadatos van en TIRA a todo lo ancho: son datos de consulta, se leen
-   una vez. Apilados en media card se comían ~380px de alto; en una tira
-   ocupan ~100px y ese alto se lo queda la conversación, que es donde se
-   trabaja a diario. */
-.opp-v2 .wo-info-strip {
-    display: grid;
-    /* 2x2 fijo, no auto-fit: con cuatro campos y ancho para tres, el cuarto
-       (Facturas) se caía solo a un renglón huérfano. En 2x2 quedan parejos y
-       cada campo gana ancho. */
-    grid-template-columns: 1fr 1fr;
-    gap: 1.1rem 1.6rem;
-    align-items: start;
-}
-/* Cabecera de la tarjeta de detalles, con el "Ver más". */
-.opp-v2 .wo-info-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 0.9rem;
-}
-.opp-v2 .wo-info-chev { width: 11px; height: 11px; transition: transform .15s; }
-.opp-v2 .wo-g-info.is-open .wo-info-chev { transform: rotate(180deg); }
-/* Lo poco consultado nace plegado; sigue a un clic porque las tres son
-   editables (probabilidad se arrastra, producto y área son desplegables). */
-.opp-v2 .wo-info-extra { display: none; }
-.opp-v2 .wo-g-info.is-open .wo-info-extra {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.1rem 1.6rem;
-    margin-top: 1rem;
-    padding-top: 0.9rem;
-    border-top: 1px solid #E2E8F0;
-}
-
-/* Que la tira se lea como una fila y no como ocho bloques sueltos: las
-   etiquetas nunca envuelven (una que se partía en dos renglones hundía su
-   valor y descuadraba toda la fila) y todos los valores arrancan a la misma
-   altura. */
-.opp-v2 .wo-info-strip .wo-info-item { gap: 7px; min-width: 0; }
-.opp-v2 .wo-info-strip .wo-info-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.25;
-}
-.opp-v2 .wo-info-strip .wo-info-value,
-.opp-v2 .wo-info-strip .wo-prob-value { line-height: 1.2; }
-.opp-v2 .wo-info-people {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 0.75rem 1.2rem;
-}
-
-.opp-v2 .wo-g-info .wo-info-label { font-size: 0.63rem; }
-.opp-v2 .wo-g-info .wo-info-value { font-size: 1.45rem; }
-.opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1rem; }
-.opp-v2 .wo-g-info .wo-prob-value { font-size: 1rem; margin: 0; }
-
-/* Encabezados que expanden: el título completo (ícono + palabra) es el
-   disparador, ya no hay botón aparte. */
-.opp-v2 .wo-head-expand {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    cursor: pointer;
-    border-radius: 7px;
-    margin-left: -5px;
-    padding: 2px 5px;
-    transition: background 0.12s, color 0.12s;
-}
-.opp-v2 .wo-head-expand:hover { background: rgba(0, 82, 212, 0.07); color: #0052D4; }
-
-/* "Archivos en Drive": mismo tamaño que Cotizaciones y Conversación, y en
-   tono sólido — es el encabezado de la pestaña, no un rótulo secundario. */
-.opp-v2 .wo-drive-head h4 { font-size: 0.9rem; font-weight: 700; color: #1D1D1F; }
-
-/* "Subir" sólido: es la acción de la pestaña y tiene que verse. */
-.opp-v2 .wo-btn-solid {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    border: none;
-    background: #0052D4;
-    color: #fff;
-    font-family: inherit;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 6px 13px;
-    border-radius: 999px;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: filter 0.12s;
-}
-.opp-v2 .wo-btn-solid:hover { filter: brightness(1.12); }
-.opp-v2 .wo-btn-solid svg { width: 11px; height: 11px; }
-
-/* Proyecto e IDENTIDAD: viven en el header, sobre fondo oscuro o con
-   degradado según el tema, así que van como pastilla SÓLIDA. Al llevar
-   también .wo-type-badge heredan el color que cada tema ya define. */
-.opp-v2 .wo-proy-head { display: flex; align-items: center; min-width: 0; margin-bottom: 0.45rem; }
-.opp-v2 .wo-proy-badge {
-    max-width: 100%;
-    border: none;
-    background: #0052D4;
-    color: #fff;
-    padding: 5px 14px;
-    margin: 0;
-    font-family: inherit;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: none;
-    letter-spacing: 0;
-    cursor: pointer;
-    text-align: left;
-}
-.opp-v2 .wo-proy-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.opp-v2 .wo-proy-badge:hover { filter: brightness(1.12); }
-/* El badge de pipeline, ya junto al nombre: más discreto para no competir
-   con el título. Se reduce por tamaño y peso, no por color — los temas le
-   asignan el suyo con !important y pelearles rompería su paleta. */
-.opp-v2 .wo-badge-titulo {
-    margin: 0;
-    flex-shrink: 0;
-    font-size: 0.58rem;
-    padding: 3px 9px;
-    letter-spacing: 0.06em;
-    opacity: 0.82;
-}
-.opp-v2 .wo-badge-titulo svg { width: 10px; height: 10px; }
-.opp-v2 .wo-badge-titulo:hover { opacity: 1; }
-/* Placeholder de carga: gris neutro, el header es claro en unos temas y
-   oscuro en otros. */
-.opp-v2 .wo-proy-vacio { font-size: 0.8rem; color: #9CA3AF; }
-
-/* El badge de pipeline ya no va sobre el título, donde necesitaba pegar
-   fuerte contra un header oscuro. Aquí convive con Producto y Área, así que
-   se calla: mismo tono de texto que los demás valores y solo un contorno
-   fino que recuerda que se puede cambiar. Va con !important porque los
-   temas pintan .wo-type-badge sólido para el header (y ahí sí debe serlo,
-   es donde vive la pastilla del proyecto). */
-.opp-v2 .wo-g-info .wo-type-badge {
-    margin: 3px 0 0;
-    background: transparent !important;
-    border: 1px solid #DDE3EA !important;
-    color: #3A3A3C !important;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 4px 12px;
-}
-.opp-v2 .wo-g-info .wo-type-badge:hover { border-color: #BFD9FF !important; }
-
-/* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
-   primera columna y las facturas ocupando las otras dos, con campos
-   cortos en línea que envuelven — así cabe más de una. */
-
-.opp-v2 .wo-fact-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem 1.4rem;
-}
-.opp-v2 .wo-fact-row .wo-doc-input { flex: 0 1 140px; }
-
-/* PO / Factura: subrayado visible en reposo, se marca al pasar y al escribir. */
-.opp-v2 .wo-doc-input {
-    background: none;
-    border: none;
-    border-bottom: 1px solid #E2E8F0;
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1C1C1E;
-    width: 100%;
-    max-width: 100%;
-    padding: 0.1rem 0;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.12s;
-}
-.opp-v2 .wo-doc-input:hover { border-bottom-color: #BFD9FF; }
-.opp-v2 .wo-doc-input:focus { border-bottom-color: #0052D4; cursor: text; }
-
-/* Vendedor / cliente: van uno al lado del otro, así que el margen inferior
-   que traen de serie solo abría un hueco muerto. */
-.opp-v2 .wo-g-info .wo-stakeholder { margin-bottom: 0; }
-.opp-v2 .wo-g-info .wo-stakeholder-label { margin-bottom: 0.45rem; font-size: 0.63rem; }
-
-/* El separador se come el sobrante: vendedor y cliente quedan al fondo. */
-.opp-v2 .wo-info-sep { margin: 1.1rem 0 0.9rem; }
-
-/* ═══ Drive embebido bajo Cotizaciones ═══
-   Van juntos en la misma card: cotizaciones arriba, archivos abajo, con
-   atajo para subir y para abrir la carpeta completa. */
-.opp-v2 .wo-g-cot { display: flex; flex-direction: column; }
-.opp-v2 .wo-g-cot .wo-quote-list { flex: 1; min-height: 0; overflow-y: auto; }
-
-/* Pestaña pegada al pie de Cotizaciones: la distinción la da el fondo más
-   claro que la card, sin línea divisoria. */
-.opp-v2 .wo-drive-block {
-    margin: 0.9rem -1.5rem -1.5rem;   /* sangra hasta el borde de la card */
-    padding: 0.85rem 1.5rem 1rem;
+.opp-v4 .widget-card {
     background: #fff;
-    border-radius: 0 0 18px 18px;
-    flex-shrink: 0;
+    color: var(--w4-tinta);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-.opp-v2 .wo-drive-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 0.5rem;
-    padding: 0 7px;   /* mismo sangrado que las filas: los íconos alinean */
-}
-.opp-v2 .wo-drive-head h4 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: #86868B;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.opp-v2 .wo-drive-head h4 svg { color: #0052D4; flex-shrink: 0; }
 
-/* Soltar archivos encima del bloque los sube directo. */
-.opp-v2 .wo-drive-block.is-drop {
-    background: rgba(0, 82, 212, 0.07);
-    box-shadow: inset 0 0 0 2px #0052D4;
+/* ── Encabezado ── */
+.opp-v4 .wo4-head { padding: 18px 26px 0; flex-shrink: 0; }
+.opp-v4 .wo4-crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; color: var(--w4-gris); margin-bottom: 8px; min-height: 30px;
 }
-.opp-v2 .wo-drive-block.is-drop .wo-drive-list { opacity: 0.45; }
-.opp-v2 .wo-drive-list { display: flex; flex-direction: column; gap: 2px; }
-.opp-v2 .wo-drive-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 7px;
-    border-radius: 8px;
+.opp-v4 .wo4-crumb-proy { display: inline-flex; align-items: center; min-width: 0; }
+.opp-v4 .wo4-crumb-link {
+    display: inline-flex; align-items: center; gap: 7px; max-width: 520px;
+    border: none; background: none; padding: 0; cursor: pointer;
+    font: inherit; color: var(--w4-gris);
+}
+.opp-v4 .wo4-crumb-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-v4 .wo4-crumb-link:hover { color: var(--w4-azul); }
+.opp-v4 .wo4-win { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.opp-v4 .wo4-ic {
+    width: 30px; height: 30px; border: none; background: none; border-radius: 8px;
+    color: var(--w4-gris); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     text-decoration: none;
-    transition: background 0.12s;
 }
-.opp-v2 .wo-drive-item:hover { background: rgba(0, 82, 212, 0.06); }
-.opp-v2 .wo-drive-nombre {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.78rem;
-    color: #1D1D1F;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-/* Carpeta donde vive el archivo: el bloque ya no lista solo la raíz, así
-   que hay que decir de dónde sale cada uno. */
-.opp-v2 .wo-drive-carpeta {
-    flex-shrink: 0;
-    max-width: 40%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.64rem;
-    color: #9CA3AF;
-    background: rgba(0, 0, 0, 0.045);
-    border-radius: 5px;
-    padding: 2px 6px;
-}
-.opp-v2 .wo-drive-ext { font-size: 0.64rem; font-weight: 700; color: #9CA3AF; flex-shrink: 0; }
-.opp-v2 .wo-drive-vacio { font-size: 0.78rem; color: #9CA3AF; padding: 4px 7px; }
-.opp-v2 .wo-drive-mas {
-    align-self: flex-start;
-    border: none;
-    background: none;
-    padding: 4px 7px;
-    font-family: inherit;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #0052D4;
-    cursor: pointer;
-}
+.opp-v4 .wo4-ic:hover { background: #F3F4F6; color: var(--w4-tinta); }
 
-/* ═══ Rejilla del contenido (widget v3) ═══
-   2×2 explícitas en vez de dos columnas anidadas, para que las filas se
-   alineen: Info ↔ Tareas y Cotizaciones ↔ Conversación comparten alto. */
-/* Composición asimétrica a propósito: cuatro cuadros del mismo tamaño decían
-   que las cuatro cosas pesan igual, y no es cierto. Los metadatos pasan a
-   franja superior; abajo, dos cuadros a la izquierda (lo que se consulta) y
-   la conversación sola a la derecha, alta, porque es donde ocurre el trabajo. */
-.opp-v2 .wo-grid {
-    display: grid;
-    grid-template-columns: 0.86fr 1.14fr;
-    gap: 1.25rem;
+.opp-v4 .wo4-title-row { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; }
+.opp-v4 .wo4-title {
+    font-size: 1.72rem; font-weight: 700; letter-spacing: -.02em;
+    color: var(--w4-tinta); margin: 0; min-width: 0;
+}
+.opp-v4 .wo4-tipo {
+    background: #F3F4F6; color: #4B5563; border: none; border-radius: 7px;
+    padding: 5px 12px; font: inherit; font-size: .76rem; font-weight: 500;
+    cursor: pointer; flex-shrink: 0;
+}
+.opp-v4 .wo4-tipo:hover { background: #E9EBEF; }
+.opp-v4 .wo4-tipo.is-fijo { cursor: default; }
+.opp-v4 .wo4-tipo.is-fijo:hover { background: #F3F4F6; }
+
+/* ── Barra de etapa ── */
+.opp-v4 .wo4-etapa {
+    padding: 14px 26px 16px; border-bottom: 1px solid var(--w4-linea);
+    display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; flex-shrink: 0;
+}
+.opp-v4 .wo4-etapa-info { flex: 1; min-width: 260px; }
+.opp-v4 .wo4-etapa-line { display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; flex-wrap: wrap; }
+.opp-v4 .wo4-etapa-nom { font-size: 1.02rem; font-weight: 700; }
+.opp-v4 .wo4-etapa-meta { font-size: .81rem; color: var(--w4-gris); }
+.opp-v4 .wo4-segs { display: flex; gap: 5px; }
+.opp-v4 .wo4-seg { height: 5px; flex: 1; border-radius: 99px; background: var(--w4-track); }
+.opp-v4 .wo4-seg.on { background: var(--w4-azul); }
+.opp-v4 .wo4-etapa-acts { display: flex; align-items: center; gap: 10px; }
+.opp-v4 .wo4-ghost {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--w4-linea); background: #fff; border-radius: 9px;
+    padding: 9px 15px; font: inherit; font-size: .84rem; font-weight: 600;
+    color: var(--w4-texto); cursor: pointer;
+}
+.opp-v4 .wo4-ghost:hover { border-color: #C7CBD1; }
+.opp-v4 .wo4-pri {
+    display: inline-flex; align-items: center; gap: 8px; border: none;
+    background: var(--w4-azul); color: #fff; border-radius: 9px;
+    padding: 10px 18px; font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer;
+}
+.opp-v4 .wo4-pri:hover { background: var(--w4-azul-dark); }
+
+.opp-v4 .wo4-etapas-panel {
+    padding: 14px 26px 18px; border-bottom: 1px solid var(--w4-linea);
+    background: var(--w4-panel); flex-shrink: 0;
+}
+.opp-v4 .wo4-etapas-grid { display: flex; gap: 7px; flex-wrap: wrap; }
+.opp-v4 .wo4-et {
+    border: 1px solid var(--w4-linea); background: #fff; border-radius: 8px;
+    padding: 7px 13px; font: inherit; font-size: .75rem; font-weight: 600;
+    color: var(--w4-texto); cursor: pointer;
+}
+.opp-v4 .wo4-et:hover { border-color: var(--w4-azul); color: var(--w4-azul); }
+.opp-v4 .wo4-et.done { background: #EFF6FF; border-color: #BFDBFE; color: var(--w4-azul); }
+.opp-v4 .wo4-et.now { background: var(--w4-azul); border-color: var(--w4-azul); color: #fff; }
+.opp-v4 .wo4-et.rama { border-style: dashed; color: var(--w4-gris); }
+.opp-v4 .wo4-etapas-hint { font-size: .74rem; color: var(--w4-gris); margin-top: 9px; }
+
+/* ── Cuerpo ── */
+.opp-v4 .wo4-body {
+    flex: 1; min-height: 0; overflow-y: auto; background: var(--w4-lienzo);
+    display: grid; grid-template-columns: 1fr 372px; gap: 18px; padding: 18px 26px 26px;
     align-items: start;
 }
-.opp-v2 .wo-g-info { grid-column: 1; grid-row: 1; }
-.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; }
-
-/* La derecha es UNA pila, no dos celdas: así Tareas toma el alto que pide y
-   la conversación se come todo lo que sobra. Como dos celdas, el aire que
-   dejaba Tareas quedaba muerto entre ambas. */
-.opp-v2 .wo-col-viva {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    min-width: 0;
+.opp-v4 .wo4-main, .opp-v4 .wo4-side {
+    display: flex; flex-direction: column; gap: 14px; min-width: 0;
 }
-.opp-v2 .wo-col-viva .wo-g-tareas { flex: 0 0 auto; }
-.opp-v2 .wo-col-viva .wo-g-conv { flex: 1; min-height: 380px; }
+.opp-v4 .wo4-card { background: #fff; border: 1px solid var(--w4-linea); border-radius: 13px; }
+.opp-v4 .wo4-pad { padding: 15px 17px; }
+.opp-v4 .wo4-chead {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 11px;
+}
+.opp-v4 .wo4-chead h3 { font-size: .88rem; font-weight: 700; margin: 0; color: var(--w4-tinta); }
+.opp-v4 .wo4-link {
+    border: none; background: none; color: var(--w4-azul); font: inherit;
+    font-size: .8rem; font-weight: 600; cursor: pointer; padding: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+}
+.opp-v4 .wo4-link:hover { text-decoration: underline; }
+.opp-v4 .wo4-vacio { font-size: .84rem; color: var(--w4-tenue); padding: 6px 0; }
+.opp-v4 .wo4-vacio-box {
+    border: 1.5px dashed var(--w4-track); border-radius: 10px; padding: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    color: var(--w4-tenue); font-size: .84rem;
+}
 
-@media (max-width: 900px) {
-    .opp-v2 .wo-grid { grid-template-columns: 1fr; }
-    .opp-v2 .wo-g-info,
-    .opp-v2 .wo-g-cot,
-    .opp-v2 .wo-col-viva { grid-column: 1; grid-row: auto; }
+/* Tareas | Actividades */
+.opp-v4 .wo4-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.opp-v4 .wo4-lista { display: flex; flex-direction: column; }
+.opp-v4 .wo4-fila {
+    display: flex; align-items: center; gap: 9px; padding: 5px 0;
+    font-size: .85rem; cursor: pointer;
+}
+.opp-v4 .wo4-fila:hover .wo4-fila-t { color: var(--w4-azul); }
+.opp-v4 .wo4-punto {
+    width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0;
+}
+.opp-v4 .wo4-fila.done .wo4-punto { background: #16A34A; }
+.opp-v4 .wo4-fila.venc .wo4-punto { background: #EF4444; }
+.opp-v4 .wo4-fila-t {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-fila.done .wo4-fila-t { color: var(--w4-tenue); text-decoration: line-through; }
+.opp-v4 .wo4-fila.venc .wo4-fila-t { color: #EF4444; }
+.opp-v4 .wo4-fila-d { font-size: .78rem; color: var(--w4-tenue); flex-shrink: 0; }
+.opp-v4 .wo4-resumen { font-size: .78rem; color: var(--w4-tenue); margin-top: 7px; }
+
+/* Conversación */
+.opp-v4 .wo4-conv { flex: 1; display: flex; flex-direction: column; min-height: 460px; }
+.opp-v4 .wo4-conv-head {
+    display: flex; align-items: center; gap: 12px; padding: 15px 17px;
+    border-bottom: 1px solid var(--w4-linea); flex-wrap: wrap; flex-shrink: 0;
+}
+.opp-v4 .wo4-conv-t { display: flex; align-items: center; gap: 8px; color: var(--w4-tinta); }
+.opp-v4 .wo4-conv-t h3 { font-size: .88rem; font-weight: 700; margin: 0; }
+.opp-v4 .wo4-conv-n { font-size: .8rem; color: var(--w4-tenue); }
+.opp-v4 .wo4-buscar {
+    margin-left: auto; display: flex; align-items: center; gap: 7px;
+    background: var(--w4-panel); border-radius: 8px; padding: 7px 11px;
+    min-width: 170px; color: var(--w4-gris);
+}
+.opp-v4 .wo4-buscar input {
+    border: none; background: none; outline: none; font: inherit;
+    font-size: .8rem; width: 100%; min-width: 0; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-segmented { display: flex; background: var(--w4-panel); border-radius: 9px; padding: 3px; }
+.opp-v4 .wo4-sg {
+    border: none; background: none; border-radius: 7px; padding: 5px 12px;
+    font: inherit; font-size: .79rem; font-weight: 500; color: var(--w4-gris); cursor: pointer;
+}
+.opp-v4 .wo4-sg.is-active {
+    background: #fff; color: var(--w4-tinta); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, .1);
+}
+.opp-v4 .wo4-feed { flex: 1; overflow-y: auto; padding: 16px 17px; min-height: 0; }
+.opp-v4 .wo4-dia { display: flex; align-items: center; gap: 13px; margin: 16px 0 13px; }
+.opp-v4 .wo4-dia:first-child { margin-top: 0; }
+.opp-v4 .wo4-dia::before, .opp-v4 .wo4-dia::after {
+    content: ''; flex: 1; height: 1px; background: var(--w4-linea);
+}
+.opp-v4 .wo4-dia span { font-size: .78rem; color: var(--w4-tenue); }
+.opp-v4 .wo4-msg { display: flex; gap: 11px; margin-bottom: 14px; cursor: pointer; }
+.opp-v4 .wo4-msg-sys { cursor: default; }
+.opp-v4 .wo4-msg-ic {
+    width: 31px; height: 31px; border-radius: 8px; background: var(--w4-panel);
+    color: var(--w4-gris); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-msg-ic.entra { background: rgba(22, 163, 74, .1); color: #16A34A; }
+.opp-v4 .wo4-msg-ic.sale { background: rgba(37, 99, 235, .1); color: var(--w4-azul); }
+.opp-v4 .wo4-msg-b { flex: 1; min-width: 0; }
+.opp-v4 .wo4-msg-h {
+    font-size: .84rem; font-weight: 700; display: flex; gap: 8px;
+    align-items: baseline; flex-wrap: wrap; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-msg-h time { font-size: .78rem; font-weight: 400; color: var(--w4-tenue); }
+.opp-v4 .wo4-msg-x { font-size: .85rem; color: var(--w4-texto); overflow-wrap: anywhere; }
+.opp-v4 .wo4-msg-x a { color: var(--w4-azul); text-decoration: none; }
+.opp-v4 .wo4-msg:hover .wo4-msg-x a { text-decoration: underline; }
+.opp-v4 .wo4-nota { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 14px; }
+.opp-v4 .wo4-nota.mia { align-items: flex-end; }
+.opp-v4 .wo4-burbuja {
+    position: relative; background: var(--w4-panel); color: var(--w4-tinta);
+    border-radius: 14px 14px 14px 4px; padding: 9px 15px; font-size: .86rem;
+    max-width: 72%; overflow-wrap: anywhere;
+}
+.opp-v4 .wo4-nota.mia .wo4-burbuja {
+    background: var(--w4-azul); color: #fff; border-radius: 14px 14px 4px 14px;
+}
+.opp-v4 .wo4-burbuja .wo-conv-pinbtn { margin-left: 7px; vertical-align: middle; }
+.opp-v4 .wo4-nota:hover .wo-conv-pinbtn { opacity: 1; }
+.opp-v4 .wo4-nota-meta { font-size: .76rem; color: var(--w4-tenue); margin-top: 5px; }
+.opp-v4 .wo4-composer {
+    display: flex; align-items: center; gap: 9px; padding: 13px 17px;
+    border-top: 1px solid var(--w4-linea); flex-shrink: 0;
+}
+.opp-v4 .wo4-cic {
+    width: 33px; height: 33px; border-radius: 8px; border: none; background: none;
+    color: var(--w4-gris); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-cic:hover { background: var(--w4-panel); color: var(--w4-tinta); }
+.opp-v4 .wo4-cinp {
+    flex: 1; min-width: 0; border: 1px solid var(--w4-linea); border-radius: 999px;
+    padding: 10px 16px; font: inherit; font-size: .86rem; outline: none;
+    background: #fff; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-cinp:focus { border-color: var(--w4-azul); }
+.opp-v4 .wo4-send {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--w4-azul); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── Lateral ── */
+.opp-v4 .wo4-monto-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 14px; margin-bottom: 14px;
+}
+.opp-v4 .wo4-lbl { font-size: .78rem; color: var(--w4-gris); display: block; margin-bottom: 3px; }
+.opp-v4 .wo4-monto { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
+.opp-v4 .wo4-cierre { text-align: right; }
+.opp-v4 .wo4-cierre-v { font-size: 1.02rem; font-weight: 600; }
+.opp-v4 .wo4-docs { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.opp-v4 .wo4-doc { background: var(--w4-panel); border-radius: 9px; padding: 8px 12px; }
+.opp-v4 .wo4-doc:hover { background: #F3F4F6; }
+.opp-v4 .wo4-doc-inp {
+    width: 100%; border: none; background: none; outline: none; font: inherit;
+    font-size: .95rem; font-weight: 600; color: var(--w4-tinta); padding: 0; cursor: pointer;
+}
+.opp-v4 .wo4-doc-inp:focus { cursor: text; }
+.opp-v4 .wo4-vermas { margin-top: 12px; }
+.opp-v4 .wo4-chev { width: 12px; height: 12px; transition: transform .15s; }
+.opp-v4 .wo4-card.is-open .wo4-chev { transform: rotate(180deg); }
+.opp-v4 .wo4-extra { display: none; }
+.opp-v4 .wo4-card.is-open .wo4-extra {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 13px;
+    margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-extra-full { grid-column: 1 / -1; }
+.opp-v4 .wo4-extra-v { font-weight: 600; font-size: .92rem; }
+.opp-v4 .wo4-prob { font-size: 1.02rem; font-weight: 700; margin: 0; }
+.opp-v4 .wo4-barra { height: 6px; background: var(--w4-track); border-radius: 99px; overflow: hidden; }
+.opp-v4 .wo4-persona { display: flex; align-items: center; gap: 11px; margin-top: 13px; }
+.opp-v4 .wo4-av {
+    width: 35px; height: 35px; border-radius: 50%; color: #fff;
+    font-size: .76rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-av.blue { background: #2563EB; }
+.opp-v4 .wo4-av.purple { background: #7C3AED; }
+.opp-v4 .wo4-persona-n {
+    font-size: .9rem; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-persona-r {
+    font-size: .78rem; color: var(--w4-gris);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Cotizaciones */
+.opp-v4 .wo4-cot {
+    border: 1px solid var(--w4-linea); border-radius: 10px; padding: 11px 13px;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+}
+.opp-v4 .wo4-cot:last-child { margin-bottom: 0; }
+.opp-v4 .wo4-cot-b { flex: 1; min-width: 0; cursor: pointer; }
+.opp-v4 .wo4-cot-t { font-size: .86rem; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.opp-v4 .wo4-v10 {
+    background: #EFF6FF; color: var(--w4-azul); border-radius: 5px;
+    padding: 1px 6px; font-size: .68rem; font-weight: 700;
+}
+.opp-v4 .wo4-cot-m { font-size: .79rem; color: var(--w4-gris); }
+.opp-v4 .wo4-cot-a { display: flex; gap: 3px; flex-shrink: 0; }
+
+/* Drive */
+.opp-v4 .wo4-arch {
+    display: flex; align-items: center; gap: 10px; padding: 7px 0;
+    font-size: .86rem; text-decoration: none; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-arch-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-v4 .wo4-arch:hover .wo4-arch-n { color: var(--w4-azul); }
+.opp-v4 .wo4-arch-c {
+    font-size: .68rem; color: var(--w4-tenue); background: var(--w4-panel);
+    border-radius: 5px; padding: 2px 6px; flex-shrink: 0; max-width: 38%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-arch-e { font-size: .7rem; font-weight: 700; color: var(--w4-tenue); flex-shrink: 0; }
+.opp-v4 .wo4-drive.is-drop { outline: 2px dashed var(--w4-azul); outline-offset: 4px; border-radius: 8px; }
+
+@media (max-width: 1100px) {
+    .opp-v4 .wo4-body { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-duo { grid-template-columns: 1fr; }
 }

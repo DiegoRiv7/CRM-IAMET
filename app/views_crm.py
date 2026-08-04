@@ -5166,6 +5166,8 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             'usuario_id': todo.usuario_id,
             'comentarios': todo.comentarios or '',
             'fecha_creacion': todo.fecha_creacion.strftime('%d/%m/%Y') if todo.fecha_creacion else '',
+            # La barra de etapa reporta cuánto lleva sin moverse la oportunidad.
+            'fecha_actualizacion': todo.fecha_actualizacion.isoformat() if todo.fecha_actualizacion else '',
             'cotizaciones': cots_list,
             'productos_adicionales': [
                 {'id': p.id, 'producto': p.producto, 'notas': p.notas}

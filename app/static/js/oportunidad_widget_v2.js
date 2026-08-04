@@ -93,6 +93,25 @@
         return ['En Solicitud', 'Cotizando', 'Enviada', 'Seguimiento', 'Vendido s/PO', 'Vendido c/PO', 'En Tránsito', 'Facturado', 'Programado', 'Entregado', 'Esperando Pago', 'Sin Respuesta', 'Ganado', 'Perdido'];
     }
 
+    /* Ramas del pipeline: no siguen el orden lineal, así que el botón de
+       avanzar nunca las propone — se llega a ellas desde "Ver etapas". */
+    var ETAPAS_RAMA = ['vendido s/po', 'vendido c/po', 'perdido', 'ganado', 'sin respuesta'];
+    function esRama(nombre) {
+        return ETAPAS_RAMA.indexOf(String(nombre || '').toLowerCase()) !== -1;
+    }
+
+    /* El sistema no guarda cuándo cambió de etapa, solo la última vez que se
+       tocó la oportunidad. Así que se reporta eso, que es lo que el dato
+       significa de verdad. */
+    function diasSinCambios(d) {
+        if (!d || !d.fecha_actualizacion) return '';
+        var t = new Date(d.fecha_actualizacion);
+        if (isNaN(t.getTime())) return '';
+        var dias = Math.floor((Date.now() - t.getTime()) / 86400000);
+        if (dias < 1) return ' · sin cambios hoy';
+        return ' · ' + dias + (dias === 1 ? ' día' : ' días') + ' sin cambios';
+    }
+
     function alive(inst) {
         return inst && inst.alive && document.body.contains(inst.root);
     }
@@ -204,7 +223,6 @@
             oppId: null,
             data: null,        // snapshot original (woOriginalData)
             edited: {},        // campos modificados (woEditedFields)
-            actividadId: null, // _woActividadRecienteId scoped
             alive: true,
         };
 
@@ -241,7 +259,7 @@
         });
         // Drive: soltar archivos encima del bloque los sube, sin abrir el
         // gestor ni pasar por el botón.
-        var driveBlock = root.querySelector('.wo-drive-block');
+        var driveBlock = root.querySelector('.wo4-drive');
         if (driveBlock) {
             var dragDepth = 0;
             var traeArchivos = function (ev) {
@@ -345,11 +363,14 @@
                 ev.stopPropagation();
                 close(inst, false);
                 break;
-            case 'pipeline-izq':
-                q(inst, 'pipelineScroll').scrollBy({ left: -150, behavior: 'smooth' });
+            case 'ver-etapas':
+                var panel = q(inst, 'etapasPanel');
+                var abierto = panel.style.display === 'none';
+                panel.style.display = abierto ? 'block' : 'none';
+                q(inst, 'verEtapasTxt').textContent = abierto ? 'Ocultar etapas' : 'Ver etapas';
                 break;
-            case 'pipeline-der':
-                q(inst, 'pipelineScroll').scrollBy({ left: 150, behavior: 'smooth' });
+            case 'avanzar-etapa':
+                if (inst.etapaSiguiente) changeStage(inst, inst.etapaSiguiente);
                 break;
             case 'nueva-tarea':
                 setFocus(inst);
@@ -364,16 +385,6 @@
                 ev.stopPropagation();
                 setFocus(inst);
                 if (typeof window.woAbrirWidgetCrearActividad === 'function') {
-                    window.woAbrirWidgetCrearActividad();
-                    openSubWindowed(inst, 'widgetOppCrearActividad');
-                }
-                break;
-            case 'abrir-actividad':
-                setFocus(inst);
-                if (inst.actividadId && typeof window.woVerActividad === 'function') {
-                    window.woVerActividad(inst.actividadId);
-                    openSubWindowed(inst, 'widgetOppVerActividad');
-                } else if (typeof window.woAbrirWidgetCrearActividad === 'function') {
                     window.woAbrirWidgetCrearActividad();
                     openSubWindowed(inst, 'widgetOppCrearActividad');
                 }
@@ -593,25 +604,13 @@
         // Compat: crm_ingeniero.js seteaba este flag observando el widget legacy.
         if (ing) window._ingenieroModeActive = true;
 
-        // ── Type badge ──
+        // ── Tipo de venta: chip discreto de texto ──
         var badge = q(inst, 'typeBadge');
-        badge.className = 'wo-type-badge ' + tipo;
-        var badgeIcon, badgeLabel;
-        if (tipo === 'bitrix_proyecto') {
-            badgeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
-            badgeLabel = 'PROYECTO BITRIX24';
-            badge.style.cssText += 'cursor:default;background:#5856D6;border-color:#5856D6;color:#fff;';
-        } else {
-            badge.style.cursor = ing ? 'default' : 'pointer';
-            badge.style.background = '';
-            badge.style.borderColor = '';
-            badge.style.color = '';
-            badgeIcon = tipo === 'proyecto'
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
-                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
-            badgeLabel = tipo === 'proyecto' ? 'VENTA PROYECTO' : 'VENTA RUNRATE';
-        }
-        badge.innerHTML = badgeIcon + '<span>' + badgeLabel + '</span>';
+        var etiquetaTipo = tipo === 'bitrix_proyecto' ? 'Proyecto Bitrix24'
+                         : tipo === 'proyecto' ? 'Venta proyecto' : 'Venta runrate';
+        badge.textContent = etiquetaTipo;
+        badge.classList.toggle('is-fijo', tipo === 'bitrix_proyecto' || ing);
+        badge.title = (tipo === 'bitrix_proyecto' || ing) ? '' : 'Clic para cambiar de pipeline';
         badge.onclick = (tipo === 'bitrix_proyecto' || ing) ? null : function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -656,12 +655,10 @@
         // Título de ventana (dock, breadcrumb)
         inst.root.setAttribute('data-widget-title', d.oportunidad || 'Oportunidad');
 
-        // ── Pipeline ──
-        var stagesContainer = q(inst, 'pipelineStages');
-        stagesContainer.innerHTML = '';
-        var pipelineWrap = q(inst, 'pipelineWrap');
-        pipelineWrap.style.display = (tipo === 'bitrix_proyecto') ? 'none' : '';
-
+        // ── Etapa: barra segmentada + "Avanzar a <siguiente>" ──
+        // La tira de 12+ pastillas con scroll se sustituye por el progreso y la
+        // acción real. Saltar a una etapa arbitraria (y las ramas) vive en el
+        // panel de "Ver etapas".
         var etapas = getEtapasForTipo(tipo);
         var currentEtapa = d.etapa_corta || etapas[0];
         var currentIdx = -1;
@@ -675,40 +672,53 @@
         }
         if (currentIdx === -1) currentIdx = 0;
 
+        var pipelineWrap = q(inst, 'pipelineWrap');
+        var sinPipeline = (tipo === 'bitrix_proyecto');
+        pipelineWrap.style.display = sinPipeline ? 'none' : '';
+        q(inst, 'etapasPanel').style.display = 'none';
+        q(inst, 'verEtapasTxt').textContent = 'Ver etapas';
+
+        q(inst, 'etapaNombre').textContent = etapas[currentIdx] || currentEtapa;
+        q(inst, 'etapaMeta').textContent =
+            'Etapa ' + (currentIdx + 1) + ' de ' + etapas.length + diasSinCambios(d);
+
+        var segs = q(inst, 'etapaSegs');
+        segs.innerHTML = '';
         etapas.forEach(function (et, idx) {
-            if (idx > 0) {
-                var conn = document.createElement('span');
-                conn.className = 'wo-stage-connector' + (idx <= currentIdx ? ' completed' : '');
-                stagesContainer.appendChild(conn);
-            }
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            if (idx < currentIdx) {
-                btn.className = 'wo-stage-btn completed';
-                btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ' + esc(et);
-            } else if (idx === currentIdx) {
-                btn.className = 'wo-stage-btn active';
-                btn.textContent = et;
-            } else {
-                btn.className = 'wo-stage-btn';
-                btn.textContent = et;
-            }
-            if (ing) {
-                btn.style.pointerEvents = 'none';
-                btn.style.opacity = '0.7';
-            } else {
-                btn.addEventListener('click', function () { changeStage(inst, et); });
-            }
-            stagesContainer.appendChild(btn);
+            var i2 = document.createElement('i');
+            i2.className = 'wo4-seg' + (idx <= currentIdx ? ' on' : '');
+            i2.title = et;
+            segs.appendChild(i2);
         });
 
-        setTimeout(function () {
-            var activeBtn = stagesContainer.querySelector('.wo-stage-btn.active');
-            if (activeBtn) {
-                var scroll = q(inst, 'pipelineScroll');
-                scroll.scrollLeft = activeBtn.offsetLeft - scroll.offsetWidth / 2 + activeBtn.offsetWidth / 2;
-            }
-        }, 50);
+        // Botón de avanzar: solo si la siguiente etapa es lineal (no una rama)
+        // y el usuario puede mover etapas.
+        var btnAv = q(inst, 'btnAvanzar');
+        var sig = etapas[currentIdx + 1];
+        if (!ing && sig && !esRama(sig)) {
+            q(inst, 'avanzarTxt').textContent = 'Avanzar a ' + sig;
+            btnAv.style.display = '';
+            inst.etapaSiguiente = sig;
+        } else {
+            btnAv.style.display = 'none';
+            inst.etapaSiguiente = null;
+        }
+
+        // Panel de etapas: todas, con las ramas marcadas
+        var stagesContainer = q(inst, 'pipelineStages');
+        stagesContainer.innerHTML = '';
+        etapas.forEach(function (et, idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'wo4-et' +
+                (idx < currentIdx ? ' done' : '') +
+                (idx === currentIdx ? ' now' : '') +
+                (esRama(et) ? ' rama' : '');
+            btn.textContent = et;
+            if (ing) btn.style.pointerEvents = 'none';
+            else btn.addEventListener('click', function () { changeStage(inst, et); });
+            stagesContainer.appendChild(btn);
+        });
 
         // ── Info card ──
         var montoNum = Number(d.monto) || 0;
@@ -752,20 +762,17 @@
         if (d.cotizaciones && d.cotizaciones.length > 0) {
             d.cotizaciones.forEach(function (cot) {
                 var card = document.createElement('div');
-                card.className = 'wo-quote-card';
+                card.className = 'wo4-cot';
                 var cotId = String(cot.id == null ? '' : cot.id).padStart(3, '0');
-                var totalStr = (Number(cot.total) || 0).toLocaleString('es-MX', { minimumFractionDigits: 0 });
+                var totalStr = (Number(cot.total) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 });
                 card.innerHTML =
-                    '<div class="wo-quote-left">' +
-                    '<div class="wo-quote-badge">#' + cotId + '</div>' +
-                    '<div class="wo-quote-info" data-cot-open style="cursor:pointer;">' +
-                    '<div class="wo-quote-title">COT-' + new Date().getFullYear() + '-' + cotId + '<span class="wo-quote-version">(v1.0)</span></div>' +
-                    '<div class="wo-quote-meta">' + esc(cot.fecha) + ' &bull; $' + totalStr + '</div>' +
+                    '<div class="wo4-cot-b" data-cot-open>' +
+                    '<div class="wo4-cot-t">COT-' + new Date().getFullYear() + '-' + cotId + ' <span class="wo4-v10">v1.0</span></div>' +
+                    '<div class="wo4-cot-m">' + esc(cot.fecha) + ' &middot; $' + totalStr + '</div>' +
                     '</div>' +
-                    '</div>' +
-                    '<div class="wo-quote-actions">' +
-                    '<a href="#" data-cot-edit class="wo-action-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>' +
-                    '<a href="/app/cotizacion/pdf/' + cot.id + '/" class="wo-action-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
+                    '<div class="wo4-cot-a">' +
+                    '<button type="button" class="wo4-ic" data-cot-edit title="Editar"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></button>' +
+                    '<a class="wo4-ic" href="/app/cotizacion/pdf/' + cot.id + '/" title="Descargar"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
                     '</div>';
                 card.querySelector('[data-cot-open]').addEventListener('click', function () {
                     window.open('/app/cotizacion/view/' + cot.id + '/', '_blank');
@@ -778,7 +785,7 @@
                 quoteList.appendChild(card);
             });
         } else {
-            quoteList.innerHTML = '<div class="wo-empty">Sin cotizaciones aun</div>';
+            quoteList.innerHTML = '<div class="wo4-vacio">Sin cotizaciones aún</div>';
         }
     }
 
@@ -1208,33 +1215,29 @@
     function filaPendiente(t, now) {
         var done = t.estado === 'completada';
         var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < now;
-        var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
-        var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
         var row = document.createElement('div');
-        row.className = 'wo-tarea-inline-item';
-        if (done) row.style.background = 'rgba(52,199,89,0.06)';
-        else if (venc) row.style.background = 'rgba(255,59,48,0.07)';
+        row.className = 'wo4-fila' + (done ? ' done' : '') + (venc ? ' venc' : '');
         row.innerHTML =
-            '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
-            '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.titulo || 'Sin título') + '</span>' +
-            '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
+            '<span class="wo4-punto"></span>' +
+            '<span class="wo4-fila-t">' + esc(t.titulo || 'Sin título') + '</span>' +
+            '<span class="wo4-fila-d">' +
             (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '') +
             '</span>';
         return row;
     }
 
     function vacio(msg, iconPath) {
-        return '<div class="wo-empty" style="padding:1rem;font-size:0.78rem;">' +
-            '<svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">' +
+        return '<div class="wo4-vacio-box">' +
+            '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">' +
             iconPath + '</svg>' + msg + '</div>';
     }
 
     function verTodasBtn(inst, total, modo) {
         var more = document.createElement('div');
-        more.style.cssText = 'text-align:center;padding:0.4rem;';
+        more.style.cssText = 'padding:0.5rem 0 0;';
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.style.cssText = 'background:none;border:none;color:#0052D4;font-size:0.75rem;font-weight:600;cursor:pointer;';
+        btn.className = 'wo4-link';
         btn.textContent = 'Ver todas (' + total + ')';
         btn.addEventListener('click', function () {
             setFocus(inst);
@@ -1273,11 +1276,16 @@
                     });
                     container.appendChild(row);
                 });
+                var hechas = tareas.filter(function (t) { return t.estado === 'completada'; }).length;
+                var res = document.createElement('div');
+                res.className = 'wo4-resumen';
+                res.textContent = hechas + ' de ' + tareas.length + ' completadas';
+                container.appendChild(res);
                 if (tareas.length > TOPE_LISTA) container.appendChild(verTodasBtn(inst, tareas.length, 'tareas'));
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar</div>';
+                container.innerHTML = '<div class="wo4-vacio">Error al cargar</div>';
             });
     }
 
@@ -1286,7 +1294,6 @@
     function renderActividad(inst) {
         var container = q(inst, 'actividadList');
         var oppId = inst.oppId;
-        inst.actividadId = null;
         container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
 
         fetch('/app/api/oportunidad/' + oppId + '/tareas/')
@@ -1301,9 +1308,6 @@
                 }
                 var now = new Date();
                 ordenarPendientes(acts, now);
-                // La próxima pendiente sigue siendo la que abre el atajo de agenda.
-                var prox = acts.filter(function (t) { return t.estado !== 'completada'; })[0];
-                inst.actividadId = prox ? prox.id : null;
                 container.innerHTML = '';
                 acts.slice(0, TOPE_LISTA).forEach(function (t) {
                     var row = filaPendiente(t, now);
@@ -1322,7 +1326,7 @@
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar</div>';
+                container.innerHTML = '<div class="wo4-vacio">Error al cargar</div>';
             });
     }
 
@@ -1354,7 +1358,7 @@
                 renderConvFeed(inst, true);
             })
             .catch(function () {
-                if (feed) feed.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">No se pudo cargar la conversación.</div>';
+                if (feed) feed.innerHTML = '<div class="wo4-vacio">No se pudo cargar la conversación.</div>';
             });
     }
 
@@ -1389,7 +1393,10 @@
 
         var visibles = msgs.filter(function (m) {
             var cls = _convClasificar(m);
-            if (filtro !== 'todo' && cls !== filtro) return false;
+            // "Todo" = lo que de verdad es conversación: correos y notas. La
+            // bitácora importada de Bitrix24 solo sale en su propio filtro.
+            if (filtro === 'todo') { if (cls === 'historial') return false; }
+            else if (cls !== filtro) return false;
             if (query) {
                 var blob = ((m.texto || '') + ' ' + (m.nombre || '') + ' ' + (m.asunto || '') + ' ' + (m.remitente_nombre || '')).toLowerCase();
                 if (blob.indexOf(query) === -1) return false;
@@ -1397,46 +1404,77 @@
             return true;
         });
 
+        var cnt = q(inst, 'convCount');
+        if (cnt) cnt.textContent = visibles.length
+            ? visibles.length + (visibles.length === 1 ? ' registro' : ' registros') : '';
+
         if (!visibles.length) {
-            feed.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;padding:1.5rem 0;">' +
-                (query || filtro !== 'todo' ? 'Sin resultados con este filtro.' : 'Sin mensajes todavía. Escribe la primera nota.') + '</div>';
+            feed.innerHTML = '<div class="wo4-vacio" style="padding:2.5rem 0;">' +
+                (query || filtro !== 'todo'
+                    ? 'Sin resultados con este filtro.'
+                    : 'Aquí aparecen los correos de esta oportunidad y las notas del equipo.') + '</div>';
             return;
         }
 
+        /* Separadores por día: el feed se lee como una bitácora, no como una
+           lista corrida. La fecha viene ya formateada del servidor
+           (dd/mm/aaaa hh:mm), así que se parte por el día. */
+        var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio',
+                     'agosto','septiembre','octubre','noviembre','diciembre'];
+        function diaDe(fecha) {
+            var m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(fecha || '');
+            if (!m) return '';
+            return parseInt(m[1], 10) + ' ' + MESES[parseInt(m[2], 10) - 1] + ' ' + m[3];
+        }
+        function horaDe(fecha) {
+            var m = /(\d{2}:\d{2})$/.exec(fecha || '');
+            return m ? m[1] : '';
+        }
+
         var h = '';
+        var diaPrev = null;
         visibles.forEach(function (m) {
+            var dia = diaDe(m.fecha);
+            if (dia && dia !== diaPrev) {
+                h += '<div class="wo4-dia"><span>' + esc(dia) + '</span></div>';
+                diaPrev = dia;
+            }
             var cls = _convClasificar(m);
+
             if (cls === 'correo') {
                 var esEnv = (m.direccion || '').toUpperCase() === 'SENT';
-                var acc = esEnv ? '#0052D4' : '#059669';
-                h += '<div onclick="if(typeof woCorreoVerDetalle===\'function\')woCorreoVerDetalle(' + m.id + ')" ' +
-                    'style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;background:' + (esEnv ? 'rgba(0,82,212,0.05)' : 'rgba(16,185,129,0.06)') + ';border:1px solid ' + (esEnv ? 'rgba(0,82,212,0.16)' : 'rgba(16,185,129,0.2)') + ';border-radius:10px;padding:8px 11px;">' +
-                    '<svg width="13" height="13" fill="none" stroke="' + acc + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>' +
-                    '<div style="flex:1;min-width:0;">' +
-                    '<div style="font-size:0.62rem;font-weight:800;color:' + acc + ';letter-spacing:0.05em;">' + (esEnv ? 'CORREO ENVIADO' : 'CORREO RECIBIDO') + '</div>' +
-                    '<div style="font-size:0.78rem;font-weight:700;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.asunto || '(sin asunto)') + '</div>' +
-                    '<div style="font-size:0.66rem;color:#9CA3AF;margin-top:1px;">' + esc(m.fecha || '') + '</div>' +
+                h += '<div class="wo4-msg" onclick="if(typeof woCorreoVerDetalle===\'function\')woCorreoVerDetalle(' + m.id + ')">' +
+                    '<span class="wo4-msg-ic ' + (esEnv ? 'sale' : 'entra') + '">' +
+                    (esEnv
+                        ? '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+                        : '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>') +
+                    '</span><div class="wo4-msg-b">' +
+                    '<div class="wo4-msg-h">' + esc(m.remitente_nombre || m.nombre || (esEnv ? 'Enviado' : 'Recibido')) +
+                    '<time>· Correo ' + (esEnv ? 'enviado' : 'recibido') + ' · ' + esc(horaDe(m.fecha)) + '</time></div>' +
+                    '<div class="wo4-msg-x"><a>' + esc(m.asunto || '(sin asunto)') + '</a></div>' +
                     '</div></div>';
                 return;
             }
+
             if (cls === 'historial') {
-                h += '<div style="display:flex;align-items:center;gap:7px;padding:2px 4px;">' +
-                    '<span style="width:6px;height:6px;border-radius:50%;background:#C7C7CC;flex-shrink:0;"></span>' +
-                    '<span style="font-size:0.72rem;color:#86868B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + esc((m.texto || '').replace(/^\[[^\]]*\]\s*/, '').split('|')[0]) + '</span>' +
-                    '<span style="font-size:0.64rem;color:#C7C7CC;flex-shrink:0;">' + esc(m.fecha || '') + '</span>' +
-                    '</div>';
+                h += '<div class="wo4-msg wo4-msg-sys"><span class="wo4-msg-ic">' +
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' +
+                    '</span><div class="wo4-msg-b">' +
+                    '<div class="wo4-msg-h">Bitácora<time>· ' + esc(horaDe(m.fecha)) + '</time></div>' +
+                    '<div class="wo4-msg-x">' + esc((m.texto || '').replace(/^\[[^\]]*\]\s*/, '').split('|')[0]) + '</div>' +
+                    '</div></div>';
                 return;
             }
-            // Nota
+
+            // Nota del equipo
             var mio = !!m.es_mio;
-            h += '<div class="wo-conv-msg" style="display:flex;flex-direction:column;align-items:' + (mio ? 'flex-end' : 'flex-start') + ';">' +
-                '<div style="font-size:0.64rem;color:#9CA3AF;margin-bottom:2px;padding:0 6px;">' + (mio ? '' : esc(m.nombre || '') + ' \u00b7 ') + esc(m.fecha || '') + '</div>' +
-                '<div style="display:flex;align-items:center;gap:5px;max-width:88%;flex-direction:' + (mio ? 'row-reverse' : 'row') + ';">' +
-                '<div style="background:' + (mio ? '#0052D4' : '#F2F2F7') + ';color:' + (mio ? '#fff' : '#1D1D1F') + ';padding:7px 11px;border-radius:' + (mio ? '13px 13px 4px 13px' : '13px 13px 13px 4px') + ';font-size:0.8rem;line-height:1.4;word-break:break-word;">' + esc(m.texto || '') + '</div>' +
-                '<button type="button" data-conv-pin="' + m.id + '" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '" class="wo-conv-pinbtn' + (m.fijado ? ' is-pinned' : '') + '">' +
+            h += '<div class="wo4-nota' + (mio ? ' mia' : '') + '">' +
+                '<div class="wo4-burbuja">' + esc(m.texto || '') +
+                '<button type="button" data-conv-pin="' + m.id + '" class="wo-conv-pinbtn' + (m.fijado ? ' is-pinned' : '') + '" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '">' +
                 '<svg width="11" height="11" viewBox="0 0 24 24" fill="' + (m.fijado ? '#B45309' : 'none') + '" stroke="currentColor" stroke-width="1.6"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
-                '</button>' +
-                '</div></div>';
+                '</button></div>' +
+                '<div class="wo4-nota-meta">' + esc(m.nombre || '') + ' · Nota · ' + esc(horaDe(m.fecha)) + '</div>' +
+                '</div>';
         });
         feed.innerHTML = h;
         if (scrollFondo) feed.scrollTop = feed.scrollHeight;
@@ -1518,69 +1556,62 @@
     /* Proyecto: vive en el header, junto al título — ahí tiene el ancho para
        mostrar el nombre completo. Clic → abre el proyecto; si no hay ninguno
        vinculado, el atajo para vincularlo. */
+    /* Proyecto: cuando existe se muestra como RUTA en el encabezado (ahí
+       cabe el nombre completo, que suele ser largo); cuando no, aparece la
+       tarjeta del lateral con el atajo para vincularlo. Nunca los dos. */
     function renderProyecto(inst, d) {
-        var head = q(inst, 'proyectoHeader');
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
-        head.style.display = esProyecto ? 'flex' : 'none';
+        q(inst, 'proyectoHeader').style.display = 'none';
+        q(inst, 'proyectoCard').style.display = 'none';
         if (esProyecto) cargarProyectos(inst);
     }
 
     function cargarProyectos(inst) {
-        var slot = q(inst, 'proyectoHeader');
+        var ruta = q(inst, 'proyectoHeader');
+        var card = q(inst, 'proyectoCard');
+        var lista = q(inst, 'proyectoList');
         var oppId = inst.oppId;
-        slot.innerHTML = '<span class="wo-proy-vacio">Cargando…</span>';
-
-        function pintarVincular(txt) {
-            slot.innerHTML = '';
-            var b = document.createElement('button');
-            b.type = 'button';
-            // wo-type-badge además: hereda el color que cada tema define
-            // para el badge del header, que es oscuro o con degradado.
-            b.className = 'wo-type-badge wo-proy-badge';
-            b.setAttribute('data-action', 'vincular-proyecto');
-            b.innerHTML =
-                '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
-                '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
-                '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
-                '<span>' + esc(txt) + '</span>';
-            slot.appendChild(b);
-        }
-
-        function pintarLink(p) {
-            slot.innerHTML = '';
-            var link = document.createElement('button');
-            link.type = 'button';
-            link.className = 'wo-type-badge wo-proy-badge';
-            link.title = 'Abrir proyecto: ' + (p.nombre || '');
-            link.innerHTML =
-                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
-                '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
-                '<span>' + esc(p.nombre || 'Proyecto') + '</span>';
-            link.addEventListener('click', function () {
-                if (typeof window.proyectosVerDetalle === 'function') {
-                    // El widget de proyecto necesita el foco: si esta instancia
-                    // está en modo modal, se cierra; en ventana ambos conviven.
-                    if (!isWindowed(inst)) doClose(inst);
-                    window.proyectosVerDetalle(p.id);
-                } else {
-                    window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
-                }
-            });
-            slot.appendChild(link);
-        }
 
         fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;
                 var proys = (data && data.success && data.proyectos) || [];
-                if (proys.length) pintarLink(proys[0]);
-                else pintarVincular('Vincular proyecto');
+
+                if (!proys.length) {
+                    card.style.display = '';
+                    lista.innerHTML = '<div class="wo4-vacio">Sin proyecto vinculado</div>';
+                    return;
+                }
+
+                var p = proys[0];
+                ruta.style.display = 'inline-flex';
+                ruta.innerHTML = '';
+                var a = document.createElement('button');
+                a.type = 'button';
+                a.className = 'wo4-crumb-link';
+                a.title = 'Abrir proyecto: ' + (p.nombre || '');
+                a.innerHTML =
+                    '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">' +
+                    '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>' +
+                    '<span>' + esc(p.nombre || 'Proyecto') + '</span>';
+                a.addEventListener('click', function () {
+                    if (typeof window.proyectosVerDetalle === 'function') {
+                        // El widget de proyecto necesita el foco: si esta instancia
+                        // está en modo modal se cierra; en ventana ambos conviven.
+                        if (!isWindowed(inst)) doClose(inst);
+                        window.proyectosVerDetalle(p.id);
+                    } else {
+                        window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
+                    }
+                });
+                ruta.appendChild(a);
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                pintarVincular('Vincular proyecto');
+                card.style.display = '';
+                lista.innerHTML = '<div class="wo4-vacio">No se pudo cargar</div>';
             });
     }
 
@@ -1593,7 +1624,7 @@
     function renderDrive(inst) {
         var cont = q(inst, 'driveList');
         var oppId = inst.oppId;
-        cont.innerHTML = '<div class="wo-drive-vacio">Cargando…</div>';
+        cont.innerHTML = '<div class="wo4-vacio">Cargando…</div>';
 
         // "recientes": los últimos archivos estén donde estén. Pedir solo la
         // raíz dejaba el bloque vacío en oportunidades con todo en carpetas.
@@ -1603,13 +1634,13 @@
                 if (!alive(inst) || inst.oppId !== oppId) return;
                 var archivos = (data && data.recientes) || [];
                 if (!archivos.length) {
-                    cont.innerHTML = '<div class="wo-drive-vacio">Sin archivos</div>';
+                    cont.innerHTML = '<div class="wo4-vacio">Sin archivos</div>';
                     return;
                 }
                 cont.innerHTML = '';
                 archivos.forEach(function (a) {
                     var row = document.createElement('a');
-                    row.className = 'wo-drive-item';
+                    row.className = 'wo4-arch';
                     row.href = a.url;
                     row.target = '_blank';
                     row.rel = 'noopener';
@@ -1617,16 +1648,16 @@
                     row.innerHTML =
                         '<svg width="13" height="13" fill="none" stroke="#86868B" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;">' +
                         '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-                        '<span class="wo-drive-nombre">' + esc(a.nombre || 'Archivo') + '</span>' +
-                        (a.carpeta ? '<span class="wo-drive-carpeta">' + esc(a.carpeta) + '</span>' : '') +
-                        '<span class="wo-drive-ext">' + esc((a.extension || '').toUpperCase()) + '</span>';
+                        '<span class="wo4-arch-n">' + esc(a.nombre || 'Archivo') + '</span>' +
+                        (a.carpeta ? '<span class="wo4-arch-c">' + esc(a.carpeta) + '</span>' : '') +
+                        '<span class="wo4-arch-e">' + esc((a.extension || '').toUpperCase()) + '</span>';
                     cont.appendChild(row);
                 });
                 var resto = (data.total || archivos.length) - archivos.length;
                 if (resto > 0) {
                     var mas = document.createElement('button');
                     mas.type = 'button';
-                    mas.className = 'wo-drive-mas';
+                    mas.className = 'wo4-link';
                     mas.setAttribute('data-action', 'abrir-drive');
                     mas.textContent = 'Ver ' + resto + ' más';
                     cont.appendChild(mas);
@@ -1634,7 +1665,7 @@
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                cont.innerHTML = '<div class="wo-drive-vacio">No se pudo cargar</div>';
+                cont.innerHTML = '<div class="wo4-vacio">No se pudo cargar</div>';
             });
     }
 
@@ -1643,7 +1674,7 @@
         if (!files.length) return;
         var oppId = inst.oppId;
         var cont = q(inst, 'driveList');
-        cont.innerHTML = '<div class="wo-drive-vacio">Subiendo…</div>';
+        cont.innerHTML = '<div class="wo4-vacio">Subiendo…</div>';
 
         function subirUno(f) {
             var fd = new FormData();
