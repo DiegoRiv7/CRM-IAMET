@@ -262,8 +262,11 @@ body {
    trabaja a diario. */
 .opp-v2 .wo-info-strip {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-    gap: 0.9rem 1.6rem;
+    /* 2x2 fijo, no auto-fit: con cuatro campos y ancho para tres, el cuarto
+       (Facturas) se caía solo a un renglón huérfano. En 2x2 quedan parejos y
+       cada campo gana ancho. */
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem 1.6rem;
     align-items: start;
 }
 /* Cabecera de la tarjeta de detalles, con el "Ver más". */
@@ -281,8 +284,8 @@ body {
 .opp-v2 .wo-info-extra { display: none; }
 .opp-v2 .wo-g-info.is-open .wo-info-extra {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-    gap: 0.9rem 1.6rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem 1.6rem;
     margin-top: 1rem;
     padding-top: 0.9rem;
     border-top: 1px solid #E2E8F0;
@@ -409,7 +412,7 @@ body {
 /* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
    primera columna y las facturas ocupando las otras dos, con campos
    cortos en línea que envuelven — así cabe más de una. */
-.opp-v2 .wo-doc-fact { grid-column: span 2; }
+
 .opp-v2 .wo-fact-row {
     display: flex;
     flex-wrap: wrap;
