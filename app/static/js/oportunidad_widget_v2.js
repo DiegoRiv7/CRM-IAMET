@@ -1605,11 +1605,6 @@
 
         var cots = (inst.data && inst.data.cotizaciones) || [];
         var ing = !!window.ES_INGENIERO;
-        // Ojo con el literal 'undefined': algunas oportunidades de prueba lo
-        // traen como nombre y se pintaba tal cual bajo el título.
-        var nombreOpp = (inst.data && inst.data.oportunidad) || '';
-        if (nombreOpp === 'undefined' || nombreOpp === 'null') nombreOpp = '';
-
         var ov = document.createElement('div');
         ov.id = 'wo4CotOverlay';
         // .widget-overlay nace con display:none — la clase 'active' es la que
@@ -1626,7 +1621,6 @@
             '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
             '</div><div style="min-width:0;">' +
             '<h2 class="wo4-cotwin-t">Cotizaciones de la Oportunidad</h2>' +
-            (nombreOpp ? '<div class="wo4-cotwin-sub">' + esc(nombreOpp) + '</div>' : '') +
             '</div></div>' +
             '<button type="button" class="widget-close" data-cerrar>&times;</button>' +
             '</div>' +

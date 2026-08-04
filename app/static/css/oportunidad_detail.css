@@ -589,10 +589,6 @@ body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .wo4-cotwin-t { margin: 0; font-size: 1.1rem; font-weight: 600; color: #1D1D1F; }
-.wo4-cotwin-sub {
-    font-size: .8rem; color: #86868B;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 620px;
-}
 /* Acciones dentro de la franja de color; la búsqueda va aparte, debajo,
    en su barra blanca — igual que el gestor de Drive. */
 .wo4-cotwin-acts {
@@ -618,17 +614,13 @@ body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
 }
 .wo4-cotwin-grid .wo4-cot { margin-bottom: 0; background: #fff; padding: 13px 12px 13px 15px; }
 
-/* Sobre la franja de color de cada tema, el subtítulo y el icono se aclaran. */
+/* Sobre la franja de color de cada tema, título e icono se aclaran. */
 body[data-theme="temporada"] .wo4-cotwin-t,
 body[data-theme="sakura"] .wo4-cotwin-t,
 body[data-theme="duna"] .wo4-cotwin-t,
 body[data-theme="espacial"] .wo4-cotwin-t,
 body[data-theme="mundial"] .wo4-cotwin-t { color: #fff; }
-body[data-theme="temporada"] .wo4-cotwin-sub,
-body[data-theme="sakura"] .wo4-cotwin-sub,
-body[data-theme="duna"] .wo4-cotwin-sub,
-body[data-theme="espacial"] .wo4-cotwin-sub,
-body[data-theme="mundial"] .wo4-cotwin-sub { color: rgba(255,255,255,.78); }
+
 body[data-theme="temporada"] .wo4-cotwin-ico,
 body[data-theme="sakura"] .wo4-cotwin-ico,
 body[data-theme="duna"] .wo4-cotwin-ico,
