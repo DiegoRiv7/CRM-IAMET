@@ -242,6 +242,12 @@
   .pend-launcher{position:fixed;right:22px;bottom:22px;width:420px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
     border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:900;transition:box-shadow .2s,transform .2s;}
   .pend-launcher.expanded{width:440px;}
+  /* Nivel 2 (aviso expandido en el lugar): más ancho, el cuerpo del correo manda. */
+  .pend-launcher.expanded.n2{width:600px;}
+  .pend-n2-quote{display:block;max-height:340px;overflow:auto;white-space:pre-wrap;font-size:.82rem;line-height:1.5;}
+  .pend-n2-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .pend-n2-acts .pend-foc-btn{padding:7px 13px;font-size:.8rem;border-radius:9px;}
+  .pend-n2-acts .pend-foc-btn.pri{flex:none;}
   .pend-launcher.pill{width:auto;padding:9px 15px;border-radius:999px;cursor:pointer;}
   .pend-launcher.pill:hover{box-shadow:0 20px 46px rgba(15,23,42,.2);}
   .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
@@ -1229,7 +1235,7 @@
   function _toastCollapse() {
     _toastExpanded = false;
     var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
-    var lc = el('pendLauncher'); if (lc) lc.classList.remove('expanded');
+    var lc = el('pendLauncher'); if (lc) { lc.classList.remove('expanded'); lc.classList.remove('n2'); }
     _toastDraw();
   }
   window.pendToastCollapse = _toastCollapse;
@@ -1240,6 +1246,7 @@
   window.pendToastNivel2 = function () {
     var it = _toastTop(); if (!it) return;
     _toastExpand();
+    var lcN2 = el('pendLauncher'); if (lcN2) lcN2.classList.add('n2');
     var box = el('pendLcFocus'); if (!box) return;
     var esCorreo = it.tipo === 'correo';
     var total = (_miniData && _miniData.total) || 0;
@@ -1265,8 +1272,8 @@
       '<div class="pend-foc-lbl">' + _esc(((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase()) + '</div>' +
       '<div class="pend-toast-title" style="cursor:default;">' + _esc(it.headline || it.titulo || '') + '</div>' +
       (it.contexto ? '<div class="pend-toast-ctx" style="display:block;">' + _esc(it.contexto) + '</div>' : '') +
-      (cuerpo ? '<div class="pend-toast-quote" style="display:block;max-height:220px;overflow:auto;white-space:pre-wrap;">“' + _esc(cuerpo) + '”</div>' : '') +
-      '<div class="pend-foc-acts" style="flex-wrap:wrap;">' + btns + '</div>' +
+      (cuerpo ? '<div class="pend-toast-quote pend-n2-quote">“' + _esc(cuerpo) + '”</div>' : '') +
+      '<div class="pend-n2-acts">' + btns + '</div>' +
       '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (total > 1 ? ' (' + total + ')' : '') + ' →</div>';
   };
   window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
