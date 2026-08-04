@@ -1357,6 +1357,23 @@
 
   // ── Mini panel del asistente (nivel intermedio: launcher → mini → panel grande) ──
   var _miniData = null, _miniTab = 'todo';
+  // Pestaña "Atendido": bitácora del día (desde las 8am) de lo que ya se atendió.
+  var _atendidos = null;
+  function _atFetch() {
+    fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.success) { _atendidos = d; if (_miniTab === 'atendido') _miniDraw(); } })
+      .catch(function () {});
+  }
+  var _AT_COLORS = { respondido: '#34C759', agendado: '#007AFF', oportunidad: '#AF52DE', actualizada: '#FF9500', revisado: '#8E8E93' };
+  function _atCard(it) {
+    var open = it.opp_id ? ('pendMiniAbrirOpp(' + it.opp_id + ')') : (it.mail_id ? ('pendVerCorreo(' + it.mail_id + ')') : '');
+    return '<div class="pend-mini-card"><div class="pend-mini-open"' + (open ? ' onclick="' + open + '"' : '') + '>' +
+      '<div class="pend-mini-clbl"><span style="color:' + (_AT_COLORS[it.accion] || '#5a5c63') + ';">' + _esc(it.etiqueta || '') + '</span><span>' + _esc(it.hora || '') + '</span></div>' +
+      '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
+      (it.detalle ? '<div class="pend-mini-cd">' + _esc(it.detalle) + '</div>' : '') +
+      '</div></div>';
+  }
   window.pendMiniAbrir = function () {
     _toastExpanded = false;
     var lc = el('pendLauncher'); if (lc) { lc.style.display = 'none'; lc.classList.remove('expanded'); }
@@ -1376,7 +1393,7 @@
     var mini = el('pendMini'); if (mini) mini.style.display = 'none';
     pendAbrir();
   };
-  window.pendMiniTab = function (t) { _miniTab = t; _miniDraw(); };
+  window.pendMiniTab = function (t) { _miniTab = t; if (t === 'atendido') _atFetch(); _miniDraw(); };
   function _miniLoad() {
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
@@ -1424,11 +1441,21 @@
     var tabs = '<div class="pend-mini-tabs">' +
       _miniTabBtn('todo', 'Todo', d.total) +
       _miniTabBtn('correo', 'Correo', d.correos) +
-      _miniTabBtn('pipeline', 'Pipeline', d.pipeline) + '</div>';
-    var cards = items.length
-      ? items.map(_miniCard).join('')
-      : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
+      _miniTabBtn('pipeline', 'Pipeline', d.pipeline) +
+      _miniTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) + '</div>';
+    var cards;
+    if (_miniTab === 'atendido') {
+      var ats = (_atendidos && _atendidos.items) || [];
+      cards = ats.length
+        ? ats.map(_atCard).join('')
+        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
+    } else {
+      cards = items.length
+        ? items.map(_miniCard).join('')
+        : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
+    }
     body.innerHTML = '<div class="pend-mini-brief">' + _esc(d.brief || '') + '</div>' + tabs + cards;
+    if (_atendidos === null) _atFetch();   // primer conteo de la pestaña sin esperar el clic
   }
   // Acciones rápidas del mini
   window.pendMiniResponder = function (id) {

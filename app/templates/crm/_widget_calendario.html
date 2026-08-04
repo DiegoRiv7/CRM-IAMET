@@ -4733,7 +4733,9 @@
         if (relBtn) {
             if (e.opportunity&&e.opportunity.text) {
                 relBtn.style.display='inline-flex';
-                var span=relBtn.querySelector('span'); if (span) span.textContent='Oportunidad: '+e.opportunity.text; else relBtn.innerHTML='<span>Oportunidad: '+e.opportunity.text+'</span>';
+                // innerHTML completo (no solo el span): si antes se mostró un correo
+                // relacionado, aquí se limpia su icono de sobre.
+                relBtn.innerHTML='<span>Oportunidad: '+String(e.opportunity.text).replace(/</g,'&lt;')+'</span>';
                 // Reasignar SIEMPRE el onclick (capturando el opp id de ESTA
                 // actividad). El visor de TareaOportunidad sobreescribe esta
                 // misma propiedad con un handler "solo cerrar"; sin reasignar
@@ -4745,6 +4747,23 @@
                 relBtn.onclick = function () {
                     document.getElementById('widgetOppVerActividad').style.display='none';
                     if (_relOppId && typeof window.openDetalle === 'function') window.openDetalle(_relOppId);
+                };
+            }
+            else if (e.correo && e.correo.id) {
+                // Seguimiento agendado desde el asistente sobre un correo suelto:
+                // "Relacionado a" lleva al correo original para poder contestarlo.
+                relBtn.style.display='inline-flex';
+                var _corTxt = 'Correo: ' + (e.correo.remitente || e.correo.asunto || '');
+                relBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex:none;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>' + _corTxt.replace(/</g,'&lt;') + ' &rsaquo;</span>';
+                var _relCorreoId = e.correo.id;
+                relBtn.onclick = function () {
+                    document.getElementById('widgetOppVerActividad').style.display='none';
+                    if (typeof window.mailVerCorreo === 'function') {
+                        if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (er) {} }
+                        var mw = document.getElementById('widgetMail');
+                        if (mw) mw.style.zIndex = '11000';
+                        try { window.mailVerCorreo(_relCorreoId); } catch (er) {}
+                    } else { window.location = '/app/?tab=correo'; }
                 };
             }
             else { relBtn.style.display='none'; relBtn.onclick = null; }

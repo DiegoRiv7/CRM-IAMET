@@ -8185,6 +8185,9 @@ def api_asistente_correo_listo(request, correo_id):
     if marcar:
         CorreoAtendido.objects.get_or_create(
             usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+        _asis_log_accion(request.user, 'revisado',
+                         _cor_limpiar_asunto(correo.asunto or '') or (correo.remitente_nombre or correo.remitente_email or 'Correo'),
+                         'De %s' % (correo.remitente_nombre or correo.remitente_email or ''), mail=correo)
         return JsonResponse({'success': True, 'completada': True, 'motivo_done': 'listo'})
     CorreoAtendido.objects.filter(usuario=request.user, mail=correo).delete()
     return JsonResponse({'success': True, 'completada': False, 'motivo_done': ''})
@@ -8498,6 +8501,18 @@ def api_asistente_oportunidad_draft(request, correo_id):
     })
 
 
+def _asis_log_accion(user, accion, titulo, detalle='', mail=None, opp=None):
+    """Deja constancia en la bitácora "Atendido" del asistente (pestaña del panel).
+    Nunca truena: perder una fila de bitácora no debe romper la acción original."""
+    try:
+        from .models import AsistenteAccion
+        AsistenteAccion.objects.create(
+            usuario=user, accion=accion, titulo=(titulo or '')[:200],
+            detalle=(detalle or '')[:300], mail=mail, oportunidad=opp)
+    except Exception:
+        logger.exception('Asistente: no se pudo registrar la acción en la bitácora')
+
+
 def _seg_espejo_expediente(user, opp, act):
     """La sección 'Actividades' del detalle de la oportunidad lee TareaOportunidad,
     no el calendario. Mismo doble registro que hace el '+Nueva' del detalle
@@ -8641,6 +8656,7 @@ def api_asistente_oportunidad_crear(request):
                 tipo_actividad='tarea', descripcion=desc_seg,
                 fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
                 creado_por=user, color='#007AFF', oportunidad_id=todo.id,
+                correo=correo,
             )
             act.participantes.set([user.id])
             _seg_espejo_expediente(user, todo, act)
@@ -8649,6 +8665,10 @@ def api_asistente_oportunidad_crear(request):
             logger.exception('Asistente: no se pudo crear actividad de seguimiento: %s', e)
             actividad_error = str(e)
 
+    _asis_log_accion(user, 'oportunidad', todo.oportunidad or 'Oportunidad',
+                     'Cliente: %s%s' % (cliente.nombre_empresa,
+                                        ' · con seguimiento agendado' if actividad_id else ''),
+                     mail=correo, opp=todo)
     return JsonResponse({'success': True, 'opp_id': todo.id, 'opp_nombre': todo.oportunidad,
                          'actividad_id': actividad_id, 'actividad_error': actividad_error})
 
@@ -8847,10 +8867,11 @@ def api_asistente_oportunidad_update_aplicar(request):
             naive = datetime(int(y), int(mo), int(d), int(hh), int(mm))
             ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
             act = Actividad.objects.create(
-                titulo='Seguimiento',
+                titulo=('Seguimiento: %s' % (opp.oportunidad or ''))[:120].rstrip(': '),
                 descripcion='Realizar seguimiento de ' + (opp.oportunidad or ''),
                 tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
                 creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
+                correo=correo,
             )
             act.participantes.set([request.user.id])
             _seg_espejo_expediente(request.user, opp, act)
@@ -8859,6 +8880,10 @@ def api_asistente_oportunidad_update_aplicar(request):
             logger.exception('Asistente: no se pudo agendar seguimiento al actualizar: %s', e)
             seg = {'creado': False, 'error': str(e)}
 
+    _asis_log_accion(request.user, 'actualizada', opp.oportunidad or 'Oportunidad',
+                     ('Etapa: %s · %s%%' % (opp.etapa_corta, opp.probabilidad_cierre))
+                     + (' · con seguimiento' if seg.get('creado') else ''),
+                     mail=correo, opp=opp)
     return JsonResponse({'success': True, 'opp_id': opp.id, 'seguimiento': seg})
 
 
@@ -8901,7 +8926,7 @@ def api_asistente_seguimiento_draft(request, opp_id):
         'success': True,
         'opp_id': opp.id,
         'opp_nombre': opp.oportunidad,
-        'titulo': 'Seguimiento',
+        'titulo': ('Seguimiento: %s' % (opp.oportunidad or ''))[:120].rstrip(': '),
         'descripcion': 'Realizar seguimiento de ' + (opp.oportunidad or ''),
         'fecha': fecha.isoformat(),
         'hora': '%02d:00' % hora,
@@ -8939,6 +8964,8 @@ def api_asistente_seguimiento_crear(request):
         )
         act.participantes.set([request.user.id])
         _seg_espejo_expediente(request.user, opp, act)
+        _asis_log_accion(request.user, 'agendado', act.titulo,
+                         'Para el %s' % timezone.localtime(ini).strftime('%d/%m %H:%M'), opp=opp)
         return JsonResponse({'success': True, 'opp_id': opp.id, 'actividad_id': act.id})
     except Exception as e:
         logger.exception('Asistente: no se pudo agendar seguimiento: %s', e)
@@ -9787,27 +9814,31 @@ def api_asistente_aviso_agendar(request):
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
     fecha = _mas_dias_habiles(timezone.localdate(), 2)
     hora = _hora_disponible(request.user, fecha)
-    opp = None
+    opp, m = None, None
     if tipo == 'correo':
         m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).select_related('oportunidad').first()
         if not m:
             return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
         opp = m.oportunidad
         rem = (m.remitente_nombre or m.remitente_email or '').strip()
+        asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
+        titulo_act = ('Seguimiento: %s' % asunto_l)[:120]
         desc = ('Dar seguimiento al correo de %s: %s' % (rem, (m.asunto or '').strip()))[:500]
     else:
         opp = TodoItem.objects.filter(id=ref_id).first()
         if not opp:
             return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+        titulo_act = ('Seguimiento: %s' % (opp.oportunidad or 'oportunidad'))[:120]
         desc = 'Realizar seguimiento de ' + (opp.oportunidad or '')
     try:
         naive = datetime(fecha.year, fecha.month, fecha.day, hora, 0)
         ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
         act = Actividad.objects.create(
-            titulo='Seguimiento', descripcion=desc, tipo_actividad='tarea',
+            titulo=titulo_act, descripcion=desc, tipo_actividad='tarea',
             fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
             creado_por=request.user, color='#007AFF',
             oportunidad_id=(opp.id if opp else None),
+            correo=m,
         )
         act.participantes.set([request.user.id])
         _seg_espejo_expediente(request.user, opp, act)
@@ -9816,6 +9847,9 @@ def api_asistente_aviso_agendar(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
     AvisoPospuesto.objects.update_or_create(
         usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': fecha})
+    _asis_log_accion(request.user, 'agendado', titulo_act,
+                     'Para el %s a las %02d:00' % (fecha.strftime('%d/%m'), hora),
+                     mail=m, opp=opp)
     return JsonResponse({'success': True, 'actividad_id': act.id,
                          'fecha': fecha.isoformat(), 'hora': '%02d:00' % hora})
 
@@ -9828,7 +9862,7 @@ def api_asistente_aviso_revisado(request):
     semana hábil (la opp sigue abierta; si sigue estancada, reaparece)."""
     import json as _json
     from django.utils import timezone
-    from .models import AvisoPospuesto, MailCorreo, CorreoAtendido
+    from .models import AvisoPospuesto, MailCorreo, CorreoAtendido, TodoItem
     try:
         data = _json.loads(request.body or '{}')
     except Exception:
@@ -9843,11 +9877,76 @@ def api_asistente_aviso_revisado(request):
             return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
         CorreoAtendido.objects.get_or_create(
             usuario=request.user, mail=m, defaults={'fecha': timezone.localdate()})
+        _asis_log_accion(request.user, 'revisado',
+                         _cor_limpiar_asunto(m.asunto or '') or (m.remitente_nombre or m.remitente_email or 'Correo'),
+                         'De %s' % (m.remitente_nombre or m.remitente_email or ''), mail=m)
     else:
+        opp_r = TodoItem.objects.filter(id=ref_id).first()
         AvisoPospuesto.objects.update_or_create(
             usuario=request.user, tipo='oportunidad', ref_id=int(ref_id),
             defaults={'hasta': _mas_dias_habiles(timezone.localdate(), 5)})
+        if opp_r:
+            _asis_log_accion(request.user, 'revisado', opp_r.oportunidad or 'Oportunidad',
+                             'Silenciada una semana', opp=opp_r)
     return JsonResponse({'success': True})
+
+
+@login_required
+def api_asistente_atendidos(request):
+    """GET — pestaña "Atendido" del asistente: lo que ya atendiste HOY.
+
+    La jornada corre de 8am a 8am: a las 8 de la mañana la pestaña amanece
+    vacía y va acumulando el día en curso (las filas viejas se conservan en
+    BD como historial, solo se deja de mostrarlas). Además de la bitácora,
+    los correos que RESPONDISTE se detectan solos desde los enviados."""
+    import json as _json
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import AsistenteAccion, MailCorreo
+    now = timezone.localtime()
+    ini_dia = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now.hour < 8:
+        ini_dia -= timedelta(days=1)
+
+    _ETIQUETAS = {'respondido': 'Respondiste', 'agendado': 'Agendaste seguimiento',
+                  'oportunidad': 'Creaste oportunidad', 'actualizada': 'Actualizaste oportunidad',
+                  'revisado': 'Marcaste revisado'}
+    items = []
+    for a in (AsistenteAccion.objects.filter(usuario=request.user, created_at__gte=ini_dia)
+              .order_by('-created_at')[:100]):
+        t = timezone.localtime(a.created_at)
+        items.append({
+            'accion': a.accion, 'etiqueta': _ETIQUETAS.get(a.accion, a.accion),
+            'titulo': a.titulo, 'detalle': a.detalle,
+            'hora': t.strftime('%H:%M'), 'ts': t.isoformat(),
+            'mail_id': a.mail_id, 'opp_id': a.oportunidad_id,
+        })
+
+    # Respondidos: cada enviado de la jornada cuenta como correo atendido,
+    # sin importar desde dónde lo hayas contestado (asistente o Correo).
+    for s in (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='SENT', fecha_envio__gte=ini_dia)
+            .order_by('-fecha_envio')[:60]):
+        dest = ''
+        try:
+            lst = _json.loads(s.destinatarios_json or '[]')
+            dest = (lst[0] if isinstance(lst, list) and lst else '') or ''
+            if isinstance(dest, dict):
+                dest = dest.get('email') or dest.get('nombre') or ''
+        except Exception:
+            dest = ''
+        t = timezone.localtime(s.fecha_envio)
+        items.append({
+            'accion': 'respondido', 'etiqueta': 'Respondiste',
+            'titulo': _cor_limpiar_asunto(s.asunto or '') or 'Correo sin asunto',
+            'detalle': ('A %s' % dest) if dest else '',
+            'hora': t.strftime('%H:%M'), 'ts': t.isoformat(),
+            'mail_id': s.id, 'opp_id': s.oportunidad_id,
+        })
+
+    items.sort(key=lambda x: x['ts'], reverse=True)
+    return JsonResponse({'success': True, 'items': items, 'total': len(items),
+                         'desde': timezone.localtime(ini_dia).strftime('%d/%m %H:%M')})
 
 
 @login_required

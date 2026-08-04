@@ -2730,6 +2730,17 @@ class Actividad(models.Model):
         verbose_name="Idea Relacionada"
     )
 
+    # Enlace opcional a un correo — seguimientos agendados desde el asistente:
+    # desde la actividad se puede abrir el correo original y contestarlo.
+    correo = models.ForeignKey(
+        'MailCorreo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actividades_seguimiento',
+        verbose_name="Correo Relacionado"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Resultado de la actividad: texto libre + estatus, capturados al completar
@@ -6837,6 +6848,37 @@ class CorreoAnalisis(models.Model):
 
     def __str__(self):
         return f'mail {self.correo_id} → {self.categoria} ({self.fuente})'
+
+
+class AsistenteAccion(models.Model):
+    """Bitácora de lo que el usuario atendió desde el asistente.
+
+    Alimenta la pestaña "Atendido" del panel: qué se hizo con cada aviso
+    (respondió, agendó, creó/actualizó oportunidad, lo dio por revisado).
+    La pestaña muestra solo la ventana del día en curso (desde las 8am);
+    las filas se conservan como historial."""
+    ACCION_CHOICES = [
+        ('respondido', 'Respondido'),
+        ('agendado', 'Seguimiento agendado'),
+        ('oportunidad', 'Oportunidad creada'),
+        ('actualizada', 'Oportunidad actualizada'),
+        ('revisado', 'Revisado'),
+    ]
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='acciones_asistente')
+    accion = models.CharField(max_length=14, choices=ACCION_CHOICES)
+    titulo = models.CharField(max_length=200)
+    detalle = models.CharField(max_length=300, blank=True, default='')
+    mail = models.ForeignKey(MailCorreo, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['usuario', 'created_at'])]
+        verbose_name = 'Acción del asistente'
+        verbose_name_plural = 'Acciones del asistente'
+
+    def __str__(self):
+        return f'{self.usuario_id}: {self.accion} — {self.titulo[:40]}'
 
 
 class ReplayMensual(models.Model):

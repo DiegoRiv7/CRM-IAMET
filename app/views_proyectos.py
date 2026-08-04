@@ -2624,7 +2624,7 @@ def actividad_list_create(request):
             if oportunidad_id:
                 actividades = actividades.filter(oportunidad_id=oportunidad_id)
 
-            actividades = actividades.select_related('creado_por', 'oportunidad', 'evento', 'curso').prefetch_related('participantes')
+            actividades = actividades.select_related('creado_por', 'oportunidad', 'evento', 'curso', 'correo').prefetch_related('participantes')
 
             events = []
             _1h = timedelta(hours=1)
@@ -2633,6 +2633,11 @@ def actividad_list_create(request):
                 opportunity_data = None
                 if actividad.oportunidad:
                     opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad, 'monto': float(actividad.oportunidad.monto or 0)}
+                correo_data = None
+                if actividad.correo_id:
+                    correo_data = {'id': actividad.correo_id,
+                                   'asunto': actividad.correo.asunto or '',
+                                   'remitente': actividad.correo.remitente_nombre or actividad.correo.remitente_email or ''}
                 evento_data = None
                 if actividad.evento_id:
                     evento_data = {'id': actividad.evento_id, 'nombre': actividad.evento.nombre}
@@ -2653,6 +2658,7 @@ def actividad_list_create(request):
                     'color': actividad.color,
                     'participants': participants_data,
                     'opportunity': opportunity_data,
+                    'correo': correo_data,
                     'evento': evento_data,
                     'curso': curso_data,
                     'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
@@ -2998,6 +3004,12 @@ def actividad_detail(request, pk):
         if actividad.oportunidad:
             opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
 
+        correo_data = None
+        if actividad.correo_id:
+            correo_data = {'id': actividad.correo_id,
+                           'asunto': actividad.correo.asunto or '',
+                           'remitente': actividad.correo.remitente_nombre or actividad.correo.remitente_email or ''}
+
         resultado_archivos = []
         for a in actividad.resultado_archivos.all():
             try:
@@ -3024,6 +3036,7 @@ def actividad_detail(request, pk):
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
+            'correo': correo_data,
             'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
             'es_mio': actividad.creado_por_id == request.user.pk,
             'completada': actividad.completada,
