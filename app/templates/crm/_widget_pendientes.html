@@ -1292,7 +1292,7 @@
       // · llegó y no respondes (3-A): Agendar | Abrir en Correo | Actualizar | Revisado
       // · ya respondiste / hito (3-B): Actualizar | Agendar | Abrir en Correo | Revisado
       var priActualizar = ((it.acciones || [])[0] === 'actualizar_oportunidad');
-      var bAbrir = _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir en Correo');
+      var bAbrir = _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
       var bAct = _btn(priActualizar ? 'pri' : 'sec', "pendToastAct('actualizar_oportunidad')", 'Actualizar oportunidad');
       var bAgen = _btn(priActualizar ? 'sec' : 'pri', "pendToastAct('agendar_seguimiento')", 'Agendar seguimiento');
       btns = (priActualizar ? (bAct + bAgen + bAbrir) : (bAgen + bAbrir + bAct))
@@ -1305,7 +1305,7 @@
       }).join('');
       if (esCorreo) {
         btns += _btn(accs.length ? 'sec' : 'pri', "pendToastAct('responder')", 'Generar respuesta');
-        btns += _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir en Correo');
+        btns += _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
         // Correo SUELTO: vincularlo aquí mismo — clave los primeros días, cuando
         // la gente aún no tiene correos ligados y el asistente no puede ofrecer
         // actualizar. Al vincular, la tarjeta vuelve ya como correo de oportunidad.
@@ -1426,22 +1426,38 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo preparar.') + '</div>'; return; }
+        // Narrado como el de "Actualizar oportunidad": el asistente dice en texto
+        // qué hará; los campos de fecha/hora solo aparecen si quieres ajustar.
         box.innerHTML =
           '<div class="pend-n2-top" onclick="pendToastVincVolver()"><span class="pend-foc-back">‹ Volver</span></div>' +
           '<div class="pend-foc-lbl">AGENDAR SEGUIMIENTO</div>' +
-          '<div class="pend-toast-title" style="cursor:default;">' + _esc(d.titulo || 'Seguimiento') + '</div>' +
-          '<div class="pend-toast-ctx" style="display:block;">Te sugiero tu primer hueco libre. Revisa la fecha y la hora, ajústalas si quieres, y confirma.</div>' +
-          '<div style="display:flex;gap:10px;margin:10px 0 2px;">' +
-            '<input type="date" class="pend-foc-in" id="toastSegFecha" value="' + _esc(d.fecha || '') + '" style="flex:1;">' +
-            '<input type="time" class="pend-foc-in" id="toastSegHora" value="' + _esc(d.hora || '09:00') + '" style="width:130px;">' +
+          '<div class="pend-toast-ctx" style="display:block;font-size:.92rem;color:#1d1d1f;line-height:1.55;">' +
+            'Te agendo <b>«' + _esc(d.titulo || 'Seguimiento') + '»</b> para el ' +
+            '<b id="segPrevFecha">' + _esc(_fechaLegible(d.fecha)) + '</b> a las ' +
+            '<b id="segPrevHora">' + _esc(d.hora || '09:00') + '</b> — tu primer hueco libre.' +
+          '</div>' +
+          '<div id="segPrevInputs" style="display:none;gap:10px;margin:10px 0 2px;">' +
+            '<input type="date" class="pend-foc-in" id="toastSegFecha" value="' + _esc(d.fecha || '') + '" onchange="pendToastSegPrevUpd()" style="flex:1;">' +
+            '<input type="time" class="pend-foc-in" id="toastSegHora" value="' + _esc(d.hora || '09:00') + '" onchange="pendToastSegPrevUpd()" style="width:130px;">' +
           '</div>' +
           '<div class="pend-foc-acts">' +
             '<button type="button" class="pend-foc-btn pri" onclick="pendToastAgendarGo(\'' + tipo + '\',' + ref + ')">Agendar seguimiento</button>' +
             '<button type="button" class="pend-foc-btn sec" onclick="pendToastVincVolver()">Cancelar</button>' +
           '</div>' +
-          '<div class="pend-foc-note">Nada se agenda sin que lo confirmes.</div>';
+          '<div class="pend-foc-note"><span style="cursor:pointer;text-decoration:underline;" onclick="pendToastSegAjustar()">Ajustar los detalles</span> · Nada se agenda sin que lo confirmes.</div>';
       })
       .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar.</div>'; });
+  };
+  window.pendToastSegAjustar = function () {
+    var d = el('segPrevInputs');
+    if (d) d.style.display = (d.style.display === 'none') ? 'flex' : 'none';
+  };
+  window.pendToastSegPrevUpd = function () {
+    // Los campos editan el TEXTO del plan en vivo: lo que lees es lo que se agenda.
+    var f = el('toastSegFecha'), h = el('toastSegHora');
+    var pf = el('segPrevFecha'), ph = el('segPrevHora');
+    if (pf && f && f.value) pf.textContent = _fechaLegible(f.value);
+    if (ph && h && h.value) ph.textContent = h.value;
   };
   window.pendToastAgendarGo = function (tipo, ref) {
     var f = el('toastSegFecha'), h = el('toastSegHora');
