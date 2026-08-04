@@ -1258,12 +1258,20 @@
     var cuerpo = it.quote_full || it.quote || '';
     // Acciones del aviso (sin "no importa") + Responder en todos los correos.
     var accs = (it.acciones || []).filter(function (a) { return a !== 'no_importa' && a !== 'responder' && _MINI_ACTS[a]; });
+    // Correo LIGADO a oportunidad: el aviso chico es conservador (actualizar solo
+    // se ofrece después de responder), pero expandido SIEMPRE ofrece actualizar.
+    if (esCorreo && it.opp_id && accs.indexOf('actualizar_oportunidad') === -1) {
+      accs.push('actualizar_oportunidad');
+    }
     var btns = accs.map(function (a, i) {
       return '<button type="button" class="pend-foc-btn ' + (i === 0 ? 'pri' : 'sec') + '" onclick="pendToastAct(\'' + a + '\')">' + _esc(_MINI_ACTS[a].l) + '</button>';
     }).join('');
     if (esCorreo) {
       btns += '<button type="button" class="pend-foc-btn ' + (accs.length ? 'sec' : 'pri') + '" onclick="pendToastAct(\'responder\')">Responder</button>';
       btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastAbrirSolo(' + it.mail_id + ')">Abrir en Correo</button>';
+      if (it.opp_id) {
+        btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')">Abrir oportunidad</button>';
+      }
     } else if (it.opp_id) {
       btns += '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')">Abrir oportunidad</button>';
     }
