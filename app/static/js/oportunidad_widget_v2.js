@@ -363,15 +363,6 @@
                 ev.stopPropagation();
                 close(inst, false);
                 break;
-            case 'ver-etapas':
-                var panel = q(inst, 'etapasPanel');
-                var abierto = panel.style.display === 'none';
-                panel.style.display = abierto ? 'block' : 'none';
-                q(inst, 'verEtapasTxt').textContent = abierto ? 'Ocultar etapas' : 'Ver etapas';
-                break;
-            case 'avanzar-etapa':
-                if (inst.etapaSiguiente) changeStage(inst, inst.etapaSiguiente);
-                break;
             case 'nueva-tarea':
                 setFocus(inst);
                 if (typeof window.crmTaskAbrirCrear === 'function') window.crmTaskAbrirCrear(inst.oppId);
@@ -675,8 +666,6 @@
         var pipelineWrap = q(inst, 'pipelineWrap');
         var sinPipeline = (tipo === 'bitrix_proyecto');
         pipelineWrap.style.display = sinPipeline ? 'none' : '';
-        q(inst, 'etapasPanel').style.display = 'none';
-        q(inst, 'verEtapasTxt').textContent = 'Ver etapas';
 
         q(inst, 'etapaNombre').textContent = etapas[currentIdx] || currentEtapa;
         q(inst, 'etapaMeta').textContent =
@@ -687,43 +676,15 @@
         etapas.forEach(function (et, idx) {
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'wo4-seg' + (idx <= currentIdx ? ' on' : '');
-            b.setAttribute('data-nombre', et);
-            if (ing || idx === currentIdx) {
-                b.disabled = true;
-            } else {
-                b.addEventListener('click', function () { changeStage(inst, et); });
-            }
-            segs.appendChild(b);
-        });
-
-        // Botón de avanzar: solo si la siguiente etapa es lineal (no una rama)
-        // y el usuario puede mover etapas.
-        var btnAv = q(inst, 'btnAvanzar');
-        var sig = etapas[currentIdx + 1];
-        if (!ing && sig && !esRama(sig)) {
-            q(inst, 'avanzarTxt').textContent = 'Avanzar a ' + sig;
-            btnAv.style.display = '';
-            inst.etapaSiguiente = sig;
-        } else {
-            btnAv.style.display = 'none';
-            inst.etapaSiguiente = null;
-        }
-
-        // Panel de etapas: todas, con las ramas marcadas
-        var stagesContainer = q(inst, 'pipelineStages');
-        stagesContainer.innerHTML = '';
-        etapas.forEach(function (et, idx) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'wo4-et' +
+            b.className = 'wo4-seg' +
                 (idx < currentIdx ? ' done' : '') +
                 (idx === currentIdx ? ' now' : '') +
                 (esRama(et) ? ' rama' : '');
-            btn.textContent = et;
-            if (ing) btn.style.pointerEvents = 'none';
-            else btn.addEventListener('click', function () { changeStage(inst, et); });
-            stagesContainer.appendChild(btn);
+            b.textContent = et;
+            b.title = esRama(et) ? et + ' (rama: no sigue el orden lineal)' : 'Mover a ' + et;
+            if (ing || idx === currentIdx) b.disabled = true;
+            else b.addEventListener('click', function () { changeStage(inst, et); });
+            segs.appendChild(b);
         });
 
         // ── Info card ──

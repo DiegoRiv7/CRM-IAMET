@@ -65,29 +65,17 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                 </div>
             </div>
 
-            <!-- ═══ ETAPA ═══ -->
+            <!-- ═══ ETAPA ═══
+                 Sin botones: los rectángulos son el control. Cada uno lleva el
+                 nombre de su etapa y al hacer clic mueve la oportunidad ahí. Sin
+                 "Ver etapas" ni "Avanzar", el ancho completo alcanza para los
+                 nombres, que era lo que faltaba. -->
             <div class="wo4-etapa" data-wo="pipelineWrap">
-                <div class="wo4-etapa-info">
-                    <div class="wo4-etapa-line">
-                        <span class="wo4-etapa-nom" data-wo="etapaNombre">—</span>
-                        <span class="wo4-etapa-meta" data-wo="etapaMeta"></span>
-                    </div>
-                    <div class="wo4-segs" data-wo="etapaSegs"></div>
+                <div class="wo4-etapa-line">
+                    <span class="wo4-etapa-nom" data-wo="etapaNombre">—</span>
+                    <span class="wo4-etapa-meta" data-wo="etapaMeta"></span>
                 </div>
-                <div class="wo4-etapa-acts">
-                    <button type="button" class="wo4-ghost" data-action="ver-etapas">
-                        <span data-wo="verEtapasTxt">Ver etapas</span>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <button type="button" class="wo4-pri" data-wo="btnAvanzar" data-action="avanzar-etapa" style="display:none;">
-                        <span data-wo="avanzarTxt">Avanzar</span>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="wo4-etapas-panel" data-wo="etapasPanel" style="display:none;">
-                <div class="wo4-etapas-grid" data-wo="pipelineStages"></div>
-                <div class="wo4-etapas-hint">Las punteadas son ramas: no siguen el orden lineal, por eso el botón de arriba no las propone.</div>
+                <div class="wo4-segs" data-wo="etapaSegs"></div>
             </div>
 
             <!-- ═══ CUERPO ═══ -->
