@@ -577,9 +577,9 @@ body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
    .wo-header (que es lo que pintan los cinco temas), acción principal,
    buscador y la lista completa con sus botones. */
 .wo4-cotwin { z-index: var(--z-widget-sub, 10800); display: flex; align-items: center; justify-content: center; }
+/* La medida va inline en el JS (crm.css fija .widget-card en 520px y una
+   clase propia no le gana por orden de carga). Aquí solo lo tipográfico. */
 .wo4-cotwin-card {
-    width: 1400px; max-width: 95vw; height: 84vh;
-    display: flex; flex-direction: column; background: #F9FAFB;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 .wo4-cotwin-head { border-bottom: 1px solid #E5E5EA; background: #fff; flex-shrink: 0; }

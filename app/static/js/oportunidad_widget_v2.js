@@ -1605,6 +1605,10 @@
 
         var cots = (inst.data && inst.data.cotizaciones) || [];
         var ing = !!window.ES_INGENIERO;
+        // Ojo con el literal 'undefined': algunas oportunidades de prueba lo
+        // traen como nombre y se pintaba tal cual bajo el título.
+        var nombreOpp = (inst.data && inst.data.oportunidad) || '';
+        if (nombreOpp === 'undefined' || nombreOpp === 'null') nombreOpp = '';
 
         var ov = document.createElement('div');
         ov.id = 'wo4CotOverlay';
@@ -1612,7 +1616,8 @@
         // lo muestra, convención del resto de overlays del CRM.
         ov.className = 'widget-overlay active opp-v4 wo4-cotwin';
         ov.innerHTML =
-            '<div class="widget-card widget-card-md wo4-cotwin-card">' +
+            '<div class="widget-card wo4-cotwin-card" style="width:1400px;max-width:95vw;height:84vh;' +
+            'display:flex;flex-direction:column;background:#F9FAFB;overflow:hidden;">' +
             '<div class="wo-header wo4-cotwin-head">' +
             '<div class="wo-header-top">' +
             '<div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">' +
@@ -1621,7 +1626,7 @@
             '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
             '</div><div style="min-width:0;">' +
             '<h2 class="wo4-cotwin-t">Cotizaciones de la Oportunidad</h2>' +
-            '<div class="wo4-cotwin-sub">' + esc((inst.data && inst.data.oportunidad) || '') + '</div>' +
+            (nombreOpp ? '<div class="wo4-cotwin-sub">' + esc(nombreOpp) + '</div>' : '') +
             '</div></div>' +
             '<button type="button" class="widget-close" data-cerrar>&times;</button>' +
             '</div>' +
