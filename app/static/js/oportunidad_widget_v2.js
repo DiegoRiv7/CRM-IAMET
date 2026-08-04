@@ -1630,16 +1630,20 @@
             '</div></div>' +
             '<button type="button" class="widget-close" data-cerrar>&times;</button>' +
             '</div>' +
-            '<div class="wo4-cotwin-tools">' +
+            // Acciones dentro de la franja, como el gestor de Drive
+            '<div class="wo4-cotwin-acts">' +
             (ing ? '<span></span>' :
                 '<button type="button" class="wo4-cotwin-nueva" data-nueva>' +
                 '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">' +
                 '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva cotización</button>') +
-            '<div class="wo4-buscar wo4-cotwin-buscar">' +
-            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
-            '<input type="text" data-buscar placeholder="Buscar cotización..."></div>' +
-            '<span class="wo4-cotwin-n" data-conteo></span>' +
             '</div>' +
+            '</div>' +
+            // Barra blanca de búsqueda, debajo de la franja
+            '<div class="wo4-cotwin-bar">' +
+            '<div class="wo4-buscar wo4-cotwin-buscar">' +
+            '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+            '<input type="text" data-buscar placeholder="Buscar cotizaciones..."></div>' +
+            '<span class="wo4-cotwin-n" data-conteo></span>' +
             '</div>' +
             '<div class="wo4-cotwin-body"><div class="wo4-cotwin-grid" data-lista></div></div>' +
             '</div>';
