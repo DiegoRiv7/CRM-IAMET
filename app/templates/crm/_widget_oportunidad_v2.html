@@ -44,14 +44,6 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <!-- Proyecto vinculado como ruta, no como pastilla -->
                     <span class="wo4-crumb-proy" data-wo="proyectoHeader" style="display:none;"></span>
                     <div class="wo4-win">
-                        <button type="button" data-wo="btnAsistente" data-action="abrir-asistente"
-                            class="wo4-ic wo-asist-btn-title" title="Asistente AI de esta oportunidad">
-                            <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:26px;height:26px;">
-                                <span class="asist-orb-core"></span>
-                                <span class="asist-orb-ring asist-orb-ring--horiz"></span>
-                                <span class="asist-orb-ring asist-orb-ring--vert"></span>
-                            </span>
-                        </button>
                         <button type="button" class="wo4-ic widget-close" data-wo="close" data-action="close" title="Cerrar">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
@@ -212,15 +204,26 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
 
                     <div class="wo4-card wo4-pad">
                         <div class="wo4-chead">
-                            <h3>Cotizaciones</h3>
+                            <!-- El título expande: muestra todas y saca el buscador -->
+                            <button type="button" class="wo4-htitle" data-action="toggle-cot">
+                                <h3>Cotizaciones</h3>
+                                <svg class="wo4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
                             <button type="button" class="wo4-link" data-wo="btnNuevaCot" data-action="nueva-cot">+ Nueva</button>
+                        </div>
+                        <div class="wo4-buscar wo4-buscar-card">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" data-wo="cotSearch" placeholder="Buscar cotización">
                         </div>
                         <div data-wo="quoteList"></div>
                     </div>
 
                     <div class="wo4-card wo4-pad">
                         <div class="wo4-chead">
-                            <h3>Archivos en Drive</h3>
+                            <button type="button" class="wo4-htitle" data-action="toggle-drive">
+                                <h3>Archivos en Drive</h3>
+                                <svg class="wo4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="file" data-wo="driveFile" multiple style="display:none;">
                                 <button type="button" class="wo4-link" data-action="drive-subir">
@@ -231,6 +234,10 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
                                 </button>
                             </div>
+                        </div>
+                        <div class="wo4-buscar wo4-buscar-card">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" data-wo="driveSearch" placeholder="Buscar archivo">
                         </div>
                         <div class="wo4-drive" data-wo="driveList"></div>
                     </div>

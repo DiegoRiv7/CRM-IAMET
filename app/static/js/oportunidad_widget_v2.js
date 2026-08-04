@@ -284,6 +284,23 @@
                 this.value = '';
             });
         }
+        /* Buscadores de cotizaciones y drive: filtran las filas ya pintadas,
+           sin volver a pedir al servidor. */
+        function filtrarLista(listaEl, texto) {
+            var t = (texto || '').trim().toLowerCase();
+            Array.prototype.forEach.call(listaEl.children, function (fila) {
+                var ok = !t || (fila.textContent || '').toLowerCase().indexOf(t) !== -1;
+                fila.style.display = ok ? '' : 'none';
+            });
+        }
+        [['cotSearch', 'quoteList'], ['driveSearch', 'driveList']].forEach(function (par) {
+            var inp = q(inst, par[0]);
+            if (!inp) return;
+            inp.addEventListener('input', function () {
+                filtrarLista(q(inst, par[1]), this.value);
+            });
+        });
+
         var convFileEl = q(inst, 'convFile');
         if (convFileEl) {
             convFileEl.addEventListener('change', function () {
@@ -393,17 +410,6 @@
                     openSubWindowed(inst, 'widgetOppConversacion');
                 }
                 break;
-            case 'abrir-asistente':
-                setFocus(inst);
-                if (typeof window.asistenteAbrir === 'function') {
-                    window.asistenteAbrir({
-                        oportunidad: {
-                            id: inst.oppId,
-                            titulo: (inst.data && inst.data.oportunidad) || '',
-                        },
-                    });
-                }
-                break;
             case 'vincular-proyecto':
                 abrirVincularProyecto(inst);
                 break;
@@ -416,6 +422,19 @@
                 var txt = q(inst, 'infoToggleTxt');
                 if (txt) txt.textContent = abierto ? 'Ver menos' : 'Ver más';
                 break;
+            case 'toggle-cot': {
+                var cardCot = q(inst, 'quoteList').closest('.wo4-card');
+                cardCot.classList.toggle('is-expandido');
+                break;
+            }
+            case 'toggle-drive': {
+                var cardDr = q(inst, 'driveList').closest('.wo4-card');
+                var abierto = cardDr.classList.toggle('is-expandido');
+                // Expandido trae TODOS los archivos; plegado vuelve a los ultimos.
+                inst.driveTodos = abierto;
+                renderDrive(inst);
+                break;
+            }
             case 'drive-subir':
                 setFocus(inst);
                 var driveEl = q(inst, 'driveFile');
@@ -1607,7 +1626,8 @@
 
         // "recientes": los últimos archivos estén donde estén. Pedir solo la
         // raíz dejaba el bloque vacío en oportunidades con todo en carpetas.
-        fetch('/app/api/oportunidad/' + oppId + '/drive/?recientes=' + TOPE_DRIVE, { credentials: 'same-origin' })
+        var tope = inst.driveTodos ? 100 : TOPE_DRIVE;
+        fetch('/app/api/oportunidad/' + oppId + '/drive/?recientes=' + tope, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;

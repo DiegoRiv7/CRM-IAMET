@@ -446,10 +446,13 @@ body {
    tarjeta cede padding, que es lo que sobraba. */
 /* Se veían fantasma: ahora llevan fondo propio, y la lista reserva el ancho
    de su barra para que no los tape. */
+/* Azules y visibles siempre: en gris sobre la tarjeta blanca solo se
+   distinguian al pasar el cursor, que era justo el problema. */
 .opp-v4 .wo4-cot-a .wo4-ic {
-    width: 26px; height: 26px; background: var(--w4-panel); color: var(--w4-texto);
+    width: 26px; height: 26px;
+    background: #EFF6FF; color: var(--w4-azul);
 }
-.opp-v4 .wo4-cot-a .wo4-ic:hover { background: #E5E7EB; color: var(--w4-tinta); }
+.opp-v4 .wo4-cot-a .wo4-ic:hover { background: #DBEAFE; color: var(--w4-azul-dark); }
 .opp-v4 [data-wo="quoteList"] { padding-right: 2px; }
 .opp-v4 .wo4-cot-t { min-width: 0; }
 .opp-v4 .wo4-cot-t, .opp-v4 .wo4-cot-m { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -553,4 +556,25 @@ body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
     .opp-v4 .wo4-conv-head { gap: 8px; }
     .opp-v4 .wo4-composer { flex-wrap: wrap; }
     .opp-v4 .wo4-cinp { order: 4; width: 100%; flex-basis: 100%; }
+}
+
+/* ═══ Tarjetas expandibles: Cotizaciones y Drive ═══
+   El título es el control: al hacer clic muestra todo y saca el buscador. */
+.opp-v4 .wo4-htitle {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: none; background: none; padding: 0; cursor: pointer;
+    font: inherit; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-htitle:hover h3 { color: var(--w4-azul); }
+.opp-v4 .wo4-htitle .wo4-chev { color: var(--w4-tenue); }
+.opp-v4 .wo4-card.is-expandido .wo4-htitle .wo4-chev { transform: rotate(180deg); }
+
+/* El buscador solo existe cuando la tarjeta está expandida. */
+.opp-v4 .wo4-buscar-card { display: none; margin-bottom: 10px; }
+.opp-v4 .wo4-card.is-expandido .wo4-buscar-card { display: flex; }
+
+/* Expandida, la lista crece hasta un tope y scrollea dentro de sí misma. */
+.opp-v4 .wo4-card.is-expandido [data-wo="quoteList"],
+.opp-v4 .wo4-card.is-expandido .wo4-drive {
+    max-height: 340px; overflow-y: auto;
 }
