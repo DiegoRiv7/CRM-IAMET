@@ -1865,6 +1865,9 @@
   };
   window.pendMiniAbrirOpp = function (id) {
     var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    // Dejar el toast visible detrás de la ventana de la oportunidad: al cerrarla,
+    // el asistente sigue ahí (antes desaparecía hasta recargar la página).
+    pendLauncherShow();
     if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
     pendAbrir();
   };
