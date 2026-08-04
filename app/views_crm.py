@@ -9373,7 +9373,8 @@ def _feed_correos_items(user, limite=6):
     ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
-    from .models import MailConexion, MailCorreo, CorreoAtendido, TodoItem, AvisoPospuesto, Actividad
+    from .models import (MailConexion, MailCorreo, CorreoAtendido, TodoItem,
+                         AvisoPospuesto, Actividad, AsistenteEstado)
     out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return out
@@ -9555,6 +9556,10 @@ def _feed_correos_items(user, limite=6):
         # conversación no se pierda. Se calla si ya hay un seguimiento agendado
         # sobre ese correo, si descartaste el aviso, o si el hilo no tiene correo
         # RECIBIDO (un correo que iniciaste tú no es una respuesta).
+        # Arranque limpio: la oferta solo aplica a respuestas ENVIADAS después de
+        # que el asistente se activó para este usuario (la marca se crea sola la
+        # primera vez). Lo respondido antes del lanzamiento no genera tarjetas.
+        estado_asis, _creado = AsistenteEstado.objects.get_or_create(usuario=user)
         vistos_hilo_c = set()
         cand_c = []
         for s in sent_recientes:
@@ -9562,6 +9567,8 @@ def _feed_correos_items(user, limite=6):
             if not hk or hk in vistos_hilo_c:
                 continue
             vistos_hilo_c.add(hk)
+            if not s.fecha_envio or s.fecha_envio < estado_asis.activado_en:
+                continue                        # respondido antes de activar el asistente
             if s.oportunidad_id or opp_por_hilo.get(hk):
                 continue                        # ligado a oportunidad → es del 3-B
             m_card = recibidos.get(hk)

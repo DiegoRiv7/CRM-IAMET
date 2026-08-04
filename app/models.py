@@ -6881,6 +6881,18 @@ class AsistenteAccion(models.Model):
         return f'{self.usuario_id}: {self.accion} — {self.titulo[:40]}'
 
 
+class AsistenteEstado(models.Model):
+    """Estado del asistente por usuario. `activado_en` = la primera vez que su
+    feed corrió (se crea solo). Arranque limpio: los correos respondidos ANTES
+    de esa fecha no generan la oferta de "¿agendo seguimiento?" (caso 3-C) —
+    al lanzar, el asistente solo propone agendar sobre lo que pase después."""
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='asistente_estado')
+    activado_en = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.usuario_id}: activado {self.activado_en:%Y-%m-%d}'
+
+
 class ReplayMensual(models.Model):
     """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
     (usuario, mes, anio): el mes ya cerró, los datos son finales."""
