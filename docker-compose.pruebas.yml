@@ -47,7 +47,9 @@ services:
     environment:
       DB_HOST: db
       PYTHONUNBUFFERED: "1"
-    entrypoint: python manage.py sincronizar_correo --loop 180
+    # 90s: el ajuste mínimo del "paso 3" — correos nuevos avisan en ~1.5 min
+    # promedio sin la complejidad de IMAP IDLE/push (decisión 2026-08-04).
+    entrypoint: python manage.py sincronizar_correo --loop 90
     deploy:
       resources:
         limits:

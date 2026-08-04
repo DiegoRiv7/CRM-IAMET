@@ -9918,11 +9918,40 @@ def api_asistente_aviso_posponer(request):
 
 
 @login_required
+def api_asistente_aviso_agendar_draft(request):
+    """GET — preview del seguimiento que agendaría el toast (verificación humana):
+    título propuesto + fecha/hora sugeridas (+2 días hábiles, primer hueco libre).
+    El usuario revisa/ajusta y recién entonces se agenda (POST agendar)."""
+    from django.utils import timezone
+    from .models import MailCorreo, TodoItem
+    tipo = request.GET.get('tipo')
+    ref_id = request.GET.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
+    hora = _hora_disponible(request.user, fecha)
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
+        titulo = ('Seguimiento: %s' % asunto_l)[:120]
+    else:
+        opp = TodoItem.objects.filter(id=ref_id).first()
+        if not opp:
+            return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+        titulo = ('Seguimiento: %s' % (opp.oportunidad or 'oportunidad'))[:120]
+    return JsonResponse({'success': True, 'titulo': titulo,
+                         'fecha': fecha.isoformat(), 'hora': '%02d:00' % hora})
+
+
+@login_required
 @require_http_methods(["POST"])
 def api_asistente_aviso_agendar(request):
-    """POST — "Agendar" del toast: crea DIRECTO (sin formularios) una actividad de
-    seguimiento a +2 días hábiles en el primer hueco libre, y silencia el aviso hasta
-    ese día (si sigue pendiente, vuelve justo cuando toca darle seguimiento)."""
+    """POST — "Agendar" del toast: crea la actividad de seguimiento y silencia el
+    aviso hasta ese día (si sigue pendiente, vuelve justo cuando toca darle
+    seguimiento). La fecha/hora vienen del preview aprobado por el usuario
+    (verificación humana); sin ellas, +2 días hábiles en el primer hueco libre."""
     import json as _json
     from datetime import datetime, timedelta
     from django.utils import timezone
@@ -9937,6 +9966,22 @@ def api_asistente_aviso_agendar(request):
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
     fecha = _mas_dias_habiles(timezone.localdate(), 2)
     hora = _hora_disponible(request.user, fecha)
+    minuto = 0
+    f_raw = (data.get('fecha') or '').strip()
+    if f_raw:
+        try:
+            y_f, m_f, d_f = f_raw.split('-')
+            fecha = datetime(int(y_f), int(m_f), int(d_f)).date()
+        except Exception:
+            pass
+    h_raw = (data.get('hora') or '').strip()
+    if h_raw:
+        try:
+            partes_h = h_raw.split(':')
+            hora = max(0, min(23, int(partes_h[0])))
+            minuto = max(0, min(59, int(partes_h[1]))) if len(partes_h) > 1 else 0
+        except Exception:
+            pass
     opp, m = None, None
     if tipo == 'correo':
         m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).select_related('oportunidad').first()
@@ -9954,7 +9999,7 @@ def api_asistente_aviso_agendar(request):
         titulo_act = ('Seguimiento: %s' % (opp.oportunidad or 'oportunidad'))[:120]
         desc = 'Realizar seguimiento de ' + (opp.oportunidad or '')
     try:
-        naive = datetime(fecha.year, fecha.month, fecha.day, hora, 0)
+        naive = datetime(fecha.year, fecha.month, fecha.day, hora, minuto)
         ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
         act = Actividad.objects.create(
             titulo=titulo_act, descripcion=desc, tipo_actividad='tarea',
@@ -9971,10 +10016,10 @@ def api_asistente_aviso_agendar(request):
     AvisoPospuesto.objects.update_or_create(
         usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': fecha})
     _asis_log_accion(request.user, 'agendado', titulo_act,
-                     'Para el %s a las %02d:00' % (fecha.strftime('%d/%m'), hora),
+                     'Para el %s a las %02d:%02d' % (fecha.strftime('%d/%m'), hora, minuto),
                      mail=m, opp=opp)
     return JsonResponse({'success': True, 'actividad_id': act.id,
-                         'fecha': fecha.isoformat(), 'hora': '%02d:00' % hora})
+                         'fecha': fecha.isoformat(), 'hora': '%02d:%02d' % (hora, minuto)})
 
 
 @login_required
