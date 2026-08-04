@@ -8621,9 +8621,22 @@ def api_asistente_oportunidad_crear(request):
                 f_obj = _mas_dias_habiles(timezone.localdate(), 2)
                 naive = datetime(f_obj.year, f_obj.month, f_obj.day, _hora_disponible(user, f_obj), 0)
                 ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+            # Título y descripción que digan QUÉ se espera hacer, no solo "dar
+            # seguimiento": el análisis del correo ya sabe qué pidió el cliente.
+            ana_seg = getattr(correo, 'analisis', None) if correo else None
+            resumen_seg = ((ana_seg.resumen if ana_seg else '') or '').strip()
+            cat_seg = (ana_seg.categoria if ana_seg else '') or ''
+            if cat_seg == 'venta':
+                desc_seg = 'Enviar la cotización que pidió el cliente y confirmarle de recibido.'
+            elif cat_seg == 'hito':
+                desc_seg = 'Confirmar de recibido y actualizar la venta con el documento.'
+            else:
+                desc_seg = 'Retomar la conversación con el cliente y avanzar la oportunidad.'
+            if resumen_seg:
+                desc_seg += ' Del correo: %s' % resumen_seg
             act = Actividad.objects.create(
-                titulo=(data.get('actividad_titulo') or ('Dar seguimiento a %s' % cliente.nombre_empresa))[:200],
-                tipo_actividad='tarea', descripcion='',
+                titulo=(data.get('actividad_titulo') or ('Actividad de seguimiento — %s' % cliente.nombre_empresa))[:200],
+                tipo_actividad='tarea', descripcion=desc_seg,
                 fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
                 creado_por=user, color='#007AFF', oportunidad_id=todo.id,
             )
