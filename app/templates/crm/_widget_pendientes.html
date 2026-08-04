@@ -58,9 +58,9 @@
       <nav class="pend-side">
         <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi Asistente</div>
         <button type="button" class="pend-side-item active" data-nav="asistente" onclick="pendNav('asistente')">Asistente</button>
-        <button type="button" class="pend-side-item" data-nav="dia" onclick="pendNav('dia')">Resumen</button>
-        <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes</button>
-        <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correo</button>
+        <button type="button" class="pend-side-item" data-nav="dia" onclick="pendNav('dia')">Recomendaciones del día</button>
+        <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes sin atender</button>
+        <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correos importantes sin atender</button>
         <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
         <span class="pend-replay-wrap pend-side-bottom">
           <button type="button" class="pend-side-item" id="pendTabReplay" data-nav="mes" onclick="pendNav('mes')">
@@ -93,8 +93,9 @@
           <!-- Vista "Asistente" en grande: el mini panel como protagonista del centro.
                El chat (flujo + barra) se MUEVE aquí desde la columna derecha al entrar. -->
           <div id="pendAsisBig" style="display:none;">
+            <div class="abig-status" id="asisBigStatus"></div>
             <div class="pend-abig-brief" id="asisBigBrief"></div>
-            <div class="pend-mini-tabs" id="asisBigTabs"></div>
+            <div class="pend-mini-tabs abig-tabs" id="asisBigTabs"></div>
             <div id="asisBigCards"></div>
           </div>
         </div>
@@ -330,11 +331,30 @@
   /* ── Vista "Asistente" en grande (centro del panel) ── */
   .pend-shell.asis-mode .pend-asis{display:none;}          /* la columna derecha se retira: el asistente ya es el centro */
   .pend-shell.asis-mode .pend-maintop{display:none;}
-  #pendAsisBig{max-width:900px;margin:0 auto;padding:6px 10px 8px;}
-  .pend-abig-brief{font-size:1rem;line-height:1.6;color:#1d1d1f;padding:6px 2px 2px;}
-  #asisBigCards .pend-mini-card{padding:17px 8px;}
-  #asisBigCards .pend-mini-ch{font-size:1rem;}
-  #asisBigCards .pend-mini-cd,#asisBigCards .pend-mini-ctx{font-size:.87rem;}
+  #pendAsisBig{max-width:960px;margin:0 auto;padding:6px 12px 8px;}
+  .abig-status{display:flex;align-items:center;gap:7px;font-size:.8rem;color:#5a5c63;padding:2px 2px 12px;}
+  .abig-status b{color:#16181d;}
+  .abig-dot{width:8px;height:8px;background:#34c759;border-radius:50%;flex:none;}
+  .abig-refresh{margin-left:auto;border:1px solid #e9eaee;background:#fff;border-radius:9px;padding:5px 12px;
+    font-size:.76rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
+  .abig-refresh:hover{background:#f2f3f6;}
+  .pend-abig-brief{font-size:.98rem;line-height:1.6;color:#1d1d1f;padding:0 2px 4px;}
+  .abig-tabs{align-items:center;}
+  .abig-orden{margin-left:auto;font-size:.75rem;color:#9a9ca3;font-weight:600;}
+  /* Tarjetas del asistente en grande: blancas, con avatar de iniciales y chips */
+  .abig-card{background:#fff;border:1px solid #e9eaee;border-radius:14px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .abig-row{display:flex;gap:12px;cursor:pointer;}
+  .abig-ava{width:38px;height:38px;border-radius:50%;color:#fff;font-weight:700;font-size:.82rem;
+    display:flex;align-items:center;justify-content:center;flex:none;letter-spacing:.02em;}
+  .abig-mainc{flex:1;min-width:0;}
+  .abig-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .abig-name{font-weight:700;font-size:.95rem;color:#16181d;}
+  .abig-chip{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:999px;background:#f2f3f6;color:#5a5c63;white-space:nowrap;}
+  .abig-hace{margin-left:auto;font-size:.72rem;color:#9a9ca3;font-weight:600;white-space:nowrap;}
+  .abig-subj{font-weight:600;font-size:.9rem;color:#1d1d1f;margin-top:3px;}
+  .abig-ctx{font-size:.85rem;color:#4b5563;line-height:1.55;margin-top:3px;}
+  .abig-acts{display:flex;gap:8px;margin-top:11px;margin-left:50px;flex-wrap:wrap;}
   #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fafbfc;padding:10px 0 2px;margin-top:10px;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
   .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
@@ -2044,6 +2064,7 @@
   // El mini panel a escala completa: brief + pestañas + tarjetas con el mensaje
   // de la IA entero + el chat (los nodos del chat se MUEVEN aquí, mismos ids).
   var _asisBigTab = 'todo';
+  var _asisLastLoad = null;   // timestamp de la última revisión del feed (barra "Al día")
   function _asisModo(on) {
     var shell = document.querySelector('#widgetPendientes .pend-shell');
     if (shell) shell.classList.toggle('asis-mode', !!on);
@@ -2069,18 +2090,67 @@
   function _asisBigTabBtn(k, lbl, n) {
     return '<button type="button" class="pend-mini-tab' + (_asisBigTab === k ? ' on' : '') + '" onclick="pendAsisBigTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
   }
+  var _ABIG_AVA = ['#0a84ff', '#af52de', '#ff9500', '#34c759', '#5856d6', '#b45309', '#ff3b30'];
+  function _abigIni(nombre) {
+    var p = (nombre || '?').trim().split(/\s+/);
+    return ((p[0] || '')[0] || '?').toUpperCase() + ((p[1] || '')[0] || '').toUpperCase();
+  }
+  function _abigAvaColor(nombre) {
+    var h = 0, s = nombre || '';
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+    return _ABIG_AVA[h % _ABIG_AVA.length];
+  }
+  function _abigCard(it) {
+    var openCall = it.tipo === 'correo' ? ('pendVerCorreo(' + it.mail_id + ')') : ('pendMiniAbrirOpp(' + it.opp_id + ')');
+    var acts = (it.acciones || []).map(function (a, i) {
+      var c = _MINI_ACTS[a]; if (!c) return '';
+      var cls = (a === 'no_importa') ? 'txt' : (i === 0 ? 'pri' : 'sec');
+      return '<button type="button" class="pend-mini-btn ' + cls + '" onclick="' + c.f(it) + '">' + _esc(c.l) + '</button>';
+    }).join('');
+    var col = _catColor(it);
+    var chips = '<span class="abig-chip" style="color:' + col + ';background:' + col + '1a;">' + _esc(it.categoria || '') + '</span>';
+    if (it.grupo) chips += '<span class="abig-chip">' + (it.grupo === 'correo' ? 'Correo' : 'Pipeline') + '</span>';
+    return '<div class="abig-card">' +
+      '<div class="abig-row" onclick="' + openCall + '">' +
+        '<div class="abig-ava" style="background:' + _abigAvaColor(it.titulo) + ';">' + _esc(_abigIni(it.titulo)) + '</div>' +
+        '<div class="abig-mainc">' +
+          '<div class="abig-head"><span class="abig-name">' + _esc(it.titulo || '') + '</span>' + chips +
+            '<span class="abig-hace">' + _esc(it.hace || '') + '</span></div>' +
+          '<div class="abig-subj">' + _esc(it.desc || '') + '</div>' +
+          (it.contexto ? '<div class="abig-ctx">' + _esc(it.contexto) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="abig-acts">' + acts + '</div>' +
+    '</div>';
+  }
+  function _abigBriefHtml(txt) {
+    // Negritas a las cifras clave del brief ("6 correos…", "6 oportunidades…").
+    var e = _esc(txt || '');
+    return e.replace(/(\d+\s+correos?[^.,;:«]*)/gi, '<b>$1</b>')
+            .replace(/(\d+\s+oportunidades?[^.,;:«]*)/gi, '<b>$1</b>');
+  }
+  function _asisBigStatusHtml() {
+    var mins = _asisLastLoad ? Math.max(0, Math.round((Date.now() - _asisLastLoad) / 60000)) : null;
+    var t = (mins === null) ? 'Revisando tu correo y tu pipeline…'
+      : (mins < 1 ? 'Última revisión hace un momento' : 'Última revisión hace ' + mins + ' min');
+    return '<span class="abig-dot"></span><b>Al día</b> · ' + t +
+      '<button type="button" class="abig-refresh" onclick="pendAsisFeedLoad()">&#8635; Volver a revisar</button>';
+  }
   function _asisBigDraw() {
-    var brief = el('asisBigBrief'), tabsEl = el('asisBigTabs'), cardsEl = el('asisBigCards');
+    var brief = el('asisBigBrief'), tabsEl = el('asisBigTabs'), cardsEl = el('asisBigCards'),
+        statusEl = el('asisBigStatus');
     if (!cardsEl) return;
+    if (statusEl) statusEl.innerHTML = _asisBigStatusHtml();
     var d = _miniData;
     if (!d) { cardsEl.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>'; return; }
-    if (brief) brief.textContent = d.brief || '';
+    if (brief) brief.innerHTML = _abigBriefHtml(d.brief || '');
     if (tabsEl) {
       tabsEl.innerHTML =
         _asisBigTabBtn('todo', 'Todo', d.total) +
         _asisBigTabBtn('correo', 'Correo', d.correos) +
         _asisBigTabBtn('pipeline', 'Pipeline', d.pipeline) +
-        _asisBigTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0);
+        _asisBigTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) +
+        '<span class="abig-orden">Ordenado por urgencia</span>';
     }
     if (_asisBigTab === 'atendido') {
       var ats = (_atendidos && _atendidos.items) || [];
@@ -2090,7 +2160,7 @@
     } else {
       var items = (d.items || []).filter(function (it) { return _asisBigTab === 'todo' || it.grupo === _asisBigTab; });
       cardsEl.innerHTML = items.length
-        ? items.map(_miniCard).join('')
+        ? items.map(_abigCard).join('')
         : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
     }
     if (_atendidos === null) _atFetch();
@@ -2121,7 +2191,7 @@
     else box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisDraw(); _asisBigDraw(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisLastLoad = Date.now(); _asisDraw(); _asisBigDraw(); })
       .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
   };
 
