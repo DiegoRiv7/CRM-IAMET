@@ -3879,6 +3879,7 @@
                     description: d.description, color: color,
                     extendedProps: {
                         participants: d.participants || [], opportunity: d.opportunity || null,
+                        correo: d.correo || null,
                         evento: null, curso: null, creado_por: d.creado_por,
                         tipo_actividad: d.tipo, completada: d.completada,
                     }
@@ -4033,7 +4034,7 @@
                     description:e.description, color:evtColor,
                     // Top-level para que eventContent lo encuentre en `stored`.
                     recurrence_group_id: e.recurrence_group_id || null,
-                    extendedProps:{ participants:e.participants, opportunity:e.opportunity, evento:e.evento || null, curso:e.curso || null, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada, recurrence_group_id: e.recurrence_group_id || null } };
+                    extendedProps:{ participants:e.participants, opportunity:e.opportunity, correo:e.correo || null, evento:e.evento || null, curso:e.curso || null, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada, recurrence_group_id: e.recurrence_group_id || null } };
             });
             tareas.forEach(function(t){
                 if (!t.fecha_limite) return;
