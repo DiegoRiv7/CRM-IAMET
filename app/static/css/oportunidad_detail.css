@@ -467,10 +467,6 @@ body {
 .opp-v4 .wo4-arch-e { font-size: .7rem; font-weight: 700; color: var(--w4-tenue); flex-shrink: 0; }
 .opp-v4 .wo4-drive.is-drop { outline: 2px dashed var(--w4-azul); outline-offset: 4px; border-radius: 8px; }
 
-@media (max-width: 1100px) {
-    .opp-v4 .wo4-body { grid-template-columns: 1fr; }
-    .opp-v4 .wo4-duo { grid-template-columns: 1fr; }
-}
 
 /* Sobre la franja de color, el texto secundario del encabezado tiene que
    aclararse. Se listan los cinco temas que pintan .wo-header; los claros
@@ -510,4 +506,49 @@ body[data-theme="duna"] .opp-v4 .wo4-head .wo4-ic:hover,
 body[data-theme="espacial"] .opp-v4 .wo4-head .wo4-ic:hover,
 body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
     background: rgba(255,255,255,.16); color: #fff;
+}
+
+/* ═══ Responsive de VENTANA, no de pantalla ═══
+   El widget vive en ventanas que el usuario redimensiona: con @media el
+   layout miraba el ancho de la PANTALLA, así que una ventana angosta sobre
+   un monitor grande seguía en dos columnas y se encimaba todo. Con
+   @container el layout responde al ancho real del widget. */
+.opp-v4 [data-wo="content"] { container-type: inline-size; container-name: oppv4; }
+
+@container oppv4 (max-width: 1040px) {
+    /* Apilado: el cuerpo vuelve a ser un solo scroll y las columnas dejan de
+       repartirse el alto (si no, cada una se encoge a nada). */
+    .opp-v4 .wo4-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+        align-items: start;
+    }
+    .opp-v4 .wo4-main, .opp-v4 .wo4-side { height: auto; overflow: visible; }
+    .opp-v4 .wo4-side > .wo4-card { flex: 0 0 auto; }
+    .opp-v4 [data-wo="quoteList"], .opp-v4 .wo4-drive { overflow: visible; min-height: 0; }
+    .opp-v4 .wo4-conv { min-height: 340px; }
+}
+
+@container oppv4 (max-width: 760px) {
+    /* Ventana angosta: tareas y actividades dejan de compartir fila, y la
+       cabecera de la conversación se acomoda en dos renglones. */
+    .opp-v4 .wo4-duo { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-buscar { margin-left: 0; order: 3; width: 100%; }
+    .opp-v4 .wo4-segmented { order: 2; }
+    .opp-v4 .wo4-body { padding: 10px 14px 14px; gap: 10px; }
+    .opp-v4 .wo4-head { padding: 12px 14px 10px !important; }
+    .opp-v4 .wo4-etapa { padding: 6px 14px 8px; }
+    .opp-v4 .wo4-title { font-size: 1.35rem; }
+    .opp-v4 .wo4-monto { font-size: 1.35rem; }
+}
+
+@container oppv4 (max-width: 520px) {
+    /* Mínimo útil: el monto y el cierre se apilan, y las personas también. */
+    .opp-v4 .wo4-monto-row { flex-direction: column; gap: 8px; }
+    .opp-v4 .wo4-cierre { text-align: left; }
+    .opp-v4 .wo4-docs { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-card.is-open .wo4-extra { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-conv-head { gap: 8px; }
+    .opp-v4 .wo4-composer { flex-wrap: wrap; }
+    .opp-v4 .wo4-cinp { order: 4; width: 100%; flex-basis: 100%; }
 }
