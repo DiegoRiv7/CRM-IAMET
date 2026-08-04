@@ -543,22 +543,31 @@ body {
    la conversación sola a la derecha, alta, porque es donde ocurre el trabajo. */
 .opp-v2 .wo-grid {
     display: grid;
-    grid-template-columns: 1fr 1.08fr;
+    grid-template-columns: 0.86fr 1.14fr;
     gap: 1.25rem;
     align-items: start;
 }
 .opp-v2 .wo-g-info { grid-column: 1; grid-row: 1; }
-.opp-v2 .wo-g-tareas { grid-column: 2; grid-row: 1; }
 .opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; }
-.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2; align-self: stretch; }
-/* La conversación deja de ocupar toda la columna (quedaba desproporcionada)
-   pero sigue siendo el cuadro más alto: es donde se trabaja. */
-.opp-v2 .wo-g-conv { min-height: 440px; }
+
+/* La derecha es UNA pila, no dos celdas: así Tareas toma el alto que pide y
+   la conversación se come todo lo que sobra. Como dos celdas, el aire que
+   dejaba Tareas quedaba muerto entre ambas. */
+.opp-v2 .wo-col-viva {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+}
+.opp-v2 .wo-col-viva .wo-g-tareas { flex: 0 0 auto; }
+.opp-v2 .wo-col-viva .wo-g-conv { flex: 1; min-height: 380px; }
 
 @media (max-width: 900px) {
     .opp-v2 .wo-grid { grid-template-columns: 1fr; }
     .opp-v2 .wo-g-info,
-    .opp-v2 .wo-g-tareas,
     .opp-v2 .wo-g-cot,
-    .opp-v2 .wo-g-conv { grid-column: 1; grid-row: auto; }
+    .opp-v2 .wo-col-viva { grid-column: 1; grid-row: auto; }
 }
