@@ -685,10 +685,16 @@
         var segs = q(inst, 'etapaSegs');
         segs.innerHTML = '';
         etapas.forEach(function (et, idx) {
-            var i2 = document.createElement('i');
-            i2.className = 'wo4-seg' + (idx <= currentIdx ? ' on' : '');
-            i2.title = et;
-            segs.appendChild(i2);
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'wo4-seg' + (idx <= currentIdx ? ' on' : '');
+            b.setAttribute('data-nombre', et);
+            if (ing || idx === currentIdx) {
+                b.disabled = true;
+            } else {
+                b.addEventListener('click', function () { changeStage(inst, et); });
+            }
+            segs.appendChild(b);
         });
 
         // Botón de avanzar: solo si la siguiente etapa es lineal (no una rama)

@@ -209,9 +209,27 @@ body {
 .opp-v4 .wo4-etapa-line { display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; flex-wrap: wrap; }
 .opp-v4 .wo4-etapa-nom { font-size: 1.02rem; font-weight: 700; }
 .opp-v4 .wo4-etapa-meta { font-size: .81rem; color: var(--w4-gris); }
-.opp-v4 .wo4-segs { display: flex; gap: 5px; }
-.opp-v4 .wo4-seg { height: 5px; flex: 1; border-radius: 99px; background: var(--w4-track); }
+/* Cada segmento es un botón: al pasar el cursor se engorda y asoma el
+   nombre de la etapa (vista previa), y al hacer clic mueve la oportunidad
+   ahí. La barra deja de ser decorativa y se vuelve el control. */
+.opp-v4 .wo4-segs { display: flex; gap: 5px; align-items: flex-end; height: 16px; padding-top: 11px; }
+.opp-v4 .wo4-seg {
+    position: relative; height: 5px; flex: 1; min-width: 0; padding: 0;
+    border: none; border-radius: 99px; background: var(--w4-track);
+    cursor: pointer; transition: height .12s, background .12s;
+}
 .opp-v4 .wo4-seg.on { background: var(--w4-azul); }
+.opp-v4 .wo4-seg:hover { height: 11px; background: var(--w4-azul-dark); }
+.opp-v4 .wo4-seg:disabled { cursor: default; }
+.opp-v4 .wo4-seg:disabled:hover { height: 5px; }
+.opp-v4 .wo4-seg::after {
+    content: attr(data-nombre);
+    position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+    background: #111827; color: #fff; border-radius: 6px; padding: 4px 9px;
+    font-size: .72rem; font-weight: 600; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5;
+}
+.opp-v4 .wo4-seg:hover::after { opacity: 1; }
 .opp-v4 .wo4-etapa-acts { display: flex; align-items: center; gap: 10px; }
 .opp-v4 .wo4-ghost {
     display: inline-flex; align-items: center; gap: 7px;
@@ -257,10 +275,15 @@ body {
     min-height: 0; height: 100%;
 }
 .opp-v4 .wo4-side { overflow-y: auto; padding-bottom: 8px; }
+/* Las barras no ocupan sitio ni se ven hasta que el cursor entra en la
+   región: el lateral y el feed pueden desbordar en oportunidades con muchas
+   cotizaciones o correos, pero la ventana se ve limpia. */
+.opp-v4 .wo4-side, .opp-v4 .wo4-feed { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.opp-v4 .wo4-side:hover, .opp-v4 .wo4-feed:hover { scrollbar-color: #D1D5DB transparent; }
 .opp-v4 .wo4-side::-webkit-scrollbar, .opp-v4 .wo4-feed::-webkit-scrollbar { width: 6px; }
-.opp-v4 .wo4-side::-webkit-scrollbar-thumb, .opp-v4 .wo4-feed::-webkit-scrollbar-thumb {
-    background: #D1D5DB; border-radius: 20px;
-}
+.opp-v4 .wo4-side::-webkit-scrollbar-track, .opp-v4 .wo4-feed::-webkit-scrollbar-track { background: transparent; }
+.opp-v4 .wo4-side::-webkit-scrollbar-thumb, .opp-v4 .wo4-feed::-webkit-scrollbar-thumb { background: transparent; border-radius: 20px; }
+.opp-v4 .wo4-side:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-feed:hover::-webkit-scrollbar-thumb { background: #D1D5DB; }
 .opp-v4 .wo4-duo { flex-shrink: 0; }
 .opp-v4 .wo4-side > .wo4-card { flex-shrink: 0; }
 .opp-v4 .wo4-card { background: #fff; border: 1px solid var(--w4-linea); border-radius: 13px; }
@@ -447,8 +470,8 @@ body {
 
 /* Cotizaciones */
 .opp-v4 .wo4-cot {
-    border: 1px solid var(--w4-linea); border-radius: 10px; padding: 11px 13px;
-    display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+    border: 1px solid var(--w4-linea); border-radius: 10px; padding: 10px 9px 10px 12px;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 9px;
 }
 .opp-v4 .wo4-cot:last-child { margin-bottom: 0; }
 .opp-v4 .wo4-cot-b { flex: 1; min-width: 0; cursor: pointer; }
@@ -458,7 +481,12 @@ body {
     padding: 1px 6px; font-size: .68rem; font-weight: 700;
 }
 .opp-v4 .wo4-cot-m { font-size: .79rem; color: var(--w4-gris); }
-.opp-v4 .wo4-cot-a { display: flex; gap: 3px; flex-shrink: 0; }
+.opp-v4 .wo4-cot-a { display: flex; gap: 1px; flex-shrink: 0; }
+/* Los iconos de la cotización se salían del lateral: van más chicos y la
+   tarjeta cede padding, que es lo que sobraba. */
+.opp-v4 .wo4-cot-a .wo4-ic { width: 26px; height: 26px; }
+.opp-v4 .wo4-cot-t { min-width: 0; }
+.opp-v4 .wo4-cot-t, .opp-v4 .wo4-cot-m { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Drive */
 .opp-v4 .wo4-arch {
