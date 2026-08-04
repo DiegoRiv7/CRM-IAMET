@@ -8489,7 +8489,7 @@ def api_asistente_oportunidad_draft(request, correo_id):
         'tipo': tipo,
         'etapa': etapa,
         'probabilidad': 10,
-        'actividad_titulo': ('Dar seguimiento a %s' % (cliente_nombre or 'este correo'))[:120],
+        'actividad_titulo': ('Actividad de seguimiento — %s' % (cliente_nombre or 'este correo'))[:120],
         'actividad_fecha': fecha_seg.isoformat(),
         'remitente': (correo.remitente_nombre or correo.remitente_email or ''),
         'asunto': correo.asunto or '',

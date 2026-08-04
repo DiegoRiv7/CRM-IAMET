@@ -1533,6 +1533,9 @@
           if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
           alert((d && d.error) || 'No se pudo crear la oportunidad.'); return;
         }
+        if (d.actividad_error) {
+          alert('La oportunidad se creó, pero el seguimiento no se pudo agendar:\n' + d.actividad_error);
+        }
         var cid = _oppDraft.correo_id;
         _oppDraft = null;
         if (cid != null) pendMiniDescartar('correo', cid);   // lo quita del feed + redibuja
