@@ -9677,10 +9677,12 @@ def _feed_correos_items(user, limite=6):
         a_c = getattr(m_card, 'analisis', None)
         resumen_c = ((a_c.resumen if a_c else '') or '').strip()
         item['categoria'] = 'Respondiste — ¿agendo seguimiento?'
-        item['acciones'] = ['agendar_correo', 'no_importa']
+        # Primero desbloquear el valor: si esta conversación es de una venta,
+        # vincularla (y el asistente ofrecerá actualizar); agendar queda a un clic.
+        item['acciones'] = ['vincular_oportunidad', 'agendar_correo', 'no_importa']
         item['headline'] = 'Respondiste a %s — ¿le agendo un seguimiento?' % item['titulo']
         item['contexto'] = (' '.join(x for x in [
-            resumen_c, 'Así no se te pierde si no te contesta.'] if x)).strip()
+            resumen_c, 'Si es de una venta, vincúlala y la actualizo; o te agendo un seguimiento.'] if x)).strip()
         item['quote'] = _quote(m_card)
         out.append(item)
 
@@ -9730,9 +9732,13 @@ def _feed_correos_items(user, limite=6):
                 _ctx_insiste(m)] if x)).strip()
         elif cat == 'hito':                  # factura/orden/pago SIN oportunidad ligada
             item['categoria'] = 'Factura / orden recibida'
-            item['acciones'] = ['responder', 'no_importa']
+            # La acción de valor de un hito es ACTUALIZAR la venta, pero sin vínculo
+            # no se puede — así que lo primario es desbloquearla: vincular. Al
+            # vincular, el feed se rehace y la tarjeta vuelve ofreciendo actualizar.
+            item['acciones'] = ['vincular_oportunidad', 'responder', 'no_importa']
             item['headline'] = '%s te envió una factura u orden' % item['titulo']
-            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m)] if x)).strip()
+            item['contexto'] = (' '.join(x for x in [
+                resumen, '¿De qué venta es? Vincúlala y la actualizo.'] if x)).strip()
         else:                                # correo importante sin responder → responder
             item['categoria'] = ('Lleva %d días sin responder' % dias) if item['urgente'] else 'Correo sin responder'
             item['acciones'] = ['responder', 'no_importa']

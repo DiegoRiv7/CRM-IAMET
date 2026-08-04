@@ -1304,7 +1304,10 @@
         // Correo SUELTO: vincularlo aquí mismo — clave los primeros días, cuando
         // la gente aún no tiene correos ligados y el asistente no puede ofrecer
         // actualizar. Al vincular, la tarjeta vuelve ya como correo de oportunidad.
-        btns += _btn('sec', 'pendToastVincular(' + it.mail_id + ')', 'Vincular a oportunidad');
+        // (Solo si la tarjeta no lo trae ya como acción primaria.)
+        if (accs.indexOf('vincular_oportunidad') === -1) {
+          btns += _btn('sec', 'pendToastVincular(' + it.mail_id + ')', 'Vincular a oportunidad');
+        }
       } else if (it.opp_id) {
         btns += _btn('sec', 'pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
       }
@@ -1325,11 +1328,21 @@
   };
   window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
   window.pendToastAbrirSolo = function (mailId) { _toastCollapse(); _abrirMailConBorrador(mailId, ''); };
-  // ── Vincular correo → oportunidad desde el nivel 2 (arranque en frío) ──
+  // ── Vincular correo → oportunidad desde el aviso (arranque en frío) ──
+  // Funciona desde el toast (nivel 1 o 2) Y desde el mini panel: pinta en la
+  // vista activa y al volver regresa a donde estabas.
+  window.pendToastVincVolver = function () {
+    if (_toastExpanded) { pendToastNivel2(); return; }
+    if (typeof window.pendMiniFocusCerrar === 'function') pendMiniFocusCerrar();
+  };
   window.pendToastVincular = function (mailId) {
-    var box = el('pendLcFocus'); if (!box) return;
+    if (!_toastExpanded && el('pendLauncher') && el('pendLauncher').style.display !== 'none'
+        && (!el('pendMini') || el('pendMini').style.display === 'none')) {
+      _toastExpand();   // desde el aviso chico: expandir para tener dónde pintar
+    }
+    var box = _activeFeedBox(); if (!box) return;
     box.innerHTML =
-      '<div class="pend-n2-top" onclick="pendToastNivel2()"><span class="pend-foc-back">‹ Volver</span></div>' +
+      '<div class="pend-n2-top" onclick="pendToastVincVolver()"><span class="pend-foc-back">‹ Volver</span></div>' +
       '<div class="pend-foc-lbl">VINCULAR A OPORTUNIDAD</div>' +
       '<input type="text" class="pend-foc-in" id="toastVincQ" placeholder="Escribe el nombre de la oportunidad…" autocomplete="off" oninput="pendToastVincBuscar(' + mailId + ', this.value)">' +
       '<div id="toastVincRes" style="max-height:300px;overflow:auto;margin-top:8px;"></div>' +
@@ -1366,10 +1379,9 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!(d && d.ok)) { alert((d && d.error) || 'No se pudo vincular.'); return; }
-        // Con el vínculo puesto, el feed se rehace: la tarjeta vuelve como correo
-        // de oportunidad (y si es hito, ofreciendo actualizar de una vez).
-        _toastCollapse();
-        pendFeedRefresh();
+        // Con el vínculo puesto, el feed se rehace donde estés (toast/mini/panel):
+        // la tarjeta vuelve como correo de oportunidad (hito → ofrece actualizar).
+        _feedReloadActive();
       })
       .catch(function () { alert('No se pudo vincular.'); });
   };
@@ -1571,6 +1583,7 @@
     agendar_seguimiento: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + (it.opp_id || 0) + ')'; } },
     agendar: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + it.opp_id + ')'; } },
     agendar_correo: { l: 'Agendar seguimiento', f: function (it) { return 'pendToastAgendarCorreo(' + it.mail_id + ')'; } },
+    vincular_oportunidad: { l: 'Vincular a oportunidad', f: function (it) { return 'pendToastVincular(' + it.mail_id + ')'; } },
     abrir: { l: 'Abrir', f: function (it) { return 'pendMiniAbrirOpp(' + it.opp_id + ')'; } },
     no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + (it.tipo === 'correo' ? it.mail_id : it.opp_id) + ')'; } }
   };
