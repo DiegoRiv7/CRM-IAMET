@@ -154,6 +154,11 @@ body {
     color: var(--w4-tinta);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+/* La ventana NO scrollea como un todo: el encabezado y la barra de etapa
+   quedan siempre fijos, y solo scrollea la región que lo necesite (el feed
+   de la conversación o el lateral). Sin el min-height:0 el contenido empuja
+   al contenedor flex y reaparece la barra de la ventana entera. */
+.opp-v4 [data-wo="content"] { min-height: 0; overflow: hidden; }
 
 /* ── Encabezado ── */
 /* El encabezado conserva la franja de cada tema (lleva también .wo-header,
@@ -326,7 +331,16 @@ body {
     background: #fff; color: var(--w4-tinta); font-weight: 600;
     box-shadow: 0 1px 3px rgba(17, 24, 39, .1);
 }
-.opp-v4 .wo4-feed { flex: 1; overflow-y: auto; padding: 16px 17px; min-height: 0; }
+/* Como cualquier chat: los mensajes se anclan ABAJO, pegados al campo de
+   escribir. El espacio libre queda arriba y se lee como "aquí empieza la
+   conversación" en vez de como un hueco. El wrapper con margin-top:auto es
+   la forma segura de hacerlo — justify-content:flex-end sobre un contenedor
+   con scroll deja el principio inalcanzable cuando el contenido desborda. */
+.opp-v4 .wo4-feed {
+    flex: 1; overflow-y: auto; padding: 16px 17px; min-height: 0;
+    display: flex; flex-direction: column;
+}
+.opp-v4 .wo4-feed-in { margin-top: auto; width: 100%; }
 .opp-v4 .wo4-dia { display: flex; align-items: center; gap: 13px; margin: 16px 0 13px; }
 .opp-v4 .wo4-dia:first-child { margin-top: 0; }
 .opp-v4 .wo4-dia::before, .opp-v4 .wo4-dia::after {

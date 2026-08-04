@@ -1409,10 +1409,10 @@
             ? visibles.length + (visibles.length === 1 ? ' registro' : ' registros') : '';
 
         if (!visibles.length) {
-            feed.innerHTML = '<div class="wo4-vacio" style="padding:2.5rem 0;">' +
+            feed.innerHTML = '<div class="wo4-feed-in"><div class="wo4-vacio" style="padding:2.5rem 0;text-align:center;">' +
                 (query || filtro !== 'todo'
                     ? 'Sin resultados con este filtro.'
-                    : 'Aquí aparecen los correos de esta oportunidad y las notas del equipo.') + '</div>';
+                    : 'Aquí aparecen los correos de esta oportunidad y las notas del equipo.') + '</div></div>';
             return;
         }
 
@@ -1476,7 +1476,7 @@
                 '<div class="wo4-nota-meta">' + esc(m.nombre || '') + ' · Nota · ' + esc(horaDe(m.fecha)) + '</div>' +
                 '</div>';
         });
-        feed.innerHTML = h;
+        feed.innerHTML = '<div class="wo4-feed-in">' + h + '</div>';
         if (scrollFondo) feed.scrollTop = feed.scrollHeight;
 
         // Pin: delegación local (feed + barra de fijado se regeneran juntos)
