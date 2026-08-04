@@ -1595,53 +1595,83 @@
             });
     }
 
-    /* Ventana de cotizaciones: lista completa con buscador, al estilo del
-       gestor de Drive. Se construye al vuelo y se destruye al cerrar, así
-       cada oportunidad abierta muestra las suyas sin pisarse. */
+    /* Ventana de cotizaciones: mismo molde que el gestor de Drive — franja de
+       encabezado (con .wo-header, que es lo que pintan los temas), acción
+       principal, buscador y la lista completa con sus botones. Se construye al
+       vuelo y se destruye al cerrar, así cada oportunidad abre la suya. */
     function abrirTodasCotizaciones(inst) {
         var previo = document.getElementById('wo4CotOverlay');
         if (previo) previo.remove();
 
         var cots = (inst.data && inst.data.cotizaciones) || [];
+        var ing = !!window.ES_INGENIERO;
+
         var ov = document.createElement('div');
         ov.id = 'wo4CotOverlay';
-        ov.className = 'wo4-modal';
+        ov.className = 'widget-overlay opp-v4 wo4-cotwin';
         ov.innerHTML =
-            '<div class="wo4-modal-card">' +
-            '<div class="wo4-modal-head">' +
-            '<h3>Cotizaciones de la oportunidad</h3>' +
-            '<button type="button" class="wo4-ic" data-cerrar title="Cerrar">' +
-            '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+            '<div class="widget-card widget-card-md wo4-cotwin-card">' +
+            '<div class="wo-header wo4-cotwin-head">' +
+            '<div class="wo-header-top">' +
+            '<div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">' +
+            '<div class="wo4-cotwin-ico">' +
+            '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">' +
+            '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+            '</div><div style="min-width:0;">' +
+            '<h2 class="wo4-cotwin-t">Cotizaciones de la Oportunidad</h2>' +
+            '<div class="wo4-cotwin-sub">' + esc((inst.data && inst.data.oportunidad) || '') + '</div>' +
+            '</div></div>' +
+            '<button type="button" class="widget-close" data-cerrar>&times;</button>' +
             '</div>' +
-            '<div class="wo4-modal-tools">' +
-            '<div class="wo4-buscar">' +
-            '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
-            '<input type="text" data-buscar placeholder="Buscar cotización"></div>' +
-            '<span class="wo4-modal-n">' + cots.length + (cots.length === 1 ? ' cotización' : ' cotizaciones') + '</span>' +
+            '<div class="wo4-cotwin-tools">' +
+            (ing ? '<span></span>' :
+                '<button type="button" class="wo4-cotwin-nueva" data-nueva>' +
+                '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">' +
+                '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva cotización</button>') +
+            '<div class="wo4-buscar wo4-cotwin-buscar">' +
+            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+            '<input type="text" data-buscar placeholder="Buscar cotización..."></div>' +
+            '<span class="wo4-cotwin-n" data-conteo></span>' +
             '</div>' +
-            '<div class="wo4-modal-body" data-lista></div>' +
+            '</div>' +
+            '<div class="wo4-cotwin-body"><div class="wo4-cotwin-grid" data-lista></div></div>' +
             '</div>';
         document.body.appendChild(ov);
 
         var lista = ov.querySelector('[data-lista]');
-        if (!cots.length) {
-            lista.innerHTML = '<div class="wo4-vacio" style="padding:2rem;text-align:center;">Sin cotizaciones aún</div>';
-        } else {
-            pintarCotizaciones(inst, lista, cots);
-        }
+        var conteo = ov.querySelector('[data-conteo]');
 
-        ov.querySelector('[data-buscar]').addEventListener('input', function () {
-            var t = this.value.trim().toLowerCase();
-            Array.prototype.forEach.call(lista.children, function (fila) {
-                fila.style.display = (!t || (fila.textContent || '').toLowerCase().indexOf(t) !== -1) ? '' : 'none';
+        function pintar(filtro) {
+            var t = (filtro || '').trim().toLowerCase();
+            lista.innerHTML = '';
+            var vis = cots.filter(function (c) {
+                if (!t) return true;
+                var blob = ('COT-' + c.id + ' ' + (c.fecha || '') + ' ' + (c.total || '')).toLowerCase();
+                return blob.indexOf(t) !== -1;
             });
+            if (!vis.length) {
+                lista.innerHTML = '<div class="wo4-vacio" style="padding:3rem;text-align:center;grid-column:1/-1;">' +
+                    (t ? 'Sin resultados para esa búsqueda.' : 'Sin cotizaciones aún') + '</div>';
+            } else {
+                pintarCotizaciones(inst, lista, vis);
+            }
+            conteo.textContent = vis.length + (vis.length === 1 ? ' cotización' : ' cotizaciones');
+        }
+        pintar('');
+
+        ov.querySelector('[data-buscar]').addEventListener('input', function () { pintar(this.value); });
+        var btnNueva = ov.querySelector('[data-nueva]');
+        if (btnNueva) btnNueva.addEventListener('click', function () {
+            cerrar();
+            setFocus(inst);
+            openCotizadorV2(inst.oppId, inst);
         });
-        function cerrar() { ov.remove(); }
+
+        function cerrar() { ov.remove(); document.removeEventListener('keydown', esc); }
+        function esc(e) { if (e.key === 'Escape') cerrar(); }
         ov.querySelector('[data-cerrar]').addEventListener('click', cerrar);
         ov.addEventListener('click', function (e) { if (e.target === ov) cerrar(); });
-        document.addEventListener('keydown', function esc(e) {
-            if (e.key === 'Escape') { cerrar(); document.removeEventListener('keydown', esc); }
-        });
+        document.addEventListener('keydown', esc);
     }
 
     /* ── Drive embebido bajo Cotizaciones ─────────────────────────────
