@@ -399,6 +399,9 @@
             case 'conv-enviar':
                 enviarNotaConv(inst);
                 break;
+            case 'conv-cancelar-respuesta':
+                cancelarRespuesta(inst);
+                break;
             case 'toggle-info':
                 var card = q(inst, 'infoCard');
                 var abierto = card.classList.toggle('is-open');
@@ -1448,11 +1451,22 @@
 
             // Nota del equipo
             var mio = !!m.es_mio;
+            var cita = '';
+            if (m.reply_to) {
+                cita = '<div class="wo4-cita"><span class="wo4-cita-n">' + esc(m.reply_to.nombre || '') + '</span>' +
+                    esc(m.reply_to.texto || (m.reply_to.tiene_imagen ? 'Archivo adjunto' : '')) + '</div>';
+            }
             h += '<div class="wo4-nota' + (mio ? ' mia' : '') + '">' +
-                '<div class="wo4-burbuja">' + esc(m.texto || '') +
+                '<div class="wo4-nota-row">' +
+                '<div class="wo4-burbuja">' + cita + esc(m.texto || '') +
+                (m.editado ? '<span class="wo4-editado">· editado</span>' : '') +
                 '<button type="button" data-conv-pin="' + m.id + '" class="wo-conv-pinbtn' + (m.fijado ? ' is-pinned' : '') + '" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '">' +
                 '<svg width="11" height="11" viewBox="0 0 24 24" fill="' + (m.fijado ? '#B45309' : 'none') + '" stroke="currentColor" stroke-width="1.6"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
                 '</button></div>' +
+                '<button type="button" class="wo4-msg-mas" data-conv-mas="' + m.id + '" title="Opciones del mensaje" aria-haspopup="true">' +
+                '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>' +
+                '</button>' +
+                '</div>' +
                 '<div class="wo4-nota-meta">' + esc(m.nombre || '') + ' · Nota · ' + esc(horaDe(m.fecha)) + '</div>' +
                 '</div>';
         });
@@ -1476,6 +1490,137 @@
         };
         wire(feed);
         wire(pinned);
+
+        // Menú de los 3 puntos: responder siempre, editar y borrar solo lo propio.
+        feed.querySelectorAll('[data-conv-mas]').forEach(function (btn) {
+            btn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var id = parseInt(btn.getAttribute('data-conv-mas'), 10);
+                var msg = null;
+                for (var i = 0; i < msgs.length; i++) { if (msgs[i].id === id) { msg = msgs[i]; break; } }
+                if (msg) abrirMenuMensaje(inst, btn, msg);
+            });
+        });
+    }
+
+    /* Menú flotante de un mensaje. Vive pegado al botón que lo abrió y se cierra
+       al elegir, al hacer clic fuera o con Escape. Se monta en el widget (no en
+       el body) para que herede el z-index de la ventana. */
+    function cerrarMenuMensaje(inst) {
+        if (inst._convMenu) { inst._convMenu.remove(); inst._convMenu = null; }
+        if (inst._convMenuOff) { inst._convMenuOff(); inst._convMenuOff = null; }
+    }
+
+    function abrirMenuMensaje(inst, btn, msg) {
+        cerrarMenuMensaje(inst);
+        var opts = [{ txt: 'Responder', act: 'responder' }];
+        if (msg.es_mio) {
+            opts.push({ txt: 'Editar', act: 'editar' });
+            opts.push({ txt: 'Eliminar', act: 'eliminar', peligro: true });
+        }
+
+        var menu = document.createElement('div');
+        menu.className = 'wo4-msgmenu';
+        menu.innerHTML = opts.map(function (o) {
+            return '<button type="button" class="wo4-msgmenu-it' + (o.peligro ? ' peligro' : '') +
+                '" data-op="' + o.act + '">' + o.txt + '</button>';
+        }).join('');
+
+        // Cuelga del cuadro de la conversación, NO del overlay: en modo ventana
+        // el overlay lleva pointer-events:none y el menú quedaría muerto.
+        var raiz = btn.closest('.wo4-conv') || inst.root;
+        raiz.appendChild(menu);
+        var rb = btn.getBoundingClientRect();
+        var rr = raiz.getBoundingClientRect();
+        // Si abajo no cabe, se despliega hacia arriba.
+        var cabeAbajo = (rb.bottom + 4 + menu.offsetHeight) <= rr.bottom;
+        menu.style.top = cabeAbajo
+            ? (rb.bottom - rr.top + 4) + 'px'
+            : (rb.top - rr.top - menu.offsetHeight - 4) + 'px';
+        // Anclado por la derecha del botón para no salirse por el borde.
+        menu.style.left = Math.max(6, rb.right - rr.left - menu.offsetWidth) + 'px';
+        inst._convMenu = menu;
+
+        menu.addEventListener('click', function (ev) {
+            var it = ev.target.closest('[data-op]');
+            if (!it) return;
+            var op = it.getAttribute('data-op');
+            cerrarMenuMensaje(inst);
+            if (op === 'responder') responderMensaje(inst, msg);
+            else if (op === 'editar') editarMensaje(inst, msg);
+            else if (op === 'eliminar') eliminarMensaje(inst, msg);
+        });
+
+        var fuera = function (ev) { if (!menu.contains(ev.target)) cerrarMenuMensaje(inst); };
+        var escKey = function (ev) { if (ev.key === 'Escape') cerrarMenuMensaje(inst); };
+        setTimeout(function () {
+            document.addEventListener('mousedown', fuera);
+            document.addEventListener('keydown', escKey);
+        }, 0);
+        inst._convMenuOff = function () {
+            document.removeEventListener('mousedown', fuera);
+            document.removeEventListener('keydown', escKey);
+        };
+    }
+
+    function responderMensaje(inst, msg) {
+        inst.convReplyTo = msg;
+        pintarBarraRespuesta(inst);
+        var input = q(inst, 'convInput');
+        if (input) input.focus();
+    }
+
+    function cancelarRespuesta(inst) {
+        inst.convReplyTo = null;
+        pintarBarraRespuesta(inst);
+    }
+
+    function pintarBarraRespuesta(inst) {
+        var barra = q(inst, 'convReplyBar');
+        if (!barra) return;
+        var msg = inst.convReplyTo;
+        if (!msg) { barra.style.display = 'none'; barra.innerHTML = ''; return; }
+        var trozo = (msg.texto || '').slice(0, 60);
+        barra.style.display = 'flex';
+        barra.innerHTML =
+            '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>' +
+            '<span class="wo4-reply-t">Respondiendo a <b>' + esc(msg.nombre || '') + '</b>' +
+            (trozo ? ': ' + esc(trozo) + ((msg.texto || '').length > 60 ? '…' : '') : '') + '</span>' +
+            '<button type="button" class="wo4-reply-x" data-action="conv-cancelar-respuesta" title="Cancelar respuesta">' +
+            '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+    }
+
+    function editarMensaje(inst, msg) {
+        var nuevo = window.prompt('Editar mensaje', msg.texto || '');
+        if (nuevo === null) return;
+        nuevo = nuevo.trim();
+        if (!nuevo || nuevo === msg.texto) return;
+        fetch('/app/api/oportunidad/' + inst.oppId + '/chat/mensaje/' + msg.id + '/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({ texto: nuevo }),
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.success) loadConversacion(inst);
+                else notify((d && d.error) || 'No se pudo editar el mensaje', 'error');
+            })
+            .catch(function () { notify('No se pudo editar el mensaje', 'error'); });
+    }
+
+    function eliminarMensaje(inst, msg) {
+        if (!window.confirm('¿Eliminar este mensaje? No se puede deshacer.')) return;
+        fetch('/app/api/oportunidad/' + inst.oppId + '/chat/mensaje/' + msg.id + '/', {
+            method: 'DELETE', headers: { 'X-CSRFToken': csrf() },
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.success) {
+                    if (inst.convReplyTo && inst.convReplyTo.id === msg.id) cancelarRespuesta(inst);
+                    loadConversacion(inst);
+                } else notify((d && d.error) || 'No se pudo eliminar el mensaje', 'error');
+            })
+            .catch(function () { notify('No se pudo eliminar el mensaje', 'error'); });
     }
 
     /* Adjuntos del composer embebido: un mensaje por archivo, en serie para
@@ -1521,6 +1666,9 @@
         input.value = '';
         var fd = new FormData();
         fd.append('texto', texto);
+        var replyTo = inst.convReplyTo;
+        if (replyTo) fd.append('reply_to_id', replyTo.id);
+        cancelarRespuesta(inst);
         fetch('/app/api/oportunidad/' + inst.oppId + '/chat/', {
             method: 'POST', body: fd,
             headers: { 'X-CSRFToken': csrf() },
@@ -1528,9 +1676,16 @@
             .then(function (r) { return r.json(); })
             .then(function (d) {
                 if (d && d.success) loadConversacion(inst);
-                else input.value = texto;  // restaurar si falló
+                else {
+                    // restaurar si falló, incluida la respuesta que se estaba dando
+                    input.value = texto;
+                    if (replyTo) responderMensaje(inst, replyTo);
+                }
             })
-            .catch(function () { input.value = texto; });
+            .catch(function () {
+                input.value = texto;
+                if (replyTo) responderMensaje(inst, replyTo);
+            });
     }
 
     /* Proyecto: vive en el header, junto al título — ahí tiene el ancho para

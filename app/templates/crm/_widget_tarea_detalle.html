@@ -144,7 +144,32 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 .tw4 .tw4-main > .tw4-card:first-of-type {
     flex: 0 1 auto; max-height: 52%; margin-bottom: 14px; padding-bottom: 6px;
 }
-.tw4 .tw4-card-act { flex: 1 1 auto; min-height: 220px; padding-bottom: 0; }
+/* La conversación de la tarea se despega del lienzo igual que la de la
+   oportunidad: cabecera y compositor en gris, el feed en blanco, borde más
+   marcado y sombra. Blanco sobre blanco no se leía como cuadro. */
+.tw4 .tw4-card-act {
+    flex: 1 1 auto; min-height: 220px; padding: 0;
+    background: #F7F8FA; border-color: #D3D7DE;
+    box-shadow: 0 8px 24px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .09);
+}
+.tw4 .tw4-card-act .tw4-sec-t {
+    position: sticky; top: 0; z-index: 2;
+    margin: 0; padding: 13px 22px; background: #EDEFF3;
+    border-bottom: 1px solid #DDE1E7; border-radius: 15px 15px 0 0;
+}
+.tw4 .tw4-card-act .tw4-tray-box { background: #fff; }
+.tw4 .tw4-card-act .tw4-feed {
+    background: #fff; padding: 16px 22px; margin: 0;
+    border-bottom: 1px solid #DDE1E7;
+}
+/* La sección ya no pone aire: lo ponen la cabecera y el feed. */
+.tw4 .tw4-card-act .tw4-actividad { padding: 0; }
+/* El compositor se alinea con la caja, ya sin el margen negativo que
+   compensaba el padding de la tarjeta. */
+.tw4 .tw4-card-act .tw4-tray {
+    margin: 0; padding: 12px 22px 16px;
+    background: #EDEFF3; border-top: none; border-radius: 0 0 15px 15px;
+}
 .tw4 .tw4-titulo-wrap { flex-shrink: 0; }
 .tw4 .tw4-titulo {
     margin: 0 0 18px; font-size: 22px; font-weight: 700;

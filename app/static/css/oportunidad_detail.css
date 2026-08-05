@@ -191,14 +191,17 @@ body {
     font-size: 1.72rem; font-weight: 700; letter-spacing: -.02em;
     color: var(--w4-tinta); margin: 0; min-width: 0;
 }
+/* La etiqueta del pipeline en azul sólido: en gris tenue se perdía contra la
+   franja del tema, y es el dato que dice de qué tipo de venta se trata. */
 .opp-v4 .wo4-tipo {
-    background: #F3F4F6; color: #4B5563; border: none; border-radius: 7px;
-    padding: 5px 12px; font: inherit; font-size: .76rem; font-weight: 500;
-    cursor: pointer; flex-shrink: 0;
+    background: var(--w4-azul); color: #fff; border: none; border-radius: 7px;
+    padding: 5px 13px; font: inherit; font-size: .76rem; font-weight: 600;
+    letter-spacing: .01em; cursor: pointer; flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, .3);
 }
-.opp-v4 .wo4-tipo:hover { background: #E9EBEF; }
+.opp-v4 .wo4-tipo:hover { background: var(--w4-azul-dark); }
 .opp-v4 .wo4-tipo.is-fijo { cursor: default; }
-.opp-v4 .wo4-tipo.is-fijo:hover { background: #F3F4F6; }
+.opp-v4 .wo4-tipo.is-fijo:hover { background: var(--w4-azul); }
 
 /* ── Barra de etapa ──
    El pipeline usa las clases de siempre (.wo-pipeline-container, .wo-stage-btn…)
@@ -289,14 +292,15 @@ body {
    punto más oscuro que el resto de las tarjetas, borde más marcado y sombra.
    Sobre un lienzo gris claro, blanco sobre blanco no se leía como cuadro. */
 .opp-v4 .wo4-conv {
+    position: relative;  /* ancla del menú de los 3 puntos */
     flex: 1; display: flex; flex-direction: column; min-height: 260px;
-    background: #FCFCFD; border-color: #DDE0E5;
-    box-shadow: 0 6px 20px -8px rgba(16, 24, 40, .16), 0 2px 5px -2px rgba(16, 24, 40, .07);
+    background: #F7F8FA; border-color: #D3D7DE;
+    box-shadow: 0 8px 24px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .09);
 }
 .opp-v4 .wo4-conv-head {
     display: flex; align-items: center; gap: 12px; padding: 15px 17px;
     border-bottom: 1px solid var(--w4-linea); flex-wrap: wrap; flex-shrink: 0;
-    background: #F6F7F9; border-radius: 13px 13px 0 0;
+    background: #EDEFF3; border-bottom-color: #DDE1E7; border-radius: 13px 13px 0 0;
 }
 .opp-v4 .wo4-conv-t { display: flex; align-items: center; gap: 8px; color: var(--w4-tinta); }
 .opp-v4 .wo4-conv-t h3 { font-size: .88rem; font-weight: 700; margin: 0; }
@@ -365,6 +369,58 @@ body {
 .opp-v4 .wo4-burbuja .wo-conv-pinbtn { margin-left: 7px; vertical-align: middle; }
 .opp-v4 .wo4-nota:hover .wo-conv-pinbtn { opacity: 1; }
 .opp-v4 .wo4-nota-meta { font-size: .76rem; color: var(--w4-tenue); margin-top: 5px; }
+
+/* ── Acciones del mensaje ──
+   Los 3 puntos viven al lado de la burbuja y solo aparecen al pasar el cursor:
+   siempre visibles llenaban el feed de ruido. */
+.opp-v4 .wo4-nota-row { display: flex; align-items: center; gap: 4px; max-width: 100%; }
+.opp-v4 .wo4-nota.mia .wo4-nota-row { flex-direction: row-reverse; }
+.opp-v4 .wo4-msg-mas {
+    width: 24px; height: 24px; border: none; background: none; border-radius: 6px;
+    color: var(--w4-tenue); cursor: pointer; flex-shrink: 0; opacity: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .12s, background .12s, color .12s;
+}
+.opp-v4 .wo4-nota:hover .wo4-msg-mas { opacity: 1; }
+.opp-v4 .wo4-msg-mas:hover { background: #EEF0F3; color: var(--w4-tinta); }
+.opp-v4 .wo4-editado { font-size: .72rem; opacity: .65; margin-left: 6px; }
+
+.opp-v4 .wo4-msgmenu {
+    position: absolute; z-index: 60; min-width: 156px; padding: 5px;
+    background: #fff; border: 1px solid #E4E7EC; border-radius: 11px;
+    box-shadow: 0 12px 30px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .08);
+}
+.opp-v4 .wo4-msgmenu-it {
+    display: block; width: 100%; text-align: left; border: none; background: none;
+    padding: 8px 11px; border-radius: 7px; font: inherit; font-size: .84rem;
+    font-weight: 500; color: var(--w4-texto); cursor: pointer;
+}
+.opp-v4 .wo4-msgmenu-it:hover { background: #F2F4F7; color: var(--w4-tinta); }
+.opp-v4 .wo4-msgmenu-it.peligro { color: #BE123C; }
+.opp-v4 .wo4-msgmenu-it.peligro:hover { background: #FFF1F2; }
+
+/* La cita de a qué mensaje se responde, dentro de la burbuja. */
+.opp-v4 .wo4-cita {
+    border-left: 3px solid rgba(37, 99, 235, .45); padding: 3px 0 3px 9px;
+    margin-bottom: 6px; font-size: .8rem; opacity: .85; overflow-wrap: anywhere;
+}
+.opp-v4 .wo4-nota.mia .wo4-cita { border-left-color: rgba(255, 255, 255, .6); }
+.opp-v4 .wo4-cita-n { display: block; font-weight: 700; font-size: .76rem; }
+
+/* Barra de "respondiendo a", entre el feed y el compositor. */
+.opp-v4 .wo4-replybar {
+    display: flex; align-items: center; gap: 9px; padding: 9px 17px;
+    border-top: 1px solid var(--w4-linea); background: #EEF3FE;
+    color: #1D4ED8; font-size: .8rem; flex-shrink: 0;
+}
+.opp-v4 .wo4-reply-t {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-reply-x {
+    border: none; background: none; color: inherit; cursor: pointer;
+    padding: 3px; border-radius: 6px; display: flex; flex-shrink: 0;
+}
+.opp-v4 .wo4-reply-x:hover { background: rgba(29, 78, 216, .12); }
 /* Cabecera y compositor en gris y el feed en blanco: el cuadro se lee como
    una ventana con marco propio, no como una hoja más sobre el lienzo. */
 .opp-v4 .wo4-conv .wo4-feed { background: #fff; }
@@ -372,7 +428,7 @@ body {
     display: flex; align-items: center; gap: 9px; padding: 13px 17px;
     border-top: 1px solid var(--w4-linea); flex-shrink: 0;
 }
-.opp-v4 .wo4-conv .wo4-composer { background: #F6F7F9; border-radius: 0 0 13px 13px; }
+.opp-v4 .wo4-conv .wo4-composer { background: #EDEFF3; border-top-color: #DDE1E7; border-radius: 0 0 13px 13px; }
 .opp-v4 .wo4-conv .wo4-cinp { background: #fff; }
 .opp-v4 .wo4-cic {
     width: 33px; height: 33px; border-radius: 8px; border: none; background: none;
@@ -503,7 +559,8 @@ body[data-theme="sakura"] .opp-v4 .wo4-tipo,
 body[data-theme="duna"] .opp-v4 .wo4-tipo,
 body[data-theme="espacial"] .opp-v4 .wo4-tipo,
 body[data-theme="mundial"] .opp-v4 .wo4-tipo {
-    background: rgba(255,255,255,.18); color: #fff;
+    background: var(--w4-azul); color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
 }
 body[data-theme="temporada"] .opp-v4 .wo4-ic,
 body[data-theme="sakura"] .opp-v4 .wo4-ic,
