@@ -9321,24 +9321,45 @@ def api_asistente_desempeno(request):
 @login_required
 @login_required
 def api_asistente_reporte_oportunidades(request):
-    """GET .../reporte/oportunidades/?tipo=<vencidas|importantes|abiertas>&cliente=<texto>
-    — Excel de las oportunidades del usuario, filtrado por código (sin IA).
-    Es la salida de los reportes del chat: los chips y el parser de texto libre
-    arman los parámetros; aquí solo se consulta y se genera el archivo."""
+    """GET .../reporte/oportunidades/ — Excel de oportunidades filtrado por CÓDIGO
+    (sin IA). Parámetros: tipo=<vencidas|importantes|abiertas>, cliente, etapa,
+    pipeline=<runrate|proyecto>, monto_min, top, cierre_mes, cierre_anio,
+    estancadas_dias, extras=<ultima_actividad,dias_sin_mov,po> (csv).
+    El archivo lleva cuadro informativo (fecha, autor, filtros) y tabla azul."""
     from datetime import date
     from django.http import HttpResponse
     from django.utils import timezone as _tz
-    from .models import TodoItem
+    from .models import TodoItem, Actividad
 
-    tipo = (request.GET.get('tipo') or 'abiertas').strip().lower()
-    cliente_q = (request.GET.get('cliente') or '').strip()
+    g = request.GET
+    tipo = (g.get('tipo') or 'abiertas').strip().lower()
+    cliente_q = (g.get('cliente') or '').strip()
+    etapa_q = (g.get('etapa') or '').strip()
+    pipeline_q = (g.get('pipeline') or '').strip().lower()
+    extras = [x for x in (g.get('extras') or '').split(',') if x]
+
+    def _int(nombre, default=0):
+        try:
+            return int(g.get(nombre) or default)
+        except (TypeError, ValueError):
+            return default
+    monto_min = _int('monto_min')
+    top = _int('top')
+    cierre_mes = _int('cierre_mes')
+    cierre_anio = _int('cierre_anio')
+    estancadas_dias = _int('estancadas_dias')
 
     qs = TodoItem.objects.filter(usuario=request.user).select_related('cliente')
     if cliente_q:
         qs = qs.filter(cliente__nombre_empresa__icontains=cliente_q)
+    if etapa_q:
+        qs = qs.filter(etapa_corta__icontains=etapa_q)
+    if pipeline_q in ('runrate', 'proyecto'):
+        qs = qs.filter(tipo_negociacion=pipeline_q)
     opps = list(qs)
 
     hoy = date.today()
+    ahora = _tz.now()
 
     def _abierta(o):
         return _cli_abierta(o.etapa_corta, o.estado_crm)
@@ -9352,6 +9373,7 @@ def api_asistente_reporte_oportunidades(request):
             return False
         return bool(a and m) and (a, m) < (hoy.year, hoy.month)
 
+    filtros = []   # descripción legible para el cuadro informativo
     if tipo == 'vencidas':
         opps = [o for o in opps if _vencida(o)]
         titulo = 'Oportunidades vencidas'
@@ -9362,35 +9384,87 @@ def api_asistente_reporte_oportunidades(request):
         tipo = 'abiertas'
         opps = [o for o in opps if _abierta(o)]
         titulo = 'Pipeline abierto'
-    opps.sort(key=lambda o: -(float(o.monto or 0)))
-    if tipo == 'importantes':
-        opps = opps[:25]
+    filtros.append('Tipo: %s' % titulo)
     if cliente_q:
-        titulo += ' · %s' % cliente_q
+        filtros.append('Cliente: %s' % cliente_q)
+    if etapa_q:
+        filtros.append('Etapa: %s' % etapa_q)
+    if pipeline_q in ('runrate', 'proyecto'):
+        filtros.append('Pipeline: %s' % pipeline_q.capitalize())
+    if monto_min:
+        opps = [o for o in opps if float(o.monto or 0) >= monto_min]
+        filtros.append('Monto mínimo: $%s' % ('{:,.0f}'.format(monto_min)))
+    if cierre_mes:
+        anio_c = cierre_anio or hoy.year
+        opps = [o for o in opps if (str(o.mes_cierre or '').lstrip('0') == str(cierre_mes)
+                                    and str(o.anio_cierre or '') == str(anio_c))]
+        filtros.append('Cierre: %02d/%d' % (cierre_mes, anio_c))
+    if estancadas_dias:
+        opps = [o for o in opps if o.fecha_actualizacion
+                and (ahora - o.fecha_actualizacion).days >= estancadas_dias]
+        filtros.append('Sin movimiento: %d días o más' % estancadas_dias)
 
+    opps.sort(key=lambda o: -(float(o.monto or 0)))
+    tope = top or (25 if tipo == 'importantes' else 0)
+    if tope:
+        opps = opps[:tope]
+        filtros.append('Top %d por monto' % tope)
+
+    # Columnas extra del catálogo (personalización por código)
+    _EXTRAS = {'ultima_actividad': 'Última actividad', 'dias_sin_mov': 'Días sin movimiento', 'po': 'PO'}
+    extras = [e for e in extras if e in _EXTRAS]
+    ult_act = {}
+    if 'ultima_actividad' in extras and opps:
+        ids = [o.id for o in opps]
+        for a in (Actividad.objects.filter(oportunidad_id__in=ids)
+                  .order_by('oportunidad_id', '-fecha_inicio')
+                  .values('oportunidad_id', 'titulo')):
+            ult_act.setdefault(a['oportunidad_id'], a['titulo'])
+    if extras:
+        filtros.append('Columnas extra: %s' % ', '.join(_EXTRAS[e] for e in extras))
+
+    # ── El Excel: cuadro informativo + tabla azul ──
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
+    AZUL, AZUL_CLARO, AZUL_BANDA = '1D4ED8', 'DBEAFE', 'EFF6FF'
+    borde = Border(bottom=Side(style='thin', color='BFDBFE'))
     wb = Workbook()
     ws = wb.active
     ws.title = 'Oportunidades'
-    ws['A1'] = titulo
-    ws['A1'].font = Font(bold=True, size=14)
-    ws['A2'] = '%s · generado el %s' % (
-        request.user.get_full_name() or request.user.username,
-        _tz.localtime().strftime('%d/%m/%Y %H:%M'))
-    ws['A2'].font = Font(color='6B7280', size=10)
-    headers = ['Oportunidad', 'Cliente', 'Etapa', 'Monto', 'Prob. %', 'Cierre', 'Tipo', 'Última actualización']
-    ws.append([])
-    ws.append(headers)
-    hrow = ws.max_row
-    for c in range(1, len(headers) + 1):
-        cell = ws.cell(row=hrow, column=c)
-        cell.font = Font(bold=True, color='FFFFFF')
-        cell.fill = PatternFill('solid', fgColor='0F172A')
-        cell.alignment = Alignment(horizontal='left')
-    for o in opps:
-        ws.append([
+
+    ws['B2'] = titulo
+    ws['B2'].font = Font(bold=True, size=16, color='0F172A')
+    info = [
+        ('Fecha del reporte', _tz.localtime().strftime('%d/%m/%Y %H:%M')),
+        ('Generado por', request.user.get_full_name() or request.user.username),
+        ('Filtros', ' · '.join(filtros)),
+        ('Resultados', str(len(opps))),
+    ]
+    r0 = 4
+    for i, (k, v) in enumerate(info):
+        ck = ws.cell(row=r0 + i, column=2, value=k)
+        cv = ws.cell(row=r0 + i, column=3, value=v)
+        ck.font = Font(bold=True, size=10, color='1E3A8A')
+        cv.font = Font(size=10, color='1F2937')
+        ck.fill = PatternFill('solid', fgColor=AZUL_CLARO)
+        cv.fill = PatternFill('solid', fgColor=AZUL_BANDA)
+        cv.alignment = Alignment(wrap_text=True, vertical='top')
+
+    headers = ['Oportunidad', 'Cliente', 'Etapa', 'Monto', 'Prob. %', 'Cierre', 'Pipeline', 'Últ. actualización']
+    headers += [_EXTRAS[e] for e in extras]
+    hrow = r0 + len(info) + 2
+    for c, h in enumerate(headers, start=2):
+        cell = ws.cell(row=hrow, column=c, value=h)
+        cell.font = Font(bold=True, color='FFFFFF', size=10)
+        cell.fill = PatternFill('solid', fgColor=AZUL)
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+    ws.row_dimensions[hrow].height = 22
+
+    r = hrow
+    for idx, o in enumerate(opps):
+        r += 1
+        fila = [
             o.oportunidad or '',
             (o.cliente.nombre_empresa if o.cliente_id else ''),
             o.etapa_corta or '',
@@ -9399,14 +9473,28 @@ def api_asistente_reporte_oportunidades(request):
             '%s/%s' % (o.mes_cierre or '—', o.anio_cierre or '—'),
             (o.tipo_negociacion or '').capitalize(),
             (_tz.localtime(o.fecha_actualizacion).strftime('%d/%m/%Y') if o.fecha_actualizacion else ''),
-        ])
-    anchos = [42, 28, 18, 14, 9, 10, 12, 18]
+        ]
+        for e in extras:
+            if e == 'ultima_actividad':
+                fila.append(ult_act.get(o.id, '— sin actividades —'))
+            elif e == 'dias_sin_mov':
+                fila.append((ahora - o.fecha_actualizacion).days if o.fecha_actualizacion else '')
+            elif e == 'po':
+                fila.append(o.po_number or '')
+        for c, val in enumerate(fila, start=2):
+            cell = ws.cell(row=r, column=c, value=val)
+            cell.font = Font(size=10, color='1F2937')
+            cell.border = borde
+            if idx % 2 == 1:
+                cell.fill = PatternFill('solid', fgColor=AZUL_BANDA)
+        ws.cell(row=r, column=5).number_format = '$#,##0.00'
+    if not opps:
+        ws.cell(row=hrow + 1, column=2, value='Sin oportunidades con esos filtros.').font = Font(italic=True, color='6B7280')
+
+    anchos = [3, 42, 28, 18, 14, 9, 10, 11, 17] + [24] * len(extras)
     for i, w in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
-    for r in range(hrow + 1, ws.max_row + 1):
-        ws.cell(row=r, column=4).number_format = '$#,##0.00'
-    if not opps:
-        ws.append(['Sin oportunidades con ese filtro.'])
+    ws.freeze_panes = ws.cell(row=hrow + 1, column=1)
 
     import io as _io
     buf = _io.BytesIO()

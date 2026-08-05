@@ -1200,8 +1200,7 @@
       _repChip('⭐ Mis más importantes (Excel)', "pendRepOpps('importantes','')") +
       _repChip('📊 Pipeline abierto (Excel)', "pendRepOpps('abiertas','')") +
       _repChip('🏅 Mi desempeño del mes (Excel)', "pendRepDescarga('xlsx')") +
-      _repChip('🗓️ Resumen de mi día', "pendRepPrompt('Hazme un resumen de lo que he atendido hoy')") +
-      _repChip('🔢 Tablero de números', 'pendRepTablero()');
+      _repChip('🗓️ Resumen de mi día', "pendRepPrompt('Hazme un resumen de lo que he atendido hoy')");
     res.innerHTML =
       '<div style="max-width:760px;margin:0 auto;padding:24px 20px 0;display:flex;flex-direction:column;min-height:100%;">' +
         '<div class="abig-hola">¿Qué reporte necesitas?</div>' +
@@ -1216,28 +1215,72 @@
     _repDraw();
   }
   // Reporte de oportunidades: descarga DIRECTA por código (cero IA, cero tokens).
+  // `p` puede ser un objeto con todos los filtros o (tipo, cliente) suelto.
   window.pendRepOpps = function (tipo, cliente) {
-    var nom = tipo === 'vencidas' ? 'oportunidades vencidas'
-      : (tipo === 'importantes' ? 'tus oportunidades más importantes' : 'tu pipeline abierto');
-    _repPush('bot', '✓ Generando el Excel de <b>' + _esc(nom) + (cliente ? ' · ' + _esc(cliente) : '') + '</b> — se está descargando.');
-    var url = '/app/api/asistente/reporte/oportunidades/?tipo=' + encodeURIComponent(tipo) +
-      (cliente ? '&cliente=' + encodeURIComponent(cliente) : '');
-    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    var p = (typeof tipo === 'object') ? tipo : { tipo: tipo, cliente: cliente || '' };
+    var nom = p.tipo === 'vencidas' ? 'oportunidades vencidas'
+      : (p.tipo === 'importantes' ? 'tus oportunidades más importantes' : 'tu pipeline abierto');
+    var det = [];
+    if (p.cliente) det.push('cliente ' + p.cliente);
+    if (p.etapa) det.push('etapa ' + p.etapa);
+    if (p.pipeline) det.push(p.pipeline);
+    if (p.monto_min) det.push('desde $' + Number(p.monto_min).toLocaleString());
+    if (p.top) det.push('top ' + p.top);
+    if (p.cierre_mes) det.push('cierre ' + p.cierre_mes + '/' + (p.cierre_anio || new Date().getFullYear()));
+    if (p.estancadas_dias) det.push('sin movimiento ' + p.estancadas_dias + '+ días');
+    if (p.extras) det.push('+ ' + p.extras.split(',').join(', ').replace(/_/g, ' '));
+    _repPush('bot', '✓ Entendido: <b>' + _esc(nom) + '</b>' + (det.length ? ' · ' + _esc(det.join(' · ')) : '') + '. Generando tu Excel…');
+    var qs = ['tipo=' + encodeURIComponent(p.tipo)];
+    ['cliente', 'etapa', 'pipeline', 'monto_min', 'top', 'cierre_mes', 'cierre_anio', 'estancadas_dias', 'extras']
+      .forEach(function (k) { if (p[k]) qs.push(k + '=' + encodeURIComponent(p[k])); });
+    var a = document.createElement('a');
+    a.href = '/app/api/asistente/reporte/oportunidades/?' + qs.join('&');
+    a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
-  // Parser por CÓDIGO del texto libre: si la petición es un reporte de
-  // oportunidades reconocible (tipo + cliente opcional), no gasta IA.
+  // Parser por CÓDIGO del texto libre: tipo + cliente + etapa + pipeline +
+  // monto + top N + mes de cierre + estancamiento + columnas extra. Sin IA.
+  var _REP_MESES = { enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+    julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12 };
   function _repParseOpps(q) {
     var s = ' ' + q.toLowerCase() + ' ';
-    if (!/oportunidad|pipeline|vencid|important|grandes/.test(s)) return null;
-    var tipo = /vencid/.test(s) ? 'vencidas'
-      : (/important|grandes|top|mejores/.test(s) ? 'importantes'
-        : (/abiert|pipeline|todas/.test(s) ? 'abiertas' : null));
-    if (!tipo) return null;
-    var cliente = '';
-    var m = s.match(/cliente\s+([a-z0-9áéíóúñü&\.\- ]{2,45}?)(?=\s*(?:en\s+excel|en\s+pdf|por\s+favor|$|\.|,))/);
-    if (m) cliente = m[1].trim();
-    return { tipo: tipo, cliente: cliente };
+    if (!/oportunidad|pipeline|vencid|important|grandes|estancad/.test(s)) return null;
+    var p = {};
+    p.tipo = /vencid/.test(s) ? 'vencidas'
+      : (/important|grandes|top|mejores|mayores/.test(s) ? 'importantes'
+        : (/abiert|pipeline|todas|estancad/.test(s) ? 'abiertas' : null));
+    if (!p.tipo) return null;
+    var m = s.match(/cliente\s+([a-z0-9áéíóúñü&\.\- ]{2,45}?)(?=\s*(?:en\s+excel|en\s+pdf|por\s+favor|con\s|que\s|y\s+agr|$|\.|,))/);
+    if (m) p.cliente = m[1].trim();
+    m = s.match(/etapa\s+([a-záéíóúñ ]{3,25}?)(?=\s*(?:en\s+excel|$|\.|,|con\s|del?\s))/);
+    if (m) p.etapa = m[1].trim();
+    if (/runrate/.test(s)) p.pipeline = 'runrate';
+    else if (/\bproyectos?\b/.test(s) && !/proyecto\s+de/.test(s)) p.pipeline = 'proyecto';
+    m = s.match(/(?:mayores?|arriba|m[aá]s)\s+de\s+\$?\s*([\d,\.]+)\s*(k|mil|m\b|millones)?/);
+    if (m) {
+      var n = parseFloat(m[1].replace(/,/g, ''));
+      if (m[2] === 'k' || m[2] === 'mil') n *= 1000;
+      if (m[2] === 'm' || m[2] === 'millones') n *= 1000000;
+      if (n) p.monto_min = Math.round(n);
+    }
+    m = s.match(/top\s*(\d{1,3})/) || s.match(/(?:mis|las)\s+(\d{1,3})\s+m[aá]s/);
+    if (m) { p.top = +m[1]; p.tipo = p.tipo === 'abiertas' ? 'importantes' : p.tipo; }
+    m = s.match(/cierran?\s+(?:en\s+)?(este\s+mes|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/);
+    if (m) {
+      var hoy2 = new Date();
+      p.cierre_mes = m[1] === 'este mes' ? (hoy2.getMonth() + 1) : _REP_MESES[m[1]];
+      p.cierre_anio = hoy2.getFullYear();
+    }
+    if (/estancad|sin\s+movimiento|sin\s+mover/.test(s)) {
+      m = s.match(/(\d{1,3})\s*(d[ií]as|semanas)/);
+      p.estancadas_dias = m ? (+m[1] * (/semanas/.test(m[2]) ? 7 : 1)) : 14;
+    }
+    var ex = [];
+    if (/[uú]ltima\s+actividad/.test(s)) ex.push('ultima_actividad');
+    if (/d[ií]as\s+sin\s+movimiento/.test(s)) ex.push('dias_sin_mov');
+    if (/\bpo\b|orden(es)?\s+de\s+compra/.test(s)) ex.push('po');
+    if (ex.length) p.extras = ex.join(',');
+    return p;
   }
   function _repDraw() {
     var flow = el('repFlow'); if (!flow) return;
@@ -1267,7 +1310,7 @@
     _repPush('user', _esc(q));
     // 1º: ¿es un reporte de oportunidades que el CÓDIGO entiende? → Excel directo.
     var po = _repParseOpps(q);
-    if (po) { pendRepOpps(po.tipo, po.cliente); return; }
+    if (po) { pendRepOpps(po); return; }
     // Intents gratis también aquí (atendido del día por código puro).
     if (/atendid|resumen\s+de\s+(lo\s+que|mi\s+d[ií]a)|qu[eé]\s+he\s+hecho/i.test(q)) {
       var idx0 = _repPush('bot', '<span class="pend-typing2">Armando tu resumen…</span>');
