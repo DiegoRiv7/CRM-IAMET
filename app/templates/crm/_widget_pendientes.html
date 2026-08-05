@@ -92,14 +92,12 @@
           <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
           <!-- Vista "Asistente" en grande: el mini panel como protagonista del centro.
                El chat (flujo + barra) se MUEVE aquí desde la columna derecha al entrar. -->
+          <!-- Sección "Asistente" del modal: CONVERSACIÓN estilo Codex/Claude Code.
+               El asistente saluda con el brief + sugerencias; el flujo del chat
+               (#pendChatFlow) y la caja (#pendChat) se mueven aquí al entrar. -->
           <div id="pendAsisBig" style="display:none;">
             <div class="abig-status" id="asisBigStatus"></div>
-            <div class="abig-inner">
-              <div class="pend-abig-brief" id="asisBigBrief"></div>
-              <div class="abig-chips" id="asisBigChips"></div>
-              <div class="pend-mini-tabs abig-tabs" id="asisBigTabs"></div>
-              <div id="asisBigCards"></div>
-            </div>
+            <div id="asisBigSaludo" class="abig-saludo"></div>
           </div>
         </div>
       </div>
@@ -344,34 +342,19 @@
   .abig-refresh{margin-left:auto;border:1px solid #e2e4e9;background:#fff;border-radius:10px;padding:6px 14px;
     font-size:.8rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
   .abig-refresh:hover{background:#f6f7f9;}
-  .abig-inner{max-width:720px;margin:0 auto;padding:20px 24px 8px;}
-  /* Las tarjetas dentro de la vista grande: la lista del mini con un punto más de aire */
-  #asisBigCards .pend-mini-card{padding:16px 2px;}
-  #asisBigCards .pend-mini-ch{font-size:.98rem;}
-  #asisBigCards .pend-mini-cd,#asisBigCards .pend-mini-ctx{font-size:.86rem;}
-  #asisBigCards .pend-mini-clbl{font-size:.68rem;}
-  .pend-abig-brief{font-size:1.02rem;line-height:1.65;color:#1d1d1f;}
-  .abig-chips{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
-  .abig-chips .abig-chip{font-size:.76rem;font-weight:600;padding:5px 12px;background:#f2f3f6;color:#4b5563;}
-  .abig-tabs{align-items:center;margin:14px 0 4px;}
-  .abig-tabs .pend-mini-tab{border:1px solid transparent;}
-  .abig-tabs .pend-mini-tab.on{background:#fff;color:#16181d;border-color:#e2e4e9;box-shadow:0 1px 2px rgba(15,23,42,.06);}
-  .abig-orden{margin-left:auto;font-size:.78rem;color:#9a9ca3;font-weight:500;}
-  /* Tarjetas: la tarjeta chica escalada — tipografía primero, sin adornos */
-  .abig-card{background:#fff;border:1px solid #e7e9ee;border-radius:14px;padding:18px 22px 16px;margin-bottom:14px;
-    box-shadow:0 1px 2px rgba(15,23,42,.04);}
-  .abig-open{cursor:pointer;}
-  .abig-clbl{display:flex;justify-content:space-between;gap:10px;font-size:.7rem;letter-spacing:.05em;
-    text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:7px;}
-  .abig-name{font-weight:700;font-size:1.02rem;color:#16181d;letter-spacing:-.01em;margin-bottom:2px;}
-  .abig-subj{font-weight:600;font-size:.9rem;color:#3f434b;}
-  .abig-ctx{font-size:.88rem;color:#4b5563;line-height:1.6;margin-top:5px;}
-  .abig-acts{display:flex;gap:9px;margin-top:13px;flex-wrap:wrap;align-items:center;}
-  #asisBigCards .pend-mini-btn{font-size:.84rem;padding:8px 17px;}
-  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fff;padding:12px 24px 14px;margin-top:8px;
+  /* Conversación estilo Codex: saludo del asistente + sugerencias + caja grande */
+  .abig-saludo{max-width:720px;margin:0 auto;padding:26px 24px 4px;}
+  .abig-burbuja{font-size:1rem;line-height:1.68;color:#1d1d1f;background:#f6f7f9;
+    border-radius:16px;padding:16px 20px;}
+  .abig-sugs{display:flex;gap:9px;margin:16px 2px 6px;flex-wrap:wrap;}
+  .abig-sug{border:1px solid #e2e4e9;background:#fff;border-radius:999px;padding:8px 16px;
+    font-size:.84rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
+  .abig-sug:hover{background:#f6f7f9;border-color:#d5d8de;}
+  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fff;padding:14px 24px 16px;margin-top:8px;
     border-top:1px solid #eef0f3;}
   #pendAsisBig .pend-chat .pend-chat-form{max-width:672px;margin:0 auto;}
-  #pendAsisBig .pend-chatflow{padding:0 24px;max-width:720px;margin:0 auto;}
+  #pendAsisBig .pend-chat-input{font-size:.95rem;padding:13px 18px;border-radius:14px;}
+  #pendAsisBig .pend-chatflow{padding:6px 24px 0;max-width:720px;margin:0 auto;}
   .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
   .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
   .pend-mini-btn.pri{background:#0a84ff;color:#fff;} .pend-mini-btn.pri:hover{background:#0060df;}
@@ -1394,9 +1377,9 @@
       '<div class="pend-n2-acts">' + btns + '</div>' +
       '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (total > 1 ? ' (' + total + ')' : '') + ' →</div>';
   };
-  // "Ver todo lo pendiente" abre la sección Asistente del panel grande — ahí
-  // viven los pendientes (decisión de producto: promocionar esa vista).
-  window.pendToastVerTodo = function () { _toastCollapse(); if (typeof window.pendAbrir === 'function') pendAbrir(); else pendMiniAbrir(); };
+  // "Ver todo lo pendiente" abre el panel flotante del asistente (la joya):
+  // ahí viven los pendientes. El modal grande es la CONVERSACIÓN con el asistente.
+  window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
   window.pendToastAbrirSolo = function (mailId) { _toastCollapse(); _abrirMailConBorrador(mailId, ''); };
   // ── Vincular correo → oportunidad desde el aviso (arranque en frío) ──
   // Funciona desde el toast (nivel 1 o 2) Y desde el mini panel: pinta en la
@@ -1748,11 +1731,7 @@
     var mini = el('pendMini');
     if (mini && mini.style.display !== 'none') return el('pendMiniBody');
     var ov = el('widgetPendientes');
-    if (ov && ov.classList.contains('active')) {
-      var big = el('pendAsisBig');
-      if (big && big.style.display !== 'none') return el('asisBigCards');
-      return el('pendAsisFeed');
-    }
+    if (ov && ov.classList.contains('active')) return el('pendAsisFeed');
     return el('pendMiniBody');
   }
   var _MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -2098,35 +2077,11 @@
       if (aside && chat) aside.appendChild(chat);
     }
   }
-  window.pendAsisBigTab = function (t) {
-    _asisBigTab = t;
-    if (t === 'atendido') _atFetch();
-    _asisBigDraw();
+  // Sugerencias del chat: un clic = preguntarle eso al asistente.
+  window.pendAsisSugerir = function (t) {
+    var i = el('pendChatInput'); if (i) i.value = t;
+    pendChatSend();
   };
-  function _asisBigTabBtn(k, lbl, n) {
-    return '<button type="button" class="pend-mini-tab' + (_asisBigTab === k ? ' on' : '') + '" onclick="pendAsisBigTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
-  }
-  function _abigCard(it) {
-    // La MISMA esencia tipográfica de la tarjeta chica, con aire: etiqueta de
-    // categoría en mayúsculas con su color, nombre, asunto, mensaje de la IA
-    // completo y la botonería azul de siempre. Sin avatares ni chips de colores.
-    var openCall = it.tipo === 'correo' ? ('pendVerCorreo(' + it.mail_id + ')') : ('pendMiniAbrirOpp(' + it.opp_id + ')');
-    var acts = (it.acciones || []).map(function (a, i) {
-      var c = _MINI_ACTS[a]; if (!c) return '';
-      var cls = (a === 'no_importa') ? 'txt' : (i === 0 ? 'pri' : 'sec');
-      return '<button type="button" class="pend-mini-btn ' + cls + '" onclick="' + c.f(it) + '">' + _esc(c.l) + '</button>';
-    }).join('');
-    return '<div class="abig-card">' +
-      '<div class="abig-open" onclick="' + openCall + '">' +
-        '<div class="abig-clbl"><span style="color:' + _catColor(it) + ';">' + _esc((it.categoria || '').toUpperCase()) + '</span>' +
-          '<span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
-        '<div class="abig-name">' + _esc(it.titulo || '') + '</div>' +
-        '<div class="abig-subj">' + _esc(it.desc || '') + '</div>' +
-        (it.contexto ? '<div class="abig-ctx">' + _esc(it.contexto) + '</div>' : '') +
-      '</div>' +
-      '<div class="abig-acts">' + acts + '</div>' +
-    '</div>';
-  }
   function _abigBriefHtml(txt) {
     // Negritas a las cifras clave del brief ("6 correos…", "6 oportunidades…").
     var e = _esc(txt || '');
@@ -2141,42 +2096,25 @@
       '<button type="button" class="abig-refresh" onclick="pendAsisFeedLoad()">&#8635; Volver a revisar</button>';
   }
   function _asisBigDraw() {
-    var brief = el('asisBigBrief'), tabsEl = el('asisBigTabs'), cardsEl = el('asisBigCards'),
-        statusEl = el('asisBigStatus');
-    if (!cardsEl) return;
+    // Chat estilo Codex: el asistente te recibe con el brief como su primer
+    // mensaje + sugerencias de un clic. La conversación (#pendChatFlow) corre
+    // debajo y la caja grande (#pendChat) vive abajo. Sin feed aquí — los
+    // pendientes viven en el panel flotante.
+    var statusEl = el('asisBigStatus');
     if (statusEl) statusEl.innerHTML = _asisBigStatusHtml();
+    var sal = el('asisBigSaludo'); if (!sal) return;
     var d = _miniData;
-    if (!d) { cardsEl.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>'; return; }
-    if (brief) brief.innerHTML = _abigBriefHtml(d.brief || '');
-    var chipsEl = el('asisBigChips');
-    if (chipsEl) {
-      chipsEl.innerHTML =
-        '<span class="abig-chip">&#9993; Bandeja de {{ request.user.first_name|default:"tu correo"|escapejs }}</span>' +
-        '<span class="abig-chip">&#9671; Pipeline · ' + (d.pipeline || 0) + ' por atender</span>' +
-        '<span class="abig-chip">&#128197; Tu agenda de hoy</span>';
-    }
-    if (tabsEl) {
-      tabsEl.innerHTML =
-        _asisBigTabBtn('todo', 'Todo', d.total) +
-        _asisBigTabBtn('correo', 'Correo', d.correos) +
-        _asisBigTabBtn('pipeline', 'Pipeline', d.pipeline) +
-        _asisBigTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) +
-        '<span class="abig-orden">Ordenado por urgencia</span>';
-    }
-    if (_asisBigTab === 'atendido') {
-      var ats = (_atendidos && _atendidos.items) || [];
-      cardsEl.innerHTML = ats.length
-        ? ats.map(_atCard).join('')
-        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
-    } else {
-      var items = (d.items || []).filter(function (it) { return _asisBigTab === 'todo' || it.grupo === _asisBigTab; });
-      // La MISMA lista del mini (separadores, densidad, ritmo) — solo que en una
-      // columna central cómoda. Las cajas blancas grandes se veían vacías.
-      cardsEl.innerHTML = items.length
-        ? items.map(_miniCard).join('')
-        : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
-    }
-    if (_atendidos === null) _atFetch();
+    var saludo = (d && d.brief) ? _abigBriefHtml(d.brief)
+      : 'Un momento — estoy revisando tu correo y tu pipeline…';
+    var pendTxt = (d && d.total) ? ('Ver mis ' + d.total + ' pendientes') : 'Ver mis pendientes';
+    sal.innerHTML =
+      '<div class="abig-burbuja">' + saludo + '</div>' +
+      '<div class="abig-sugs">' +
+        '<button type="button" class="abig-sug" onclick="pendCerrar();pendMiniAbrir()">' + _esc(pendTxt) + '</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Cómo va mi pipeline este mes?\')">¿Cómo va mi pipeline?</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué correos importantes no he respondido?\')">¿Qué correos no he respondido?</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué debería hacer ahora mismo?\')">¿Qué hago ahora?</button>' +
+      '</div>';
   }
 
   // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
