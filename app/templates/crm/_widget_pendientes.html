@@ -46,7 +46,7 @@
     <button type="button" class="pend-mini-go" onclick="pendMiniAsk()" aria-label="Enviar">&#8593;</button>
   </div>
 </div>
-<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi Asistente">
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi día">
   <div class="ww-card pend-card">
     <!-- Controles de ventana (— □ ×): esquina superior derecha, discretos -->
     <div class="pend-winctl">
@@ -56,9 +56,8 @@
 
       <!-- Mini-sidebar -->
       <nav class="pend-side">
-        <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi Asistente</div>
-        <button type="button" class="pend-side-item active" data-nav="asistente" onclick="pendNav('asistente')">Asistente</button>
-        <button type="button" class="pend-side-item" data-nav="dia" onclick="pendNav('dia')">Recomendaciones del día</button>
+        <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi día</div>
+        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Recomendaciones del día</button>
         <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes sin atender</button>
         <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correos importantes sin atender</button>
         <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
@@ -654,11 +653,13 @@
     ov.classList.add('active');
     var _lc = el('pendLauncher'); if (_lc) _lc.style.display = 'none';   // ocultar launcher al expandir
     var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
-    // Abrir siempre en "Asistente" (el protagonista del módulo). Conserva el recap 18:00.
+    // Abrir siempre en "Recomendaciones del día". El asistente vive en el toast
+    // y el panel flotante (decisión de producto: no duplicar chats — el modal
+    // es el tablero "Mi día"). Conserva el recap 18:00.
     _tab = 'resumen';
     var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
-    pendCargar();               // los datos de "Mi día" se precargan para las otras secciones
-    pendNav('asistente');       // sección inicial: el asistente en grande (feed + chat)
+    pendCargar();
+    pendNav('dia');
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
     if (!_ensureWindow(ov)) {
