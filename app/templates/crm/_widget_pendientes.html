@@ -331,7 +331,9 @@
   .pend-mini-x{font-size:1.15rem;} .pend-mini-expand{font-size:.9rem;}
   .pend-mini-expand:hover,.pend-mini-x:hover{background:#f2f3f6;color:#6b7280;}
   .pend-mini-sub{font-size:.76rem;color:#9a9ca3;margin-top:3px;}
-  .pend-mini-body{flex:1;overflow-y:auto;padding:15px 17px;}
+  /* Padding lateral proporcional: al agrandar la ventana, el texto conserva un
+     ancho de lectura cómodo en vez de estirarse de pared a pared. */
+  .pend-mini-body{flex:1;overflow-y:auto;padding:15px clamp(17px, 8%, 120px);}
   .pend-mini-brief{font-size:.9rem;line-height:1.55;color:#374151;}
   .pend-mini-brief b{color:#16181d;font-weight:700;}
   .pend-mini-tabs{display:flex;gap:7px;margin:16px 0 2px;flex-wrap:wrap;}
@@ -1358,62 +1360,77 @@
   // todas las acciones. El panel completo queda detrás de "Ver todo lo pendiente".
   // (Antes el clic abría el panel de golpe — cambio de contexto que confundía.)
   window.pendToastOpenBig = function () { pendToastNivel2(); };
-  window.pendToastNivel2 = function () {
-    var it = _toastTop(); if (!it) return;
-    _toastExpand();
-    var lcN2 = el('pendLauncher'); if (lcN2) lcN2.classList.add('n2');
-    var box = el('pendLcFocus'); if (!box) return;
+  // Detalle "nivel 2" de un aviso — COMPARTIDO por el toast y la ventanita:
+  // más cuerpo del correo + botonera completa, con acciones amarradas al ítem.
+  function _nivel2Html(it, ctx) {
+    var esToast = (ctx === 'toast');
     var esCorreo = it.tipo === 'correo';
-    var total = (_miniData && _miniData.total) || 0;
+    var ref = esCorreo ? it.mail_id : it.opp_id;
     var cuerpo = it.quote_full || it.quote || '';
+    var volver = esToast ? 'pendToastCollapse()' : 'pendMiniVolver()';
+    var revisado = esToast ? 'pendToastCollapse();pendToastRevisado()'
+                           : ("pendMiniDescartar('" + it.tipo + "'," + ref + ')');
     function _btn(cls, onclick, label) {
       return '<button type="button" class="pend-foc-btn ' + cls + '" onclick="' + onclick + '">' + label + '</button>';
     }
     var btns = '';
     if (esCorreo && it.opp_id) {
-      // Correo LIGADO a oportunidad: botonera fija de UNA fila (orden acordado):
-      // · llegó y no respondes (3-A): Agendar | Abrir en Correo | Actualizar | Revisado
-      // · ya respondiste / hito (3-B): Actualizar | Agendar | Abrir en Correo | Revisado
+      // Correo LIGADO a oportunidad: botonera fija de UNA fila (orden acordado).
       var priActualizar = ((it.acciones || [])[0] === 'actualizar_oportunidad');
       var bAbrir = _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
-      var bAct = _btn(priActualizar ? 'pri' : 'sec', "pendToastAct('actualizar_oportunidad')", 'Actualizar oportunidad');
-      var bAgen = _btn(priActualizar ? 'sec' : 'pri', "pendToastAct('agendar_seguimiento')", 'Agendar seguimiento');
-      btns = (priActualizar ? (bAct + bAgen + bAbrir) : (bAgen + bAbrir + bAct))
-        + _btn('sec', 'pendToastCollapse();pendToastRevisado()', 'Revisado');
+      var bAct = _btn(priActualizar ? 'pri' : 'sec', 'pendMiniActualizarOpp(' + it.mail_id + ')', 'Actualizar oportunidad');
+      var bAgen = _btn(priActualizar ? 'sec' : 'pri', 'pendMiniAgendar(' + it.opp_id + ')', 'Agendar seguimiento');
+      btns = (priActualizar ? (bAct + bAgen + bAbrir) : (bAgen + bAbrir + bAct)) + _btn('sec', revisado, 'Revisado');
     } else {
-      // Correos sueltos y avisos de oportunidad: acciones del aviso + Responder/Abrir.
       var accs = (it.acciones || []).filter(function (a) { return a !== 'no_importa' && a !== 'responder' && _MINI_ACTS[a]; });
       btns = accs.map(function (a, i) {
-        return _btn(i === 0 ? 'pri' : 'sec', "pendToastAct('" + a + "')", _esc(_MINI_ACTS[a].l));
+        return _btn(i === 0 ? 'pri' : 'sec', _MINI_ACTS[a].f(it), _esc(_MINI_ACTS[a].l));
       }).join('');
       if (esCorreo) {
-        btns += _btn(accs.length ? 'sec' : 'pri', "pendToastAct('responder')", 'Generar respuesta');
+        var resp = esToast ? "pendToastAct('responder')" : ('pendMiniResponder(' + it.mail_id + ')');
+        btns += _btn(accs.length ? 'sec' : 'pri', resp, 'Generar respuesta');
         btns += _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
-        // Correo SUELTO: vincularlo aquí mismo — clave los primeros días, cuando
-        // la gente aún no tiene correos ligados y el asistente no puede ofrecer
-        // actualizar. Al vincular, la tarjeta vuelve ya como correo de oportunidad.
-        // (Solo si la tarjeta no lo trae ya como acción primaria.)
         if (accs.indexOf('vincular_oportunidad') === -1) {
           btns += _btn('sec', 'pendToastVincular(' + it.mail_id + ')', 'Vincular a oportunidad');
         }
       } else if (it.opp_id) {
-        btns += _btn('sec', 'pendToastCollapse();pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
+        btns += _btn('sec', (esToast ? 'pendToastCollapse();' : '') + 'pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
       }
       var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
       if (!tieneAgendar) {
-        btns += _btn('sec', 'pendToastAgendar()', 'Agendar seguimiento');
+        btns += _btn('sec', "pendToastAgendarPrev('" + it.tipo + "'," + ref + ')', 'Agendar seguimiento');
       }
-      btns += _btn('sec', 'pendToastCollapse();pendToastRevisado()', 'Revisado');
+      btns += _btn('sec', revisado, 'Revisado');
     }
-    box.innerHTML =
-      '<div class="pend-n2-top" onclick="pendToastCollapse()"><span class="pend-foc-back">‹ Volver</span></div>' +
+    var pie = esToast
+      ? '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (((_miniData && _miniData.total) || 0) > 1 ? ' (' + _miniData.total + ')' : '') + ' →</div>'
+      : '';
+    return '<div class="pend-n2-top" onclick="' + volver + '"><span class="pend-foc-back">‹ Volver</span></div>' +
       '<span class="pend-toast-cat pend-n2-cat" style="color:' + _catColor(it) + ';">' + _esc(((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase()) + '</span>' +
       '<div class="pend-toast-title" style="cursor:default;">' + _esc(it.headline || it.titulo || '') + '</div>' +
       (it.contexto ? '<div class="pend-toast-ctx" style="display:block;">' + _esc(it.contexto) + '</div>' : '') +
       (cuerpo ? '<div class="pend-toast-quote pend-n2-quote">“' + _esc(cuerpo) + '”</div>' : '') +
-      '<div class="pend-n2-acts">' + btns + '</div>' +
-      '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (total > 1 ? ' (' + total + ')' : '') + ' →</div>';
+      '<div class="pend-n2-acts">' + btns + '</div>' + pie;
+  }
+  window.pendToastNivel2 = function () {
+    var it = _toastTop(); if (!it) return;
+    _toastExpand();
+    var lcN2 = el('pendLauncher'); if (lcN2) lcN2.classList.add('n2');
+    var box = el('pendLcFocus'); if (!box) return;
+    box.innerHTML = _nivel2Html(it, 'toast');
   };
+  // Clic en una tarjeta de la ventanita (o de la columna de "Mi día"): el detalle
+  // se abre AHÍ MISMO — la lista se retira y vuelve con "‹ Volver".
+  window.pendMiniNivel2 = function (tipo, ref) {
+    var items = (_miniData && _miniData.items) || [];
+    var it = items.filter(function (x) {
+      return x.tipo === tipo && (tipo === 'correo' ? x.mail_id === ref : x.opp_id === ref);
+    })[0];
+    if (!it) return;
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = _nivel2Html(it, 'mini');
+  };
+  window.pendMiniVolver = function () { _feedRedraw(); };
   // "Ver todo lo pendiente" abre el panel flotante del asistente (la joya):
   // ahí viven los pendientes. El modal grande es la CONVERSACIÓN con el asistente.
   window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
@@ -1771,13 +1788,20 @@
     no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + (it.tipo === 'correo' ? it.mail_id : it.opp_id) + ')'; } }
   };
   function _miniCard(it) {
-    // Abrir el ítem = clic en el cuadro (remitente + contenido), no un botón.
-    var openCall = it.tipo === 'correo' ? ('pendVerCorreo(' + it.mail_id + ')') : ('pendMiniAbrirOpp(' + it.opp_id + ')');
-    var acts = (it.acciones || []).map(function (a, i) {
-      var c = _MINI_ACTS[a]; if (!c) return '';
-      var cls = (a === 'no_importa') ? 'txt' : (i === 0 ? 'pri' : 'sec');
-      return '<button type="button" class="pend-mini-btn ' + cls + '" onclick="' + c.f(it) + '">' + _esc(c.l) + '</button>';
-    }).join('');
+    // Clic en el cuadro = abrir el DETALLE ahí mismo (nivel 2 interno).
+    var ref = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    var openCall = "pendMiniNivel2('" + it.tipo + "'," + ref + ')';
+    // Botonera espejo del toast: [primaria] [Agendar] [Revisado].
+    var pri = (it.acciones || [])[0], acts = '';
+    if (pri === 'responder' && it.mail_id) {
+      acts += '<button type="button" class="pend-mini-btn pri" onclick="pendToastAbrirSolo(' + it.mail_id + ')">Abrir correo</button>';
+    } else if (pri && _MINI_ACTS[pri]) {
+      acts += '<button type="button" class="pend-mini-btn pri" onclick="' + _MINI_ACTS[pri].f(it) + '">' + _esc(_MINI_ACTS[pri].l) + '</button>';
+    }
+    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
+      acts += '<button type="button" class="pend-mini-btn sec" onclick="pendToastAgendarPrev(\'' + it.tipo + '\',' + ref + ')">Agendar</button>';
+    }
+    acts += '<button type="button" class="pend-mini-btn txt" onclick="pendMiniDescartar(\'' + it.tipo + '\',' + ref + ')">Revisado</button>';
     return '<div class="pend-mini-card">' +
       '<div class="pend-mini-open" onclick="' + openCall + '">' +
         '<div class="pend-mini-clbl' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '"><span style="color:' + _catColor(it) + ';">' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
