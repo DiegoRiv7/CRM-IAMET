@@ -97,7 +97,11 @@
                (#pendChatFlow) y la caja (#pendChat) se mueven aquí al entrar. -->
           <div id="pendAsisBig" style="display:none;">
             <div class="abig-status" id="asisBigStatus"></div>
-            <div id="asisBigSaludo" class="abig-saludo"></div>
+            <div id="asisBigCentro">
+              <div id="asisBigSaludo" class="abig-saludo"></div>
+              <div id="asisBigChatSlot"></div>
+              <div id="asisBigSugs" class="abig-sugs"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -342,14 +346,26 @@
   .abig-refresh{margin-left:auto;border:1px solid #e2e4e9;background:#fff;border-radius:10px;padding:6px 14px;
     font-size:.8rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
   .abig-refresh:hover{background:#f6f7f9;}
-  /* Conversación estilo Codex: saludo del asistente + sugerencias + caja grande */
-  .abig-saludo{max-width:720px;margin:0 auto;padding:26px 24px 4px;}
-  .abig-burbuja{font-size:1rem;line-height:1.68;color:#1d1d1f;background:#f6f7f9;
-    border-radius:16px;padding:16px 20px;}
-  .abig-sugs{display:flex;gap:9px;margin:16px 2px 6px;flex-wrap:wrap;}
+  /* Portada estilo Claude: saludo grande + caja + sugerencias, centrados en el
+     alto. Con conversación: el saludo/sugerencias se van y la caja ancla abajo. */
+  #pendAsisBig{display:flex;flex-direction:column;min-height:100%;}
+  #asisBigCentro{flex:1;display:flex;flex-direction:column;}
+  #pendAsisBig.abig-idle #asisBigCentro{justify-content:center;padding-bottom:9vh;}
+  .abig-saludo{max-width:760px;margin:0 auto;padding:10px 24px 0;width:100%;}
+  .abig-hola{font-size:1.7rem;font-weight:700;color:#16181d;text-align:center;
+    letter-spacing:-.02em;margin-bottom:14px;}
+  .abig-brief2{font-size:.96rem;color:#4b5563;text-align:center;line-height:1.7;
+    max-width:640px;margin:0 auto 10px;}
+  .abig-sugs{display:flex;gap:9px;margin:16px auto 6px;flex-wrap:wrap;justify-content:center;
+    max-width:760px;padding:0 24px;}
   .abig-sug{border:1px solid #e2e4e9;background:#fff;border-radius:999px;padding:8px 16px;
     font-size:.84rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
   .abig-sug:hover{background:#f6f7f9;border-color:#d5d8de;}
+  #pendAsisBig.abig-convo #asisBigSaludo{display:none;}
+  #pendAsisBig.abig-convo #asisBigSugs{display:none;}
+  #pendAsisBig.abig-convo #asisBigChatSlot{flex:1;display:flex;flex-direction:column;}
+  #pendAsisBig.abig-convo #pendChatFlow{flex:1;}
+  #pendAsisBig.abig-idle .pend-chat{position:static;border-top:none;background:transparent;padding:6px 24px 0;}
   #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fff;padding:14px 24px 16px;margin-top:8px;
     border-top:1px solid #eef0f3;}
   #pendAsisBig .pend-chat .pend-chat-form{max-width:672px;margin:0 auto;}
@@ -2068,14 +2084,26 @@
     if (res) res.style.display = on ? 'none' : '';
     var flow = el('pendChatFlow'), chat = el('pendChat');
     if (on) {
-      if (big && flow) big.appendChild(flow);
-      if (big && chat) big.appendChild(chat);
+      var slot = el('asisBigChatSlot');
+      if (slot && flow) slot.appendChild(flow);
+      if (slot && chat) slot.appendChild(chat);
+      _asisBigModoUpd();
     } else {
       var asideBody = document.querySelector('#widgetPendientes .pend-asis-body');
       var aside = document.querySelector('#widgetPendientes .pend-asis');
       if (asideBody && flow) asideBody.appendChild(flow);
       if (aside && chat) aside.appendChild(chat);
     }
+  }
+  // Idle (sin conversación): saludo + caja + sugerencias CENTRADOS verticalmente,
+  // como la portada de Claude. En cuanto hay mensajes → modo conversación:
+  // el saludo/sugerencias se retiran y la caja se ancla abajo.
+  function _asisBigModoUpd() {
+    var big = el('pendAsisBig'); if (!big) return;
+    var flow = el('pendChatFlow');
+    var convo = !!(flow && flow.children.length);
+    big.classList.toggle('abig-convo', convo);
+    big.classList.toggle('abig-idle', !convo);
   }
   // Sugerencias del chat: un clic = preguntarle eso al asistente.
   window.pendAsisSugerir = function (t) {
@@ -2104,17 +2132,28 @@
     if (statusEl) statusEl.innerHTML = _asisBigStatusHtml();
     var sal = el('asisBigSaludo'); if (!sal) return;
     var d = _miniData;
-    var saludo = (d && d.brief) ? _abigBriefHtml(d.brief)
-      : 'Un momento — estoy revisando tu correo y tu pipeline…';
-    var pendTxt = (d && d.total) ? ('Ver mis ' + d.total + ' pendientes') : 'Ver mis pendientes';
+    // Saludo estilo portada de Claude: encabezado grande + el resto del brief
+    // como párrafo. El brief llega "Buenas tardes, X. Revisé tu correo…".
+    var hola = 'Hola', resto = '';
+    if (d && d.brief) {
+      var m = d.brief.match(/^([^.]{3,60})\.\s*(.*)$/);
+      if (m) { hola = m[1]; resto = m[2]; } else { resto = d.brief; }
+    } else {
+      resto = 'Un momento — estoy revisando tu correo y tu pipeline…';
+    }
     sal.innerHTML =
-      '<div class="abig-burbuja">' + saludo + '</div>' +
-      '<div class="abig-sugs">' +
+      '<div class="abig-hola">' + _esc(hola) + '</div>' +
+      (resto ? '<div class="abig-brief2">' + _abigBriefHtml(resto) + '</div>' : '');
+    var sugs = el('asisBigSugs');
+    if (sugs) {
+      var pendTxt = (d && d.total) ? ('Ver mis ' + d.total + ' pendientes') : 'Ver mis pendientes';
+      sugs.innerHTML =
         '<button type="button" class="abig-sug" onclick="pendCerrar();pendMiniAbrir()">' + _esc(pendTxt) + '</button>' +
         '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Cómo va mi pipeline este mes?\')">¿Cómo va mi pipeline?</button>' +
         '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué correos importantes no he respondido?\')">¿Qué correos no he respondido?</button>' +
-        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué debería hacer ahora mismo?\')">¿Qué hago ahora?</button>' +
-      '</div>';
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué debería hacer ahora mismo?\')">¿Qué hago ahora?</button>';
+    }
+    _asisBigModoUpd();
   }
 
   // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
@@ -2164,6 +2203,7 @@
     b.textContent = text;
     row.appendChild(b);
     flow.appendChild(row);
+    if (typeof _asisBigModoUpd === 'function') _asisBigModoUpd();   // portada → conversación
     _scrollBody();
   }
   function _pushAiMsg(markdown) {
