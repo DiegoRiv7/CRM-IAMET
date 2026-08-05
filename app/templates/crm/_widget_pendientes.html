@@ -763,7 +763,7 @@
       _renderCorreos();
     } else if (section === 'reportes') {
       if (subtabs) subtabs.style.display = 'none';
-      _renderDesempeno();
+      _renderReportesChat();
     } else {
       if (subtabs) subtabs.style.display = 'none';
       var res = el('pendResArea');
@@ -1185,6 +1185,90 @@
     return 'vendedor=' + encodeURIComponent(_sel) + '&gran=' + encodeURIComponent(_desGran) +
       (_desRef ? '&ref=' + encodeURIComponent(_desRef) : '');
   }
+  // ── Sección Reportes: CHAT de reportes con el asistente ──────────────────
+  // Los chips predeterminados son CÓDIGO PURO (descargan el archivo directo,
+  // cero tokens); la barra libre va al motor de IA para reportes a la medida.
+  var _repHist = [];
+  function _repChip(label, onclick) {
+    return '<button type="button" class="abig-sug" onclick="' + onclick + '">' + label + '</button>';
+  }
+  function _renderReportesChat() {
+    var res = el('pendResArea'); if (!res) return;
+    res.className = '';
+    var chips =
+      _repChip('📊 Mi desempeño del mes (Excel)', "pendRepDescarga('xlsx')") +
+      _repChip('📄 Mi desempeño del mes (PDF)', "pendRepDescarga('pdf')") +
+      _repChip('🗓️ Resumen de mi día', "pendRepPrompt('Hazme un resumen de lo que he atendido hoy')") +
+      _repChip('📈 ¿Cómo va mi pipeline?', "pendRepPrompt('¿Cómo va mi pipeline este mes? Dame montos por etapa')") +
+      _repChip('🔢 Ver tablero de números', 'pendRepTablero()');
+    res.innerHTML =
+      '<div style="max-width:760px;margin:0 auto;padding:26px 20px 10px;">' +
+        '<div class="abig-hola">¿Qué reporte necesitas?</div>' +
+        '<div class="abig-brief2">Pídemelo con tus palabras — de tu desempeño, tu pipeline, un cliente, tu día — o usa uno de los rápidos.</div>' +
+        '<div class="abig-sugs" style="justify-content:center;">' + chips + '</div>' +
+        '<div id="repFlow" style="margin-top:14px;"></div>' +
+        '<div style="display:flex;gap:9px;margin-top:14px;">' +
+          '<input type="text" id="repIn" class="pend-foc-in" style="flex:1;" placeholder="Describe el reporte que quieres…" onkeydown="if(event.key===\'Enter\')pendRepSend()">' +
+          '<button type="button" class="pend-foc-btn pri" onclick="pendRepSend()">Pedir</button>' +
+        '</div>' +
+      '</div>';
+    _repDraw();
+  }
+  function _repDraw() {
+    var flow = el('repFlow'); if (!flow) return;
+    flow.innerHTML = _repHist.map(function (m) {
+      return '<div class="mc-msg mc-' + m.role + '"><div class="mc-burbuja">' + m.html + '</div></div>';
+    }).join('');
+    var body = el('pendBody'); if (body) body.scrollTop = body.scrollHeight;
+  }
+  function _repPush(role, html) { _repHist.push({ role: role, html: html }); _repDraw(); return _repHist.length - 1; }
+  function _repSet(i, html) { if (_repHist[i]) { _repHist[i].html = html; _repDraw(); } }
+  // Chip directo: descarga el archivo por código, sin IA.
+  window.pendRepDescarga = function (fmt) {
+    _repPush('bot', '✓ Listo — tu desempeño de este mes en ' + (fmt === 'pdf' ? 'PDF' : 'Excel') + ' se está descargando.');
+    var url = '/app/api/asistente/desempeno/export/?formato=' + fmt + '&vendedor=' + encodeURIComponent(_sel) + '&gran=mes';
+    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  window.pendRepTablero = function () { _renderDesempeno(); };
+  window.pendRepPrompt = function (t) {
+    var i = el('repIn'); if (i) i.value = t;
+    pendRepSend();
+  };
+  window.pendRepSend = function () {
+    var i = el('repIn'); if (!i) return;
+    var q = (i.value || '').trim(); if (!q) return;
+    i.value = '';
+    _repPush('user', _esc(q));
+    // Intents gratis también aquí (atendido del día por código puro).
+    if (/atendid|resumen\s+de\s+(lo\s+que|mi\s+d[ií]a)|qu[eé]\s+he\s+hecho/i.test(q)) {
+      var idx0 = _repPush('bot', '<span class="pend-typing2">Armando tu resumen…</span>');
+      fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d2) {
+          var ats = (d2 && d2.items) || [];
+          _repSet(idx0, ats.length
+            ? ('<div class="mc-nota">Tu día hasta ahora (' + ats.length + '):</div>' + ats.map(_atCard).join(''))
+            : 'Todavía no registro nada atendido hoy. La jornada corre desde las 8am.');
+        })
+        .catch(function () { _repSet(idx0, 'No pude leer tu bitácora ahora mismo.'); });
+      return;
+    }
+    var idx = _repPush('bot', '<span class="pend-typing2">Preparando…</span>');
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var md = (d && (d.respuesta || d.error)) || 'No pude preparar eso ahora mismo.';
+        _repSet(idx, (typeof window.asistenteRenderMarkdown === 'function')
+          ? window.asistenteRenderMarkdown(md) : _esc(md));
+      })
+      .catch(function () { _repSet(idx, 'Error de conexión con el asistente.'); });
+  };
+
   function _renderDesempeno() {
     var res = el('pendResArea'); if (!res) return;
     if (_desData) { _drawDesempeno(res); return; }
