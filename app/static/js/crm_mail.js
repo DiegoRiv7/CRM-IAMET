@@ -995,6 +995,11 @@
                         etapaEl.style.color = d.oportunidad.etapa ? (d.oportunidad.etapa_color || '#0052D4') : '#9CA3AF';
                     }
                     _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Responsable: ' + d.oportunidad.responsable : '');
+                    var cieEl = document.getElementById('mailCtxOppCierre');
+                    if (cieEl) {
+                        if (d.oportunidad.cierre) { cieEl.textContent = 'Cierre estimado: ' + d.oportunidad.cierre; cieEl.style.display = 'block'; }
+                        else cieEl.style.display = 'none';
+                    }
                     // Tareas pendientes (con círculo tipo checkbox)
                     var tw = document.getElementById('mailCtxTareasWrap');
                     var tl = document.getElementById('mailCtxTareas');
@@ -1186,6 +1191,21 @@
                     document.getElementById('mailDetailSubject').textContent = d.asunto || '(Sin asunto)';
                     document.getElementById('mailDetailFrom').textContent = d.remitente_nombre ? d.remitente_nombre + ' <' + d.remitente_email + '>' : d.remitente_email;
                     document.getElementById('mailDetailTo').textContent = (d.destinatarios || []).map(function (x) { return x.nombre ? x.nombre + ' <' + x.email + '>' : x.email; }).join(', ') || '—';
+                    // Encabezado estilo mockup: avatar + nombre + "· para mí" (o "· para N")
+                    var nomR = d.remitente_nombre || d.remitente_email || '—';
+                    var avaEl = document.getElementById('mailDetailAvatar');
+                    if (avaEl) avaEl.textContent = nomR.split(/\s+/).slice(0, 2).map(function (p) { return (p[0] || '').toUpperCase(); }).join('');
+                    var fnEl = document.getElementById('mailDetailFromNom'); if (fnEl) fnEl.textContent = nomR;
+                    var fmEl = document.getElementById('mailDetailFromMail'); if (fmEl) fmEl.textContent = d.remitente_email || '';
+                    var pmEl = document.getElementById('mailDetailParaMi');
+                    if (pmEl) {
+                        var dest = d.destinatarios || [];
+                        var mios = (_mailConexiones || []).map(function (cx) { return (cx.correo_electronico || '').toLowerCase(); });
+                        var paraMi = dest.some(function (x) { return mios.indexOf(String(x.email || '').toLowerCase()) !== -1; });
+                        pmEl.textContent = dest.length === 0 ? ''
+                            : (paraMi && dest.length === 1 ? ' · para mí'
+                                : (paraMi ? ' · para mí y ' + (dest.length - 1) + ' más' : ' · para ' + dest.length + ' destinatarios'));
+                    }
                     document.getElementById('mailDetailDate').textContent = d.fecha_envio ? new Date(d.fecha_envio).toLocaleString('es-MX') : '';
 
                     // Star state

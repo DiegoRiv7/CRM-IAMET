@@ -360,8 +360,13 @@
                         .mda-ghost:hover{text-decoration:underline;}
                     </style>
                     <div id="mailDetailActs" style="display:flex;align-items:center;gap:7px;padding:10px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;flex-wrap:wrap;">
-                        <button type="button" class="mda-btn ico" onclick="mailResponder(false)" title="Responder">
+                        <button type="button" class="mda-btn" onclick="mailResponder(false)">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                            Responder
+                        </button>
+                        <button type="button" class="mda-btn" onclick="mailResponder(true)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="11 17 6 12 11 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H6"/></svg>
+                            Responder a todos
                         </button>
                         <button type="button" class="mda-btn" onclick="mailAbrirReenvio()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
@@ -431,11 +436,21 @@
                                 </svg>
                             </button>
                         </div>
-                        <div style="display:flex;flex-direction:column;gap:3px;font-size:0.77rem;color:#9CA3AF;">
-                            <span style="color:#374151;font-weight:500;">De: <span id="mailDetailFrom"></span></span>
-                            <span>Para: <span id="mailDetailTo"></span></span>
-                            <span id="mailDetailDate" style="font-size:0.72rem;margin-top:1px;"></span>
+                        <!-- Remitente estilo mockup: avatar de iniciales + nombre + "para mí/N"; -->
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:2px;">
+                            <div id="mailDetailAvatar" style="width:38px;height:38px;border-radius:50%;background:#EAF2FF;color:#0060DF;display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:800;flex-shrink:0;letter-spacing:0.02em;"></div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:baseline;gap:8px;min-width:0;">
+                                    <span id="mailDetailFromNom" style="font-size:0.86rem;font-weight:700;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+                                    <span id="mailDetailDate" style="font-size:0.72rem;color:#9CA3AF;flex-shrink:0;margin-left:auto;"></span>
+                                </div>
+                                <div style="font-size:0.75rem;color:#9CA3AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                    <span id="mailDetailFromMail"></span><span id="mailDetailParaMi"></span>
+                                </div>
+                            </div>
                         </div>
+                        <!-- Los ids viejos siguen existiendo (ocultos) para no romper el JS actual -->
+                        <div style="display:none;"><span id="mailDetailFrom"></span><span id="mailDetailTo"></span></div>
                     </div>
                     {% comment %}Barra de acciones con etiquetas removida — duplicaba los iconos compactos del header del detalle.{% endcomment %}
                     <!-- Tira de conversación (hilos): la llena crm_mail.js -->
@@ -678,6 +693,7 @@
                             <span id="mailCtxOppEtapa" style="font-size:0.78rem;font-weight:800;color:#0052D4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
                             <span id="mailCtxOppEtapaPos" style="font-size:0.66rem;color:#9CA3AF;flex-shrink:0;"></span>
                         </div>
+                        <div id="mailCtxOppCierre" style="display:none;font-size:0.72rem;color:#374151;margin-top:6px;font-weight:600;"></div>
                         <div id="mailCtxOppResp" style="font-size:0.68rem;color:#9CA3AF;margin-top:3px;"></div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">

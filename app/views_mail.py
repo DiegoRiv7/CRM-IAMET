@@ -1271,6 +1271,7 @@ def api_mail_contexto(request, correo_id):
             'etapa_idx': etapa_idx,
             'etapa_total': len(etapas),
             'responsable': responsable,
+            'cierre': ('%s/%s' % (opp.mes_cierre, opp.anio_cierre)) if (opp.mes_cierre and opp.anio_cierre) else '',
         },
         'cliente': {
             'empresa': cliente.nombre_empresa if cliente else '',
