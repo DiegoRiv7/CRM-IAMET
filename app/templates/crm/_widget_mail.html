@@ -9,15 +9,17 @@
             height: 100vh !important;
             min-height: 100vh !important;
             max-height: 100vh !important;
-            padding: 20px !important;
+            /* SECCIÓN de verdad: a sangre completa, sin margen que la haga
+               parecer widget flotante. */
+            padding: 0 !important;
             box-sizing: border-box !important;
             display: flex !important;
             overflow: hidden !important;
-            /* CLAVE: el overlay base centra (align-items:center) → el card
-               tomaba la altura de su CONTENIDO (crecía/encogía según correos).
-               stretch lo obliga a llenar el alto del viewport siempre. */
             align-items: stretch !important;
             justify-content: stretch !important;
+            /* El asistente (toast/ventanita, z~900+) SIEMPRE flota encima. */
+            position: static !important;
+            z-index: auto !important;
         }
         #widgetMail.is-page-mode > .mail-card-shell {
             flex: 1 1 auto !important;
@@ -26,6 +28,9 @@
             height: auto !important;
             max-height: none !important;
             min-height: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border-left: 1px solid #EBEDF0;
         }
         /* Sin × de cerrar: es una sección, no un modal */
         #widgetMail.is-page-mode .mail-close-btn { display: none !important; }
