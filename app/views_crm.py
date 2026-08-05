@@ -9319,6 +9319,108 @@ def api_asistente_desempeno(request):
 
 
 @login_required
+@login_required
+def api_asistente_reporte_oportunidades(request):
+    """GET .../reporte/oportunidades/?tipo=<vencidas|importantes|abiertas>&cliente=<texto>
+    — Excel de las oportunidades del usuario, filtrado por código (sin IA).
+    Es la salida de los reportes del chat: los chips y el parser de texto libre
+    arman los parámetros; aquí solo se consulta y se genera el archivo."""
+    from datetime import date
+    from django.http import HttpResponse
+    from django.utils import timezone as _tz
+    from .models import TodoItem
+
+    tipo = (request.GET.get('tipo') or 'abiertas').strip().lower()
+    cliente_q = (request.GET.get('cliente') or '').strip()
+
+    qs = TodoItem.objects.filter(usuario=request.user).select_related('cliente')
+    if cliente_q:
+        qs = qs.filter(cliente__nombre_empresa__icontains=cliente_q)
+    opps = list(qs)
+
+    hoy = date.today()
+
+    def _abierta(o):
+        return _cli_abierta(o.etapa_corta, o.estado_crm)
+
+    def _vencida(o):
+        if not _abierta(o):
+            return False
+        try:
+            a, m = int(o.anio_cierre or 0), int(o.mes_cierre or 0)
+        except (TypeError, ValueError):
+            return False
+        return bool(a and m) and (a, m) < (hoy.year, hoy.month)
+
+    if tipo == 'vencidas':
+        opps = [o for o in opps if _vencida(o)]
+        titulo = 'Oportunidades vencidas'
+    elif tipo == 'importantes':
+        opps = [o for o in opps if _abierta(o)]
+        titulo = 'Oportunidades más importantes'
+    else:
+        tipo = 'abiertas'
+        opps = [o for o in opps if _abierta(o)]
+        titulo = 'Pipeline abierto'
+    opps.sort(key=lambda o: -(float(o.monto or 0)))
+    if tipo == 'importantes':
+        opps = opps[:25]
+    if cliente_q:
+        titulo += ' · %s' % cliente_q
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Oportunidades'
+    ws['A1'] = titulo
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A2'] = '%s · generado el %s' % (
+        request.user.get_full_name() or request.user.username,
+        _tz.localtime().strftime('%d/%m/%Y %H:%M'))
+    ws['A2'].font = Font(color='6B7280', size=10)
+    headers = ['Oportunidad', 'Cliente', 'Etapa', 'Monto', 'Prob. %', 'Cierre', 'Tipo', 'Última actualización']
+    ws.append([])
+    ws.append(headers)
+    hrow = ws.max_row
+    for c in range(1, len(headers) + 1):
+        cell = ws.cell(row=hrow, column=c)
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='0F172A')
+        cell.alignment = Alignment(horizontal='left')
+    for o in opps:
+        ws.append([
+            o.oportunidad or '',
+            (o.cliente.nombre_empresa if o.cliente_id else ''),
+            o.etapa_corta or '',
+            float(o.monto or 0),
+            o.probabilidad_cierre or 0,
+            '%s/%s' % (o.mes_cierre or '—', o.anio_cierre or '—'),
+            (o.tipo_negociacion or '').capitalize(),
+            (_tz.localtime(o.fecha_actualizacion).strftime('%d/%m/%Y') if o.fecha_actualizacion else ''),
+        ])
+    anchos = [42, 28, 18, 14, 9, 10, 12, 18]
+    for i, w in enumerate(anchos, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    for r in range(hrow + 1, ws.max_row + 1):
+        ws.cell(row=r, column=4).number_format = '$#,##0.00'
+    if not opps:
+        ws.append(['Sin oportunidades con ese filtro.'])
+
+    import io as _io
+    buf = _io.BytesIO()
+    wb.save(buf)
+    nombre = 'Reporte_%s%s_%s.xlsx' % (
+        tipo, ('_' + '_'.join(cliente_q.split())[:30]) if cliente_q else '',
+        hoy.strftime('%d-%m-%Y'))
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="%s"' % nombre
+    return resp
+
+
 def api_asistente_desempeno_export(request):
     """GET .../desempeno/export/?formato=<xlsx|pdf>&... — descarga el desempeño como
     tabla Excel o PDF, respetando vendedor/período."""

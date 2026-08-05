@@ -1196,23 +1196,48 @@
     var res = el('pendResArea'); if (!res) return;
     res.className = '';
     var chips =
-      _repChip('📊 Mi desempeño del mes (Excel)', "pendRepDescarga('xlsx')") +
-      _repChip('📄 Mi desempeño del mes (PDF)', "pendRepDescarga('pdf')") +
+      _repChip('📉 Oportunidades vencidas (Excel)', "pendRepOpps('vencidas','')") +
+      _repChip('⭐ Mis más importantes (Excel)', "pendRepOpps('importantes','')") +
+      _repChip('📊 Pipeline abierto (Excel)', "pendRepOpps('abiertas','')") +
+      _repChip('🏅 Mi desempeño del mes (Excel)', "pendRepDescarga('xlsx')") +
       _repChip('🗓️ Resumen de mi día', "pendRepPrompt('Hazme un resumen de lo que he atendido hoy')") +
-      _repChip('📈 ¿Cómo va mi pipeline?', "pendRepPrompt('¿Cómo va mi pipeline este mes? Dame montos por etapa')") +
-      _repChip('🔢 Ver tablero de números', 'pendRepTablero()');
+      _repChip('🔢 Tablero de números', 'pendRepTablero()');
     res.innerHTML =
-      '<div style="max-width:760px;margin:0 auto;padding:26px 20px 10px;">' +
+      '<div style="max-width:760px;margin:0 auto;padding:24px 20px 0;display:flex;flex-direction:column;min-height:100%;">' +
         '<div class="abig-hola">¿Qué reporte necesitas?</div>' +
-        '<div class="abig-brief2">Pídemelo con tus palabras — de tu desempeño, tu pipeline, un cliente, tu día — o usa uno de los rápidos.</div>' +
+        '<div class="abig-brief2">Pídemelo con tus palabras — «oportunidades vencidas del cliente Eaton», «mis 10 más grandes» — o usa uno de los rápidos.</div>' +
         '<div class="abig-sugs" style="justify-content:center;">' + chips + '</div>' +
-        '<div id="repFlow" style="margin-top:14px;"></div>' +
-        '<div style="display:flex;gap:9px;margin-top:14px;">' +
-          '<input type="text" id="repIn" class="pend-foc-in" style="flex:1;" placeholder="Describe el reporte que quieres…" onkeydown="if(event.key===\'Enter\')pendRepSend()">' +
-          '<button type="button" class="pend-foc-btn pri" onclick="pendRepSend()">Pedir</button>' +
+        '<div id="repFlow" style="margin-top:16px;flex:1;"></div>' +
+        '<div class="pend-mini-foot" style="position:sticky;bottom:0;background:#fafbfc;padding:12px 0;border-top:none;display:flex;gap:9px;">' +
+          '<input type="text" id="repIn" class="pend-mini-in" style="flex:1;" placeholder="Describe el reporte que quieres…" onkeydown="if(event.key===\'Enter\')pendRepSend()">' +
+          '<button type="button" class="pend-mini-go" onclick="pendRepSend()" aria-label="Pedir">&#8593;</button>' +
         '</div>' +
       '</div>';
     _repDraw();
+  }
+  // Reporte de oportunidades: descarga DIRECTA por código (cero IA, cero tokens).
+  window.pendRepOpps = function (tipo, cliente) {
+    var nom = tipo === 'vencidas' ? 'oportunidades vencidas'
+      : (tipo === 'importantes' ? 'tus oportunidades más importantes' : 'tu pipeline abierto');
+    _repPush('bot', '✓ Generando el Excel de <b>' + _esc(nom) + (cliente ? ' · ' + _esc(cliente) : '') + '</b> — se está descargando.');
+    var url = '/app/api/asistente/reporte/oportunidades/?tipo=' + encodeURIComponent(tipo) +
+      (cliente ? '&cliente=' + encodeURIComponent(cliente) : '');
+    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  // Parser por CÓDIGO del texto libre: si la petición es un reporte de
+  // oportunidades reconocible (tipo + cliente opcional), no gasta IA.
+  function _repParseOpps(q) {
+    var s = ' ' + q.toLowerCase() + ' ';
+    if (!/oportunidad|pipeline|vencid|important|grandes/.test(s)) return null;
+    var tipo = /vencid/.test(s) ? 'vencidas'
+      : (/important|grandes|top|mejores/.test(s) ? 'importantes'
+        : (/abiert|pipeline|todas/.test(s) ? 'abiertas' : null));
+    if (!tipo) return null;
+    var cliente = '';
+    var m = s.match(/cliente\s+([a-z0-9áéíóúñü&\.\- ]{2,45}?)(?=\s*(?:en\s+excel|en\s+pdf|por\s+favor|$|\.|,))/);
+    if (m) cliente = m[1].trim();
+    return { tipo: tipo, cliente: cliente };
   }
   function _repDraw() {
     var flow = el('repFlow'); if (!flow) return;
@@ -1240,6 +1265,9 @@
     var q = (i.value || '').trim(); if (!q) return;
     i.value = '';
     _repPush('user', _esc(q));
+    // 1º: ¿es un reporte de oportunidades que el CÓDIGO entiende? → Excel directo.
+    var po = _repParseOpps(q);
+    if (po) { pendRepOpps(po.tipo, po.cliente); return; }
     // Intents gratis también aquí (atendido del día por código puro).
     if (/atendid|resumen\s+de\s+(lo\s+que|mi\s+d[ií]a)|qu[eé]\s+he\s+hecho/i.test(q)) {
       var idx0 = _repPush('bot', '<span class="pend-typing2">Armando tu resumen…</span>');
