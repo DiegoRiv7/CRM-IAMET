@@ -45,6 +45,11 @@
     <input type="text" class="pend-mini-in" placeholder="Pídeme algo…" id="pendMiniIn" onkeydown="if(event.key==='Enter')pendMiniAsk()">
     <button type="button" class="pend-mini-go" onclick="pendMiniAsk()" aria-label="Enviar">&#8593;</button>
   </div>
+  <!-- Asideros de redimensión: 4 orillas + 4 esquinas -->
+  <div class="pend-mini-rs" data-rs="n"></div><div class="pend-mini-rs" data-rs="s"></div>
+  <div class="pend-mini-rs" data-rs="e"></div><div class="pend-mini-rs" data-rs="w"></div>
+  <div class="pend-mini-rs" data-rs="ne"></div><div class="pend-mini-rs" data-rs="nw"></div>
+  <div class="pend-mini-rs" data-rs="se"></div><div class="pend-mini-rs" data-rs="sw"></div>
 </div>
 <div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi día">
   <div class="ww-card pend-card">
@@ -307,7 +312,17 @@
      Sin minimizar (eso es el toast) ni maximizar (eso es "Mi día"). ── */
   .pend-mini{position:fixed;right:22px;bottom:22px;width:520px;max-width:calc(100vw - 44px);height:min(78vh,860px);max-height:92vh;background:#fff;
     border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:901;display:flex;flex-direction:column;overflow:hidden;
-    resize:both;min-width:400px;min-height:340px;}
+    min-width:400px;min-height:340px;}
+  /* Asideros invisibles en orillas y esquinas para redimensionar desde cualquiera */
+  .pend-mini-rs{position:absolute;z-index:6;}
+  .pend-mini-rs[data-rs="n"]{top:0;left:14px;right:14px;height:7px;cursor:n-resize;}
+  .pend-mini-rs[data-rs="s"]{bottom:0;left:14px;right:14px;height:7px;cursor:s-resize;}
+  .pend-mini-rs[data-rs="e"]{right:0;top:14px;bottom:14px;width:7px;cursor:e-resize;}
+  .pend-mini-rs[data-rs="w"]{left:0;top:14px;bottom:14px;width:7px;cursor:w-resize;}
+  .pend-mini-rs[data-rs="ne"]{top:0;right:0;width:16px;height:16px;cursor:ne-resize;}
+  .pend-mini-rs[data-rs="nw"]{top:0;left:0;width:16px;height:16px;cursor:nw-resize;}
+  .pend-mini-rs[data-rs="se"]{bottom:0;right:0;width:16px;height:16px;cursor:se-resize;}
+  .pend-mini-rs[data-rs="sw"]{bottom:0;left:0;width:16px;height:16px;cursor:sw-resize;}
   .pend-mini-head{padding:15px 17px 12px;border-bottom:1px solid #f0f1f3;position:relative;cursor:move;user-select:none;}
   .pend-mini-h1{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:800;color:#16181d;}
   .pend-mini-badge{background:#eef1f6;color:#6b7280;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;}
@@ -1657,6 +1672,10 @@
     _toastExpanded = false;
     var lc = el('pendLauncher'); if (lc) { lc.style.display = 'none'; lc.classList.remove('expanded'); }
     var mini = el('pendMini'); if (!mini) return;
+    // Cada apertura arranca fresca: tamaño por defecto y en su esquina de siempre
+    // (donde nacen las tarjetas), aunque la vez pasada la hayas movido o agrandado.
+    mini.style.left = ''; mini.style.top = ''; mini.style.right = ''; mini.style.bottom = '';
+    mini.style.width = ''; mini.style.height = ''; mini.style.maxWidth = ''; mini.style.maxHeight = '';
     mini.style.display = 'flex';
     if (_miniData) { _miniDraw(); }
     else {
@@ -1694,6 +1713,39 @@
       mini.style.top = Math.min(window.innerHeight - 60, Math.max(0, down.t + e.clientY - down.y)) + 'px';
     });
     document.addEventListener('mouseup', function () { down = null; });
+  })();
+  // Redimensionar desde cualquier orilla o esquina (asideros .pend-mini-rs).
+  (function _miniResize() {
+    var rs = null, MINW = 400, MINH = 340;
+    document.addEventListener('mousedown', function (e) {
+      var h = e.target.closest ? e.target.closest('.pend-mini-rs') : null;
+      if (!h) return;
+      var mini = el('pendMini'); if (!mini || mini.style.display === 'none') return;
+      var r = mini.getBoundingClientRect();
+      mini.style.left = r.left + 'px'; mini.style.top = r.top + 'px';
+      mini.style.right = 'auto'; mini.style.bottom = 'auto';
+      mini.style.width = r.width + 'px'; mini.style.height = r.height + 'px';
+      mini.style.maxHeight = 'none'; mini.style.maxWidth = 'none';
+      rs = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, w: r.width, h: r.height,
+             d: h.getAttribute('data-rs') || '' };
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!rs) return;
+      var mini = el('pendMini'); if (!mini) return;
+      var dx = e.clientX - rs.x, dy = e.clientY - rs.y;
+      if (rs.d.indexOf('e') !== -1) mini.style.width = Math.max(MINW, rs.w + dx) + 'px';
+      if (rs.d.indexOf('s') !== -1) mini.style.height = Math.max(MINH, rs.h + dy) + 'px';
+      if (rs.d.indexOf('w') !== -1) {
+        var nw = Math.max(MINW, rs.w - dx);
+        mini.style.left = (rs.l + (rs.w - nw)) + 'px'; mini.style.width = nw + 'px';
+      }
+      if (rs.d.indexOf('n') !== -1) {
+        var nh = Math.max(MINH, rs.h - dy);
+        mini.style.top = (rs.t + (rs.h - nh)) + 'px'; mini.style.height = nh + 'px';
+      }
+    });
+    document.addEventListener('mouseup', function () { rs = null; });
   })();
   function _miniLoad() {
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
