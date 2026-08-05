@@ -303,10 +303,12 @@
   .pend-toast-focus{max-height:70vh;overflow:auto;cursor:default;}
   .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
   @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
-  /* ── Mini panel del asistente (reducido) ── */
-  .pend-mini{position:fixed;right:22px;bottom:22px;width:440px;max-width:calc(100vw - 44px);max-height:82vh;background:#fff;
-    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:901;display:flex;flex-direction:column;overflow:hidden;}
-  .pend-mini-head{padding:15px 17px 12px;border-bottom:1px solid #f0f1f3;position:relative;}
+  /* ── Mini panel del asistente: ventanita arrastrable y redimensionable.
+     Sin minimizar (eso es el toast) ni maximizar (eso es "Mi día"). ── */
+  .pend-mini{position:fixed;right:22px;bottom:22px;width:520px;max-width:calc(100vw - 44px);height:min(78vh,860px);max-height:92vh;background:#fff;
+    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:901;display:flex;flex-direction:column;overflow:hidden;
+    resize:both;min-width:400px;min-height:340px;}
+  .pend-mini-head{padding:15px 17px 12px;border-bottom:1px solid #f0f1f3;position:relative;cursor:move;user-select:none;}
   .pend-mini-h1{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:800;color:#16181d;}
   .pend-mini-badge{background:#eef1f6;color:#6b7280;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;}
   .pend-mini-tools{position:absolute;top:12px;right:13px;display:flex;align-items:center;gap:2px;}
@@ -1633,7 +1635,13 @@
   function _atFetch() {
     fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.success) { _atendidos = d; if (_miniTab === 'atendido') _miniDraw(); } })
+      .then(function (d) {
+        if (!(d && d.success)) return;
+        _atendidos = d;
+        if (_miniTab === 'atendido') _miniDraw();
+        var ov = el('widgetPendientes');
+        if (ov && ov.classList.contains('active')) _asisDraw();   // refresca la columna de "Mi día"
+      })
       .catch(function () {});
   }
   var _AT_COLORS = { respondido: '#34C759', agendado: '#007AFF', oportunidad: '#AF52DE', actualizada: '#FF9500', revisado: '#8E8E93' };
@@ -1665,6 +1673,28 @@
     pendAbrir();
   };
   window.pendMiniTab = function (t) { _miniTab = t; if (t === 'atendido') _atFetch(); _miniDraw(); };
+  // Arrastrar la ventanita por su encabezado (los botones no arrastran). Al primer
+  // arrastre se suelta del ancla de la esquina y queda donde la dejes.
+  (function _miniDrag() {
+    var down = null;
+    document.addEventListener('mousedown', function (e) {
+      var head = e.target.closest ? e.target.closest('.pend-mini-head') : null;
+      if (!head || (e.target.closest && e.target.closest('.pend-mini-tools'))) return;
+      var mini = el('pendMini'); if (!mini || mini.style.display === 'none') return;
+      var r = mini.getBoundingClientRect();
+      mini.style.left = r.left + 'px'; mini.style.top = r.top + 'px';
+      mini.style.right = 'auto'; mini.style.bottom = 'auto';
+      down = { x: e.clientX, y: e.clientY, l: r.left, t: r.top };
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!down) return;
+      var mini = el('pendMini'); if (!mini) return;
+      mini.style.left = Math.min(window.innerWidth - 80, Math.max(0, down.l + e.clientX - down.x)) + 'px';
+      mini.style.top = Math.min(window.innerHeight - 60, Math.max(0, down.t + e.clientY - down.y)) + 'px';
+    });
+    document.addEventListener('mouseup', function () { down = null; });
+  })();
   function _miniLoad() {
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
@@ -2161,13 +2191,37 @@
   }
 
   // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
+  var _asideTab = 'todo';
+  window.pendAsisTab = function (t) {
+    _asideTab = t;
+    if (t === 'atendido') _atFetch();
+    _asisDraw();
+  };
+  function _asideTabBtn(k, lbl, n) {
+    return '<button type="button" class="pend-mini-tab' + (_asideTab === k ? ' on' : '') + '" onclick="pendAsisTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
+  }
   function _asisDraw() {
     var box = el('pendAsisFeed'); if (!box || !_miniData) return;
-    var d = _miniData, items = d.items || [];
-    var cards = items.length
-      ? items.map(_miniCard).join('')
-      : '<div class="pend-mini-empty">Nada urgente por ahora. Te aviso si llega algo.</div>';
-    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + cards;
+    var d = _miniData;
+    var tabs = '<div class="pend-mini-tabs">' +
+      _asideTabBtn('todo', 'Todo', d.total) +
+      _asideTabBtn('correo', 'Correo', d.correos) +
+      _asideTabBtn('pipeline', 'Pipeline', d.pipeline) +
+      _asideTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) + '</div>';
+    var cards;
+    if (_asideTab === 'atendido') {
+      var ats = (_atendidos && _atendidos.items) || [];
+      cards = ats.length
+        ? ats.map(_atCard).join('')
+        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
+    } else {
+      var items = (d.items || []).filter(function (it) { return _asideTab === 'todo' || it.grupo === _asideTab; });
+      cards = items.length
+        ? items.map(_miniCard).join('')
+        : '<div class="pend-mini-empty">Nada urgente por ahora. Te aviso si llega algo.</div>';
+    }
+    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + tabs + cards;
+    if (_atendidos === null) _atFetch();
   }
   function _feedRedraw() {
     if (_toastExpanded) { _toastCollapse(); return; }
