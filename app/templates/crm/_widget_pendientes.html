@@ -660,6 +660,9 @@
     var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
     pendCargar();
     pendNav('dia');
+    // La columna derecha "Asistente" del tablero: mismo feed que el panel
+    // flotante, embebido junto a las oportunidades del día.
+    if (window.pendAsisFeedLoad) pendAsisFeedLoad();
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
     if (!_ensureWindow(ov)) {
