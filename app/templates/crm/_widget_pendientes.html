@@ -331,9 +331,10 @@
   .pend-mini-x{font-size:1.15rem;} .pend-mini-expand{font-size:.9rem;}
   .pend-mini-expand:hover,.pend-mini-x:hover{background:#f2f3f6;color:#6b7280;}
   .pend-mini-sub{font-size:.76rem;color:#9a9ca3;margin-top:3px;}
-  /* Padding lateral proporcional: al agrandar la ventana, el texto conserva un
-     ancho de lectura cómodo en vez de estirarse de pared a pared. */
-  .pend-mini-body{flex:1;overflow-y:auto;padding:15px clamp(17px, 8%, 120px);}
+  /* Padding lateral que solo crece al AGRANDAR la ventana: en el tamaño
+     predeterminado (520px) queda en los 17px de siempre; a partir de ahí el
+     texto conserva un ancho de lectura cómodo en vez de ir de pared a pared. */
+  .pend-mini-body{flex:1;overflow-y:auto;padding:15px clamp(17px, calc(8% - 24px), 120px);}
   .pend-mini-brief{font-size:.9rem;line-height:1.55;color:#374151;}
   .pend-mini-brief b{color:#16181d;font-weight:700;}
   .pend-mini-tabs{display:flex;gap:7px;margin:16px 0 2px;flex-wrap:wrap;}
