@@ -9252,7 +9252,7 @@
 
             // Input del comentario y archivos
             var commInp = document.getElementById('crm-task-comment-input');
-            if (commInp) commInp.value = '';
+            if (commInp) { commInp.value = ''; commInp.style.height = ''; }
             setHtml('crm-task-files-preview', '');
 
             _crmTaskLastData = null;
@@ -10520,13 +10520,20 @@
         var commentInput = document.getElementById('crm-task-comment-input');
         var commentForm = document.getElementById('crm-task-comment-form');
         var _dragCounter = 0;
+        // El borde del compositor vive en la caja (.tw4-tray-box), no en el
+        // form: el resalte al arrastrar se pinta ahí si existe.
+        function _dropTarget() {
+            return (commentForm && commentForm.querySelector('.tw4-tray-box')) || commentForm;
+        }
         function _showDropHint() {
             if (dropZone && !_crmCommentFiles.length) dropZone.style.display = 'block';
-            if (commentForm) { commentForm.style.borderColor = '#4f6ef7'; commentForm.style.background = '#F8FAFF'; }
+            var t = _dropTarget();
+            if (t) { t.classList.add('is-drop'); t.style.borderColor = '#4f6ef7'; t.style.background = '#F8FAFF'; }
         }
         function _hideDropHint() {
             if (dropZone) dropZone.style.display = 'none';
-            if (commentForm) { commentForm.style.borderColor = ''; commentForm.style.background = ''; }
+            var t = _dropTarget();
+            if (t) { t.classList.remove('is-drop'); t.style.borderColor = ''; t.style.background = ''; }
         }
         if (commentForm) {
             commentForm.addEventListener('dragenter', function (e) { e.preventDefault(); _dragCounter++; _showDropHint(); });
@@ -10560,6 +10567,13 @@
                     if (e.key === 'Enter' || e.key === 'Tab') { var sel = focused || items[0]; if (sel) { e.preventDefault(); sel.click(); } return; }
                     if (e.key === 'Escape') { _crmMentionClose(); return; }
                 }
+            });
+
+            // La caja crece con el texto: sin esto un comentario largo scrollea
+            // dentro de una franja de dos renglones.
+            commentInput.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 180) + 'px';
             });
 
             commentInput.addEventListener('input', function () {
@@ -10661,7 +10675,7 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.success) {
-                            if (input) input.value = '';
+                            if (input) { input.value = ''; input.style.height = ''; }
                             _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
                             _crmFilesRender();
                             crmTaskCargarComentarios(_crmCurrentTaskId);
