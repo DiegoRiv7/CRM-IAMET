@@ -910,10 +910,21 @@
                     if (!d.ok) { _mailCtxOcultar(); return; }
                     var vin = document.getElementById('mailCtxVinculado');
                     var suelto = document.getElementById('mailCtxSuelto');
-                    p.style.display = 'flex';
-                    g.style.gridTemplateColumns = '220px 340px 1fr 290px';
-                    var hg = document.getElementById('mailHeaderGrid');
-                    if (hg) hg.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                    // Respeta "Ocultar CRM" (botón de la barra de acciones): el panel se
+                    // llena igual, pero queda oculto hasta que le den "Mostrar CRM".
+                    var crmOculto = p.dataset.crmOculto === '1';
+                    if (!crmOculto) {
+                        p.style.display = 'flex';
+                        g.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                        var hg = document.getElementById('mailHeaderGrid');
+                        if (hg) hg.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                    }
+                    window._mailCtxRestaurar = function () {
+                        p.style.display = 'flex';
+                        g.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                        var hg2 = document.getElementById('mailHeaderGrid');
+                        if (hg2) hg2.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                    };
                     if (!d.vinculado) {
                         if (vin) vin.style.display = 'none';
                         if (suelto) suelto.style.display = 'flex';

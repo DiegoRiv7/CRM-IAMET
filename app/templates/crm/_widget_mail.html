@@ -347,6 +347,62 @@
                 </div>
                 <!-- Detail content -->
                 <div id="mailDetailContent" style="display:none;flex-direction:column;height:100%;position:relative;">
+                    <!-- Barra de acciones (estilo mockup): píldoras con nombre + Ocultar CRM -->
+                    <style>
+                        .mda-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #E2E4E9;background:#fff;
+                            color:#1A1A2E;border-radius:999px;padding:6px 14px;font-size:0.8rem;font-weight:600;
+                            cursor:pointer;font-family:inherit;white-space:nowrap;}
+                        .mda-btn:hover{background:#F3F6FA;}
+                        .mda-btn.ico{padding:6px 9px;}
+                        .mda-btn.danger:hover{background:#FEF2F2;color:#DC2626;border-color:#FECACA;}
+                        .mda-ghost{margin-left:auto;border:none;background:none;color:#007AFF;font-size:0.8rem;
+                            font-weight:700;cursor:pointer;font-family:inherit;padding:6px 8px;}
+                        .mda-ghost:hover{text-decoration:underline;}
+                    </style>
+                    <div id="mailDetailActs" style="display:flex;align-items:center;gap:7px;padding:10px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;flex-wrap:wrap;">
+                        <button type="button" class="mda-btn ico" onclick="mailResponder(false)" title="Responder">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                        </button>
+                        <button type="button" class="mda-btn" onclick="mailAbrirReenvio()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+                            Reenviar
+                        </button>
+                        <button type="button" class="mda-btn ico" onclick="mailDestacar()" title="Destacar" id="mailActsStar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </button>
+                        <button type="button" class="mda-btn ico" onclick="mailArchivar()" title="Archivar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                        </button>
+                        <button type="button" class="mda-btn ico danger" onclick="mailEliminar()" title="Eliminar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </button>
+                        <button type="button" class="mda-ghost" onclick="mailToggleCrm()" id="mailBtnToggleCrm">Ocultar CRM</button>
+                    </div>
+                    <script>
+                        // "Ocultar CRM": colapsa el panel de contexto de la derecha y
+                        // recuerda la preferencia. La isla vieja del header se retira.
+                        (function () {
+                            var isla = document.getElementById('mailHeaderIsland');
+                            if (isla) isla.style.setProperty('display', 'none', 'important');
+                        })();
+                        window.mailToggleCrm = function () {
+                            var p = document.getElementById('mailCtxPanel');
+                            var b = document.getElementById('mailBtnToggleCrm');
+                            if (!p) return;
+                            var oculto = p.dataset.crmOculto === '1';
+                            if (oculto) {
+                                p.dataset.crmOculto = '';
+                                if (window._mailCtxRestaurar) window._mailCtxRestaurar();
+                                else p.style.display = 'flex';
+                                if (b) b.textContent = 'Ocultar CRM';
+                            } else {
+                                p.dataset.crmOculto = '1';
+                                p.style.display = 'none';
+                                if (b) b.textContent = 'Mostrar CRM';
+                            }
+                            try { localStorage.setItem('mailCrmOculto', oculto ? '' : '1'); } catch (e) {}
+                        };
+                    </script>
                     <!-- Linked opp bar -->
                     <div id="mailDetailOppBar"
                         style="display:none;align-items:center;gap:8px;padding:6px 16px;background:#EEF3FF;border-bottom:1px solid #D0E1FF;font-size:0.79rem;color:#0052D4;font-weight:600;flex-shrink:0;">
