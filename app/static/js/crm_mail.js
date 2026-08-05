@@ -258,27 +258,32 @@
                 var unreadCls = c.leido ? '' : ' unread';
                 var adjIcon = c.tiene_adjuntos ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>' : '';
                 var starIcon = c.destacado ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : '';
-                var oppBadge = c.oportunidad_nombre ? '<span style="display:inline-block;margin-top:3px;background:rgba(0,82,212,0.1);color:#0052D4;border-radius:4px;font-size:0.65rem;font-weight:600;padding:1px 6px;">' + _esc(c.oportunidad_nombre) + '</span>' : '';
-                var dot = !c.leido ? '<span style="width:7px;height:7px;border-radius:50%;background:#007AFF;flex-shrink:0;margin-top:5px;"></span>' : '<span style="width:7px;height:7px;flex-shrink:0;"></span>';
+                var dot = !c.leido ? '<span style="width:8px;height:8px;border-radius:50%;background:#007AFF;flex-shrink:0;margin-top:6px;"></span>' : '<span style="width:8px;height:8px;flex-shrink:0;"></span>';
                 var fecha = c.fecha_envio ? _formatFecha(c.fecha_envio) : '';
 
                 h += '<div class="mail-card-wb' + unreadCls + '" onclick="mailVerCorreo(' + c.id + ')" ondblclick="mailAbrirVentana(' + c.id + ')" id="mailCard_' + c.id + '">';
                 h += dot;
                 h += '<div style="flex:1;min-width:0;">';
-                h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">';
-                h += '<span style="display:flex;align-items:center;gap:5px;min-width:0;">';
-                h += '<span class="mw-from" style="font-size:0.82rem;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">' + _esc(c.remitente_nombre || c.remitente_email) + '</span>';
+                h += '<div style="display:flex;align-items:center;gap:5px;min-width:0;">';
+                h += '<span class="mw-from" style="font-size:0.83rem;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(c.remitente_nombre || c.remitente_email) + '</span>';
                 if (c.hilo_count > 1) h += '<span class="mw-hilo-chip" style="flex-shrink:0;background:#EEF1F5;color:#6B7280;border-radius:999px;font-size:0.64rem;font-weight:700;padding:1px 6px;">' + c.hilo_count + '</span>';
-                h += '</span>';
-                h += '<span style="font-size:0.7rem;color:#9CA3AF;flex-shrink:0;">' + fecha + '</span>';
-                h += '</div>';
-                h += '<div style="display:flex;align-items:center;gap:4px;margin-top:1px;">';
-                h += '<span class="mw-subject" style="font-size:0.79rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">' + _esc(c.asunto || '(Sin asunto)') + '</span>';
                 h += starIcon;
                 h += adjIcon;
                 h += '</div>';
-                if (oppBadge) h += '<div>' + oppBadge + '</div>';
-                h += '</div></div>';
+                h += '<div class="mw-subject" style="font-size:0.79rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + _esc(c.asunto || '(Sin asunto)') + '</div>';
+                if (c.preview) h += '<div class="mw-preview">' + _esc(c.preview) + '</div>';
+                if (c.oportunidad_nombre) h += '<span class="mw-opp-chip">' + _esc(c.oportunidad_nombre) + '</span>';
+                h += '</div>';
+                h += '<div class="mw-right"><span class="mw-time">' + fecha + '</span></div>';
+                // Acciones rápidas al hover: archivar / eliminar / vincular (o abrir la opp)
+                h += '<div class="mw-quick">';
+                h += '<button type="button" class="mw-qbtn" title="Archivar" onclick="event.stopPropagation();mailQuickArchivar(' + c.id + ')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>';
+                h += '<button type="button" class="mw-qbtn" title="Eliminar" onclick="event.stopPropagation();mailQuickEliminar(' + c.id + ')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+                if (!c.oportunidad_id) {
+                    h += '<button type="button" class="mw-qbtn pri" title="Vincular a oportunidad" onclick="event.stopPropagation();mailVerCorreo(' + c.id + ');setTimeout(mailAbrirVincular,350)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>';
+                }
+                h += '</div>';
+                h += '</div>';
             });
             listEl.innerHTML = h;
             var loadMore = document.getElementById('mailLoadMore');
@@ -1855,6 +1860,34 @@
                     }
                     _showToastMail(d.destacado ? 'Correo destacado' : 'Quitado de destacados', true);
                 });
+        };
+
+        /* ── Acciones rápidas desde la fila (hover), sin abrir el correo ── */
+        window.mailQuickArchivar = function (id) {
+            fetch('/app/api/mail/archivar/' + id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'No se pudo archivar', false); return; }
+                    var card = document.getElementById('mailCard_' + id);
+                    if (card) card.remove();
+                    _showToastMail('Archivado', true);
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailQuickEliminar = function (id) {
+            fetch('/app/api/mail/eliminar/' + id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'No se pudo eliminar', false); return; }
+                    var card = document.getElementById('mailCard_' + id);
+                    if (card) card.remove();
+                    _showToastMail('Movido a papelera', true);
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
         };
 
         window.mailArchivar = function () {

@@ -819,15 +819,44 @@
             display: flex;
             align-items: flex-start;
             gap: 8px;
-            padding: 10px 12px;
-            border-bottom: 1px solid #F0F2F5;
+            padding: 11px 13px;
+            margin: 2px 6px;
+            border-radius: 12px;
             cursor: pointer;
             transition: background 0.1s;
+            position: relative;
         }
-        .mail-card-wb:hover { background: #F9FAFB; }
-        .mail-card-wb.selected { background: rgba(0,122,255,0.06); }
+        .mail-card-wb:hover { background: #F3F6FA; }
+        .mail-card-wb.selected { background: rgba(0,122,255,0.08); }
         .mail-card-wb.unread .mw-from { font-weight: 700; }
-        .mail-card-wb.unread .mw-subject { font-weight: 600; }
+        .mail-card-wb.unread .mw-subject { font-weight: 600; color: #1A1A2E; }
+        .mw-preview {
+            font-size: 0.73rem; color: #9CA3AF; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
+        }
+        .mw-opp-chip {
+            display: inline-block; margin-top: 4px; background: rgba(0,122,255,0.09);
+            color: #0060DF; border-radius: 999px; font-size: 0.65rem; font-weight: 700;
+            padding: 2px 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Columna derecha: hora que se desvanece al hover → acciones rápidas */
+        .mw-right { flex-shrink: 0; width: 74px; display: flex; flex-direction: column; align-items: flex-end; }
+        .mw-time { font-size: 0.7rem; color: #9CA3AF; transition: opacity 0.12s; }
+        .mw-quick {
+            display: none; gap: 4px; position: absolute; right: 10px; top: 50%;
+            transform: translateY(-50%); background: inherit;
+        }
+        .mail-card-wb:hover .mw-time { opacity: 0; }
+        .mail-card-wb:hover .mw-quick { display: flex; }
+        .mw-qbtn {
+            width: 28px; height: 28px; border-radius: 50%; border: 1px solid #E2E4E9;
+            background: #fff; color: #6B7280; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; padding: 0;
+        }
+        .mw-qbtn:hover { background: #F3F6FA; color: #1A1A2E; }
+        .mw-qbtn.pri { background: #007AFF; border-color: #007AFF; color: #fff; }
+        .mw-qbtn.pri:hover { background: #0060DF; }
         .mail-action-btn {
             display: flex;
             align-items: center;

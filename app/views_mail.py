@@ -484,6 +484,9 @@ def api_mail_lista(request):
     offset = (pagina - 1) * por_pagina
 
     def _row(c, hilo_count=1, hilo_no_leidos=0):
+        # Vista previa: primer tramo con sustancia del cuerpo (sin costo: ya
+        # está en la fila). Si el cuerpo aún no se ha bajado, va vacía.
+        preview = ' '.join((c.cuerpo_texto or '').split())[:110]
         return {
             'id': c.id,
             'asunto': c.asunto or '(Sin asunto)',
@@ -499,6 +502,7 @@ def api_mail_lista(request):
             'hilo_key': c.hilo_key,
             'hilo_count': hilo_count,
             'hilo_no_leidos': hilo_no_leidos,
+            'preview': preview,
         }
 
     # ── Vista de HILOS (Gmail-style): una fila por conversación ──
