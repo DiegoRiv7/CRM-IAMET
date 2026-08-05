@@ -1166,8 +1166,8 @@
             var detailContent = document.getElementById('mailDetailContent');
             if (detailEmpty) detailEmpty.style.display = 'none';
             if (detailContent) detailContent.style.display = 'flex';
-            var island = document.getElementById('mailHeaderIsland');
-            if (island) island.style.display = 'inline-flex';
+            // La isla de iconos del header quedó RETIRADA: las acciones viven en
+            // la barra del panel de lectura (una sola botonera, sin duplicados).
 
 
             // Panel de contexto CRM (independiente del detalle)
