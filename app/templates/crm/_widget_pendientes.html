@@ -335,6 +335,15 @@
      predeterminado (520px) queda en los 17px de siempre; a partir de ahí el
      texto conserva un ancho de lectura cómodo en vez de ir de pared a pared. */
   .pend-mini-body{flex:1;overflow-y:auto;padding:15px clamp(17px, calc(8% - 24px), 120px);}
+  /* ── Chat dentro de la ventanita ── */
+  .mc-top{margin-bottom:10px;}
+  .mc-msg{display:flex;margin-bottom:10px;}
+  .mc-msg.mc-user{justify-content:flex-end;}
+  .mc-burbuja{max-width:88%;border-radius:14px;padding:10px 14px;font-size:.88rem;line-height:1.55;}
+  .mc-user .mc-burbuja{background:#0a84ff;color:#fff;border-bottom-right-radius:5px;}
+  .mc-bot .mc-burbuja{background:#f4f5f7;color:#1d1d1f;border-bottom-left-radius:5px;max-width:100%;flex:1;}
+  .mc-nota{font-size:.86rem;color:#374151;margin-bottom:6px;}
+  .mc-bot .pend-mini-card{background:#fff;border:1px solid #e9eaee;border-radius:12px;padding:12px 14px;margin:8px 0;}
   .pend-mini-brief{font-size:.9rem;line-height:1.55;color:#374151;}
   .pend-mini-brief b{color:#16181d;font-weight:700;}
   .pend-mini-tabs{display:flex;gap:7px;margin:16px 0 2px;flex-wrap:wrap;}
@@ -1814,6 +1823,7 @@
     '</div>';
   }
   function _miniDraw() {
+    if (_chatMode) return;   // el chat manda: no pisar la conversación con el feed
     var d = _miniData; if (!d) return;
     var badge = el('pendMiniBadge'); if (badge) badge.textContent = d.total || 0;
     var sub = el('pendMiniSub'); if (sub) sub.textContent = 'Revisé tu correo y tu pipeline';
@@ -2174,12 +2184,82 @@
       _feedRedraw();
     }
   };
+  // ── Chat DENTRO de la ventanita ─────────────────────────────────────────
+  // Filosofía de costos: el CÓDIGO trae y filtra la información; la IA solo
+  // redacta cuando de verdad hace falta. Los intents conocidos (pendientes,
+  // atendido) se contestan pegando lo que ya está en memoria: CERO tokens.
+  var _chatMode = false, _chatHist = [];   // [{role:'user'|'bot', html}]
+  function _chatDraw() {
+    var body = el('pendMiniBody'); if (!body) return;
+    body.innerHTML =
+      '<div class="mc-top"><span class="pend-foc-back" onclick="pendMiniChatVolver()">‹ Pendientes</span></div>' +
+      '<div id="miniChatFlow">' + _chatHist.map(function (m) {
+        return '<div class="mc-msg mc-' + m.role + '"><div class="mc-burbuja">' + m.html + '</div></div>';
+      }).join('') + '</div>';
+    body.scrollTop = body.scrollHeight;
+  }
+  function _chatPush(role, html) {
+    _chatHist.push({ role: role, html: html });
+    _chatMode = true;
+    _chatDraw();
+    return _chatHist.length - 1;   // índice, para reemplazar el "Pensando…"
+  }
+  function _chatSet(idx, html) {
+    if (_chatHist[idx]) { _chatHist[idx].html = html; _chatDraw(); }
+  }
+  window.pendMiniChatVolver = function () { _chatMode = false; _miniDraw(); };
+  // Intents GRATIS (código puro, sin IA). Devuelve true si la pregunta quedó
+  // respondida localmente.
+  function _chatGratis(q) {
+    var s = q.toLowerCase();
+    // Pendientes (todo / solo correos / solo pipeline): pegar las tarjetas.
+    if (/pendient|sin\s+(responder|atender|avance)|qu[eé]\s+(tengo|hay)\s+(hoy|pendiente)/.test(s)) {
+      var d = _miniData;
+      if (!d) return false;
+      var grupo = /correo|mail/.test(s) ? 'correo' : (/pipeline|oportunidad/.test(s) ? 'pipeline' : null);
+      var items = (d.items || []).filter(function (it) { return !grupo || it.grupo === grupo; });
+      _chatPush('bot', items.length
+        ? ('<div class="mc-nota">Esto es lo que traes' + (grupo ? ' de ' + grupo : '') + ' (' + items.length + '):</div>' + items.map(_miniCard).join(''))
+        : '<div class="mc-nota">Nada pendiente' + (grupo ? ' en ' + grupo : '') + ' por ahora. Te aviso si llega algo. ✅</div>');
+      return true;
+    }
+    // Atendido / bitácora del día: código puro (fetch a la bitácora, sin IA).
+    if (/atendid|bit[aá]cora|qu[eé]\s+he\s+hecho|resumen\s+de\s+mi\s+d[ií]a/.test(s)) {
+      var idx = _chatPush('bot', '<span class="pend-typing2">Revisando tu día…</span>');
+      fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d2) {
+          var ats = (d2 && d2.items) || [];
+          _atendidos = d2 && d2.success ? d2 : _atendidos;
+          _chatSet(idx, ats.length
+            ? ('<div class="mc-nota">Tu día hasta ahora (' + ats.length + ' cosas atendidas):</div>' + ats.map(_atCard).join(''))
+            : '<div class="mc-nota">Todavía no registro nada atendido hoy. La jornada corre desde las 8am.</div>');
+        })
+        .catch(function () { _chatSet(idx, '<div class="mc-nota">No pude leer tu bitácora ahora mismo.</div>'); });
+      return true;
+    }
+    return false;
+  }
   window.pendMiniAsk = function () {
     var inp = el('pendMiniIn'); if (!inp) return;
     var q = (inp.value || '').trim(); if (!q) return;
     inp.value = '';
-    // Fase 3: el chat vive en el panel grande. Por ahora expandimos ahí.
-    pendMiniExpandir();
+    _chatPush('user', _esc(q));
+    if (_chatGratis(q)) return;   // respondido por código: cero tokens
+    // Lo demás sí va al motor (herramientas + IA redacta).
+    var idx = _chatPush('bot', '<span class="pend-typing2">Pensando…</span>');
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var md = (d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.';
+        _chatSet(idx, (typeof window.asistenteRenderMarkdown === 'function')
+          ? window.asistenteRenderMarkdown(md) : _esc(md));
+      })
+      .catch(function () { _chatSet(idx, '<div class="mc-nota">Error de conexión con el asistente.</div>'); });
   };
 
   // ── Vista "Asistente" EN GRANDE (protagonista del centro del panel) ──
