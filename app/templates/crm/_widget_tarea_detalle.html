@@ -31,16 +31,18 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
    Todo cuelga de `.tw4` (el overlay) para no tocar otros widgets. */
 
 .tw4 .crm-task-modal {
-    max-width: 1320px;
-    height: 88vh;
-    max-height: 92vh;
+    max-width: 1440px;
+    height: 94vh;
+    max-height: 94vh;
     background: #F7F8FA;
 }
 
-/* ── Encabezado: franja delgada, migaja a la izquierda, iconos a la derecha ── */
+/* ── Encabezado ──
+   Lleva también .crm-tw-header para conservar la franja de cada temporada;
+   aquí solo va la caja (los temas pintan el fondo con !important). */
 .tw4 .tw4-head {
     display: flex; align-items: center; gap: 12px;
-    padding: 0 14px 0 20px; min-height: 48px;
+    padding: 0 14px 0 20px; min-height: 52px;
     background: #fff; border-bottom: 1px solid #E9EBEF;
     flex-shrink: 0;
 }
@@ -128,15 +130,21 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     background: #ECFDF5; color: #047857; font-size: 12.5px; font-weight: 700;
 }
 
-/* ── Tarjeta única: título, descripción, subtareas, actividad y compositor ── */
+/* ── Dos cuadros: arriba la tarea (título, descripción, subtareas) y abajo
+      la conversación. Cada uno scrollea por su cuenta. ── */
 .tw4 .tw4-card {
-    flex: 1; min-height: 0;
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: column; min-height: 0;
     background: #fff; border: 1px solid #E9EBEF; border-radius: 16px;
     box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
     overflow-y: auto;
     padding: 22px 24px 0;
 }
+/* La tarea manda el alto que pida su contenido, sin pasarse de la mitad; el
+   resto se lo lleva la conversación. */
+.tw4 .tw4-main > .tw4-card:first-of-type {
+    flex: 0 1 auto; max-height: 52%; margin-bottom: 14px; padding-bottom: 6px;
+}
+.tw4 .tw4-card-act { flex: 1 1 auto; min-height: 220px; padding-bottom: 0; }
 .tw4 .tw4-titulo-wrap { flex-shrink: 0; }
 .tw4 .tw4-titulo {
     margin: 0 0 18px; font-size: 22px; font-weight: 700;
@@ -156,7 +164,7 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 
 /* Actividad: se estira hasta el compositor para que no quede lienzo muerto */
 .tw4 .tw4-actividad {
-    flex: 1 1 auto; min-height: 150px;
+    flex: 1 1 auto; min-height: 150px; padding-bottom: 8px;
     display: flex; flex-direction: column;
 }
 .tw4 .tw4-feed { flex: 1; min-height: 0; }
@@ -306,6 +314,51 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 /* ── La barra de guardar se apoya sobre el encabezado ── */
 .tw4 .crm-tw-savebar { flex-shrink: 0; }
 
+/* ── La franja de la temporada ──
+   Los cinco temas que pintan .crm-tw-header lo hacen con un fondo oscuro y
+   ponen el texto en blanco con !important. Los chips y el número nacen en gris
+   claro, así que sobre la franja se perderían: aquí se traducen a blancos
+   translúcidos. Los temas claros (rosa, blanco, café, perla) no entran. */
+body[data-theme="temporada"] .tw4 .tw4-chip,
+body[data-theme="sakura"] .tw4 .tw4-chip,
+body[data-theme="duna"] .tw4 .tw4-chip,
+body[data-theme="espacial"] .tw4 .tw4-chip,
+body[data-theme="mundial"] .tw4 .tw4-chip {
+    background: rgba(255, 255, 255, .15);
+    border-color: rgba(255, 255, 255, .28);
+    color: #fff;
+}
+body[data-theme="temporada"] .tw4 button.tw4-chip:hover,
+body[data-theme="sakura"] .tw4 button.tw4-chip:hover,
+body[data-theme="duna"] .tw4 button.tw4-chip:hover,
+body[data-theme="espacial"] .tw4 button.tw4-chip:hover,
+body[data-theme="mundial"] .tw4 button.tw4-chip:hover {
+    background: rgba(255, 255, 255, .26);
+    border-color: rgba(255, 255, 255, .45);
+    color: #fff;
+}
+body[data-theme="temporada"] .tw4 .tw4-num,
+body[data-theme="sakura"] .tw4 .tw4-num,
+body[data-theme="duna"] .tw4 .tw4-num,
+body[data-theme="espacial"] .tw4 .tw4-num,
+body[data-theme="mundial"] .tw4 .tw4-num { color: rgba(255, 255, 255, .78); }
+body[data-theme="temporada"] .tw4 .tw4-chev-sep,
+body[data-theme="sakura"] .tw4 .tw4-chev-sep,
+body[data-theme="duna"] .tw4 .tw4-chev-sep,
+body[data-theme="espacial"] .tw4 .tw4-chev-sep,
+body[data-theme="mundial"] .tw4 .tw4-chev-sep { color: rgba(255, 255, 255, .55); }
+body[data-theme="temporada"] .tw4 .tw4-sep,
+body[data-theme="sakura"] .tw4 .tw4-sep,
+body[data-theme="duna"] .tw4 .tw4-sep,
+body[data-theme="espacial"] .tw4 .tw4-sep,
+body[data-theme="mundial"] .tw4 .tw4-sep { background: rgba(255, 255, 255, .28); }
+/* El panel del menú de 3 puntos cuelga de la franja pero es una caja blanca:
+   que no herede el texto blanco del tema. */
+.tw4 .tw4-menu-wrap .crm-tw-menu .crm-tw-menu-item { color: #334155 !important; }
+.tw4 .tw4-menu-wrap .crm-tw-menu .crm-tw-menu-item svg { color: #64748B !important; }
+.tw4 .tw4-menu-wrap .crm-tw-menu .crm-tw-menu-item.danger,
+.tw4 .tw4-menu-wrap .crm-tw-menu .crm-tw-menu-item.danger svg { color: #E11D48 !important; }
+
 /* ── Responsive: el widget vive en ventanas que se encogen, así que se mide
       el contenedor, no la pantalla. ── */
 .tw4 .crm-task-modal { container-type: inline-size; container-name: tw4; }
@@ -313,6 +366,8 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     .tw4 .tw4-body { grid-template-columns: 1fr; overflow-y: auto; }
     .tw4 .tw4-main { overflow: visible; }
     .tw4 .tw4-card { overflow: visible; }
+    /* En una sola columna ya no hay alto que repartir: cada cuadro crece. */
+    .tw4 .tw4-main > .tw4-card:first-of-type { max-height: none; }
     .tw4 .tw4-side { border-left: none; border-top: 1px solid #E9EBEF; overflow: visible; }
     .tw4 .tw4-tray { position: static; }
 }
@@ -330,7 +385,7 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     <div class="crm-task-modal">
 
         <!-- ═════ ENCABEZADO ═════ -->
-        <header class="tw4-head">
+        <header class="tw4-head crm-tw-header">
             <div class="tw4-crumb">
                 <button type="button" class="tw4-chip" id="crmTaskCrumbProyecto" style="display:none;">
                     <span id="crm-task-breadcrumb-proyecto">Proyecto</span>
@@ -437,7 +492,10 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 
                     <!-- Subtareas: nace plegada, la pinta crm_main.js -->
                     <div class="tw4-sec crm-tw-subtareas-card" id="crmTaskSubtareasSection"></div>
+                </div>
 
+                <!-- Cuadro aparte: la conversación de la tarea -->
+                <div class="tw4-card tw4-card-act">
                     <div class="tw4-sec tw4-actividad">
                         <h3 class="tw4-sec-t">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
