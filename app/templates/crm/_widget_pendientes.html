@@ -2408,8 +2408,10 @@
   // IA traduce a datos; el usuario CONFIRMA (editable); el código crea.
   var _accProps = [];
   function _accEsAccion(s) {
-    return /\b(agenda|ag[eé]ndame|agendar|crea|cr[eé]ame|crear|hazme)\b/.test(s) &&
-           /actividad|seguimiento|reuni[oó]n|llamada|tarea|oportunidad/.test(s);
+    // Sin acentos ni signos raros: "agéndame", "'agendame", "créame…" cuentan igual.
+    var n = ' ' + s.normalize('NFD').replace(/[̀-ͯ]/g, '') + ' ';
+    return /(agenda|agendame|agendar|crea\b|creame|crear|hazme|ponme|programa)/.test(n) &&
+           /actividad|seguimiento|reunion|llamada|tarea|oportunidad|cita|visita/.test(n);
   }
   function _accCard(a, i) {
     if (a.tipo === 'actividad') {
