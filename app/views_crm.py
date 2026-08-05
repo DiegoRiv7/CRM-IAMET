@@ -9320,6 +9320,76 @@ def api_asistente_desempeno(request):
 
 @login_required
 @login_required
+@require_http_methods(["POST"])
+def api_asistente_accion_interpretar(request):
+    """POST {texto} — la IA SOLO TRADUCE la petición a acciones estructuradas
+    (JSON); no crea nada. El frontend muestra las propuestas con campos
+    editables y, al confirmar el usuario, el CÓDIGO ejecuta con los endpoints
+    de siempre. Una llamada mini por petición (~$0.0001)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AsistenteConfig
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    texto = (data.get('texto') or '').strip()[:600]
+    if not texto:
+        return JsonResponse({'success': False, 'error': 'Texto vacío.'}, status=400)
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if not (cfg and cfg.activo):
+            return JsonResponse({'success': False, 'error': 'El asistente de IA está apagado.'}, status=503)
+        from .asistente_provider import chat
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'IA no disponible.'}, status=503)
+
+    hoy = timezone.localdate()
+    _DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    sys = (
+        "Extraes ACCIONES de la petición de un vendedor de CRM. Hoy es %s %s. "
+        "Devuelve SOLO JSON válido: {\"acciones\": [ ... ]} con máximo 5 elementos.\n"
+        "Cada acción es UNO de estos dos objetos:\n"
+        "1) {\"tipo\": \"actividad\", \"titulo\": \"...\", \"fecha\": \"YYYY-MM-DD\", \"hora\": \"HH:MM\"} "
+        "— para agendar actividades/reuniones/llamadas/seguimientos. Si no dan hora usa \"09:00\"; "
+        "si piden varias el mismo día sin horas, sepáralas una hora entre sí. Si no dan fecha usa mañana. "
+        "'mañana', 'el jueves', 'el 15' se calculan desde hoy.\n"
+        "2) {\"tipo\": \"oportunidad\", \"titulo\": \"...\", \"cliente\": \"...\" | null, "
+        "\"pipeline\": \"runrate\" | \"proyecto\"} — para crear oportunidades de venta. "
+        "pipeline 'proyecto' solo si lo mencionan; si no, 'runrate'.\n"
+        "Los títulos: breves y útiles, en español, sacados de lo que pidió. No inventes datos que no estén."
+    ) % (_DIAS[hoy.weekday()], hoy.isoformat())
+    try:
+        resp = chat(messages=[{'role': 'system', 'content': sys},
+                              {'role': 'user', 'content': texto}],
+                    temperature=0.0, max_tokens=500)
+        txt = (resp.get('text') or '').strip()
+        if txt.startswith('```'):
+            txt = txt.strip('`')
+            if txt.lower().startswith('json'):
+                txt = txt[4:]
+        parsed = _json.loads(txt)
+        acciones = parsed.get('acciones') or []
+    except Exception:
+        logger.exception('Asistente: fallo interpretando acciones')
+        return JsonResponse({'success': False, 'error': 'No entendí la petición — intenta con otras palabras.'})
+    limpias = []
+    for a in acciones[:5]:
+        t = (a.get('tipo') or '').strip()
+        if t == 'actividad' and (a.get('titulo') or '').strip():
+            limpias.append({'tipo': 'actividad', 'titulo': a['titulo'].strip()[:150],
+                            'fecha': (a.get('fecha') or '')[:10],
+                            'hora': (a.get('hora') or '09:00')[:5]})
+        elif t == 'oportunidad' and (a.get('titulo') or '').strip():
+            limpias.append({'tipo': 'oportunidad', 'titulo': a['titulo'].strip()[:150],
+                            'cliente': (a.get('cliente') or '').strip()[:100],
+                            'pipeline': 'proyecto' if a.get('pipeline') == 'proyecto' else 'runrate'})
+    if not limpias:
+        return JsonResponse({'success': False, 'error': 'No encontré acciones concretas en la petición.'})
+    return JsonResponse({'success': True, 'acciones': limpias})
+
+
+@login_required
 def api_asistente_reporte_oportunidades(request):
     """GET .../reporte/oportunidades/ — Excel de oportunidades filtrado por CÓDIGO
     (sin IA). Parámetros: tipo=<vencidas|importantes|abiertas>, cliente, etapa,

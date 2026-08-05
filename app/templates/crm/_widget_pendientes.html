@@ -2403,12 +2403,99 @@
     }
     return false;
   }
+  // ── Acciones por chat: "agéndame 2 actividades mañana", "créame una
+  // oportunidad sobre X". El código detecta la intención; UNA llamada mini de
+  // IA traduce a datos; el usuario CONFIRMA (editable); el código crea.
+  var _accProps = [];
+  function _accEsAccion(s) {
+    return /\b(agenda|ag[eé]ndame|agendar|crea|cr[eé]ame|crear|hazme)\b/.test(s) &&
+           /actividad|seguimiento|reuni[oó]n|llamada|tarea|oportunidad/.test(s);
+  }
+  function _accCard(a, i) {
+    if (a.tipo === 'actividad') {
+      return '<div class="pend-mini-card" id="accCard' + i + '">' +
+        '<div class="pend-mini-clbl"><span style="color:#0a84ff;">AGENDAR ACTIVIDAD</span></div>' +
+        '<input type="text" class="pend-foc-in" id="accT' + i + '" value="' + _esc(a.titulo) + '" style="width:100%;margin-bottom:7px;">' +
+        '<div style="display:flex;gap:8px;">' +
+          '<input type="date" class="pend-foc-in" id="accF' + i + '" value="' + _esc(a.fecha) + '" style="flex:1;">' +
+          '<input type="time" class="pend-foc-in" id="accH' + i + '" value="' + _esc(a.hora) + '" style="width:110px;">' +
+        '</div>' +
+        '<div class="pend-mini-acts"><button type="button" class="pend-mini-btn pri" id="accB' + i + '" onclick="pendAccConfirmar(' + i + ')">Agendar</button></div>' +
+      '</div>';
+    }
+    return '<div class="pend-mini-card" id="accCard' + i + '">' +
+      '<div class="pend-mini-clbl"><span style="color:#0a7d3c;">CREAR OPORTUNIDAD · ' + _esc((a.pipeline || 'runrate').toUpperCase()) + '</span></div>' +
+      '<input type="text" class="pend-foc-in" id="accT' + i + '" value="' + _esc(a.titulo) + '" style="width:100%;margin-bottom:7px;">' +
+      '<input type="text" class="pend-foc-in" id="accC' + i + '" value="' + _esc(a.cliente || '') + '" placeholder="Cliente" style="width:100%;">' +
+      '<div class="pend-mini-acts"><button type="button" class="pend-mini-btn pri" id="accB' + i + '" onclick="pendAccConfirmar(' + i + ')">Crear</button></div>' +
+    '</div>';
+  }
+  function _accInterpretar(q) {
+    var idx = _chatPush('bot', '<span class="pend-typing2">Entendiendo tu encargo…</span>');
+    fetch('/app/api/asistente/accion/interpretar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { _chatSet(idx, _esc((d && d.error) || 'No entendí el encargo.')); return; }
+        var base = _accProps.length;
+        d.acciones.forEach(function (a) { _accProps.push(a); });
+        var html = '<div class="mc-nota">Esto es lo que haré — revisa, ajusta y confirma:</div>' +
+          d.acciones.map(function (a, j) { return _accCard(a, base + j); }).join('') +
+          '<div class="mc-nota" style="color:#9a9ca3;">Nada se crea sin que lo confirmes.</div>';
+        _chatSet(idx, html);
+      })
+      .catch(function () { _chatSet(idx, 'Error de conexión con el asistente.'); });
+  }
+  window.pendAccConfirmar = function (i) {
+    var a = _accProps[i]; if (!a) return;
+    var btn = el('accB' + i); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+    var t = (el('accT' + i) && el('accT' + i).value || a.titulo).trim();
+    var done = function (ok, msg) {
+      var card = el('accCard' + i);
+      if (card) card.innerHTML = '<div class="mc-nota">' + (ok ? '✓ ' : '✗ ') + _esc(msg) + '</div>';
+    };
+    if (a.tipo === 'actividad') {
+      var f = (el('accF' + i) && el('accF' + i).value) || a.fecha;
+      var h = (el('accH' + i) && el('accH' + i).value) || a.hora || '09:00';
+      var ini = f + 'T' + h + ':00';
+      var fin = f + 'T' + ('0' + ((+h.split(':')[0]) + 1)).slice(-2) + ':' + h.split(':')[1] + ':00';
+      fetch('/app/api/actividades/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+        body: JSON.stringify({ title: t, start: ini, end: fin, description: '', tipo: 'tarea', color: '#007AFF', participants: [] })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.id) done(true, 'Agendada «' + t + '» el ' + _fechaLegible(f) + ' a las ' + h + '.');
+          else done(false, (d && d.error) || 'No se pudo agendar.');
+        })
+        .catch(function () { done(false, 'Error de conexión.'); });
+    } else {
+      var cli = (el('accC' + i) && el('accC' + i).value || a.cliente || '').trim();
+      if (cli.length < 2) { done(false, 'Falta el cliente — escríbelo y vuelve a intentar.'); return; }
+      fetch('/app/api/asistente/oportunidad/crear/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+        body: JSON.stringify({ titulo: t, cliente_nombre: cli, tipo: a.pipeline || 'runrate', crear_actividad: true })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.success) done(true, 'Oportunidad «' + t + '» creada para ' + cli + ', con su seguimiento agendado.');
+          else done(false, (d && d.error) || 'No se pudo crear.');
+        })
+        .catch(function () { done(false, 'Error de conexión.'); });
+    }
+  };
   window.pendMiniAsk = function () {
     var inp = el('pendMiniIn'); if (!inp) return;
     var q = (inp.value || '').trim(); if (!q) return;
     inp.value = '';
     _chatPush('user', _esc(q));
     if (_chatGratis(q)) return;   // respondido por código: cero tokens
+    if (_accEsAccion(q.toLowerCase())) { _accInterpretar(q); return; }   // encargo → propuesta editable
     // Lo demás sí va al motor (herramientas + IA redacta).
     var idx = _chatPush('bot', '<span class="pend-typing2">Pensando…</span>');
     fetch('/app/api/asistente/mensaje/', {

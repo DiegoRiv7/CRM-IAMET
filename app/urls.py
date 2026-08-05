@@ -174,6 +174,7 @@ urlpatterns = [
     path('api/asistente/aviso/revisado/', views.api_asistente_aviso_revisado, name='api_asistente_aviso_revisado'),
     path('api/asistente/atendidos/', views.api_asistente_atendidos, name='api_asistente_atendidos'),
     path('api/asistente/reporte/oportunidades/', views.api_asistente_reporte_oportunidades, name='api_asistente_reporte_oportunidades'),
+    path('api/asistente/accion/interpretar/', views.api_asistente_accion_interpretar, name='api_asistente_accion_interpretar'),
     # Simulador de correos — banco de pruebas del asistente
     path('simulador-correo/', views.vista_simulador_correo, name='vista_simulador_correo'),
     path('api/simulador/inyectar/', views.api_sim_inyectar, name='api_sim_inyectar'),
