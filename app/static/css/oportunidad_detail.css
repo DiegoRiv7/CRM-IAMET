@@ -224,25 +224,24 @@ body {
     display: flex; flex-direction: column; gap: 14px; min-width: 0;
     min-height: 0; height: 100%;
 }
-/* El lateral NO scrollea: reparte su alto entre las tarjetas y cada una
-   scrollea lo suyo si se pasa. Así nunca hay una barra "general". */
-.opp-v4 .wo4-side { overflow: hidden; }
-.opp-v4 .wo4-side > .wo4-card:first-child { flex: 0 0 auto; }
-/* flex 0 1 auto (no 1 1): las tarjetas toman SU alto y solo se encogen si la
-   columna no alcanza. Con 1 1 crecían siempre y salía scroll aunque hubiera
-   dos cotizaciones. */
-.opp-v4 .wo4-side > .wo4-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
-.opp-v4 .wo4-side [data-wo="quoteList"],
-.opp-v4 .wo4-side .wo4-drive { flex: 1; min-height: 0; overflow-y: auto; }
+/* El lateral scrollea COMO COLUMNA cuando hace falta. Antes repartía su alto
+   entre las tarjetas para no sacar barra, pero con muchas cotizaciones o varias
+   personas la última tarjeta se encogía y se cortaba por abajo sin manera de
+   llegar a lo que quedaba fuera. Ahora cada tarjeta toma su alto natural
+   (flex 0 0 auto) y la barra sale sola, solo si sobra contenido. */
+.opp-v4 .wo4-side { overflow-y: auto; overflow-x: hidden; }
+.opp-v4 .wo4-side > .wo4-card {
+    flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column;
+}
 /* Las barras no ocupan sitio ni se ven hasta que el cursor entra en la
    región: el lateral y el feed pueden desbordar en oportunidades con muchas
    cotizaciones o correos, pero la ventana se ve limpia. */
-.opp-v4 .wo4-feed, .opp-v4 [data-wo="quoteList"], .opp-v4 .wo4-drive { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-.opp-v4 .wo4-feed:hover, .opp-v4 [data-wo="quoteList"]:hover, .opp-v4 .wo4-drive:hover { scrollbar-color: #D1D5DB transparent; }
-.opp-v4 .wo4-feed::-webkit-scrollbar, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar, .opp-v4 .wo4-drive::-webkit-scrollbar { width: 6px; }
-.opp-v4 .wo4-feed::-webkit-scrollbar-track, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-track, .opp-v4 .wo4-drive::-webkit-scrollbar-track { background: transparent; }
-.opp-v4 .wo4-feed::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive::-webkit-scrollbar-thumb { background: transparent; border-radius: 20px; }
-.opp-v4 .wo4-feed:hover::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive:hover::-webkit-scrollbar-thumb { background: #D1D5DB; }
+.opp-v4 .wo4-feed, .opp-v4 .wo4-side, .opp-v4 [data-wo="quoteList"], .opp-v4 .wo4-drive { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.opp-v4 .wo4-feed:hover, .opp-v4 .wo4-side:hover, .opp-v4 [data-wo="quoteList"]:hover, .opp-v4 .wo4-drive:hover { scrollbar-color: #D1D5DB transparent; }
+.opp-v4 .wo4-feed::-webkit-scrollbar, .opp-v4 .wo4-side::-webkit-scrollbar, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar, .opp-v4 .wo4-drive::-webkit-scrollbar { width: 6px; }
+.opp-v4 .wo4-feed::-webkit-scrollbar-track, .opp-v4 .wo4-side::-webkit-scrollbar-track, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-track, .opp-v4 .wo4-drive::-webkit-scrollbar-track { background: transparent; }
+.opp-v4 .wo4-feed::-webkit-scrollbar-thumb, .opp-v4 .wo4-side::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive::-webkit-scrollbar-thumb { background: transparent; border-radius: 20px; }
+.opp-v4 .wo4-feed:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-side:hover::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive:hover::-webkit-scrollbar-thumb { background: #D1D5DB; }
 .opp-v4 .wo4-duo { flex-shrink: 0; }
 .opp-v4 .wo4-card { background: #fff; border: 1px solid var(--w4-linea); border-radius: 13px; }
 .opp-v4 .wo4-pad { padding: 15px 17px; }
@@ -286,10 +285,18 @@ body {
 .opp-v4 .wo4-resumen { font-size: .78rem; color: var(--w4-tenue); margin-top: 7px; }
 
 /* Conversación */
-.opp-v4 .wo4-conv { flex: 1; display: flex; flex-direction: column; min-height: 260px; }
+/* Es el cuadro protagonista de la ventana, así que se despega del lienzo: un
+   punto más oscuro que el resto de las tarjetas, borde más marcado y sombra.
+   Sobre un lienzo gris claro, blanco sobre blanco no se leía como cuadro. */
+.opp-v4 .wo4-conv {
+    flex: 1; display: flex; flex-direction: column; min-height: 260px;
+    background: #FCFCFD; border-color: #DDE0E5;
+    box-shadow: 0 6px 20px -8px rgba(16, 24, 40, .16), 0 2px 5px -2px rgba(16, 24, 40, .07);
+}
 .opp-v4 .wo4-conv-head {
     display: flex; align-items: center; gap: 12px; padding: 15px 17px;
     border-bottom: 1px solid var(--w4-linea); flex-wrap: wrap; flex-shrink: 0;
+    background: #F6F7F9; border-radius: 13px 13px 0 0;
 }
 .opp-v4 .wo4-conv-t { display: flex; align-items: center; gap: 8px; color: var(--w4-tinta); }
 .opp-v4 .wo4-conv-t h3 { font-size: .88rem; font-weight: 700; margin: 0; }
@@ -358,10 +365,15 @@ body {
 .opp-v4 .wo4-burbuja .wo-conv-pinbtn { margin-left: 7px; vertical-align: middle; }
 .opp-v4 .wo4-nota:hover .wo-conv-pinbtn { opacity: 1; }
 .opp-v4 .wo4-nota-meta { font-size: .76rem; color: var(--w4-tenue); margin-top: 5px; }
+/* Cabecera y compositor en gris y el feed en blanco: el cuadro se lee como
+   una ventana con marco propio, no como una hoja más sobre el lienzo. */
+.opp-v4 .wo4-conv .wo4-feed { background: #fff; }
 .opp-v4 .wo4-composer {
     display: flex; align-items: center; gap: 9px; padding: 13px 17px;
     border-top: 1px solid var(--w4-linea); flex-shrink: 0;
 }
+.opp-v4 .wo4-conv .wo4-composer { background: #F6F7F9; border-radius: 0 0 13px 13px; }
+.opp-v4 .wo4-conv .wo4-cinp { background: #fff; }
 .opp-v4 .wo4-cic {
     width: 33px; height: 33px; border-radius: 8px; border: none; background: none;
     color: var(--w4-gris); cursor: pointer;
