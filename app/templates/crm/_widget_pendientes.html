@@ -1049,6 +1049,8 @@
     _drawCorreos(el('pendResArea'));
   };
   window.pendVerCorreo = function (id) {
+    // Ver un correo desde el asistente = la VENTANA individual de lectura.
+    if (typeof window.mailAbrirVentana === 'function') { try { mailAbrirVentana(id); return; } catch (e) {} }
     var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
     var mw = document.getElementById('widgetMail');
     if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
@@ -1444,7 +1446,13 @@
   // "Ver todo lo pendiente" abre el panel flotante del asistente (la joya):
   // ahí viven los pendientes. El modal grande es la CONVERSACIÓN con el asistente.
   window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
-  window.pendToastAbrirSolo = function (mailId) { _toastCollapse(); _abrirMailConBorrador(mailId, ''); };
+  // "Abrir correo" del asistente: la VENTANA de lectura individual (con
+  // responder / responder a todos / reenviar), no el módulo completo.
+  window.pendToastAbrirSolo = function (mailId) {
+    _toastCollapse();
+    if (typeof window.mailAbrirVentana === 'function') { mailAbrirVentana(mailId); return; }
+    _abrirMailConBorrador(mailId, '');   // respaldo si el módulo de correo no cargó
+  };
   // ── Vincular correo → oportunidad desde el aviso (arranque en frío) ──
   // Funciona desde el toast (nivel 1 o 2) Y desde el mini panel: pinta en la
   // vista activa y al volver regresa a donde estabas.

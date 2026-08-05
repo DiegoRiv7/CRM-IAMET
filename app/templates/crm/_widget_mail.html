@@ -1087,6 +1087,13 @@ como VENTANA flotante (gestor ww: mover, redimensionar, minimizar al dock)
 para leerlo mientras navegas otras secciones. data-windowable la registra
 con widget_window.js.
 {% endcomment %}
+<style>
+    .mv-btn{border:1px solid #E2E4E9;background:#fff;color:#1D1D1F;border-radius:9px;padding:6px 13px;
+        font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;}
+    .mv-btn:hover{background:#F6F7F9;}
+    .mv-btn.pri{background:#007AFF;border-color:#007AFF;color:#fff;}
+    .mv-btn.pri:hover{background:#0060df;}
+</style>
 <div class="widget-overlay" id="widgetMailVentana" data-windowable="1" style="z-index:var(--z-widget);">
     <div class="widget-card" style="width:760px;max-width:92vw;height:72vh;max-height:88vh;display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.25);">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 54px 12px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;background:#fff;">
@@ -1099,6 +1106,26 @@ con widget_window.js.
             </div>
             <button onclick="mailVentanaCerrar()" title="Cerrar" data-widget-close
                 style="border:none;background:rgba(0,0,0,0.05);cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#86868b;flex-shrink:0;">&times;</button>
+        </div>
+        <!-- Acciones del correo: responder / responder a todos / reenviar / abrir completo -->
+        <div id="mvActs" style="display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;background:#fff;flex-wrap:wrap;">
+            <button type="button" class="mv-btn pri" onclick="mailVentanaResponder(false)">&#8617; Responder</button>
+            <button type="button" class="mv-btn" onclick="mailVentanaResponder(true)">&#8617; Responder a todos</button>
+            <button type="button" class="mv-btn" onclick="mailVentanaReenviar()">&#8618; Reenviar</button>
+            <button type="button" class="mv-btn" onclick="mailVentanaAbrirCompleto()" style="margin-left:auto;">Abrir en Correo</button>
+        </div>
+        <!-- Compositor inline (se abre al elegir una acción) -->
+        <div id="mvComposer" style="display:none;flex-direction:column;gap:8px;padding:12px 16px;border-bottom:1px solid #F0F2F5;background:#F8FAFC;flex-shrink:0;">
+            <div id="mvCompPara" style="font-size:0.8rem;color:#374151;"></div>
+            <input id="mvCompParaIn" type="text" placeholder="Para: correo@dominio.com"
+                style="display:none;font-family:inherit;font-size:0.86rem;padding:8px 12px;border:1px solid #E2E4E9;border-radius:9px;outline:none;">
+            <textarea id="mvCompTxt" rows="5" placeholder="Escribe tu mensaje…"
+                style="font-family:inherit;font-size:0.88rem;padding:10px 12px;border:1px solid #E2E4E9;border-radius:10px;outline:none;resize:vertical;"></textarea>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <span id="mvCompStatus" style="margin-right:auto;font-size:0.78rem;color:#6b7280;"></span>
+                <button type="button" class="mv-btn" onclick="mailVentanaCompCerrar()">Cancelar</button>
+                <button type="button" class="mv-btn pri" id="mvCompEnviar" onclick="mailVentanaEnviar()">Enviar</button>
+            </div>
         </div>
         <iframe id="mvIframe" sandbox="allow-same-origin" style="flex:1;border:none;width:100%;display:none;background:#fff;"></iframe>
         <pre id="mvPlain" style="flex:1;overflow:auto;padding:16px;font-family:inherit;font-size:0.85rem;color:#1F2937;display:none;white-space:pre-wrap;margin:0;"></pre>

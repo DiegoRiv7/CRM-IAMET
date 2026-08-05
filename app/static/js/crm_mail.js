@@ -390,10 +390,17 @@
         /* ── Ventana flotante de lectura (doble clic) ──
            Abre el correo como ventana del gestor ww: se puede mover,
            redimensionar, minimizar al dock y leer desde otras secciones. */
+        var _mvId = null, _mvDet = null, _mvModo = null, _mvTodos = false;
+        function _mvEsc(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
         window.mailAbrirVentana = function (id) {
             var ov = document.getElementById('widgetMailVentana');
             if (!ov) return;
+            _mvId = id; _mvDet = null;
+            mailVentanaCompCerrar();
             ov.classList.add('active');
+            ov.style.zIndex = '11200';   // por encima de la ventanita del asistente
             try {
                 if (window.crmWidgetWindow && !ov.classList.contains('ww-windowed')) {
                     var W = Math.min(760, window.innerWidth - 90);
@@ -410,6 +417,7 @@
             fetch('/app/api/mail/detalle/' + id + '/')
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
+                    _mvDet = d;
                     if (asuntoEl) asuntoEl.textContent = d.asunto || '(Sin asunto)';
                     var fecha = d.fecha_envio ? new Date(d.fecha_envio).toLocaleString('es-MX') : '';
                     if (metaEl) metaEl.textContent = 'De: ' + (d.remitente_nombre || d.remitente_email || '—') + (fecha ? '  ·  ' + fecha : '');
@@ -431,6 +439,104 @@
                 .catch(function () {
                     if (asuntoEl) asuntoEl.textContent = 'Error al cargar el correo';
                 });
+        };
+
+        /* ── Acciones de la ventana: responder / responder a todos / reenviar ── */
+        function _mvMisCorreos() {
+            return (_mailConexiones || []).map(function (c) { return (c.correo_electronico || '').toLowerCase(); });
+        }
+        function _mvCcTodos() {
+            // Destinatarios del original menos yo y menos el remitente (que va en Para).
+            var mios = _mvMisCorreos();
+            var rem = ((_mvDet && _mvDet.remitente_email) || '').toLowerCase();
+            return ((_mvDet && _mvDet.destinatarios) || []).filter(function (dd) {
+                var low = String(dd || '').toLowerCase();
+                if (!low) return false;
+                if (low.indexOf(rem) !== -1 && rem) return false;
+                return !mios.some(function (m) { return m && low.indexOf(m) !== -1; });
+            });
+        }
+        window.mailVentanaResponder = function (todos) {
+            if (!_mvDet) return;
+            _mvModo = 'responder'; _mvTodos = !!todos;
+            var comp = document.getElementById('mvComposer');
+            var paraEl = document.getElementById('mvCompPara');
+            var paraIn = document.getElementById('mvCompParaIn');
+            if (paraIn) paraIn.style.display = 'none';
+            var cc = todos ? _mvCcTodos() : [];
+            if (paraEl) {
+                paraEl.textContent = 'Para: ' + (_mvDet.remitente_nombre || _mvDet.remitente_email || '') +
+                    (cc.length ? '  ·  CC: ' + cc.join(', ') : '');
+            }
+            if (comp) comp.style.display = 'flex';
+            var t = document.getElementById('mvCompTxt'); if (t) { try { t.focus(); } catch (e) {} }
+        };
+        window.mailVentanaReenviar = function () {
+            if (!_mvDet) return;
+            _mvModo = 'reenviar';
+            var comp = document.getElementById('mvComposer');
+            var paraEl = document.getElementById('mvCompPara');
+            var paraIn = document.getElementById('mvCompParaIn');
+            if (paraEl) paraEl.textContent = 'Reenviar «' + (_mvDet.asunto || '') + '» a:';
+            if (paraIn) { paraIn.style.display = ''; paraIn.value = ''; }
+            if (comp) comp.style.display = 'flex';
+            if (paraIn) { try { paraIn.focus(); } catch (e) {} }
+        };
+        window.mailVentanaCompCerrar = function () {
+            var comp = document.getElementById('mvComposer');
+            if (comp) comp.style.display = 'none';
+            var t = document.getElementById('mvCompTxt'); if (t) t.value = '';
+            var st = document.getElementById('mvCompStatus'); if (st) st.textContent = '';
+            _mvModo = null; _mvTodos = false;
+        };
+        window.mailVentanaEnviar = function () {
+            if (!_mvId || !_mvModo) return;
+            var t = document.getElementById('mvCompTxt');
+            var txt = (t && t.value || '').trim();
+            var st = document.getElementById('mvCompStatus');
+            var btn = document.getElementById('mvCompEnviar');
+            if (!txt) { if (st) st.textContent = 'Escribe el mensaje primero.'; return; }
+            var html = '<pre style="font-family:inherit;white-space:pre-wrap;margin:0;">' + _mvEsc(txt) + '</pre>' + _mailFirmaHtml();
+            var url, body;
+            if (_mvModo === 'reenviar') {
+                var paraIn = document.getElementById('mvCompParaIn');
+                var para = (paraIn && paraIn.value || '').trim();
+                if (!para) { if (st) st.textContent = 'Falta el destinatario.'; return; }
+                url = '/app/api/mail/reenviar/' + _mvId + '/';
+                body = { para: para, cuerpo_texto: txt, cuerpo_html: html };
+            } else {
+                url = '/app/api/mail/responder/' + _mvId + '/';
+                body = { cuerpo_texto: txt, cuerpo_html: html };
+                if (_mvTodos) {
+                    var cc = _mvCcTodos();
+                    if (cc.length) body.cc = cc.join(', ');
+                }
+            }
+            if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify(body)
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+                    if (!(d && d.ok)) { if (st) st.textContent = (d && d.error) || 'No se pudo enviar.'; return; }
+                    if (st) st.textContent = '✓ Enviado';
+                    // El asistente reacciona a tu respuesta al instante (¿actualizo? / ¿agendo?).
+                    if (typeof window.pendFeedRefresh === 'function') { try { window.pendFeedRefresh(); } catch (e) {} }
+                    setTimeout(mailVentanaCompCerrar, 1200);
+                })
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+                    if (st) st.textContent = 'Error de conexión.';
+                });
+        };
+        window.mailVentanaAbrirCompleto = function () {
+            var id = _mvId;
+            mailVentanaCerrar();
+            if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+            if (id && typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
         };
 
         window.mailVentanaCerrar = function () {
