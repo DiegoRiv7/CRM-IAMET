@@ -305,7 +305,7 @@
 
         // Probabilidad: drag en la barra
         q(inst, 'probBar').addEventListener('mousedown', function (e) {
-            if (window.ES_INGENIERO) return;
+            if (inst.soloConsulta || window.ES_INGENIERO) return;
             probDrag = inst;
             updateProbVisual(inst, probFromEvent(inst, e));
             e.preventDefault();
@@ -330,6 +330,7 @@
         });
         input.addEventListener('blur', function () {
             var val = input.value.trim();
+            if (inst.soloConsulta) { input.value = inst.data ? (inst.data[field] || '') : ''; return; }
             if (!inst.data || val === (inst.data[field] || '')) return;
             var fd = new FormData();
             fd.append(field, val);
@@ -345,7 +346,20 @@
 
     /* ── Acciones (data-action) ───────────────────────────────────── */
 
+    /* En modo consulta estos botones ni se pintan, pero la delegación es global:
+       basta un data-action que sobreviva a un render a medias para dispararlos.
+       El servidor ya responde 403; esto evita además abrir ventanas que van a
+       morir en un error. Vincular un proyecto y cambiar de pipeline también
+       escriben, así que entran a la lista. */
+    var ACCIONES_DE_ESCRITURA = [
+        'nueva-cot', 'nueva-tarea', 'nueva-actividad', 'vincular-proyecto', 'drive-subir',
+    ];
+
     function handleAction(inst, action, ev) {
+        if (inst.soloConsulta && ACCIONES_DE_ESCRITURA.indexOf(action) !== -1) {
+            notify('No tienes permiso para esta acción', 'error');
+            return;
+        }
         switch (action) {
             case 'close':
                 ev.stopPropagation();
@@ -581,9 +595,27 @@
         loadConversacion(inst);
 
         var tipo = d.tipo_negociacion || 'runrate';
-        var ing = !!window.ES_INGENIERO;
+        /* Modo consulta: lo decide el servidor (d.solo_consulta) y por eso vale en
+           TODA página. La global window.ES_INGENIERO solo existía en crm_home y en
+           la app de levantamientos, así que desde reportes el widget se abría
+           editable. Se conserva como respaldo, no como fuente. */
+        var ing = !!d.solo_consulta || !!window.ES_INGENIERO;
+        inst.soloConsulta = ing;
         // Compat: crm_ingeniero.js seteaba este flag observando el widget legacy.
         if (ing) window._ingenieroModeActive = true;
+
+        // Los metadatos comerciales (monto, cierre, PO, factura, probabilidad,
+        // producto y área) no son asunto del ingeniero: fuera la tarjeta entera.
+        var infoCard = q(inst, 'infoCard');
+        if (infoCard) infoCard.style.display = ing ? 'none' : '';
+
+        // Y fuera los botones que crean cosas. Se recorre por data-action para
+        // no depender de que cada uno tenga su propio hook data-wo.
+        ACCIONES_DE_ESCRITURA.forEach(function (acc) {
+            inst.root.querySelectorAll('[data-action="' + acc + '"]').forEach(function (b) {
+                b.style.display = ing ? 'none' : '';
+            });
+        });
 
         // ── Tipo de venta: chip discreto de texto ──
         var badge = q(inst, 'typeBadge');
@@ -730,7 +762,7 @@
     }
 
     function renderCotizaciones(inst, d) {
-        var ing = !!window.ES_INGENIERO;
+        var ing = !!inst.soloConsulta;
         var quoteList = q(inst, 'quoteList');
         quoteList.innerHTML = '';
         q(inst, 'btnNuevaCot').style.display = ing ? 'none' : '';
@@ -744,6 +776,7 @@
     /* Pinta las tarjetas de cotización en cualquier contenedor: la lista del
        lateral y la ventana de "ver todas" comparten el mismo render. */
     function pintarCotizaciones(inst, contenedor, cots) {
+        var soloConsulta = !!inst.soloConsulta;
         cots.forEach(function (cot) {
             var card = document.createElement('div');
             card.className = 'wo4-cot';
@@ -755,15 +788,17 @@
                 '<div class="wo4-cot-m">' + esc(cot.fecha) + ' &middot; $' + totalStr + '</div>' +
                 '</div>' +
                 '<div class="wo4-cot-a">' +
+                (soloConsulta ? '' :
                 '<button type="button" class="wo4-cot-btn" data-cot-edit title="Editar">' +
-                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></button>' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></button>') +
                 '<a class="wo4-cot-btn" href="/app/cotizacion/pdf/' + cot.id + '/" title="Descargar">' +
                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
                 '</div>';
             card.querySelector('[data-cot-open]').addEventListener('click', function () {
                 window.open('/app/cotizacion/view/' + cot.id + '/', '_blank');
             });
-            card.querySelector('[data-cot-edit]').addEventListener('click', function (e) {
+            var btnEdit = card.querySelector('[data-cot-edit]');
+            if (btnEdit) btnEdit.addEventListener('click', function (e) {
                 e.preventDefault();
                 setFocus(inst);
                 openEditCotizacionV2(cot.id, inst);
@@ -985,6 +1020,12 @@
         inst.root.querySelectorAll('.wo-editable, .editable').forEach(function (el) {
             el.style.cursor = 'default';
             el.onclick = null;
+        });
+        // PO y Factura son inputs de texto: sin readOnly seguirían aceptando
+        // teclas aunque el guardado esté cortado.
+        inst.root.querySelectorAll('.wo4-doc-inp').forEach(function (el) {
+            el.readOnly = true;
+            el.tabIndex = -1;
         });
     }
 
@@ -1759,7 +1800,7 @@
         if (previo) previo.remove();
 
         var cots = (inst.data && inst.data.cotizaciones) || [];
-        var ing = !!window.ES_INGENIERO;
+        var ing = !!inst.soloConsulta;
         var ov = document.createElement('div');
         ov.id = 'wo4CotOverlay';
         // .widget-overlay nace con display:none — la clase 'active' es la que

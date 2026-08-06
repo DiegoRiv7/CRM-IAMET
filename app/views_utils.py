@@ -117,6 +117,28 @@ def is_engineer(user):
     return user.groups.filter(name='Ingenieros').exists()
 
 
+def es_ingeniero_restringido(user):
+    """Ingeniero SIN acceso de supervisor: entra a consultar, no a operar.
+
+    El toggle "Acceso Supervisor" del widget de Admin mete/saca al usuario del
+    grupo 'Supervisores', así que un ingeniero con ese toggle prendido pasa por
+    is_supervisor() y NO queda restringido.
+
+    Restringido significa: en Proyectos no ve Resumen ni Finanzas, y en una
+    Oportunidad ve la conversación, las cotizaciones ya hechas y sus tareas y
+    actividades, pero ni los metadatos comerciales ni ningún control de edición.
+
+    Se evalúa SIEMPRE en el servidor: la bandera viaja en los payloads para que
+    el front sepa qué pintar, pero cada escritura la vuelve a checar (el front
+    se puede saltar; el 403 no).
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if user.is_superuser or is_supervisor(user):
+        return False
+    return is_ingeniero(user)
+
+
 def _get_display_for_value(value, choices_list):
     return dict(choices_list).get(value, value)
 

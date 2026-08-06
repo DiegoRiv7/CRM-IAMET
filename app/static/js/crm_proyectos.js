@@ -1269,17 +1269,39 @@
         financiero: 1,
     };
 
+    /* Ingeniero sin acceso de supervisor: Resumen y Finanzas no existen para él.
+       Los botones ni se pintan (el template los omite), pero a estos tabs se
+       llega también por deep-link ?tab=financiero y por el último tab guardado
+       en localStorage — de ahí que el corte viva en el normalizador y no solo
+       en la barra. El backend además recorta las cifras y devuelve 403. */
+    var _DETAIL_TAB_VETADOS = { resumen: 1, dashboard: 1, financiero: 1 };
+
+    function _proySoloConsulta() {
+        // La bandera la manda el servidor con el detalle del proyecto; mientras
+        // no haya cargado, se deduce de la ausencia del botón de Finanzas.
+        if (_cachedProjectDetail && typeof _cachedProjectDetail.solo_consulta === 'boolean') {
+            return _cachedProjectDetail.solo_consulta;
+        }
+        return !document.querySelector('.proy-tab-btn[data-tab="financiero"]');
+    }
+
+    function _proyTabPermitido(t) {
+        return !(_proySoloConsulta() && _DETAIL_TAB_VETADOS[t]);
+    }
+
     function _proyDetailNormalizeTab(t) {
+        var _fallback = _proySoloConsulta() ? 'tareas' : 'resumen';
         if (!t) {
             // Persistencia ligera: si no hay initialTab, intenta recuperar
             // el último tab activo guardado en localStorage.
             try {
                 var saved = localStorage.getItem('_proy_last_tab');
-                if (saved && _DETAIL_TAB_VALID[saved]) return saved;
+                if (saved && _DETAIL_TAB_VALID[saved] && _proyTabPermitido(saved)) return saved;
             } catch (e) {}
-            return 'resumen';
+            return _fallback;
         }
-        return _DETAIL_TAB_VALID[t] ? t : 'resumen';
+        if (!_DETAIL_TAB_VALID[t] || !_proyTabPermitido(t)) return _fallback;
+        return t;
     }
 
     // Sincroniza la URL con el proyecto/tab activos. Se usa tambi\u00e9n desde
@@ -1420,7 +1442,9 @@
     var _DETAIL_MORE_TABS    = ['equipo','comunicacion','reportes','info'];
 
     window.proyectosSetTab = function(tabName) {
-        tabName = tabName || 'resumen';
+        tabName = tabName || (_proySoloConsulta() ? 'tareas' : 'resumen');
+        // Último filtro: aquí llegan los onclick inline y cualquier llamada suelta.
+        if (!_proyTabPermitido(tabName)) tabName = 'tareas';
         currentTab = tabName;
 
         // Toggle tab buttons. Si el tab está dentro del menú "Más ▾", marcamos
