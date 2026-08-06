@@ -1288,6 +1288,13 @@
             if (e.target === overlay) closeAsistente();
         });
 
+        // Los dos listeners de abajo cuelgan de `document`, que Turbo NO
+        // reemplaza: si se re-registraran en cada navegación se acumularían.
+        // Los de arriba cuelgan de nodos del body, que son nuevos en cada
+        // navegación, así que ahí no hay duplicado posible.
+        if (window._asistDocWired) return;
+        window._asistDocWired = true;
+
         // Sugerencias del welcome y clicks en oportunidades dentro de respuestas
         document.addEventListener('click', function (e) {
             var sug = e.target.closest('.asist-sugg-card, .asist-suggestion');
@@ -1320,16 +1327,25 @@
         });
     }
 
+    /* La pestaña de Prospección (y Calendario, Correo, Reportes, Ideas…) navega
+       con Turbo, que reemplaza el <body> entero. Esto se cableaba una sola vez
+       con DOMContentLoaded + el guard _asistBooted, y ese evento no vuelve a
+       dispararse en una navegación Turbo: la X y el backdrop quedaban sin
+       listener sobre nodos nuevos. El asistente seguía abriendo (asistenteAbrir
+       resuelve el nodo al llamarse) pero ya no cerraba más que con Escape.
+       Con crmReady se recablea en cada turbo:load. */
     function boot() {
         if (!document.getElementById('widgetAsistente')) return;
-        if (window._asistBooted) return;
-        window._asistBooted = true;
         // Capturar el nombre que Django pintó en el welcome inicial,
         // para reusarlo cuando reconstruimos el welcome tras un clear.
         var greetEl = document.getElementById('asistGreetName');
         if (greetEl) _greetingName = (greetEl.textContent || '').trim();
         wireEvents();
     }
-    document.addEventListener('DOMContentLoaded', boot);
-    if (document.readyState !== 'loading') boot();
+    if (window.crmReady) {
+        window.crmReady(boot);
+    } else {
+        document.addEventListener('DOMContentLoaded', boot);
+        if (document.readyState !== 'loading') boot();
+    }
 })();
