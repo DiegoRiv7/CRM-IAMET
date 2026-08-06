@@ -251,11 +251,18 @@
              - "Cronograma"     → proyPane_programa
            "Más ▾" abre dropdown con: Equipo, Comunicación, Reportes, Info. -->
       <div class="proy-v3-topbar-tabs proy-tab-bar">
+        {% comment %}
+        Resumen y Finanzas son de supervisión: el ingeniero sin ese acceso ni
+        siquiera recibe los botones, y el backend además recorta las cifras del
+        payload y responde 403 en los endpoints financieros.
+        {% endcomment %}
+        {% if not solo_consulta %}
         <button class="proy-v3-topbar-tab proy-tab-btn active" data-tab="resumen" onclick="proyectosSetTab('resumen')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
           Resumen
         </button>
-        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
+        {% endif %}
+        <button class="proy-v3-topbar-tab proy-tab-btn{% if solo_consulta %} active{% endif %}" data-tab="tareas" onclick="proyectosSetTab('tareas')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Tareas
         </button>
@@ -284,10 +291,12 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Drive
         </button>
+        {% if not solo_consulta %}
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Finanzas
         </button>
+        {% endif %}
       </div>
 
       <div class="proy-v3-topbar-right">

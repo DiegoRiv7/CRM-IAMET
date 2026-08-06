@@ -17,7 +17,7 @@ from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-from .views_utils import is_supervisor
+from .views_utils import is_supervisor, es_ingeniero_restringido
 
 
 #: Días de duración de la cookie de sesión para usuarios del PWA.
@@ -67,7 +67,11 @@ def levantamientos_app(request):
             'Solicita acceso al administrador.'
         )
     request.session.set_expiry(PWA_SESSION_DAYS * 24 * 60 * 60)
-    return render(request, 'levantamientos_app.html')
+    # La misma bandera que en crm_home: el widget de proyectos que se incluye
+    # aquí decide con ella si pinta Resumen y Finanzas.
+    return render(request, 'levantamientos_app.html', {
+        'solo_consulta': es_ingeniero_restringido(request.user),
+    })
 
 
 @require_GET

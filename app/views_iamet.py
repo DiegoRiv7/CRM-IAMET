@@ -24,6 +24,7 @@ import json
 import re
 from decimal import Decimal, InvalidOperation
 from datetime import date
+from functools import wraps
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -37,8 +38,27 @@ from .models import (
     ProyectoLevantamiento, LevantamientoEvidencia,
     ProyectoVolumetria,
 )
-from .views_utils import is_supervisor
+from .views_utils import is_supervisor, es_ingeniero_restringido
 from .views_grupos import get_usuarios_visibles_ids
+
+
+def sin_finanzas(view):
+    """Cierra el endpoint al ingeniero sin acceso de supervisor.
+
+    Finanzas de un proyecto (OC, facturas, gastos, márgenes) es información de
+    supervisión. Ocultar la pestaña no basta: las URLs siguen respondiendo a
+    quien las pida a mano, así que el corte va aquí.
+    """
+    @wraps(view)
+    def _envuelta(request, *args, **kwargs):
+        if es_ingeniero_restringido(request.user):
+            return JsonResponse(
+                {'success': False, 'error': 'No tienes acceso a la información financiera'},
+                status=403,
+            )
+        return view(request, *args, **kwargs)
+    return _envuelta
+
 
 
 # ─── Helpers ──────────────────────────────────────────────────
@@ -882,6 +902,7 @@ def api_proyectos_dashboard(request):
 
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_proyectos_financiero(request):
     """Lista de proyectos con datos financieros agregados."""
     try:
@@ -934,6 +955,14 @@ def api_proyectos_lista(request):
         # + select_related de la oportunidad para no caer en N+1.
         qs = qs.select_related('usuario', 'oportunidad')
         proyectos = [_proyecto_to_dict_lite(p) for p in qs]
+        # Las tarjetas del listado cargan el monto de la oportunidad y la utilidad
+        # presupuestada. Al ingeniero sin acceso de supervisor le tapamos Resumen
+        # y Finanzas; dejar las mismas cifras aquí sería la puerta de atrás.
+        if es_ingeniero_restringido(request.user):
+            for d in proyectos:
+                for campo in ('utilidad_presupuestada', 'utilidad_real',
+                              'oportunidad_monto', 'oportunidad_probabilidad'):
+                    d[campo] = 0.0
         return JsonResponse({'ok': True, 'data': proyectos})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
@@ -1040,6 +1069,18 @@ def api_proyecto_detalle(request, proyecto_id):
         # en vez de tirar todo el endpoint. El frontend legacy sigue funcionando.
         d['overview'] = None
         d['overview_error'] = str(e)
+
+    # Ingeniero sin acceso de supervisor: no le tocan Resumen ni Finanzas. Las
+    # cifras se recortan AQUÍ y no solo en el front — esconder la pestaña deja
+    # los montos viajando en la respuesta, que es lo mismo que enseñarlos.
+    d['solo_consulta'] = es_ingeniero_restringido(request.user)
+    if d['solo_consulta']:
+        d.pop('kpis', None)
+        d.pop('configuracion', None)
+        if isinstance(d.get('overview'), dict):
+            d['overview'].pop('financiero', None)
+            d['overview'].pop('breakdown_presupuesto', None)
+            d['overview'].pop('salud', None)
 
     return JsonResponse({'success': True, 'data': d})
 
@@ -1639,8 +1680,10 @@ def _sync_partidas_proyecto_from_volumetria(proyecto, vol, subido_por=None,
 #  ORDENES DE COMPRA
 # ═══════════════════════════════════════════════════════════════
 
+
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_oc_lista(request, proyecto_id):
     try:
         proyecto = Proyecto.objects.get(id=proyecto_id)
@@ -1657,6 +1700,7 @@ def api_oc_lista(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_oc_crear(request):
     try:
         data = json.loads(request.body)
@@ -1718,6 +1762,7 @@ def api_oc_crear(request):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_oc_actualizar(request, oc_id):
     try:
         oc = ProyectoOrdenCompra.objects.select_related('proyecto', 'partida').get(id=oc_id)
@@ -1779,6 +1824,7 @@ def api_oc_actualizar(request, oc_id):
 
 @login_required
 @require_http_methods(["DELETE"])
+@sin_finanzas
 def api_oc_eliminar(request, oc_id):
     try:
         oc = ProyectoOrdenCompra.objects.select_related('proyecto', 'partida').get(id=oc_id)
@@ -1813,6 +1859,7 @@ def api_oc_eliminar(request, oc_id):
 
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_facturas_proveedor_lista(request, proyecto_id):
     try:
         proyecto = Proyecto.objects.get(id=proyecto_id)
@@ -1829,6 +1876,7 @@ def api_facturas_proveedor_lista(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_factura_proveedor_crear(request):
     try:
         data = json.loads(request.body)
@@ -1896,6 +1944,7 @@ def api_factura_proveedor_crear(request):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_factura_proveedor_actualizar(request, factura_id):
     try:
         factura = ProyectoFacturaProveedor.objects.select_related('proyecto').get(id=factura_id)
@@ -1946,6 +1995,7 @@ def api_factura_proveedor_actualizar(request, factura_id):
 
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_facturas_ingreso_lista(request, proyecto_id):
     try:
         proyecto = Proyecto.objects.get(id=proyecto_id)
@@ -1962,6 +2012,7 @@ def api_facturas_ingreso_lista(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_factura_ingreso_crear(request):
     try:
         data = json.loads(request.body)
@@ -2001,6 +2052,7 @@ def api_factura_ingreso_crear(request):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_factura_ingreso_actualizar(request, factura_id):
     try:
         factura = ProyectoFacturaIngreso.objects.select_related('proyecto').get(id=factura_id)
@@ -2039,6 +2091,7 @@ def api_factura_ingreso_actualizar(request, factura_id):
 
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_gastos_lista(request, proyecto_id):
     try:
         proyecto = Proyecto.objects.get(id=proyecto_id)
@@ -2055,6 +2108,7 @@ def api_gastos_lista(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_gasto_crear(request):
     try:
         data = json.loads(request.body)
@@ -2094,6 +2148,7 @@ def api_gasto_crear(request):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_gasto_actualizar(request, gasto_id):
     try:
         gasto = ProyectoGasto.objects.select_related('proyecto', 'aprobado_por').get(id=gasto_id)
@@ -2128,6 +2183,7 @@ def api_gasto_actualizar(request, gasto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_gasto_aprobar(request, gasto_id):
     if not is_supervisor(request.user):
         return JsonResponse({'success': False, 'error': 'Solo supervisores pueden aprobar gastos'}, status=403)
@@ -2160,6 +2216,7 @@ def api_gasto_aprobar(request, gasto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_financiero_sync_drive(request, proyecto_id):
     """Sincroniza archivos del drive de la oportunidad vinculada
     que aún no se hayan procesado (OCC y Facturas)."""
@@ -2197,6 +2254,7 @@ def api_financiero_sync_drive(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_financiero_upload_oc(request, proyecto_id):
     """Subir un PDF de OC manualmente al financiero del proyecto."""
     try:
@@ -2269,6 +2327,7 @@ def api_financiero_upload_oc(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_financiero_upload_factura_ingreso(request, proyecto_id):
     """Subir un PDF de Factura de Ingreso manualmente."""
     try:
@@ -2329,6 +2388,7 @@ def api_financiero_upload_factura_ingreso(request, proyecto_id):
 
 @login_required
 @require_http_methods(["POST"])
+@sin_finanzas
 def api_financiero_upload_factura_proveedor(request, proyecto_id):
     """Subir un PDF de Factura de Proveedor manualmente."""
     try:
@@ -2385,6 +2445,7 @@ def api_financiero_upload_factura_proveedor(request, proyecto_id):
 
 @login_required
 @require_http_methods(["DELETE"])
+@sin_finanzas
 def api_factura_proveedor_eliminar(request, factura_id):
     """Elimina una factura de proveedor."""
     try:
@@ -2401,6 +2462,7 @@ def api_factura_proveedor_eliminar(request, factura_id):
 
 @login_required
 @require_http_methods(["DELETE"])
+@sin_finanzas
 def api_factura_ingreso_eliminar(request, factura_id):
     """Elimina una factura de ingreso."""
     try:
@@ -2417,6 +2479,7 @@ def api_factura_ingreso_eliminar(request, factura_id):
 
 @login_required
 @require_http_methods(["DELETE"])
+@sin_finanzas
 def api_gasto_eliminar(request, gasto_id):
     """Elimina un gasto operativo."""
     try:
@@ -2691,6 +2754,7 @@ def api_alerta_resolver(request, alerta_id):
 
 @login_required
 @require_http_methods(["GET"])
+@sin_finanzas
 def api_proyecto_financieros(request, proyecto_id):
     try:
         proyecto = Proyecto.objects.get(id=proyecto_id)
