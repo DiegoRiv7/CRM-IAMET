@@ -978,15 +978,17 @@
                         var posEl = document.getElementById('mailCtxOppEtapaPos');
                         if (posEl) posEl.textContent = (llenos > 0 && d.oportunidad.etapa_total > 0) ? ('Etapa ' + llenos + ' de ' + total) : '';
                     }
-                    // Próxima actividad de calendario (clic -> abre la opp con la actividad)
+                    // Próxima actividad de calendario (clic -> ventana de la actividad)
                     var apw = document.getElementById('mailCtxActProxWrap');
                     if (apw) {
                         if (d.proxima_actividad) {
                             apw.style.display = 'block';
+                            window._mailCtxProxActId = d.proxima_actividad.id || null;
                             _mailCtxSet('mailCtxActProxTitulo', d.proxima_actividad.titulo);
                             _mailCtxSet('mailCtxActProxFecha', d.proxima_actividad.fecha ? _formatFecha(d.proxima_actividad.fecha) : '');
                         } else {
                             apw.style.display = 'none';
+                            window._mailCtxProxActId = null;
                         }
                     }
                     var etapaEl = document.getElementById('mailCtxOppEtapa');
@@ -1087,14 +1089,20 @@
                 .catch(function () { _showToastMail('Error de conexión', false); });
         };
         window.mailCtxAbrirTarea = function (tareaId) {
-            // Las tareas del panel son TareaOportunidad (cockpit de Tareas),
-            // NO el modal de Tarea de proyectos — abrir la sección Tareas con
-            // la tarea ya seleccionada (deep-link vía sessionStorage).
+            // Abrir la VENTANA de la tarea aquí mismo (sin navegar a Tareas).
+            if (typeof window.woVerActividad === 'function') { window.woVerActividad(tareaId); return; }
+            // Respaldo si el visor no cargó: deep-link a la sección Tareas.
             try { sessionStorage.setItem('tcpAbrirTarea', String(tareaId)); } catch (e) { }
             try { localStorage.setItem('crmView', 'tareas'); } catch (e) { }
             window.location.href = '/app/home/?tab=tareas';
         };
         window.mailCtxAbrirActividad = function () {
+            // Abrir la VENTANA de la actividad (no la oportunidad completa).
+            if (window._mailCtxProxActId && typeof window.calAbrirActividadPorId === 'function') {
+                window.calAbrirActividadPorId(window._mailCtxProxActId);
+                return;
+            }
+            // Respaldo: la oportunidad con su actividad reciente.
             if (!window._mailCtxOppId || typeof window.openDetalle !== 'function') return;
             window.openDetalle(window._mailCtxOppId);
             setTimeout(function () {

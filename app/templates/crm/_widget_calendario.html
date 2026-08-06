@@ -3860,6 +3860,9 @@
     // _globalEvents; en la vista Equipo ese feed puede no tener la actividad,
     // así que si falta la sintetizamos desde /api/actividades/<id>/ y luego
     // delegamos al opener real.
+    // Expuesta: otros módulos (p. ej. el panel CRM del Correo) abren una
+    // actividad del calendario por id, con fetch de respaldo si no está en el feed.
+    window.calAbrirActividadPorId = function (id) { _calEquipoOpenActividad(id); };
     function _calEquipoOpenActividad(id) {
         var found = _globalEvents.find(function (x) { return String(x.id) === String(id); });
         if (found) {

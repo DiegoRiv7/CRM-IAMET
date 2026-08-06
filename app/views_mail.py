@@ -1296,6 +1296,7 @@ def api_mail_contexto(request, correo_id):
             for a in actividades
         ],
         'proxima_actividad': {
+            'id': prox_act.id,
             'titulo': prox_act.titulo,
             'fecha': prox_act.fecha_inicio.isoformat() if prox_act.fecha_inicio else None,
         } if prox_act else None,
