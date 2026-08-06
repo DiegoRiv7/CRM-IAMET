@@ -24,15 +24,32 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-def _siguiente_dia_habil(base_dt):
-    """Devuelve el siguiente día hábil (L-V) a la misma hora de base_dt.
+#: Jornada laboral de IAMET: lunes a viernes, 8:00 a 18:00 (hora local).
+HORA_INICIO_JORNADA = 8
+HORA_FIN_JORNADA = 18
 
-    Si hoy es viernes, sábado o domingo, empuja al próximo lunes. Para
-    cualquier otro día, suma 1 día. weekday(): 0=L, 1=M, 2=X, 3=J, 4=V, 5=S, 6=D.
+
+def _siguiente_dia_habil(base_dt):
+    """Siguiente día hábil (L-V) DENTRO del horario de oficina.
+
+    Antes conservaba la hora de base_dt tal cual, así que un prospecto creado a
+    las 23:28 dejaba el recordatorio agendado a las 23:28 del día siguiente:
+    fuera de jornada y en un hueco del calendario que nadie mira.
+
+    Ahora: se empuja al siguiente día hábil y se acomoda la hora dentro de
+    8:00-18:00. Fuera de ese rango (de noche o de madrugada) cae a las 9:00,
+    que es cuando se empieza a revisar el día. La cuenta se hace en hora LOCAL
+    —lo que ve el usuario— y se devuelve consciente de zona horaria.
     """
-    nxt = base_dt + timedelta(days=1)
+    local = timezone.localtime(base_dt) if timezone.is_aware(base_dt) else base_dt
+    nxt = local + timedelta(days=1)
     while nxt.weekday() >= 5:  # 5=sábado, 6=domingo
         nxt = nxt + timedelta(days=1)
+    if not (HORA_INICIO_JORNADA <= nxt.hour < HORA_FIN_JORNADA):
+        nxt = nxt.replace(hour=9, minute=0)
+    nxt = nxt.replace(second=0, microsecond=0)
+    if timezone.is_aware(base_dt) and timezone.is_naive(nxt):
+        nxt = timezone.make_aware(nxt)
     return nxt
 
 
