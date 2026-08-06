@@ -734,7 +734,9 @@
                         </div>
                     </div>
                     <div id="mailCtxTareasWrap" style="display:none;">
-                        <div style="font-size:0.62rem;font-weight:800;color:#9CA3AF;letter-spacing:0.06em;margin-bottom:6px;">TAREAS PENDIENTES</div>
+                        {% comment %}Son TareaOportunidad: las mismas filas que la sección
+                        "Actividades" del expediente — misma palabra en ambos lados.{% endcomment %}
+                        <div style="font-size:0.62rem;font-weight:800;color:#9CA3AF;letter-spacing:0.06em;margin-bottom:6px;">ACTIVIDADES</div>
                         <div id="mailCtxTareas" style="display:flex;flex-direction:column;gap:5px;"></div>
                     </div>
                     <div id="mailCtxActsWrap" style="display:none;">

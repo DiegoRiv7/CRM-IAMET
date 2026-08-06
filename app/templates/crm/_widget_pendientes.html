@@ -258,7 +258,7 @@
   @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
   /* ── Launcher (asistente reducido, siempre visible) ── */
   .pend-launcher{position:fixed;right:22px;bottom:22px;width:420px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
-    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:900;transition:box-shadow .2s,transform .2s;}
+    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:11500;transition:box-shadow .2s,transform .2s;}
   .pend-launcher.expanded{width:440px;}
   /* Nivel 2 (aviso expandido en el lugar): crece proporcional desde la esquina
      (ancho Y alto) y el cuerpo del correo manda. La doble clase le gana al
@@ -311,7 +311,7 @@
   /* ── Mini panel del asistente: ventanita arrastrable y redimensionable.
      Sin minimizar (eso es el toast) ni maximizar (eso es "Mi día"). ── */
   .pend-mini{position:fixed;right:22px;bottom:22px;width:520px;max-width:calc(100vw - 44px);height:min(78vh,860px);max-height:92vh;background:#fff;
-    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:901;display:flex;flex-direction:column;overflow:hidden;
+    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:11500;display:flex;flex-direction:column;overflow:hidden;
     min-width:400px;min-height:340px;}
   /* Asideros invisibles en orillas y esquinas para redimensionar desde cualquiera */
   .pend-mini-rs{position:absolute;z-index:6;}
