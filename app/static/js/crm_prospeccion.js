@@ -55,6 +55,12 @@ document.addEventListener('click', function(ev) {
                     localStorage.removeItem('_pendienteProspectoSinActividad');
                     return;
                 }
+                // Solo se le reabre al responsable. Con una clave vieja en el
+                // navegador esto le abría a cualquiera la ficha de otro.
+                if (det && det.es_mio === false) {
+                    localStorage.removeItem('_pendienteProspectoSinActividad');
+                    return;
+                }
                 // Verificar si tiene actividades
                 fetch('/app/api/prospecto/' + pendienteId + '/actividades/')
                     .then(function(r) { return r.json(); })
@@ -952,6 +958,19 @@ document.addEventListener('click', function(ev) {
         });
     }
 
+    /* El aviso de "falta agendar actividad" es una instrucción para el
+       responsable del prospecto. A un supervisor o a un compañero que solo
+       entra a mirar la ficha no le toca: antes los dejaba atrapados sin poder
+       cerrar el widget de alguien más. `es_mio` lo calcula el servidor en
+       api_prospecto_detalle; el usuario_id queda de respaldo. */
+    function _soyElResponsable() {
+        var d = window._currentProspectoData;
+        if (!d) return false;
+        if (typeof d.es_mio === 'boolean') return d.es_mio;
+        var yo = (window._CRM_CONFIG && window._CRM_CONFIG.userId) || null;
+        return !!(yo && d.usuario_id && d.usuario_id === yo);
+    }
+
     function _showProspectoMissingActivityWarning() {
         var existing = document.getElementById('warnMissingProspectoActivity');
         if (existing) existing.remove();
@@ -988,7 +1007,8 @@ document.addEventListener('click', function(ev) {
         if (!id) return;
 
         // Validate: must have at least one activity before closing
-        if (nuevaEtapa === 'cerrado_ganado' || nuevaEtapa === 'cerrado_perdido') {
+        if ((nuevaEtapa === 'cerrado_ganado' || nuevaEtapa === 'cerrado_perdido')
+            && _soyElResponsable()) {
             fetch('/app/api/prospecto/' + id + '/actividades/')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
@@ -1001,8 +1021,10 @@ document.addEventListener('click', function(ev) {
                     }
                 })
                 .catch(function() {
-                    // Si falla el fetch, mostrar warning de todos modos
-                    _showProspectoMissingActivityWarning();
+                    // Si el fetch falla no sabemos si hay actividad: se deja
+                    // pasar. Bloquear por un error de red dejaba al usuario
+                    // atrapado sin poder cerrar ni saber por qué.
+                    _ejecutarCambioEtapa(id, nuevaEtapa, reunionTipo);
                 });
             return;
         }
@@ -1854,6 +1876,12 @@ document.addEventListener('click', function(ev) {
             var w0 = document.getElementById('widgetProspecto');
             if (w0) w0.classList.remove('active');
             localStorage.removeItem('_pendienteProspectoSinActividad');
+            return;
+        }
+        // Solo al responsable se le exige la actividad; el resto cierra y ya.
+        if (!_soyElResponsable()) {
+            var wAjeno = document.getElementById('widgetProspecto');
+            if (wAjeno) wAjeno.classList.remove('active');
             return;
         }
         // Verificar si tiene actividades antes de cerrar
