@@ -817,7 +817,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
 
     /* ═══ Priority & Category Maps ═══ */
     const PRIORITY_CRITICAL = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer', 'rendimiento_bajo'];
-    const PRIORITY_IMPORTANT = ['tarea_reprogramada', 'tarea_asignada', 'tarea_opp_asignada', 'mencion', 'muro_mencion', 'tarea_mencion', 'solicitud_cambio_perfil'];
+    const PRIORITY_IMPORTANT = ['tarea_completada', 'tarea_reabierta', 'tarea_reprogramada', 'tarea_asignada', 'tarea_opp_asignada', 'mencion', 'muro_mencion', 'tarea_mencion', 'solicitud_cambio_perfil'];
     const PRIORITY_INFO = ['tarea_participante', 'tarea_observador', 'comentario_oportunidad', 'tarea_comentario', 'tarea_opp_comentario', 'oportunidad_mensaje', 'muro_post', 'respuesta', 'sistema', 'proyecto_agregado', 'programacion_proyecto', 'mensaje_grupo'];
 
     // Nota: actividad_vencida/actividad_por_vencer (vencimientos del panel
@@ -825,7 +825,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     // (panel ACTIVIDAD PROGRAMADA) NO son Tareas: viven dentro de la
     // oportunidad → cuentan/clasifican como Oportunidades (ver CAT_OPPS y el
     // early-return de _ndIsTarea).
-    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
+    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_completada', 'tarea_reabierta', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
     const CAT_OPPS = ['comentario_oportunidad', 'oportunidad_mensaje', 'actividad_vencida', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer'];
     const CAT_EQUIPO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta', 'proyecto_agregado', 'mensaje_grupo'];
     const CAT_ADMIN = ['rendimiento_bajo', 'solicitud_cambio_perfil', 'tarea_reprogramada', 'sistema'];
@@ -838,6 +838,8 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         'actividad_opp_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v3" /><path d="M12 19v.5"/></svg>',
         'actividad_opp_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'rendimiento_bajo': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        'tarea_completada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        'tarea_reabierta': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>',
         'tarea_reprogramada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'tarea_asignada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>',
         'tarea_opp_asignada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>',
@@ -1414,7 +1416,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         { key: 'asignadas',   label: 'Asignaciones',     tipos: ['tarea_asignada','tarea_opp_asignada','prospecto_asignado','proyecto_agregado','programacion_proyecto','tarea_participante','tarea_observador'] },
         { key: 'menciones',   label: 'Menciones',        tipos: ['mencion','muro_mencion','tarea_mencion'] },
         { key: 'comentarios', label: 'Comentarios',      tipos: ['comentario_oportunidad','tarea_comentario','tarea_opp_comentario','oportunidad_mensaje','respuesta'] },
-        { key: 'reprog',      label: 'Reprogramaciones', tipos: ['tarea_reprogramada'] },
+        { key: 'reprog',      label: 'Cambios en tareas', tipos: ['tarea_reprogramada','tarea_completada','tarea_reabierta'] },
         { key: 'muro',        label: 'Equipo & Muro',    tipos: ['muro_post','mensaje_grupo'] },
         { key: 'cert',        label: 'Certificaciones',  tipos: ['certificacion_por_vencer','certificacion_vencida'] },
         { key: 'sistema',     label: 'Sistema',          tipos: ['solicitud_cambio_perfil','rendimiento_bajo','sistema'] }
@@ -1470,7 +1472,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     // cambio de responsable.
     function _ndTareaSub(n) {
         if (_ndIsVenc(n)) return 'venc';
-        if (n.tipo === 'tarea_reprogramada' || n.tipo === 'tarea_participante') return 'editada';
+        if (['tarea_reprogramada', 'tarea_participante', 'tarea_completada', 'tarea_reabierta'].indexOf(n.tipo) !== -1) return 'editada';
         var t = (n.titulo || '') + ' ' + (n.mensaje || '');
         if (/reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram|nuevo participante|agreg[oó].*participante|cambi[oó].*responsable|nuevo responsable|reasign/i.test(t)) return 'editada';
         return 'general';
@@ -2035,6 +2037,8 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
             'tarea_por_vencer':    (n) => _openTarea(n.tarea_id),
             'tarea_asignada':      (n) => _openTarea(n.tarea_id),
             'tarea_reprogramada':  (n) => _openTarea(n.tarea_id),
+            'tarea_completada':    (n) => _openTarea(n.tarea_id),
+            'tarea_reabierta':     (n) => _openTarea(n.tarea_id),
             'tarea_participante':  (n) => _openTarea(n.tarea_id),
             'tarea_observador':    (n) => _openTarea(n.tarea_id),
             'tarea_mencion':       (n) => _openTarea(n.tarea_id),

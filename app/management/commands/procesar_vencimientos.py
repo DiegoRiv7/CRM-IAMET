@@ -99,9 +99,19 @@ class Command(BaseCommand):
                 else f'La tarea "{t.titulo}" vence en menos de {umbral_min} minutos.'
             )
 
+            # Al pasar de "por vencer" a "vencida" el aviso viejo deja de ser
+            # cierto: se retira aquí, porque el cron no dispara post_save y la
+            # reconciliación de signals_sync no llega a este caso.
+            if vencida:
+                Notificacion.objects.filter(
+                    tipo='tarea_por_vencer', tarea_id=t.id,
+                ).delete()
+
             for user in users:
                 # Idempotente: si ya existe una notif del mismo tipo para
-                # esta tarea+usuario, no se duplica.
+                # esta tarea+usuario, no se duplica. Al reprogramar, el signal
+                # (o la purga al leer) la borra, así que la próxima vez que
+                # venza vuelve a avisar.
                 ya = Notificacion.objects.filter(
                     usuario_destinatario=user, tipo=tipo, tarea_id=t.id,
                 ).exists()

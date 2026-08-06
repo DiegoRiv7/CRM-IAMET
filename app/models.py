@@ -1654,6 +1654,8 @@ class Notificacion(models.Model):
         ('actividad_opp_por_vencer', 'Actividad de oportunidad por vencer'),
         ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
         # Importantes
+        ('tarea_completada', 'Tarea completada'),
+        ('tarea_reabierta', 'Tarea reabierta'),
         ('tarea_reprogramada', 'Tarea reprogramada'),
         ('tarea_asignada', 'Tarea asignada'),
         ('tarea_opp_asignada', 'Tarea de oportunidad asignada'),

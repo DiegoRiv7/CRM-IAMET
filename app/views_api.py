@@ -387,6 +387,87 @@ def spotlight_search_api(request):
     })
 
 
+def _purgar_vencimientos_caducos(user):
+    """Borra las notificaciones de vencimiento que ya no corresponden.
+
+    La reconciliación de signals_sync solo dispara cuando el objeto se vuelve a
+    guardar, así que no alcanza a tres casos que sí llegan al cajón:
+
+      * las creadas antes de que existiera esa reconciliación (junio 2026), en
+        tareas que nadie ha vuelto a tocar desde entonces;
+      * las de rutas que actualizan en bloque con .update(), que no dispara
+        post_save (completar actividades de una oportunidad, por ejemplo);
+      * las huérfanas: Notificacion.tarea_id es un entero suelto, no una FK, así
+        que al borrar la tarea la notificación se queda apuntando a la nada y al
+        hacer clic solo sale "Error al cargar la tarea".
+
+    Se resuelve al leer: el estado real del objeto manda sobre lo que diga la
+    notificación. Y se borran en vez de solo filtrarlas para que la tabla no
+    siga creciendo con avisos muertos.
+    """
+    from .models import Notificacion, Tarea, TareaOportunidad
+    from django.utils import timezone as _tz
+    from datetime import timedelta as _td
+
+    TIPOS_TAREA = ('tarea_vencida', 'tarea_por_vencer')
+    TIPOS_TAREA_OPP = ('actividad_vencida', 'actividad_por_vencer')
+    ACTIVOS_TAREA = ('pendiente', 'iniciada', 'en_progreso')
+    ACTIVOS_TAREA_OPP = ('pendiente', 'en_progreso')
+    UMBRAL_MIN = 10  # mismo umbral que procesar_vencimientos y signals_sync
+
+    ahora = _tz.now()
+    umbral = ahora + _td(minutes=UMBRAL_MIN)
+
+    def _sigue_aplicando(tipo, activo, fecha):
+        if not activo or not fecha:
+            return False
+        vencida = fecha < ahora
+        if tipo.endswith('_por_vencer'):
+            return (not vencida) and fecha <= umbral
+        return vencida
+
+    a_borrar = []
+
+    # ── Tareas ──
+    notifs = list(Notificacion.objects.filter(
+        usuario_destinatario=user, tipo__in=TIPOS_TAREA,
+    ).values('id', 'tipo', 'tarea_id'))
+    if notifs:
+        ids = {n['tarea_id'] for n in notifs if n['tarea_id']}
+        vivas = {
+            t.id: t for t in Tarea.objects.filter(id__in=ids).only('id', 'estado', 'fecha_limite')
+        }
+        for n in notifs:
+            t = vivas.get(n['tarea_id'])
+            if t is None:  # tarea borrada → notificación huérfana
+                a_borrar.append(n['id'])
+                continue
+            if not _sigue_aplicando(n['tipo'], t.estado in ACTIVOS_TAREA, t.fecha_limite):
+                a_borrar.append(n['id'])
+
+    # ── Tareas de oportunidad (aquí sí hay FK, pero es SET_NULL) ──
+    notifs = list(Notificacion.objects.filter(
+        usuario_destinatario=user, tipo__in=TIPOS_TAREA_OPP,
+    ).values('id', 'tipo', 'tarea_opp_id'))
+    if notifs:
+        ids = {n['tarea_opp_id'] for n in notifs if n['tarea_opp_id']}
+        vivas = {
+            t.id: t for t in TareaOportunidad.objects.filter(id__in=ids)
+                                .only('id', 'estado', 'fecha_limite')
+        }
+        for n in notifs:
+            t = vivas.get(n['tarea_opp_id'])
+            if t is None:
+                a_borrar.append(n['id'])
+                continue
+            if not _sigue_aplicando(n['tipo'], t.estado in ACTIVOS_TAREA_OPP, t.fecha_limite):
+                a_borrar.append(n['id'])
+
+    if a_borrar:
+        Notificacion.objects.filter(id__in=a_borrar).delete()
+    return len(a_borrar)
+
+
 @login_required
 def obtener_notificaciones_api(request):
     """
@@ -395,6 +476,14 @@ def obtener_notificaciones_api(request):
     try:
         from .models import Notificacion
         user = request.user
+
+        # Antes de leer, tirar los avisos de vencimiento que ya no aplican: es
+        # lo que hacía que una tarea completada siguiera saliendo como vencida.
+        try:
+            _purgar_vencimientos_caducos(user)
+        except Exception:
+            # Un fallo depurando no debe dejar al usuario sin notificaciones.
+            pass
 
         # Hardening Fase 2.F (2026-06-03): el cálculo de vencimientos
         # ANTES vivía aquí y se re-ejecutaba en CADA poll del endpoint
