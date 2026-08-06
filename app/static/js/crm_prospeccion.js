@@ -33,8 +33,10 @@ document.addEventListener('click', function(ev) {
     var _currentWidgetClienteRfc = '';
 
     // ── Abrir widget nuevo prospecto (tab=prospeccion/campañas: "cliente" mode) ──
-    var btnNuevo = document.getElementById('btnNuevoProspecto');
-    if (btnNuevo) {
+    function _wireBtnNuevoProspecto() {
+        var btnNuevo = document.getElementById('btnNuevoProspecto');
+        if (!btnNuevo || btnNuevo._wpHooked) return;
+        btnNuevo._wpHooked = true;
         btnNuevo.addEventListener('click', function() {
             if (typeof window._setNuevoProspectoMode === 'function') {
                 window._setNuevoProspectoMode('cliente');
@@ -451,8 +453,10 @@ document.addEventListener('click', function(ev) {
     });
 
     // Close on overlay click
-    var wcpOverlay = document.getElementById('widgetClienteProspectos');
-    if (wcpOverlay) {
+    function _wireClienteProspectosOverlay() {
+        var wcpOverlay = document.getElementById('widgetClienteProspectos');
+        if (!wcpOverlay || wcpOverlay._wpHooked) return;
+        wcpOverlay._wpHooked = true;
         wcpOverlay.addEventListener('click', function(e) {
             if (e.target === wcpOverlay) {
                 wcpOverlay.classList.remove('active');
@@ -738,16 +742,19 @@ document.addEventListener('click', function(ev) {
         _wcoRenderCreatedList();
         _wcoResetForm(true);
 
-        // Prellenar campos read-only desde el prospecto
+        // Prellenar desde el prospecto. Cliente y contacto se heredan y no se
+        // editan: van como texto, no como campos deshabilitados que parecen rotos.
         var setVal = function(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; };
+        var setTxt = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v || '-'; };
+        setTxt('wcoCliente', data.cliente);
+        setTxt('wcoContacto', data.contacto);
         setVal('wcoTitulo', data.nombre || '');
-        setVal('wcoCliente', data.cliente || '-');
-        setVal('wcoContacto', data.contacto || '-');
         setVal('wcoProducto', data.producto || 'SOFTWARE');
         setVal('wcoArea', data.area || 'SISTEMAS');
         setVal('wcoMonto', '');
         setVal('wcoTipoNeg', data.tipo_pipeline || '');
         setVal('wcoNotas', '');
+        _wcoLimpiarError();
 
         // Cargar dropdown de responsable. Default = vendedor del prospecto.
         // Si el user es supervisor/admin, podemos cargar la lista completa
@@ -791,26 +798,56 @@ document.addEventListener('click', function(ev) {
     }
     window.wpAbrirModalCrearOpp = wpAbrirModalCrearOpp;
 
-    function _wcoResetForm(keepReadonly) {
-        // Limpia los campos editables; los read-only (cliente/contacto) se
-        // re-aplican desde el prospecto en cada apertura.
+    /* El aviso de campo faltante va dentro del modal y marca el campo. El
+       alert() del navegador sacaba al usuario del contexto y no le decía cuál
+       de los dos campos obligatorios era. */
+    function _wcoMostrarError(msg, campoId) {
+        var box = document.getElementById('wcoError');
+        var txt = document.getElementById('wcoErrorTxt');
+        if (txt) txt.textContent = msg;
+        if (box) box.classList.add('is-on');
+        if (campoId) {
+            var el = document.getElementById(campoId);
+            if (el) { el.classList.add('is-falta'); el.focus(); }
+        }
+    }
+
+    function _wcoLimpiarError() {
+        var box = document.getElementById('wcoError');
+        if (box) box.classList.remove('is-on');
+        ['wcoTitulo', 'wcoTipoNeg'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('is-falta');
+        });
+    }
+
+    /* trasCrear=true → se acaba de agregar una y se deja el formulario listo
+       para la siguiente, conservando el pipeline (suelen ser del mismo tipo) y
+       proponiendo un título numerado. trasCrear=false → "Limpiar campos": el
+       usuario quiere empezar de cero, así que se vacía todo de verdad. */
+    function _wcoResetForm(trasCrear) {
         ['wcoMonto', 'wcoNotas'].forEach(function(id){
             var el = document.getElementById(id); if (el) el.value = '';
         });
-        // Para "Crear otra" reiniciamos también título a "Nombre prospecto - oportunidad N"
         var data = window._currentProspectoData || {};
         var titEl = document.getElementById('wcoTitulo');
         if (titEl) {
             var n = _wcoOppsCreadas.length;
-            titEl.value = (n === 0)
-                ? (data.nombre || '')
-                : ((data.nombre || 'Oportunidad') + ' #' + (n + 1));
+            if (!trasCrear) {
+                titEl.value = '';
+            } else {
+                titEl.value = (n === 0)
+                    ? (data.nombre || '')
+                    : ((data.nombre || 'Oportunidad') + ' ' + (n + 1));
+            }
         }
-        // Pipeline conserva valor previo (si hubo). Si no, vacío.
-        if (!keepReadonly) {
-            var t = document.getElementById('wcoTipoNeg');
-            if (t) t.value = '';
+        if (!trasCrear) {
+            var tn = document.getElementById('wcoTipoNeg');
+            if (tn) tn.value = '';
+            var nt = document.getElementById('wcoNotas');
+            if (nt) nt.value = '';
         }
+        _wcoLimpiarError();
     }
 
     function _wcoRenderCreatedList() {
@@ -819,43 +856,67 @@ document.addEventListener('click', function(ev) {
         var status = document.getElementById('wcoFooterStatus');
         if (!listWrap || !items || !status) return;
 
-        if (_wcoOppsCreadas.length === 0) {
+        var btnTxt = document.getElementById('wcoTerminarTxt');
+        var n = _wcoOppsCreadas.length;
+
+        if (n === 0) {
             listWrap.style.display = 'none';
             items.innerHTML = '';
-            status.textContent = 'Aún no se ha creado ninguna oportunidad.';
+            status.textContent = 'Aún no has agregado ninguna oportunidad.';
+            // El botón dice exactamente lo que va a pasar. Terminar sin ninguna
+            // oportunidad es válido, pero que no sea una sorpresa.
+            if (btnTxt) btnTxt.textContent = 'Marcar ganado sin oportunidades';
             return;
         }
         listWrap.style.display = 'block';
         items.innerHTML = _wcoOppsCreadas.map(function(o) {
-            var monto = (o.monto || 0).toLocaleString('es-MX', { style:'currency', currency:'MXN', maximumFractionDigits:0 });
-            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;">' +
-                '<span style="width:22px;height:22px;border-radius:50%;background:#16A34A;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            var meta = (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate');
+            return '<div class="wco-item">' +
+                '<span class="wco-item-ic">' +
                     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
                 '</span>' +
-                '<div style="flex:1;min-width:0;">' +
-                    '<div style="font-size:0.84rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(o.titulo) + '</div>' +
-                    '<div style="font-size:0.7rem;color:#6B7280;">' + (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate') + ' · ' + escapeHtml(monto) + '</div>' +
+                '<div class="wco-item-b">' +
+                    '<div class="wco-item-t">' + escapeHtml(o.titulo) + '</div>' +
+                    '<div class="wco-item-m">' + meta + '</div>' +
                 '</div>' +
+                (o.id ? '<button type="button" class="wco-item-ver" data-wco-abrir="' + o.id + '">Abrir</button>' : '') +
             '</div>';
         }).join('');
-        var n = _wcoOppsCreadas.length;
-        status.textContent = n === 1 ? '1 oportunidad creada.' : (n + ' oportunidades creadas.');
+        status.textContent = n === 1
+            ? '1 oportunidad lista para registrarse.'
+            : (n + ' oportunidades listas para registrarse.');
+        if (btnTxt) btnTxt.textContent = 'Terminar y marcar ganado';
     }
 
-    function _wcoCerrarModal() {
+    /* Dos salidas distintas, que antes hacían lo mismo y no se distinguían:
+         · Terminar  → confirma: el prospecto pasa a ganado.
+         · X / fondo → cancela: la etapa se queda como estaba.
+       Las oportunidades ya creadas se quedan creadas en ambos casos: existen en
+       la base desde que se agregaron, cancelar aquí no las deshace. */
+    function _wcoTerminar() {
         var modal = document.getElementById('widgetCrearOppDesdeProspecto');
         if (modal) modal.style.display = 'none';
-
-        // Si se creó al menos una oportunidad, marcar el prospecto como ganado.
-        // Si no, dejar la etapa anterior intacta.
-        if (_wcoOppsCreadas.length > 0) {
-            cambiarEtapaProspecto('cerrado_ganado');
-        }
         _wcoOppsCreadas = [];
+        cambiarEtapaProspecto('cerrado_ganado');
     }
 
-    // ── Hooks DOM del modal — registrar una sola vez ──
-    (function _wcoHookOnce() {
+    function _wcoCancelar() {
+        var modal = document.getElementById('widgetCrearOppDesdeProspecto');
+        if (modal) modal.style.display = 'none';
+        var hubo = _wcoOppsCreadas.length;
+        _wcoOppsCreadas = [];
+        // Si alcanzó a crear oportunidades, el widget debe reflejarlas.
+        if (hubo && window._currentProspectoId) {
+            if (typeof abrirWidgetProspecto === 'function') {
+                abrirWidgetProspecto(window._currentProspectoId);
+            }
+        }
+    }
+
+    // ── Hooks DOM del modal ──
+    // Los flags viven en el ELEMENTO, no en window: tras una navegación Turbo
+    // los nodos son nuevos (sin flag) y se recablean solos.
+    function _wcoHookOnce() {
         var form = document.getElementById('wcoForm');
         var btnClose = document.getElementById('wcoCloseBtn');
         var btnReset = document.getElementById('wcoResetBtn');
@@ -868,14 +929,17 @@ document.addEventListener('click', function(ev) {
                 ev.preventDefault();
                 _wcoEnviar();
             });
+            // En cuanto empieza a corregir, se retira el aviso.
+            form.addEventListener('input', _wcoLimpiarError);
+            form.addEventListener('change', _wcoLimpiarError);
         }
         if (btnClose && !btnClose._wcoHooked) {
             btnClose._wcoHooked = true;
-            btnClose.addEventListener('click', _wcoCerrarModal);
+            btnClose.addEventListener('click', _wcoCancelar);
         }
         if (btnTerm && !btnTerm._wcoHooked) {
             btnTerm._wcoHooked = true;
-            btnTerm.addEventListener('click', _wcoCerrarModal);
+            btnTerm.addEventListener('click', _wcoTerminar);
         }
         if (btnReset && !btnReset._wcoHooked) {
             btnReset._wcoHooked = true;
@@ -884,12 +948,21 @@ document.addEventListener('click', function(ev) {
         if (overlay && !overlay._wcoHooked) {
             overlay._wcoHooked = true;
             overlay.addEventListener('click', function(ev) {
-                // Click en backdrop (fuera del card) cierra el modal con la
-                // misma lógica que el botón Terminar.
-                if (ev.target === overlay) _wcoCerrarModal();
+                // El fondo cancela, no confirma: cerrar sin querer no debe
+                // dar por ganado un prospecto.
+                if (ev.target === overlay) _wcoCancelar();
+            });
+            // "Abrir" en una oportunidad ya creada (delegado: la lista se repinta).
+            overlay.addEventListener('click', function(ev) {
+                var ver = ev.target.closest('[data-wco-abrir]');
+                if (!ver) return;
+                var oid = parseInt(ver.getAttribute('data-wco-abrir'), 10);
+                if (oid && typeof window.openDetalle === 'function') {
+                    window.openDetalle(oid, { asWindow: true });
+                }
             });
         }
-    })();
+    }
 
     function _wcoEnviar() {
         var id = window._currentProspectoId;
@@ -905,14 +978,13 @@ document.addEventListener('click', function(ev) {
             ? document.getElementById('wcoResponsable').value
             : '').trim();
 
+        _wcoLimpiarError();
         if (!titulo) {
-            alert('El título de la oportunidad es requerido.');
-            document.getElementById('wcoTitulo').focus();
+            _wcoMostrarError('Ponle un título a la oportunidad.', 'wcoTitulo');
             return;
         }
         if (!tipoNeg) {
-            alert('Selecciona el tipo de pipeline (Runrate / Proyecto).');
-            document.getElementById('wcoTipoNeg').focus();
+            _wcoMostrarError('Elige el tipo de pipeline: Runrate o Proyecto.', 'wcoTipoNeg');
             return;
         }
 
@@ -937,7 +1009,7 @@ document.addEventListener('click', function(ev) {
         }).then(function(r){ return r.json(); }).then(function(data) {
             if (btn) { btn.disabled = false; btn.innerHTML = orig; }
             if (!data || !data.success) {
-                alert((data && data.error) || 'Error al crear la oportunidad.');
+                _wcoMostrarError((data && data.error) || 'No se pudo crear la oportunidad.');
                 return;
             }
             _wcoOppsCreadas.push({
@@ -953,7 +1025,7 @@ document.addEventListener('click', function(ev) {
             if (titEl) titEl.focus();
         }).catch(function(err) {
             if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-            alert('Error de red al crear oportunidad.');
+            _wcoMostrarError('No se pudo conectar. Revisa tu conexión e inténtalo otra vez.');
             console.error('[Prospecto→Opp] error', err);
         });
     }
@@ -1908,13 +1980,34 @@ document.addEventListener('click', function(ev) {
     }
 
     // Close on overlay click
-    var overlay = document.getElementById('widgetProspecto');
-    if (overlay) {
+    function _wireProspectoOverlay() {
+        var overlay = document.getElementById('widgetProspecto');
+        if (!overlay || overlay._wpHooked) return;
+        overlay._wpHooked = true;
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) {
                 _intentarCerrarProspecto();
             }
         });
+    }
+
+    /* Todo lo de arriba cuelga de nodos del <body>, que Turbo reemplaza entero
+       al navegar a la pestaña de Prospección. Antes se cableaba una sola vez al
+       evaluar el script (y el script lleva data-turbo-eval="false", así que no
+       se re-evalúa): después de navegar, el modal de "crear oportunidad" se
+       quedaba sin listeners y ni Crear, ni Crear otra, ni Terminar hacían nada.
+       crmReady vuelve a correr esto en cada turbo:load. */
+    function _wireProspeccionDOM() {
+        _wireBtnNuevoProspecto();
+        _wireClienteProspectosOverlay();
+        _wcoHookOnce();
+        _wireProspectoOverlay();
+    }
+    if (window.crmReady) {
+        window.crmReady(_wireProspeccionDOM);
+    } else {
+        document.addEventListener('DOMContentLoaded', _wireProspeccionDOM);
+        if (document.readyState !== 'loading') _wireProspeccionDOM();
     }
 
     // Close on Escape
