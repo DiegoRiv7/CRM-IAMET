@@ -900,6 +900,56 @@
             if (hg) hg.style.gridTemplateColumns = '';
             window._mailCtxOppId = null;
         }
+        /* ── Franja de vínculo (arriba del correo): dos estados.
+           Ligado: nombre (clic → ventana de la opp) + etapa + monto + Abrir/Cambiar/✕.
+           Sin vincular: aviso gris + Vincular / Crear oportunidad. */
+        function _mailFranjaBtn(label, onclick, primario) {
+            return '<button type="button" onclick="' + onclick + '" style="' +
+                (primario
+                    ? 'background:#007AFF;color:#fff;border:none;'
+                    : 'background:#fff;color:#0052D4;border:1px solid #D0E1FF;') +
+                'border-radius:8px;padding:3px 10px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">' +
+                label + '</button>';
+        }
+        function _mailFranja(d) {
+            var bar = document.getElementById('mailDetailOppBar');
+            if (!bar) return;
+            if (!d || !d.ok) { bar.style.display = 'none'; return; }
+            if (!d.vinculado) {
+                bar.style.background = '#FAFBFC';
+                bar.style.borderBottom = '1px solid #EEF1F5';
+                bar.style.color = '#6B7280';
+                bar.innerHTML =
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+                    '<span style="font-weight:600;">Sin vincular a una oportunidad</span>' +
+                    '<span style="flex:1;"></span>' +
+                    _mailFranjaBtn('Vincular', 'mailAbrirVincular()', true) +
+                    _mailFranjaBtn('Crear oportunidad', 'mailAbrirFormNuevaOpp()', false);
+                bar.style.display = 'flex';
+                return;
+            }
+            var o = d.oportunidad || {};
+            var etapaColor = o.etapa_color || '#0052D4';
+            bar.style.background = '#EEF3FF';
+            bar.style.borderBottom = '1px solid #D0E1FF';
+            bar.style.color = '#0052D4';
+            var h = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
+                '<span onclick="mailCtxAbrirOportunidad()" title="Abrir oportunidad" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'" style="cursor:pointer;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38%;">' +
+                _esc(o.nombre || '') + '</span>';
+            if (o.etapa) {
+                h += '<span style="background:#fff;border:1px solid ' + etapaColor + '33;color:' + etapaColor + ';border-radius:99px;padding:1px 9px;font-size:0.68rem;font-weight:700;white-space:nowrap;flex-shrink:0;">' + _esc(o.etapa) + '</span>';
+            }
+            if (o.monto !== undefined && o.monto !== null) {
+                h += '<span style="font-weight:800;color:#1A1A2E;font-size:0.75rem;flex-shrink:0;">$' +
+                    Number(o.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + '</span>';
+            }
+            h += '<span style="flex:1;"></span>' +
+                _mailFranjaBtn('Abrir', 'mailCtxAbrirOportunidad()', false) +
+                _mailFranjaBtn('Cambiar', 'mailAbrirVincular()', false) +
+                '<button type="button" onclick="mailDesvincular()" title="Desvincular" style="background:none;border:none;color:#9CA3AF;cursor:pointer;font-size:0.85rem;padding:0 2px;line-height:1;flex-shrink:0;">✕</button>';
+            bar.innerHTML = h;
+            bar.style.display = 'flex';
+        }
         function _mailRenderContexto(correoId) {
             var p = document.getElementById('mailCtxPanel');
             var g = document.getElementById('mailBodyGrid');
@@ -907,6 +957,7 @@
             fetch('/app/api/mail/contexto/' + correoId + '/')
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
+                    _mailFranja(d);
                     if (!d.ok) { _mailCtxOcultar(); return; }
                     var vin = document.getElementById('mailCtxVinculado');
                     var suelto = document.getElementById('mailCtxSuelto');
@@ -1234,12 +1285,14 @@
                     mailCerrarReply();
                     mailCerrarForward();
 
+                    // Franja provisional (solo nombre) mientras llega el contexto CRM;
+                    // _mailRenderContexto la repinta con etapa/monto o estado sin-vincular.
                     var oppBar = document.getElementById('mailDetailOppBar');
                     var oppName = document.getElementById('mailDetailOppName');
+                    if (oppName) oppName.textContent = d.oportunidad_nombre || '';
                     if (d.oportunidad_nombre) {
-                        oppName.textContent = d.oportunidad_nombre;
-                        oppBar.style.display = 'flex';
-                    } else {
+                        _mailFranja({ ok: true, vinculado: true, oportunidad: { nombre: d.oportunidad_nombre } });
+                    } else if (oppBar) {
                         oppBar.style.display = 'none';
                     }
 
@@ -1830,11 +1883,10 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.ok) {
-                        var bar = document.getElementById('mailDetailOppBar');
                         var name = document.getElementById('mailDetailOppName');
                         var panel = document.getElementById('mailPanelVincular');
                         if (name) name.textContent = oppNombre;
-                        if (bar) bar.style.display = 'flex';
+                        _mailFranja({ ok: true, vinculado: true, oportunidad: { nombre: oppNombre } });
                         if (panel) panel.style.display = 'none';
                         mailCerrarVincular();
                         if (_mailCorreoActual) _mailCorreoActual.oportunidad_nombre = oppNombre;

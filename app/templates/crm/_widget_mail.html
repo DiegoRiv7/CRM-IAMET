@@ -408,16 +408,13 @@
                             try { localStorage.setItem('mailCrmOculto', oculto ? '' : '1'); } catch (e) {}
                         };
                     </script>
-                    <!-- Linked opp bar -->
+                    <!-- Franja de vínculo: el JS (_mailFranja) pinta los dos estados
+                         (ligado con etapa/monto/acciones, o sin vincular con botones).
+                         mailDetailOppName sigue existiendo oculto por compatibilidad. -->
                     <div id="mailDetailOppBar"
                         style="display:none;align-items:center;gap:8px;padding:6px 16px;background:#EEF3FF;border-bottom:1px solid #D0E1FF;font-size:0.79rem;color:#0052D4;font-weight:600;flex-shrink:0;">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5">
-                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                            <line x1="7" y1="7" x2="7.01" y2="7" />
-                        </svg>
-                        <span id="mailDetailOppName"></span>
                     </div>
+                    <span id="mailDetailOppName" style="display:none;"></span>
                     <!-- Email header -->
                     <div style="padding:14px 18px 12px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
                         <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
