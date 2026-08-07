@@ -2454,3 +2454,34 @@ def api_mail_auto_sync(request):
         })
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_estado(request):
+    """Latido ligero del correo (Fase B — fluidez): SOLO base de datos, cero
+    IMAP. El worker en segundo plano es quien habla con el servidor de correo;
+    aquí el navegador solo pregunta '¿cambió algo?' con un sello barato y
+    refresca la lista únicamente cuando la respuesta es sí. Sustituye al
+    auto-sync viejo, que abría una sesión IMAP completa cada 30s por pestaña."""
+    if not MailConexion.objects.filter(usuario=request.user, activo=True).exists():
+        return JsonResponse({'ok': False, 'error': 'Sin conexión'})
+    agg = MailCorreo.objects.filter(usuario=request.user, eliminado=False).aggregate(
+        max_id=Max('id'),
+        total=Count('id'),
+        no_leidos=Count('id', filter=Q(carpeta_display='INBOX', leido=False, archivado=False)),
+        destacados=Count('id', filter=Q(destacado=True)),
+        archivados=Count('id', filter=Q(archivado=True)),
+    )
+    # Cualquier cambio visible en la lista (correo nuevo, leído/no leído desde
+    # el celular, destacado, archivado, eliminado) mueve alguno de estos números.
+    sello = '{}-{}-{}-{}-{}'.format(
+        agg['max_id'] or 0, agg['total'], agg['no_leidos'],
+        agg['destacados'], agg['archivados'],
+    )
+    return JsonResponse({
+        'ok': True,
+        'sello': sello,
+        'ultimo_id': agg['max_id'] or 0,
+        'total_no_leidos': agg['no_leidos'],
+    })

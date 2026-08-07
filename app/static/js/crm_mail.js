@@ -2716,42 +2716,89 @@
             if (menu && btn && !btn.contains(e.target)) menu.style.display = 'none';
         });
 
-        /* ── Polling & Badges ──────────────────────── */
+        /* ── Polling & Badges (Fase B — fluidez) ─────
+           El navegador ya NO abre sesiones IMAP: pregunta cada 12s al
+           endpoint /estado/ (solo BD, milisegundos) si algo cambió. El
+           worker del servidor es quien sincroniza con Gmail/Outlook; aquí
+           solo se refleja. Cuando el sello cambia, la lista se refresca
+           en silencio (sin parpadeo, conservando scroll y selección). */
+        var _mailUltimoSello = null, _mailUltimoIdVisto = 0, _mailPrevNoLeidos = 0;
+
         function _mailStartPolling() {
             if (_mailPollInterval) return;
-            _mailPollInterval = setInterval(_mailPollUnreadCount, 30000);
+            _mailPollInterval = setInterval(_mailPollUnreadCount, 12000);
         }
 
         function _mailPollUnreadCount() {
             // Sin polling con la pestaña oculta (perf: no saturar al server).
             if (document.hidden) return;
             var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-            var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 15000);
-            fetch('/app/api/mail/auto-sync/', { signal: _ac ? _ac.signal : undefined })
+            var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 8000);
+            fetch('/app/api/mail/estado/', { signal: _ac ? _ac.signal : undefined })
                 .then(function (r) { clearTimeout(_to); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(function (data) {
                     if (!data.ok) return;
 
-                    // Update badge
                     _mailPendingBadge = data.total_no_leidos || 0;
                     _mailUpdateNavBadge();
 
-                    // If new emails, auto-sync and show notification
-                    if (data.should_sync && data.nuevos > 0) {
-                        // Show Mac-style notification
-                        _showMailNotification(data.nuevos);
+                    if (_mailUltimoSello === null) {
+                        // Primera lectura de la sesión: solo memorizar el punto de partida
+                        _mailUltimoSello = data.sello;
+                        _mailUltimoIdVisto = data.ultimo_id || 0;
+                        _mailPrevNoLeidos = data.total_no_leidos || 0;
+                        return;
+                    }
+                    if (data.sello === _mailUltimoSello) return;
 
-                        // Auto-trigger sync
-                        fetch('/app/api/mail/sincronizar/', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': csrf() }
-                        }).then(function (r) { return r.json(); }).then(function (syncData) {
-                            // If mail widget is open, refresh the list
-                            var widget = document.getElementById('widgetMail');
-                            if (widget && widget.classList.contains('active')) {
-                                mailCargarLista(_mailCarpeta);
-                            }
-                        });
+                    var llegaronNuevos = (data.ultimo_id || 0) > _mailUltimoIdVisto;
+                    var deltaNoLeidos = (data.total_no_leidos || 0) - _mailPrevNoLeidos;
+                    _mailUltimoSello = data.sello;
+                    _mailUltimoIdVisto = data.ultimo_id || 0;
+                    _mailPrevNoLeidos = data.total_no_leidos || 0;
+
+                    if (llegaronNuevos && deltaNoLeidos > 0) _showMailNotification(deltaNoLeidos);
+                    _mailRefrescarSilencioso();
+                })
+                .catch(function () {});
+        }
+
+        function _mailRefrescarSilencioso() {
+            // Refresca la lista sin "Cargando...", conservando scroll y la
+            // tarjeta seleccionada. Solo cuando el correo está a la vista y
+            // no hay búsqueda activa ni historial paginado en pantalla.
+            var w = document.getElementById('widgetMail');
+            if (!w || !w.classList.contains('active')) return;
+            if (window._mailBusqueda) return;
+            if (_mailCarpeta === 'DRAFTS') return;
+            if (_mailPagina > 1) return; // el usuario está navegando historial: no yankearlo
+            var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=1';
+            if (_mailCarpeta === 'INBOX') url += '&hilos=1';
+            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (window._mailBusqueda || _mailPagina > 1) return; // cambió mientras cargaba
+                    var listEl = document.getElementById('mailList');
+                    var scroll = listEl ? listEl.scrollTop : 0;
+                    _mailTodos = data.correos || [];
+                    _mailFiltrado = _mailTodos;
+                    _mailHayMas = data.hay_mas || false;
+                    _renderLista(_mailFiltrado);
+                    if (listEl) listEl.scrollTop = scroll;
+                    if (_mailCorreoActual) {
+                        var card = document.getElementById('mailCard_' + _mailCorreoActual.id);
+                        if (card) card.classList.add('selected');
+                    }
+                    var unread = _mailTodos.filter(function (c) { return !c.leido; }).length;
+                    var badge = document.getElementById('mailUnreadBadge');
+                    if (badge) {
+                        if (unread > 0 && _mailCarpeta === 'INBOX') {
+                            badge.textContent = unread;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
                     }
                 })
                 .catch(function () {});

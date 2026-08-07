@@ -507,6 +507,7 @@ urlpatterns = [
     path('api/mail/adjunto/<int:adjunto_id>/', views_mail.api_mail_descargar_adjunto, name='api_mail_descargar_adjunto'),
     path('api/mail/check/', views_mail.api_mail_check_nuevos, name='api_mail_check_nuevos'),
     path('api/mail/auto-sync/', views_mail.api_mail_auto_sync, name='api_mail_auto_sync'),
+    path('api/mail/estado/', views_mail.api_mail_estado, name='api_mail_estado'),
     path('api/mail/destacar/<int:correo_id>/', views_mail.api_mail_destacar, name='api_mail_destacar'),
     path('api/mail/archivar/<int:correo_id>/', views_mail.api_mail_archivar, name='api_mail_archivar'),
     path('api/mail/hilo/', views_mail.api_mail_hilo, name='api_mail_hilo'),
