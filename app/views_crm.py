@@ -8777,6 +8777,81 @@ def api_asistente_oportunidad_crear(request):
                          'actividad_id': actividad_id, 'actividad_error': actividad_error})
 
 
+def _pdf_texto_correo(correo, max_chars=12000):
+    """Texto de los PDFs adjuntos CACHEADOS de un correo (pdfplumber, cero IA).
+    Solo usa la caché en BD (datos_b64, se llena al abrir el correo); no toca
+    IMAP. Devuelve '' si no hay PDFs o no se pudo extraer (p.ej. escaneados)."""
+    import io
+    import base64 as _b64
+    trozos, total = [], 0
+    try:
+        adjs = [a for a in correo.adjuntos.all()
+                if a.datos_b64 and ((a.content_type or '').lower() == 'application/pdf'
+                                    or (a.nombre_archivo or '').lower().endswith('.pdf'))]
+    except Exception:
+        return '', []
+    nombres = []
+    for adj in adjs[:3]:
+        try:
+            import pdfplumber
+            raw = _b64.b64decode(adj.datos_b64)
+            with pdfplumber.open(io.BytesIO(raw)) as pdf:
+                for page in pdf.pages[:4]:
+                    t = page.extract_text() or ''
+                    if t:
+                        trozos.append(t)
+                        total += len(t)
+                    if total > max_chars:
+                        break
+            nombres.append(adj.nombre_archivo or 'adjunto.pdf')
+        except Exception:
+            logger.warning('PDF %s: no se pudo extraer texto', getattr(adj, 'nombre_archivo', '?'))
+        if total > max_chars:
+            break
+    return '\n'.join(trozos)[:max_chars], nombres
+
+
+_PDF_RE_PO = [
+    re.compile(r'(?:orden\s+de\s+compra|purchase\s+order|p\.\s?o\.|no\.\s?de\s?orden)'
+               r'\s*(?:no\.?|num\.?|#|:)?\s*([A-Z0-9][A-Z0-9\-/]{3,19})', re.I),
+    re.compile(r'\b(60\d{8})\b'),              # Skyworks: órdenes 60XXXXXXXX
+    re.compile(r'\b(PO[A-Z]{0,4}\d{3,10})\b'),  # POIAM1661 y similares
+]
+
+
+def _pdf_datos_finos(texto):
+    """Datos duros de una factura/OC sacados por CÓDIGO (cero tokens): número
+    de orden, monto total y moneda. Solo devuelve lo que matchea claro; lo
+    dudoso se queda fuera (precisión sobre cobertura)."""
+    datos = {}
+    if not texto:
+        return datos
+    for rx in _PDF_RE_PO:
+        m = rx.search(texto)
+        if m:
+            po = m.group(1).strip().strip('.-:')
+            if 4 <= len(po) <= 20:
+                datos['po'] = po
+                break
+    # Monto: primero importes pegados a "total/importe"; si no, el mayor $ del doc
+    montos = re.findall(
+        r'(?:total|importe)[^\n\d$]{0,30}\$?\s*(\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})',
+        texto, re.I)
+    if not montos:
+        montos = re.findall(r'\$\s*(\d{1,3}(?:,\d{3})+\.\d{2})', texto)
+    try:
+        vals = sorted({float(s.replace(',', '')) for s in montos}, reverse=True)
+        if vals and vals[0] >= 100:  # importes chicos suelen ser ruido (IVA unitario, flete)
+            datos['monto'] = round(vals[0], 2)
+    except Exception:
+        pass
+    m = re.search(r'\b(USD|MXN|MN|d[oó]lares|pesos)\b', texto, re.I)
+    if m:
+        v = m.group(1).lower()
+        datos['moneda'] = 'USD' if ('usd' in v or 'dolar' in v or 'dólar' in v) else 'MXN'
+    return datos
+
+
 def _update_draft_ia(opp, etapas, asunto, cuerpo, respuesta=''):
     """(etapa, probabilidad, resumen) propuestos por IA para actualizar la oportunidad
     a partir del correo del cliente Y la respuesta del vendedor (contexto completo del
@@ -8877,6 +8952,15 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
     etapa_sug, prob_sug, resumen = _update_draft_ia(
         opp, etapas, client_correo.asunto, cuerpo, respuesta)
 
+    # PDFs adjuntos (factura/OC): datos finos por CÓDIGO, cero tokens de IA.
+    # Solo lee la caché en BD; si el PDF no se ha abierto nunca, no hay datos.
+    pdf_datos, pdf_archivos = {}, []
+    try:
+        pdf_texto, pdf_archivos = _pdf_texto_correo(client_correo)
+        pdf_datos = _pdf_datos_finos(pdf_texto)
+    except Exception:
+        logger.exception('update-draft: extracción de PDF falló (se ignora)')
+
     fecha_seg = _mas_dias_habiles(timezone.localdate(), 2)
     hora_seg = _hora_disponible(request.user, fecha_seg)
 
@@ -8894,6 +8978,11 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
         'remitente': (client_correo.remitente_nombre or client_correo.remitente_email or ''),
         'seg_fecha': fecha_seg.isoformat(),
         'seg_hora': '%02d:00' % hora_seg,
+        'monto_actual': float(opp.monto or 0),
+        'po_actual': opp.po_number or '',
+        'pdf': ({'po': pdf_datos.get('po', ''), 'monto': pdf_datos.get('monto'),
+                 'moneda': pdf_datos.get('moneda', ''), 'archivos': pdf_archivos}
+                if pdf_datos else None),
     })
 
 
@@ -8933,6 +9022,21 @@ def api_asistente_oportunidad_update_aplicar(request):
             campos.append('probabilidad_cierre')
     except Exception:
         pass
+    # Monto y orden de compra (vienen de los PDFs adjuntos o del ajuste manual)
+    try:
+        from decimal import Decimal
+        monto = data.get('monto')
+        if monto not in (None, ''):
+            monto_d = Decimal(str(monto))
+            if monto_d > 0 and monto_d != (opp.monto or Decimal('0')):
+                opp.monto = monto_d
+                campos.append('monto')
+    except Exception:
+        pass
+    po = (data.get('po_number') or '').strip()
+    if po and po != (opp.po_number or ''):
+        opp.po_number = po[:50]
+        campos.append('po_number')
     if campos:
         opp.save(update_fields=list(set(campos)))
         try:
