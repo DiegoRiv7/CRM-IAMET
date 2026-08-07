@@ -486,7 +486,8 @@
                         ifr.style.display = 'block';
                         pl.style.display = 'none';
                     } else {
-                        pl.textContent = d.cuerpo_texto || '(Sin contenido)';
+                        pl.textContent = d.cuerpo_texto ||
+                            (d.eliminado ? 'Este correo ya no está en el servidor: se eliminó o movió desde otro dispositivo.' : '(Sin contenido)');
                         pl.style.display = 'block';
                         ifr.style.display = 'none';
                     }
@@ -1353,7 +1354,8 @@
                         iframe.style.display = 'block';
                         plain.style.display = 'none';
                     } else {
-                        plain.textContent = d.cuerpo_texto || '(Sin contenido)';
+                        plain.textContent = d.cuerpo_texto ||
+                            (d.eliminado ? 'Este correo ya no está en el servidor: se eliminó o movió desde otro dispositivo.' : '(Sin contenido)');
                         plain.style.display = 'block';
                         iframe.style.display = 'none';
                     }

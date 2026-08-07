@@ -710,6 +710,7 @@ def refrescar_flags_inbox(conexion, imap, max_correos=200):
         .values_list('correo_id', flat=True)
     )
     cambios = 0
+    uids_vistos = set()
     for linea in (data or []):
         if isinstance(linea, tuple):
             linea = linea[0]
@@ -719,6 +720,7 @@ def refrescar_flags_inbox(conexion, imap, max_correos=200):
         m = re.search(r'UID (\d+)', s)
         if not m:
             continue
+        uids_vistos.add(m.group(1))
         c = por_uid.get(m.group(1))
         if not c or c.id in con_pendientes:
             continue
@@ -734,6 +736,20 @@ def refrescar_flags_inbox(conexion, imap, max_correos=200):
             upd.append('destacado')
         if upd:
             c.save(update_fields=upd)
+            cambios += 1
+
+    # Espejo de BORRADOS: el servidor no devuelve línea para UIDs que ya no
+    # existen (correo eliminado/movido desde el celular u otro cliente) →
+    # reflejarlos como eliminados, igual que Seen/Flagged. Guardas: solo con
+    # respuesta OK y al menos un UID visto (una respuesta vacía rara no debe
+    # vaciar la bandeja), y máximo 20 por pasada (borrados masivos drenan en
+    # pasadas sucesivas de 30s).
+    if typ == 'OK' and uids_vistos:
+        desaparecidos = [c for uid, c in por_uid.items()
+                         if uid not in uids_vistos and c.id not in con_pendientes]
+        for c in desaparecidos[:20]:
+            c.eliminado = True
+            c.save(update_fields=['eliminado'])
             cambios += 1
     return cambios
 
@@ -1354,6 +1370,30 @@ def api_mail_detalle(request, correo_id):
             raw_email = None
             if fetch_data and isinstance(fetch_data[0], tuple):
                 raw_email = fetch_data[0][1]
+
+            # El UID guardado puede haber muerto (el correo se borró/movió
+            # desde otro dispositivo, o el buzón renovó su numeración).
+            # Re-resolver por Message-ID antes de rendirse; si la búsqueda
+            # confirma que ya no está, reflejarlo como eliminado en vez de
+            # dejar un fantasma eterno con "(Sin contenido)".
+            if not raw_email and correo.message_id and correo.uid_imap.isdigit():
+                try:
+                    typ_s, sdata = imap.uid('SEARCH', None, 'HEADER', 'Message-ID', correo.message_id)
+                    uids_reales = (sdata[0].split() if sdata and sdata[0] else [])
+                    if uids_reales:
+                        nuevo_uid = uids_reales[-1].decode()
+                        typ, fetch_data = imap.uid('FETCH', nuevo_uid.encode(), '(RFC822)')
+                        if fetch_data and isinstance(fetch_data[0], tuple):
+                            raw_email = fetch_data[0][1]
+                            correo.uid_imap = nuevo_uid
+                            correo.save(update_fields=['uid_imap'])
+                            logger.info("Correo %s: UID re-resuelto por Message-ID → %s", correo_id, nuevo_uid)
+                    elif typ_s == 'OK':
+                        correo.eliminado = True
+                        correo.save(update_fields=['eliminado'])
+                        logger.info("Correo %s: ya no existe en el servidor, marcado eliminado", correo_id)
+                except Exception as exc:
+                    logger.warning("Correo %s: re-resolución por Message-ID falló: %s", correo_id, exc)
 
             if raw_email:
                 msg = email_lib.message_from_bytes(raw_email)
