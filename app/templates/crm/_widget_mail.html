@@ -95,20 +95,11 @@
                     </svg>
                     <span class="mw-nav-lbl">Redactar</span>
                 </button>
-                <!-- Section label + colapsar menú -->
+                <!-- Section label (el riel se expande solo con el cursor encima) -->
                 <div id="mailNavBuzonesRow" style="display:flex;align-items:center;padding:4px 6px 6px;margin-top:2px;">
                     <div class="mw-nav-lbl"
                         style="font-size:0.65rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.08em;flex:1;">
                         BUZONES</div>
-                    <button id="mailNavToggleBtn" onclick="mailNavToggle()" title="Colapsar menú"
-                        style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:2px;border-radius:6px;display:flex;"
-                        onmouseenter="this.style.color='#007AFF'" onmouseleave="this.style.color='#9CA3AF'">
-                        <svg id="mailNavToggleIco" width="13" height="13" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="11 17 6 12 11 7" />
-                            <polyline points="18 17 13 12 18 7" />
-                        </svg>
-                    </button>
                 </div>
                 <!-- Bandeja -->
                 <button class="mail-folder-wb active" id="mwFolderInbox" title="Bandeja de entrada"
@@ -908,20 +899,38 @@
             position: relative;
         }
         .mail-folder-wb:hover { background: #EBEBED; }
-        /* ── Menú colapsado a solo iconos (mailNavToggle) ── */
-        #mailNavCol.mw-colapsado { padding: 14px 7px 10px; }
-        #mailNavCol.mw-colapsado .mw-nav-lbl { display: none; }
-        #mailNavCol.mw-colapsado .mail-folder-wb { justify-content: center; padding: 9px 0; }
-        #mailNavCol.mw-colapsado #mailComposeBtn { justify-content: center; padding: 10px 0; }
-        #mailNavCol.mw-colapsado #mailNavBuzonesRow { justify-content: center; }
-        #mailNavCol.mw-colapsado #mailNavToggleIco { transform: rotate(180deg); }
-        #mailNavCol.mw-colapsado #mailUnreadBadge {
+        /* ── Menú de buzones: riel de iconos fijo que se expande al pasar el
+           cursor, FLOTANDO sobre la lista (la columna del grid queda en 64px
+           siempre; el nav crece por encima sin empujar nada). ── */
+        #mailNavCol.mw-colapsado {
+            width: 64px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow-x: hidden;
+            z-index: 90;
+            /* el retardo de .25s evita que se cierre al mover el cursor un instante fuera */
+            transition: width 0.18s cubic-bezier(0.2, 0.8, 0.25, 1) 0.25s, box-shadow 0.18s ease 0.25s;
+        }
+        #mailNavCol.mw-colapsado:hover {
+            width: 228px;
+            box-shadow: 10px 0 28px rgba(15, 40, 80, 0.14);
+            /* pequeño retardo al abrir: pasar de largo con el cursor no lo dispara */
+            transition-delay: 0.12s;
+        }
+        #mailNavCol.mw-colapsado:hover .mw-nav-lbl { animation: mwLblIn 0.22s ease; }
+        @keyframes mwLblIn { from { opacity: 0; } to { opacity: 1; } }
+        #mailNavCol.mw-colapsado:not(:hover) { padding: 14px 7px 10px; }
+        #mailNavCol.mw-colapsado:not(:hover) .mw-nav-lbl { display: none; }
+        #mailNavCol.mw-colapsado:not(:hover) .mail-folder-wb { justify-content: center; padding: 9px 0; }
+        #mailNavCol.mw-colapsado:not(:hover) #mailComposeBtn { justify-content: center; padding: 10px 0; }
+        #mailNavCol.mw-colapsado:not(:hover) #mailNavBuzonesRow { display: none; }
+        #mailNavCol.mw-colapsado:not(:hover) #mailUnreadBadge {
             position: absolute; top: 1px; right: 1px;
             margin-left: 0 !important; padding: 0 5px; min-width: 14px; font-size: 0.6rem !important;
         }
-        #mailNavCol.mw-colapsado #mailUserInfoBtn > div:nth-child(2),
-        #mailNavCol.mw-colapsado #mailUserInfoBtn > svg { display: none; }
-        #mailNavCol.mw-colapsado #mailUserInfoBtn { justify-content: center; padding: 9px 0 6px; }
+        #mailNavCol.mw-colapsado:not(:hover) #mailUserInfoBtn > div:nth-child(2),
+        #mailNavCol.mw-colapsado:not(:hover) #mailUserInfoBtn > svg { display: none; }
+        #mailNavCol.mw-colapsado:not(:hover) #mailUserInfoBtn { justify-content: center; padding: 9px 0 6px; }
         /* Divisor lista/cuerpo */
         #mailColResizer:hover, #mailColResizer.arrastrando { background: rgba(0,122,255,0.18); }
         .mail-folder-wb.active {

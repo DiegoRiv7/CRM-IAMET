@@ -16,19 +16,19 @@
         var _mailConexionId = null;
         var _mailConexiones = [];
 
-        /* ── Layout: ancho de la lista (divisor arrastrable) y menú
-           colapsable a solo iconos. Ambos se recuerdan entre sesiones. ── */
-        var _mailColLista = 340, _mailNavColapsado = false;
+        /* ── Layout: ancho de la lista (divisor arrastrable, se recuerda) y
+           menú de buzones SIEMPRE en riel de iconos de 64px — se expande solo
+           al pasar el cursor (CSS :hover), flotando sobre la lista. ── */
+        var _mailColLista = 340;
         try {
             var _mclw = parseInt(localStorage.getItem('mailColLista'), 10);
             if (_mclw >= 260 && _mclw <= 640) _mailColLista = _mclw;
-            _mailNavColapsado = localStorage.getItem('mailNavColapsado') === '1';
         } catch (e) { }
         window._mailCtxAbierto = false;
         function _mailAplicarCols() {
             var g = document.getElementById('mailBodyGrid');
             var hg = document.getElementById('mailHeaderGrid');
-            var cols = (_mailNavColapsado ? '64px' : '220px') + ' ' + _mailColLista + 'px 1fr' +
+            var cols = '64px ' + _mailColLista + 'px 1fr' +
                 (window._mailCtxAbierto ? ' 290px' : '');
             if (g) g.style.gridTemplateColumns = cols;
             if (hg) hg.style.gridTemplateColumns = cols;
@@ -36,16 +36,9 @@
         window._mailAplicarCols = _mailAplicarCols;
         function _mailAplicarLayoutPrefs() {
             var nav = document.getElementById('mailNavCol');
-            if (nav) nav.classList.toggle('mw-colapsado', _mailNavColapsado);
-            var btn = document.getElementById('mailNavToggleBtn');
-            if (btn) btn.title = _mailNavColapsado ? 'Expandir menú' : 'Colapsar menú';
+            if (nav) nav.classList.add('mw-colapsado');
             _mailAplicarCols();
         }
-        window.mailNavToggle = function () {
-            _mailNavColapsado = !_mailNavColapsado;
-            _mailAplicarLayoutPrefs();
-            try { localStorage.setItem('mailNavColapsado', _mailNavColapsado ? '1' : ''); } catch (e) { }
-        };
         // Divisor lista/cuerpo: delegado en document para sobrevivir a Turbo
         document.addEventListener('mousedown', function (ev) {
             if (!ev.target || ev.target.id !== 'mailColResizer') return;
@@ -2719,10 +2712,8 @@
         };
 
         window.mailToggleAccountMenu = function () {
-            // Con el menú colapsado a iconos no cabe el desplegable de cuentas:
-            // el clic primero expande el menú.
-            var nav = document.getElementById('mailNavCol');
-            if (nav && nav.classList.contains('mw-colapsado')) { window.mailNavToggle(); return; }
+            // El riel se expande solo con el cursor encima (CSS :hover), así
+            // que al hacer clic aquí el menú ya está expandido: abrir directo.
             var menu = document.getElementById('mailAccountMenu');
             if (!menu) return;
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
