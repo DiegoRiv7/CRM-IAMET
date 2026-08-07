@@ -470,6 +470,7 @@
             var metaEl = document.getElementById('mvMeta');
             if (asuntoEl) asuntoEl.textContent = 'Cargando...';
             if (metaEl) metaEl.textContent = '';
+            _mailRenderAdjuntos('mvAdj', []); // no arrastrar chips del correo anterior
             fetch('/app/api/mail/detalle/' + id + '/')
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
@@ -489,6 +490,7 @@
                         pl.style.display = 'block';
                         ifr.style.display = 'none';
                     }
+                    _mailRenderAdjuntos('mvAdj', d.adjuntos);
                     var cardL = document.getElementById('mailCard_' + id);
                     if (cardL) cardL.classList.remove('unread');
                 })
@@ -1356,9 +1358,48 @@
                         iframe.style.display = 'none';
                     }
 
+                    _mailRenderAdjuntos('mailDetailAdj', d.adjuntos);
+
                     if (card) card.classList.remove('unread');
                 });
         };
+
+        /* ── Adjuntos recibidos: chips descargables (los usa la vista
+           principal en #mailDetailAdj y la ventana individual en #mvAdj) ── */
+        function _mailFmtBytes(n) {
+            if (!n && n !== 0) return '';
+            if (n < 1024) return n + ' B';
+            if (n < 1048576) return Math.round(n / 1024) + ' KB';
+            return (n / 1048576).toFixed(1) + ' MB';
+        }
+        function _mailRenderAdjuntos(containerId, adjuntos) {
+            var box = document.getElementById(containerId);
+            if (!box) return;
+            adjuntos = adjuntos || [];
+            if (!adjuntos.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+            var h = '';
+            adjuntos.forEach(function (a) {
+                var ct = a.content_type || '';
+                var icono;
+                if (ct.indexOf('image/') === 0) {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                } else if (ct === 'application/pdf' || /\.pdf$/i.test(a.nombre || '')) {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                } else {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+                }
+                h += '<a href="/app/api/mail/adjunto/' + a.id + '/" target="_blank" rel="noopener" title="Descargar ' + _esc(a.nombre || 'adjunto') + '"'
+                    + ' style="display:inline-flex;align-items:center;gap:6px;background:#F5F7FA;border:1px solid #E5E8EE;border-radius:9px;padding:6px 10px;font-size:0.76rem;color:#374151;text-decoration:none;max-width:230px;"'
+                    + ' onmouseenter="this.style.background=\'#EEF3FF\';this.style.borderColor=\'#C7DBFF\'"'
+                    + ' onmouseleave="this.style.background=\'#F5F7FA\';this.style.borderColor=\'#E5E8EE\'">'
+                    + icono
+                    + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">' + _esc(a.nombre || 'adjunto') + '</span>'
+                    + (a.tamanio ? '<span style="color:#9CA3AF;flex-shrink:0;">' + _mailFmtBytes(a.tamanio) + '</span>' : '')
+                    + '</a>';
+            });
+            box.innerHTML = h;
+            box.style.display = 'flex';
+        }
 
         /* ── Actions ────────────────────────────────── */
         window.mailSincronizar = function () {
