@@ -83,7 +83,9 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                 <div class="wo-content">
                     <div class="wo-grid">
                         <!-- Info card (Row 1, Col 1) -->
-                        <div class="wo-card" style="display:flex;flex-direction:column;">
+                        {# El hook data-wo="infoCard" permite esconder los metadatos
+                           comerciales al ingeniero sin acceso de supervisor. #}
+                        <div class="wo-card" data-wo="infoCard" style="display:flex;flex-direction:column;">
                             <div class="wo-info-grid"
                                 style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
                                 <div class="wo-info-item">
