@@ -83,81 +83,92 @@
         <div id="mailBodyGrid" style="display:grid;grid-template-columns:220px 340px 1fr;flex:1;overflow:hidden;">
 
             <!-- ──────────────────── SIDEBAR ──────────────────── -->
-            <div
+            <div id="mailNavCol"
                 style="background:#F7F8FA;border-right:1.5px solid #EBEBED;display:flex;flex-direction:column;padding:14px 10px 10px;gap:2px;overflow-y:auto;">
                 <!-- Redactar -->
-                <button id="mailComposeBtn" onclick="mailRedactar()"
+                <button id="mailComposeBtn" onclick="mailRedactar()" title="Redactar"
                     style="display:none;align-items:center;gap:8px;background:#007AFF;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:0.87rem;font-weight:600;cursor:pointer;width:100%;margin-bottom:12px;font-family:inherit;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                    Redactar
+                    <span class="mw-nav-lbl">Redactar</span>
                 </button>
-                <!-- Section label -->
-                <div
-                    style="font-size:0.65rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.08em;padding:4px 6px 6px;margin-top:2px;">
-                    BUZONES</div>
+                <!-- Section label + colapsar menú -->
+                <div id="mailNavBuzonesRow" style="display:flex;align-items:center;padding:4px 6px 6px;margin-top:2px;">
+                    <div class="mw-nav-lbl"
+                        style="font-size:0.65rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.08em;flex:1;">
+                        BUZONES</div>
+                    <button id="mailNavToggleBtn" onclick="mailNavToggle()" title="Colapsar menú"
+                        style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:2px;border-radius:6px;display:flex;"
+                        onmouseenter="this.style.color='#007AFF'" onmouseleave="this.style.color='#9CA3AF'">
+                        <svg id="mailNavToggleIco" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="11 17 6 12 11 7" />
+                            <polyline points="18 17 13 12 18 7" />
+                        </svg>
+                    </button>
+                </div>
                 <!-- Bandeja -->
-                <button class="mail-folder-wb active" id="mwFolderInbox"
+                <button class="mail-folder-wb active" id="mwFolderInbox" title="Bandeja de entrada"
                     onclick="mailCambiarCarpeta('INBOX',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
                         <path
                             d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
                     </svg>
-                    Bandeja de entrada
+                    <span class="mw-nav-lbl">Bandeja de entrada</span>
                     <span id="mailUnreadBadge"
                         style="display:none;margin-left:auto;background:#007AFF;color:#fff;border-radius:20px;font-size:0.66rem;font-weight:700;padding:1px 7px;min-width:18px;text-align:center;"></span>
                 </button>
                 <!-- Enviados -->
-                <button class="mail-folder-wb" id="mwFolderSent" onclick="mailCambiarCarpeta('SENT',this)">
+                <button class="mail-folder-wb" id="mwFolderSent" title="Enviados" onclick="mailCambiarCarpeta('SENT',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                     </svg>
-                    Enviados
+                    <span class="mw-nav-lbl">Enviados</span>
                 </button>
                 <!-- Destacados -->
-                <button class="mail-folder-wb" id="mwFolderStarred"
+                <button class="mail-folder-wb" id="mwFolderStarred" title="Destacados"
                     onclick="mailCambiarCarpeta('STARRED',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <polygon
                             points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
-                    Destacados
+                    <span class="mw-nav-lbl">Destacados</span>
                 </button>
                 <!-- Borradores -->
-                <button class="mail-folder-wb" id="mwFolderDrafts"
+                <button class="mail-folder-wb" id="mwFolderDrafts" title="Borradores"
                     onclick="mailCambiarCarpeta('DRAFTS',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
-                    Borradores
+                    <span class="mw-nav-lbl">Borradores</span>
                 </button>
                 <!-- Archivo -->
-                <button class="mail-folder-wb" id="mwFolderArchive"
+                <button class="mail-folder-wb" id="mwFolderArchive" title="Archivo"
                     onclick="mailCambiarCarpeta('ARCHIVE',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" />
                         <line x1="10" y1="12" x2="14" y2="12" />
                     </svg>
-                    Archivo
+                    <span class="mw-nav-lbl">Archivo</span>
                 </button>
                 <!-- Papelera -->
-                <button class="mail-folder-wb" id="mwFolderTrash" onclick="mailCambiarCarpeta('TRASH',this)">
+                <button class="mail-folder-wb" id="mwFolderTrash" title="Papelera" onclick="mailCambiarCarpeta('TRASH',this)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                        stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                         <polyline points="3 6 5 6 21 6" />
                         <path
                             d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
-                    Papelera
+                    <span class="mw-nav-lbl">Papelera</span>
                 </button>
 
                 <div id="mailSidebarNote"
@@ -224,7 +235,10 @@
             </div>
 
             <!-- ──────────────────── LIST COLUMN ──────────────────── -->
-            <div style="border-right:1.5px solid #EBEBED;display:flex;flex-direction:column;overflow:hidden;background:#fff;">
+            <div id="mailListCol" style="border-right:1.5px solid #EBEBED;display:flex;flex-direction:column;overflow:hidden;background:#fff;position:relative;">
+                <!-- Divisor arrastrable: reparte el ancho entre lista y cuerpo -->
+                <div id="mailColResizer" title="Arrastra para ajustar el ancho"
+                    style="position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:6;"></div>
                 <div style="display:flex;align-items:center;padding:8px 14px 7px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
                     <span id="mailListTitle" style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.07em;flex:1;">Bandeja de entrada</span>
                     <button id="mailWidgetSyncBtn" onclick="mailSincronizar()" style="display:none;background:none;border:none;cursor:pointer;padding:3px;border-radius:6px;color:#9CA3AF;" title="Sincronizar" onmouseenter="this.style.color='#007AFF'" onmouseleave="this.style.color='#9CA3AF'">
@@ -234,8 +248,26 @@
                         </svg>
                     </button>
                 </div>
-                <input type="text" id="mailListSearch" placeholder="Buscar en correos..." oninput="mailFiltrar(this.value)"
-                    style="padding:8px 14px;background:#F9FAFB;border:none;border-bottom:1px solid #F0F2F5;font-size:0.83rem;color:#374151;outline:none;width:100%;font-family:inherit;box-sizing:border-box;">
+                <!-- Búsqueda: local instantánea + servidor (asunto, remitente,
+                     destinatarios y cuerpo completo de la carpeta) -->
+                <div style="padding:10px 12px;border-bottom:1px solid #F0F2F5;flex-shrink:0;">
+                    <div id="mailSearchWrap"
+                        style="display:flex;align-items:center;gap:9px;background:#F3F4F6;border:1.5px solid transparent;border-radius:11px;padding:9px 13px;transition:border-color 0.15s, background 0.15s, box-shadow 0.15s;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input type="text" id="mailListSearch" placeholder="Buscar por remitente, asunto o contenido..."
+                            oninput="mailFiltrar(this.value)"
+                            onfocus="var w=document.getElementById('mailSearchWrap');w.style.borderColor='#007AFF';w.style.background='#fff';w.style.boxShadow='0 0 0 3px rgba(0,122,255,0.1)'"
+                            onblur="var w=document.getElementById('mailSearchWrap');w.style.borderColor='transparent';w.style.background='#F3F4F6';w.style.boxShadow='none'"
+                            style="flex:1;border:none;background:none;font-size:0.87rem;color:#1A1A2E;outline:none;font-family:inherit;min-width:0;">
+                        <button id="mailSearchClear" title="Limpiar búsqueda"
+                            onclick="var i=document.getElementById('mailListSearch');i.value='';mailFiltrar('');i.focus();"
+                            style="display:none;background:#E5E7EB;border:none;color:#6B7280;width:18px;height:18px;border-radius:50%;font-size:0.66rem;cursor:pointer;flex-shrink:0;line-height:1;align-items:center;justify-content:center;">✕</button>
+                    </div>
+                </div>
                 <div style="flex:1;overflow-y:auto;" id="mailList"></div>
                 <div id="mailLoadMore"
                     style="display:none;padding:10px;text-align:center;font-size:0.8rem;color:#007AFF;cursor:pointer;border-top:1px solid #F0F2F5;"
@@ -403,6 +435,8 @@
                             } else {
                                 p.dataset.crmOculto = '1';
                                 p.style.display = 'none';
+                                window._mailCtxAbierto = false;
+                                if (window._mailAplicarCols) window._mailAplicarCols();
                                 if (b) b.textContent = 'Mostrar CRM';
                             }
                             try { localStorage.setItem('mailCrmOculto', oculto ? '' : '1'); } catch (e) {}
@@ -874,6 +908,22 @@
             position: relative;
         }
         .mail-folder-wb:hover { background: #EBEBED; }
+        /* ── Menú colapsado a solo iconos (mailNavToggle) ── */
+        #mailNavCol.mw-colapsado { padding: 14px 7px 10px; }
+        #mailNavCol.mw-colapsado .mw-nav-lbl { display: none; }
+        #mailNavCol.mw-colapsado .mail-folder-wb { justify-content: center; padding: 9px 0; }
+        #mailNavCol.mw-colapsado #mailComposeBtn { justify-content: center; padding: 10px 0; }
+        #mailNavCol.mw-colapsado #mailNavBuzonesRow { justify-content: center; }
+        #mailNavCol.mw-colapsado #mailNavToggleIco { transform: rotate(180deg); }
+        #mailNavCol.mw-colapsado #mailUnreadBadge {
+            position: absolute; top: 1px; right: 1px;
+            margin-left: 0 !important; padding: 0 5px; min-width: 14px; font-size: 0.6rem !important;
+        }
+        #mailNavCol.mw-colapsado #mailUserInfoBtn > div:nth-child(2),
+        #mailNavCol.mw-colapsado #mailUserInfoBtn > svg { display: none; }
+        #mailNavCol.mw-colapsado #mailUserInfoBtn { justify-content: center; padding: 9px 0 6px; }
+        /* Divisor lista/cuerpo */
+        #mailColResizer:hover, #mailColResizer.arrastrando { background: rgba(0,122,255,0.18); }
         .mail-folder-wb.active {
             background: rgba(0,122,255,0.08);
             color: #007AFF;

@@ -479,6 +479,7 @@ def api_mail_lista(request):
             | Q(remitente_nombre__icontains=q)
             | Q(remitente_email__icontains=q)
             | Q(cuerpo_texto__icontains=q)
+            | Q(destinatarios_json__icontains=q)
         )
 
     offset = (pagina - 1) * por_pagina

@@ -16,6 +16,60 @@
         var _mailConexionId = null;
         var _mailConexiones = [];
 
+        /* ── Layout: ancho de la lista (divisor arrastrable) y menú
+           colapsable a solo iconos. Ambos se recuerdan entre sesiones. ── */
+        var _mailColLista = 340, _mailNavColapsado = false;
+        try {
+            var _mclw = parseInt(localStorage.getItem('mailColLista'), 10);
+            if (_mclw >= 260 && _mclw <= 640) _mailColLista = _mclw;
+            _mailNavColapsado = localStorage.getItem('mailNavColapsado') === '1';
+        } catch (e) { }
+        window._mailCtxAbierto = false;
+        function _mailAplicarCols() {
+            var g = document.getElementById('mailBodyGrid');
+            var hg = document.getElementById('mailHeaderGrid');
+            var cols = (_mailNavColapsado ? '64px' : '220px') + ' ' + _mailColLista + 'px 1fr' +
+                (window._mailCtxAbierto ? ' 290px' : '');
+            if (g) g.style.gridTemplateColumns = cols;
+            if (hg) hg.style.gridTemplateColumns = cols;
+        }
+        window._mailAplicarCols = _mailAplicarCols;
+        function _mailAplicarLayoutPrefs() {
+            var nav = document.getElementById('mailNavCol');
+            if (nav) nav.classList.toggle('mw-colapsado', _mailNavColapsado);
+            var btn = document.getElementById('mailNavToggleBtn');
+            if (btn) btn.title = _mailNavColapsado ? 'Expandir menú' : 'Colapsar menú';
+            _mailAplicarCols();
+        }
+        window.mailNavToggle = function () {
+            _mailNavColapsado = !_mailNavColapsado;
+            _mailAplicarLayoutPrefs();
+            try { localStorage.setItem('mailNavColapsado', _mailNavColapsado ? '1' : ''); } catch (e) { }
+        };
+        // Divisor lista/cuerpo: delegado en document para sobrevivir a Turbo
+        document.addEventListener('mousedown', function (ev) {
+            if (!ev.target || ev.target.id !== 'mailColResizer') return;
+            ev.preventDefault();
+            var h = ev.target, x0 = ev.clientX, w0 = _mailColLista;
+            h.classList.add('arrastrando');
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+            function mv(e) {
+                _mailColLista = Math.max(260, Math.min(640, w0 + (e.clientX - x0)));
+                _mailAplicarCols();
+            }
+            function up() {
+                document.removeEventListener('mousemove', mv);
+                document.removeEventListener('mouseup', up);
+                h.classList.remove('arrastrando');
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+                try { localStorage.setItem('mailColLista', String(_mailColLista)); } catch (e) { }
+            }
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup', up);
+        });
+
         /* ── Recipient autocomplete state ──────────────────
          * Cada wrap (Para/CC) tiene un array de chips {nombre, email}.
          * Las sugerencias salen de:
@@ -128,6 +182,7 @@
 
         /* ── Load connection state on open ─────────── */
         function _mailInitState() {
+            _mailAplicarLayoutPrefs();
             fetch('/app/api/mail/conexion/', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -364,13 +419,16 @@
         window.mailFiltrar = function (q) {
             q = (q || '').trim();
             var ql = q.toLowerCase();
+            var clr = document.getElementById('mailSearchClear');
+            if (clr) clr.style.display = q ? 'flex' : 'none';
             if (!ql) {
                 _mailFiltrado = _mailTodos;
             } else {
                 _mailFiltrado = _mailTodos.filter(function (c) {
                     return (c.asunto || '').toLowerCase().includes(ql) ||
                         (c.remitente_nombre || '').toLowerCase().includes(ql) ||
-                        (c.remitente_email || '').toLowerCase().includes(ql);
+                        (c.remitente_email || '').toLowerCase().includes(ql) ||
+                        (c.preview || '').toLowerCase().includes(ql);
                 });
             }
             _renderLista(_mailFiltrado);
@@ -893,11 +951,9 @@
         }
         function _mailCtxOcultar() {
             var p = document.getElementById('mailCtxPanel');
-            var g = document.getElementById('mailBodyGrid');
-            var hg = document.getElementById('mailHeaderGrid');
             if (p) p.style.display = 'none';
-            if (g) g.style.gridTemplateColumns = '';
-            if (hg) hg.style.gridTemplateColumns = '';
+            window._mailCtxAbierto = false;
+            _mailAplicarCols();
             window._mailCtxOppId = null;
         }
         /* ── Franja de vínculo (arriba del correo): dos estados.
@@ -966,15 +1022,13 @@
                     var crmOculto = p.dataset.crmOculto === '1';
                     if (!crmOculto) {
                         p.style.display = 'flex';
-                        g.style.gridTemplateColumns = '220px 340px 1fr 290px';
-                        var hg = document.getElementById('mailHeaderGrid');
-                        if (hg) hg.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                        window._mailCtxAbierto = true;
+                        _mailAplicarCols();
                     }
                     window._mailCtxRestaurar = function () {
                         p.style.display = 'flex';
-                        g.style.gridTemplateColumns = '220px 340px 1fr 290px';
-                        var hg2 = document.getElementById('mailHeaderGrid');
-                        if (hg2) hg2.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                        window._mailCtxAbierto = true;
+                        _mailAplicarCols();
                     };
                     if (!d.vinculado) {
                         if (vin) vin.style.display = 'none';
@@ -2647,6 +2701,10 @@
         };
 
         window.mailToggleAccountMenu = function () {
+            // Con el menú colapsado a iconos no cabe el desplegable de cuentas:
+            // el clic primero expande el menú.
+            var nav = document.getElementById('mailNavCol');
+            if (nav && nav.classList.contains('mw-colapsado')) { window.mailNavToggle(); return; }
             var menu = document.getElementById('mailAccountMenu');
             if (!menu) return;
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
