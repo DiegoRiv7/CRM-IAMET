@@ -2267,53 +2267,70 @@
         // Forward attach handler
         window.mailHandleFwdAttach = function (files) { _handleAttachFiles(files, 'fwd'); };
 
-        function _setupDropZone(editorId, panelId, context, overlayId) {
-            var editor = document.getElementById(editorId);
-            if (!editor) return;
-            var overlay = overlayId ? document.getElementById(overlayId) : null;
-            var dragCounter = 0;
-            function show() { if (overlay) overlay.classList.add('show'); }
-            function hide() { if (overlay) overlay.classList.remove('show'); }
+        /* ── Drag & drop de archivos al cuerpo del correo ──
+         * Delegación a NIVEL DOCUMENTO (como el divisor de columnas): los
+         * listeners por elemento morían cuando Turbo reemplazaba el DOM al
+         * navegar entre pestañas y el arrastre dejaba de funcionar. Aquí los
+         * handlers viven en document y buscan el panel bajo el cursor en el
+         * momento del evento, así sobreviven cualquier re-render. */
+        var _MAIL_DROP_ZONAS = [
+            { panel: 'mailComposePanel', overlay: 'mailCompDropOverlay', context: 'compose' },
+            { panel: 'mailReplyPanel', overlay: 'mailRespDropOverlay', context: 'reply' },
+            { panel: 'mailForwardPanel', overlay: null, context: 'fwd' }
+        ];
+        var _mailDropHideTO = null;
 
-            editor.addEventListener('dragover', function (e) {
-                e.preventDefault();
-                if (!overlay) editor.style.background = '#F0F9FF';
-            });
-            editor.addEventListener('dragleave', function () {
-                if (!overlay) editor.style.background = '';
-            });
-            editor.addEventListener('drop', function (e) {
-                e.preventDefault();
-                if (!overlay) editor.style.background = '';
-                var files = e.dataTransfer.files;
-                if (files && files.length) {
-                    _handleAttachFiles(files, context);
-                    e.stopPropagation();
-                }
-            });
-            if (panelId) {
-                var panel = document.getElementById(panelId);
-                if (panel) {
-                    panel.addEventListener('dragenter', function (e) {
-                        if (e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
-                            dragCounter++;
-                            show();
-                        }
-                    });
-                    panel.addEventListener('dragleave', function () {
-                        dragCounter = Math.max(0, dragCounter - 1);
-                        if (dragCounter === 0) hide();
-                    });
-                    panel.addEventListener('dragover', function (e) { e.preventDefault(); });
-                    panel.addEventListener('drop', function (e) {
-                        e.preventDefault();
-                        dragCounter = 0;
-                        hide();
-                        var files = e.dataTransfer.files;
-                        if (files && files.length) _handleAttachFiles(files, context);
-                    });
-                }
+        function _mailZonaDropDe(target) {
+            if (!target || !target.nodeType) return null;
+            for (var i = 0; i < _MAIL_DROP_ZONAS.length; i++) {
+                var p = document.getElementById(_MAIL_DROP_ZONAS[i].panel);
+                // offsetParent null = panel oculto (solo uno está visible a la vez)
+                if (p && p.offsetParent !== null && p.contains(target)) return _MAIL_DROP_ZONAS[i];
             }
+            return null;
+        }
+
+        function _mailDropOcultarTodo() {
+            document.querySelectorAll('.mail-drop-overlay.show').forEach(function (o) { o.classList.remove('show'); });
+            var fwd = document.getElementById('mailForwardPanel');
+            if (fwd) fwd.style.background = '';
+        }
+
+        function _setupDropZonesGlobal() {
+            if (window._mailDropWired) return;
+            window._mailDropWired = true;
+
+            document.addEventListener('dragover', function (e) {
+                if (!e.dataTransfer || !e.dataTransfer.types) return;
+                if (Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') === -1) return;
+                var z = _mailZonaDropDe(e.target);
+                if (!z) { _mailDropOcultarTodo(); return; }
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                if (z.overlay) {
+                    var ov = document.getElementById(z.overlay);
+                    if (ov) ov.classList.add('show');
+                } else {
+                    var p = document.getElementById(z.panel);
+                    if (p) p.style.background = '#F0F9FF';
+                }
+                // Sin dragover reciente (salió de la zona o soltó fuera): apagar señal
+                clearTimeout(_mailDropHideTO);
+                _mailDropHideTO = setTimeout(_mailDropOcultarTodo, 250);
+            });
+
+            document.addEventListener('drop', function (e) {
+                clearTimeout(_mailDropHideTO);
+                _mailDropOcultarTodo();
+                var z = _mailZonaDropDe(e.target);
+                if (!z) return;
+                e.preventDefault();
+                var files = e.dataTransfer && e.dataTransfer.files;
+                if (files && files.length) {
+                    _handleAttachFiles(files, z.context);
+                    _showToastMail(files.length + (files.length > 1 ? ' archivos adjuntados' : ' archivo adjuntado'), true);
+                }
+            });
         }
 
         /* ── Paste handler: capture pasted images as attachments ──
@@ -2321,10 +2338,15 @@
          * insertar un <img src="data:..."> que infla el body y a veces
          * lo descartan los receptores. Aquí lo convertimos en adjunto real.
          */
-        function _setupPasteToAttach(editorId, context) {
-            var editor = document.getElementById(editorId);
-            if (!editor) return;
-            editor.addEventListener('paste', function (e) {
+        var _MAIL_PASTE_EDITORES = { mailCompEditor: 'compose', mailRespEditor: 'reply', mailFwdEditor: 'fwd' };
+
+        function _setupPasteToAttachGlobal() {
+            if (window._mailPasteWired) return;
+            window._mailPasteWired = true;
+            document.addEventListener('paste', function (e) {
+                var editor = e.target && e.target.closest ? e.target.closest('#mailCompEditor, #mailRespEditor, #mailFwdEditor') : null;
+                var context = editor ? _MAIL_PASTE_EDITORES[editor.id] : null;
+                if (!context) return;
                 if (!e.clipboardData) return;
                 var items = e.clipboardData.items || [];
                 var imageFiles = [];
@@ -2365,12 +2387,8 @@
         }
 
         function _setupReplyDropZone() {
-            _setupDropZone('mailRespEditor', 'mailReplyPanel', 'reply', 'mailRespDropOverlay');
-            _setupDropZone('mailCompEditor', 'mailComposePanel', 'compose', 'mailCompDropOverlay');
-            _setupDropZone('mailFwdEditor', 'mailForwardPanel', 'fwd');
-            _setupPasteToAttach('mailCompEditor', 'compose');
-            _setupPasteToAttach('mailRespEditor', 'reply');
-            _setupPasteToAttach('mailFwdEditor', 'fwd');
+            _setupDropZonesGlobal();
+            _setupPasteToAttachGlobal();
         }
 
         /* ══════ Recipient autocomplete (compose Para/CC) ══════ */
