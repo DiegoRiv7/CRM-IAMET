@@ -8830,7 +8830,9 @@ def _pdf_datos_finos(texto):
         m = rx.search(texto)
         if m:
             po = m.group(1).strip().strip('.-:')
-            if 4 <= len(po) <= 20:
+            # Una orden real siempre trae dígitos ("TIJ13947"); sin ellos es
+            # prosa pescada por accidente ("la orden de compra respectiva").
+            if 4 <= len(po) <= 20 and any(ch.isdigit() for ch in po):
                 datos['po'] = po
                 break
     # Monto: primero importes pegados a "total/importe"; si no, el mayor $ del doc
