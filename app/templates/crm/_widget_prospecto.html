@@ -169,6 +169,20 @@
                             </div>
                         </div>
 
+                        {% comment %}
+                        Oportunidades que salieron de este prospecto. Se pinta solo
+                        si hay alguna; el registro vive en la base (FK
+                        prospecto_origen_directo), así que se puede consultar
+                        cuando sea, no solo al marcar el prospecto como ganado.
+                        {% endcomment %}
+                        <div class="wo-card" id="wpOppsCard" style="padding:0.85rem 1rem;display:none;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+                                <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">OPORTUNIDADES GENERADAS</span>
+                                <span id="wpOppsCount" style="padding:2px 8px;border-radius:999px;background:#ECFDF5;color:#047857;font-size:0.68rem;font-weight:800;">0</span>
+                            </div>
+                            <div id="wpOppsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+                        </div>
+
                         <!-- Vendedor / Cliente card -->
                         <div class="wo-card">
                             <div class="wo-stakeholder">
@@ -309,120 +323,343 @@
     </div>
 </div>
 
+<style>
+/* ═══════════ MODAL CREAR OPORTUNIDAD DESDE PROSPECTO ═══════════
+   Mismo lenguaje que el rediseño del detalle de tarea: encabezado delgado,
+   una sola tarjeta, secciones separadas por líneas y la acción principal
+   siempre visible abajo. Prefijo wco- para no chocar con nada. */
+
+#widgetCrearOppDesdeProspecto .wco-card {
+    background: #F7F8FA; border-radius: 18px;
+    /* Al ancho del resto de los widgets del CRM: en 620px el formulario a dos
+       columnas quedaba apretado y la lista de creadas sin sitio. */
+    width: 1040px; max-width: 94vw; max-height: 92vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Encabezado ── */
+#widgetCrearOppDesdeProspecto .wco-head {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px 20px; background: #fff;
+    border-bottom: 1px solid #E9EBEF; flex-shrink: 0;
+}
+#widgetCrearOppDesdeProspecto .wco-head-b { flex: 1; min-width: 0; }
+#widgetCrearOppDesdeProspecto .wco-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 999px;
+    background: #ECFDF5; color: #047857;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+}
+#widgetCrearOppDesdeProspecto .wco-title {
+    margin: 7px 0 2px; font-size: 17px; font-weight: 700;
+    color: #0F172A; letter-spacing: -.01em;
+}
+#widgetCrearOppDesdeProspecto .wco-sub {
+    margin: 0; font-size: 12.5px; color: #64748B; line-height: 1.45;
+}
+#widgetCrearOppDesdeProspecto .wco-x {
+    width: 30px; height: 30px; flex-shrink: 0;
+    border: none; background: none; border-radius: 8px;
+    color: #64748B; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+#widgetCrearOppDesdeProspecto .wco-x:hover { background: #F1F3F7; color: #0F172A; }
+
+/* ── Cuerpo ── */
+#widgetCrearOppDesdeProspecto .wco-body {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px;
+    display: grid; grid-template-columns: 1fr 320px; gap: 16px;
+    align-items: start;
+}
+#widgetCrearOppDesdeProspecto .wco-panel {
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+}
+
+/* Contexto del prospecto: cliente y contacto no se editan, así que se leen
+   como datos, no como campos vacíos que invitan a escribir. */
+#widgetCrearOppDesdeProspecto .wco-ctx {
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    padding-bottom: 14px; margin-bottom: 14px;
+    border-bottom: 1px solid #F1F3F7;
+}
+#widgetCrearOppDesdeProspecto .wco-ctx-i { min-width: 0; }
+#widgetCrearOppDesdeProspecto .wco-ctx-v {
+    font-size: 13.5px; font-weight: 600; color: #0F172A;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;
+}
+
+#widgetCrearOppDesdeProspecto .wco-lbl {
+    display: block; margin-bottom: 6px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+    color: #94A3B8; text-transform: uppercase;
+}
+#widgetCrearOppDesdeProspecto .wco-req { color: #E11D48; margin-left: 2px; }
+#widgetCrearOppDesdeProspecto .wco-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+#widgetCrearOppDesdeProspecto .wco-full { grid-column: 1 / -1; }
+
+#widgetCrearOppDesdeProspecto .wco-inp,
+#widgetCrearOppDesdeProspecto .wco-sel,
+#widgetCrearOppDesdeProspecto .wco-ta {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #E4E7EC; border-radius: 9px;
+    padding: 9px 11px; font: inherit; font-size: 13.5px; color: #0F172A;
+    background: #FBFCFD; outline: none;
+    transition: border-color .12s, background .12s, box-shadow .12s;
+}
+#widgetCrearOppDesdeProspecto .wco-ta { resize: vertical; min-height: 60px; }
+#widgetCrearOppDesdeProspecto .wco-sel { background: #FBFCFD; cursor: pointer; }
+#widgetCrearOppDesdeProspecto .wco-inp:focus,
+#widgetCrearOppDesdeProspecto .wco-sel:focus,
+#widgetCrearOppDesdeProspecto .wco-ta:focus {
+    border-color: #BFD9FF; background: #fff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .09);
+}
+/* El campo que falta se marca al intentar crear, no antes: avisar en rojo
+   sobre un formulario recién abierto es regañar por adelantado. */
+#widgetCrearOppDesdeProspecto .wco-inp.is-falta,
+#widgetCrearOppDesdeProspecto .wco-sel.is-falta {
+    border-color: #FDA4AF; background: #FFF5F6;
+}
+#widgetCrearOppDesdeProspecto .wco-hint {
+    margin: 5px 0 0; font-size: 11.5px; color: #94A3B8;
+}
+#widgetCrearOppDesdeProspecto .wco-error {
+    display: none; align-items: center; gap: 7px;
+    margin-top: 12px; padding: 9px 12px;
+    background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 9px;
+    font-size: 12.5px; color: #BE123C;
+}
+#widgetCrearOppDesdeProspecto .wco-error.is-on { display: flex; }
+
+#widgetCrearOppDesdeProspecto .wco-acciones {
+    display: flex; align-items: center; gap: 9px;
+    margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F3F7;
+}
+#widgetCrearOppDesdeProspecto .wco-pri {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 17px; border: none; border-radius: 9px;
+    background: #16A34A; color: #fff;
+    font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(22, 163, 74, .3);
+    transition: background .12s;
+}
+#widgetCrearOppDesdeProspecto .wco-pri:hover:not(:disabled) { background: #15803D; }
+#widgetCrearOppDesdeProspecto .wco-pri:disabled { opacity: .6; cursor: default; }
+#widgetCrearOppDesdeProspecto .wco-ghost {
+    padding: 9px 15px; border: 1px solid #E4E7EC; border-radius: 9px;
+    background: #fff; color: #475569;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: border-color .12s, color .12s;
+}
+#widgetCrearOppDesdeProspecto .wco-ghost:hover { border-color: #BFD9FF; color: #0052D4; }
+
+/* ── Lista de creadas ── */
+/* El registro vive en su propia columna: es histórico del prospecto, no un
+   resultado momentáneo del formulario. */
+#widgetCrearOppDesdeProspecto .wco-creadas {
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 14px;
+    padding: 14px 15px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    position: sticky; top: 0;
+}
+#widgetCrearOppDesdeProspecto .wco-creadas-t {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-bottom: 10px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+    color: #94A3B8; text-transform: uppercase;
+}
+#widgetCrearOppDesdeProspecto .wco-creadas-n {
+    padding: 2px 8px; border-radius: 999px;
+    background: #ECFDF5; color: #047857; font-size: 11px; font-weight: 800;
+}
+#widgetCrearOppDesdeProspecto .wco-creadas-vacio {
+    font-size: 12.5px; color: #94A3B8; line-height: 1.5; padding: 6px 0 2px;
+}
+#widgetCrearOppDesdeProspecto .wco-item-nueva { border-color: #86EFAC; background: #F0FDF4; }
+#widgetCrearOppDesdeProspecto .wco-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; margin-bottom: 6px;
+    background: #fff; border: 1px solid #BBF7D0; border-radius: 10px;
+}
+#widgetCrearOppDesdeProspecto .wco-item-ic {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: #16A34A; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+#widgetCrearOppDesdeProspecto .wco-item-b { flex: 1; min-width: 0; }
+#widgetCrearOppDesdeProspecto .wco-item-t {
+    font-size: 13px; font-weight: 600; color: #0F172A;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#widgetCrearOppDesdeProspecto .wco-item-m { font-size: 11.5px; color: #64748B; }
+#widgetCrearOppDesdeProspecto .wco-item-ver {
+    border: none; background: none; padding: 3px 7px; border-radius: 6px;
+    font: inherit; font-size: 12px; font-weight: 600; color: #0052D4; cursor: pointer;
+}
+#widgetCrearOppDesdeProspecto .wco-item-ver:hover { background: #EFF4FF; }
+
+/* ── Pie ── */
+#widgetCrearOppDesdeProspecto .wco-foot {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 20px; background: #fff;
+    border-top: 1px solid #E9EBEF; flex-shrink: 0;
+}
+#widgetCrearOppDesdeProspecto .wco-estado {
+    flex: 1; min-width: 0; font-size: 12.5px; color: #64748B;
+}
+#widgetCrearOppDesdeProspecto .wco-terminar {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; border: none; border-radius: 9px;
+    background: #0F172A; color: #fff;
+    font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    transition: background .12s;
+}
+#widgetCrearOppDesdeProspecto .wco-terminar:hover { background: #1E293B; }
+
+@media (max-width: 980px) {
+    #widgetCrearOppDesdeProspecto .wco-body { grid-template-columns: 1fr; }
+    #widgetCrearOppDesdeProspecto .wco-creadas { position: static; }
+}
+@media (max-width: 640px) {
+    #widgetCrearOppDesdeProspecto .wco-grid { grid-template-columns: 1fr; }
+    #widgetCrearOppDesdeProspecto .wco-acciones { flex-wrap: wrap; }
+}
+</style>
+
 {% comment %}
 ═══ MODAL: CREAR OPORTUNIDAD(ES) DESDE PROSPECTO (Cerrar Ganado) ═══
-Modal en serie: el usuario puede crear varias opps para el mismo prospecto.
-Al cerrar el modal, si se creó al menos una, el prospecto pasa a cerrado_ganado.
+Modal en serie: se pueden crear varias oportunidades para el mismo prospecto.
+"Terminar" confirma y marca el prospecto como ganado; la X y el fondo cancelan
+sin tocar la etapa (antes ambos hacían lo mismo y no se sabía cuál era cuál).
 {% endcomment %}
 <div class="widget-overlay" id="widgetCrearOppDesdeProspecto" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetProspecto -->
-    <div style="background:#fff;border-radius:18px;width:560px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.22);overflow:hidden;">
-        <header style="padding:18px 22px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#F7FDF9 0%,#FFFFFF 100%);">
-            <div>
-                <div style="font-size:0.68rem;font-weight:700;color:#16A34A;letter-spacing:0.06em;">PROSPECTO GANADO</div>
-                <h3 style="margin:2px 0 0;font-size:1.05rem;font-weight:700;color:#1D1D1F;">Crear oportunidad desde este prospecto</h3>
-                <p style="margin:2px 0 0;font-size:0.78rem;color:#6B7280;">Puedes crear varias oportunidades; al cerrar el modal se marcará como ganado.</p>
+    <div class="wco-card">
+        <header class="wco-head">
+            <div class="wco-head-b">
+                <span class="wco-chip">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    PROSPECTO GANADO
+                </span>
+                <h3 class="wco-title">Crear oportunidades</h3>
+                <p class="wco-sub">Registra cada oportunidad que salió de este prospecto. Al terminar, el prospecto pasa a <b>Ganado</b>.</p>
             </div>
-            <button type="button" id="wcoCloseBtn" style="background:none;border:none;font-size:1.6rem;line-height:1;color:#86868B;cursor:pointer;padding:0 4px;">&times;</button>
+            <button type="button" id="wcoCloseBtn" class="wco-x" title="Cancelar (no marca como ganado)">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
         </header>
 
-        <div style="flex:1;overflow-y:auto;padding:18px 22px;">
-            <form id="wcoForm" autocomplete="off" novalidate>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;">
-                    <div style="grid-column:1 / -1;">
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Título de la oportunidad</label>
-                        <input type="text" id="wcoTitulo" placeholder="Ej. Renovación licencias Zebra…"
-                            style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.88rem;font-family:inherit;outline:none;">
+        <div class="wco-body">
+            <div class="wco-panel">
+                <!-- Contexto heredado del prospecto: se lee, no se edita -->
+                <div class="wco-ctx">
+                    <div class="wco-ctx-i">
+                        <span class="wco-lbl">Cliente</span>
+                        <div class="wco-ctx-v" id="wcoCliente">-</div>
                     </div>
-
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Cliente</label>
-                        <input type="text" id="wcoCliente" readonly
-                            style="width:100%;border:1px solid #F2F2F7;background:#F9FAFB;border-radius:8px;padding:9px 12px;font-size:0.86rem;color:#1D1D1F;outline:none;">
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Contacto</label>
-                        <input type="text" id="wcoContacto" readonly
-                            style="width:100%;border:1px solid #F2F2F7;background:#F9FAFB;border-radius:8px;padding:9px 12px;font-size:0.86rem;color:#1D1D1F;outline:none;">
-                    </div>
-
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Producto</label>
-                        <select id="wcoProducto" style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
-                            <option value="ZEBRA">Zebra</option>
-                            <option value="PANDUIT">Panduit</option>
-                            <option value="APC">APC</option>
-                            <option value="AVIGILION">Avigilon</option>
-                            <option value="GENETEC">Genetec</option>
-                            <option value="AXIS">Axis</option>
-                            <option value="SOFTWARE">Software</option>
-                            <option value="RUNRATE">Runrate</option>
-                            <option value="PÓLIZA">Póliza</option>
-                            <option value="CISCO">Cisco</option>
-                            <option value="SERVICIO">Servicio</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Área</label>
-                        <select id="wcoArea" style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
-                            <option value="SISTEMAS">Sistemas</option>
-                            <option value="Recursos Humanos">Recursos Humanos</option>
-                            <option value="Compras">Compras</option>
-                            <option value="Seguridad">Seguridad</option>
-                            <option value="Mantenimiento">Mantenimiento</option>
-                            <option value="Almacén">Almacén</option>
-                        </select>
-                    </div>
-
-                    {% comment %}Monto eliminado — se captura en la cotización dentro de la opp.{% endcomment %}
-                    <input type="hidden" id="wcoMonto" value="0">
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Responsable</label>
-                        <select id="wcoResponsable" style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
-                            {% comment %}Default: el vendedor dueño del prospecto. Si es supervisor, se inyectan opciones extra via JS al abrir el modal.{% endcomment %}
-                            <option value="">— Vendedor del prospecto —</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Tipo de pipeline <span style="color:#EF4444;">*</span></label>
-                        <select id="wcoTipoNeg" required style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
-                            <option value="">Selecciona…</option>
-                            <option value="runrate">Runrate</option>
-                            <option value="proyecto">Proyecto</option>
-                        </select>
-                    </div>
-
-                    <div style="grid-column:1 / -1;">
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Notas (opcional)</label>
-                        <textarea id="wcoNotas" rows="2" placeholder="Detalles iniciales de la oportunidad…"
-                            style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;font-family:inherit;outline:none;resize:vertical;"></textarea>
+                    <div class="wco-ctx-i">
+                        <span class="wco-lbl">Contacto</span>
+                        <div class="wco-ctx-v" id="wcoContacto">-</div>
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
-                    <button type="submit" id="wcoSubmitBtn"
-                        style="background:#16A34A;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:0.86rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
-                        Crear oportunidad
-                    </button>
-                    <button type="button" id="wcoResetBtn"
-                        style="background:#F2F2F7;color:#1D1D1F;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:0.84rem;cursor:pointer;">
-                        Crear otra (limpiar)
-                    </button>
-                </div>
-            </form>
+                <form id="wcoForm" autocomplete="off" novalidate>
+                    <div class="wco-grid">
+                        <div class="wco-full">
+                            <label class="wco-lbl" for="wcoTitulo">Título de la oportunidad <span class="wco-req">*</span></label>
+                            <input type="text" id="wcoTitulo" class="wco-inp" placeholder="Ej. Renovación licencias Zebra">
+                        </div>
 
-            {% comment %} Fila acumulada de oportunidades creadas en esta sesión {% endcomment %}
-            <div id="wcoCreatedList" style="margin-top:18px;display:none;">
-                <div style="font-size:0.72rem;font-weight:700;color:#475569;letter-spacing:0.04em;margin-bottom:8px;">OPORTUNIDADES CREADAS EN ESTE PROSPECTO</div>
-                <div id="wcoCreatedItems" style="display:flex;flex-direction:column;gap:6px;"></div>
+                        <div>
+                            <label class="wco-lbl" for="wcoTipoNeg">Tipo de pipeline <span class="wco-req">*</span></label>
+                            <select id="wcoTipoNeg" class="wco-sel" required>
+                                <option value="">Selecciona…</option>
+                                <option value="runrate">Runrate</option>
+                                <option value="proyecto">Proyecto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="wco-lbl" for="wcoResponsable">Responsable</label>
+                            <select id="wcoResponsable" class="wco-sel">
+                                {% comment %}Default: el vendedor dueño del prospecto. Si es supervisor, se inyectan opciones extra via JS al abrir el modal.{% endcomment %}
+                                <option value="">— Vendedor del prospecto —</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="wco-lbl" for="wcoProducto">Producto</label>
+                            <select id="wcoProducto" class="wco-sel">
+                                <option value="ZEBRA">Zebra</option>
+                                <option value="PANDUIT">Panduit</option>
+                                <option value="APC">APC</option>
+                                <option value="AVIGILION">Avigilon</option>
+                                <option value="GENETEC">Genetec</option>
+                                <option value="AXIS">Axis</option>
+                                <option value="SOFTWARE">Software</option>
+                                <option value="RUNRATE">Runrate</option>
+                                <option value="PÓLIZA">Póliza</option>
+                                <option value="CISCO">Cisco</option>
+                                <option value="SERVICIO">Servicio</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="wco-lbl" for="wcoArea">Área</label>
+                            <select id="wcoArea" class="wco-sel">
+                                <option value="SISTEMAS">Sistemas</option>
+                                <option value="Recursos Humanos">Recursos Humanos</option>
+                                <option value="Compras">Compras</option>
+                                <option value="Seguridad">Seguridad</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Almacén">Almacén</option>
+                            </select>
+                        </div>
+
+                        {% comment %}Monto eliminado — se captura en la cotización dentro de la opp.{% endcomment %}
+                        <input type="hidden" id="wcoMonto" value="0">
+
+                        <div class="wco-full">
+                            <label class="wco-lbl" for="wcoNotas">Notas <span style="font-weight:600;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+                            <textarea id="wcoNotas" class="wco-ta" rows="2" placeholder="Detalles iniciales de la oportunidad…"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="wco-error" id="wcoError">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                        <span id="wcoErrorTxt"></span>
+                    </div>
+
+                    <div class="wco-acciones">
+                        <button type="submit" id="wcoSubmitBtn" class="wco-pri">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            <span>Agregar oportunidad</span>
+                        </button>
+                        <button type="button" id="wcoResetBtn" class="wco-ghost">Limpiar campos</button>
+                    </div>
+                </form>
+            </div>
+
+            {% comment %}
+            Registro de oportunidades del prospecto. Se carga del servidor
+            (FK prospecto_origen_directo), así que sigue ahí al cerrar y volver
+            a abrir; las de esta sesión se marcan como nuevas.
+            {% endcomment %}
+            <div class="wco-creadas" id="wcoCreatedList">
+                <div class="wco-creadas-t">
+                    <span>Oportunidades de este prospecto</span>
+                    <span class="wco-creadas-n" id="wcoCreatedCount">0</span>
+                </div>
+                <div id="wcoCreatedItems"></div>
             </div>
         </div>
 
-        <footer style="padding:12px 22px;border-top:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center;background:#FAFAFC;">
-            <div id="wcoFooterStatus" style="font-size:0.76rem;color:#6B7280;">Aún no se ha creado ninguna oportunidad.</div>
-            <button type="button" id="wcoTerminarBtn"
-                style="background:#1D1D1F;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:700;font-size:0.84rem;cursor:pointer;">
-                Terminar
+        <footer class="wco-foot">
+            <div class="wco-estado" id="wcoFooterStatus">Aún no has agregado ninguna oportunidad.</div>
+            <button type="button" id="wcoTerminarBtn" class="wco-terminar">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                <span id="wcoTerminarTxt">Terminar y marcar ganado</span>
             </button>
         </footer>
     </div>

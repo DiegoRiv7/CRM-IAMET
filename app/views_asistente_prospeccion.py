@@ -871,15 +871,17 @@ def _limpiar_markdown(t: str) -> str:
 
 
 def _calcular_fecha_seguimiento(dias: int = 2):
-    """Hoy + N días naturales, con push de fin de semana al lunes.
-    Devuelve datetime aware en TZ del servidor."""
-    ahora = timezone.now()
-    fecha = ahora + timedelta(days=dias)
-    if fecha.weekday() == 5:    # sábado
-        fecha = fecha + timedelta(days=2)
-    elif fecha.weekday() == 6:  # domingo
-        fecha = fecha + timedelta(days=1)
-    return fecha
+    """Hoy + N días, dentro de la jornada (L-V, 8:00-18:00 hora local).
+
+    Antes sumaba los días sobre timezone.now() —que es UTC— y evaluaba
+    weekday() ahí mismo. Cerca de medianoche eso cambia el día: un jueves a
+    las 17:06 en Tijuana es viernes 00:06 en UTC, así que la cuenta de fin de
+    semana se corría y el recordatorio acababa cayendo en sábado. Además
+    conservaba la hora, de modo que un prospecto creado de madrugada dejaba el
+    seguimiento a las 00:06.
+    """
+    from .views_utils import siguiente_horario_habil
+    return siguiente_horario_habil(dias=dias)
 
 
 def _crear_actividad_para_prospecto(prospecto: Prospecto, request_user,

@@ -227,7 +227,7 @@
 
         // Probabilidad: drag en la barra
         q(inst, 'probBar').addEventListener('mousedown', function (e) {
-            if (window.ES_INGENIERO) return;
+            if (inst.soloConsulta || window.ES_INGENIERO) return;
             probDrag = inst;
             updateProbVisual(inst, probFromEvent(inst, e));
             e.preventDefault();
@@ -254,6 +254,7 @@
         input.addEventListener('blur', function () {
             input.style.borderBottomColor = 'transparent';
             var val = input.value.trim();
+            if (inst.soloConsulta) { input.value = inst.data ? (inst.data[field] || '') : ''; return; }
             if (!inst.data || val === (inst.data[field] || '')) return;
             var fd = new FormData();
             fd.append(field, val);
@@ -269,7 +270,18 @@
 
     /* ── Acciones (data-action) ───────────────────────────────────── */
 
+    /* En modo consulta estos botones ni se pintan, pero la delegación es global.
+       El servidor ya responde 403; esto evita además abrir ventanas que van a
+       morir en un error. */
+    var ACCIONES_DE_ESCRITURA = [
+        'nueva-cot', 'nueva-tarea', 'nueva-actividad', 'vincular-proyecto', 'drive-subir',
+    ];
+
     function handleAction(inst, action, ev) {
+        if (inst.soloConsulta && ACCIONES_DE_ESCRITURA.indexOf(action) !== -1) {
+            notify('No tienes permiso para esta acción', 'error');
+            return;
+        }
         switch (action) {
             case 'close':
                 ev.stopPropagation();
@@ -488,9 +500,26 @@
         hideSaveBar(inst);
 
         var tipo = d.tipo_negociacion || 'runrate';
-        var ing = !!window.ES_INGENIERO;
+        /* Modo consulta: lo decide el servidor (d.solo_consulta) y por eso vale
+           en TODA página. La global window.ES_INGENIERO solo existe en crm_home
+           y en la app de levantamientos, así que desde reportes el widget se
+           abría editable. Se conserva como respaldo, no como fuente. */
+        var ing = !!d.solo_consulta || !!window.ES_INGENIERO;
+        inst.soloConsulta = ing;
         // Compat: crm_ingeniero.js seteaba este flag observando el widget legacy.
         if (ing) window._ingenieroModeActive = true;
+
+        // Los metadatos comerciales (monto, cierre, PO, factura, probabilidad,
+        // producto y área) no son asunto del ingeniero: fuera la tarjeta entera.
+        var infoCard = q(inst, 'infoCard');
+        if (infoCard) infoCard.style.display = ing ? 'none' : '';
+
+        // Y fuera los botones que crean cosas.
+        ACCIONES_DE_ESCRITURA.forEach(function (acc) {
+            inst.root.querySelectorAll('[data-action="' + acc + '"]').forEach(function (b) {
+                b.style.display = ing ? 'none' : '';
+            });
+        });
 
         // ── Type badge ──
         var badge = q(inst, 'typeBadge');
@@ -643,7 +672,7 @@
     }
 
     function renderCotizaciones(inst, d) {
-        var ing = !!window.ES_INGENIERO;
+        var ing = !!inst.soloConsulta;
         var quoteList = q(inst, 'quoteList');
         quoteList.innerHTML = '';
         q(inst, 'btnNuevaCot').style.display = ing ? 'none' : '';
@@ -662,13 +691,15 @@
                     '</div>' +
                     '</div>' +
                     '<div class="wo-quote-actions">' +
-                    '<a href="#" data-cot-edit class="wo-action-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>' +
+                    (ing ? '' :
+                    '<a href="#" data-cot-edit class="wo-action-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>') +
                     '<a href="/app/cotizacion/pdf/' + cot.id + '/" class="wo-action-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
                     '</div>';
                 card.querySelector('[data-cot-open]').addEventListener('click', function () {
                     window.open('/app/cotizacion/view/' + cot.id + '/', '_blank');
                 });
-                card.querySelector('[data-cot-edit]').addEventListener('click', function (e) {
+                var btnEdit = card.querySelector('[data-cot-edit]');
+                if (btnEdit) btnEdit.addEventListener('click', function (e) {
                     e.preventDefault();
                     setFocus(inst);
                     openEditCotizacionV2(cot.id, inst);

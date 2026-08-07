@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from decimal import Decimal
 
-from .views_utils import is_supervisor, is_administrador
+from .views_utils import is_supervisor, is_administrador, siguiente_horario_habil
 from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
@@ -25,15 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 def _siguiente_dia_habil(base_dt):
-    """Devuelve el siguiente día hábil (L-V) a la misma hora de base_dt.
+    """Alias del helper compartido: L-V dentro de 8:00-18:00 (hora local).
 
-    Si hoy es viernes, sábado o domingo, empuja al próximo lunes. Para
-    cualquier otro día, suma 1 día. weekday(): 0=L, 1=M, 2=X, 3=J, 4=V, 5=S, 6=D.
+    Se conserva el nombre porque lo usan varios sitios de este módulo; la
+    lógica vive en views_utils para que todos los recordatorios del CRM
+    caigan en el mismo horario.
     """
-    nxt = base_dt + timedelta(days=1)
-    while nxt.weekday() >= 5:  # 5=sábado, 6=domingo
-        nxt = nxt + timedelta(days=1)
-    return nxt
+    return siguiente_horario_habil(base_dt)
 
 
 @login_required
@@ -404,8 +402,10 @@ def api_crear_prospecto(request):
         try:
             ahora = timezone.now()
             fecha_auto = _siguiente_dia_habil(ahora)
-            # Título y descripción: tomados del prospecto. Si hay comentarios
-            # iniciales, los anexamos para dar contexto al vendedor.
+            # Título del calendario: se lee entre decenas de eventos, así que
+            # dice de una qué es y de quién. Antes era solo prospecto.nombre y
+            # en la rejilla no se distinguía de cualquier otra actividad.
+            titulo_cal = f'Recordatorio de prospección — {prospecto.nombre}'
             titulo_auto = prospecto.nombre
             comentarios_iniciales = (prospecto.comentarios or '').strip()
             if comentarios_iniciales:
@@ -430,11 +430,13 @@ def api_crear_prospecto(request):
                 + f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
             )
             Actividad.objects.create(
-                titulo=titulo_auto[:200],
+                titulo=titulo_cal[:200],
                 tipo_actividad='tarea',
                 descripcion=desc_cal,
                 fecha_inicio=fecha_auto,
                 fecha_fin=fecha_auto + timedelta(hours=1),
+                # El responsable del prospecto: creado_por es lo que el
+                # calendario filtra para decidir a quién se la muestra.
                 creado_por=asignar_a,
                 color='#B45309',
             )
@@ -520,6 +522,31 @@ def api_crear_prospecto(request):
     })
 
 
+def _opps_del_prospecto(p):
+    """Oportunidades generadas desde un prospecto, de la más nueva a la más vieja.
+
+    Se lee por la FK prospecto_origen_directo, que apunta a TODAS. Se incluye
+    también oportunidad_creada porque las opps anteriores a esa FK solo quedaron
+    enlazadas por ahí; el dict evita repetir la que aparece en ambas.
+    """
+    encontradas = {}
+    for opp in p.opps_generadas.select_related('usuario').all():
+        encontradas[opp.id] = opp
+    if p.oportunidad_creada_id and p.oportunidad_creada_id not in encontradas:
+        encontradas[p.oportunidad_creada_id] = p.oportunidad_creada
+    return [
+        {
+            'id': o.id,
+            'titulo': o.oportunidad or f'Oportunidad #{o.id}',
+            'tipo_negociacion': o.tipo_negociacion or 'runrate',
+            'etapa': o.etapa_corta or '',
+            'responsable': (o.usuario.get_full_name() or o.usuario.username) if o.usuario else '',
+            'fecha': o.fecha_creacion.strftime('%d/%m/%Y') if o.fecha_creacion else '',
+        }
+        for o in sorted(encontradas.values(), key=lambda x: x.id, reverse=True)
+    ]
+
+
 @login_required
 def api_prospecto_detalle(request, prospecto_id):
     """GET: devuelve toda la info del prospecto para el widget."""
@@ -571,6 +598,15 @@ def api_prospecto_detalle(request, prospecto_id):
         'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M') if p.fecha_creacion else '',
         'fecha_actualizacion': p.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') if p.fecha_actualizacion else '',
         'usuario': p.usuario.get_full_name() or p.usuario.username,
+        # El aviso de "falta agendar actividad" solo debe salirle al responsable
+        # del prospecto. Sin este id el front no tenía con qué comparar y se lo
+        # enseñaba a cualquiera que abriera la ficha, supervisores incluidos.
+        'usuario_id': p.usuario_id,
+        'es_mio': p.usuario_id == request.user.id,
+        # Oportunidades que salieron de este prospecto. El registro vive en la
+        # base (FK prospecto_origen_directo), no en la sesión del modal: así
+        # sigue ahí al cerrarlo y volver a abrirlo.
+        'oportunidades': _opps_del_prospecto(p),
     })
 
 
@@ -1097,14 +1133,27 @@ def api_prospecto_actividad_toggle(request, actividad_id):
     actividad.completada = not actividad.completada
     actividad.save()
 
-    # También marcar la actividad del calendario correspondiente
+    # También marcar la actividad del calendario correspondiente.
+    # Emparejaba por titulo=descripcion, que solo coincidía de casualidad (el
+    # título del calendario y la descripción de la ProspectoActividad son campos
+    # distintos y ya divergían cuando el prospecto tenía comentarios iniciales).
+    # El vínculo de verdad es la metadata ---prospecto_id: que se escribe en la
+    # descripción; entre las del mismo prospecto se desempata por fecha.
     try:
         cal_acts = Actividad.objects.filter(
             color='#B45309',
-            titulo=actividad.descripcion,
             creado_por=actividad.usuario,
+            descripcion__contains='---prospecto_id:%d|' % actividad.prospecto_id,
         )
-        cal_acts.update(completada=actividad.completada)
+        if actividad.fecha_programada:
+            exactas = cal_acts.filter(fecha_inicio=actividad.fecha_programada)
+            if exactas.exists():
+                cal_acts = exactas
+        # save() por instancia y no .update(): el bulk no dispara post_save y ahí
+        # cuelga la reconciliación de notificaciones.
+        for _cal in cal_acts:
+            _cal.completada = actividad.completada
+            _cal.save(update_fields=['completada'])
     except Exception:
         pass
 

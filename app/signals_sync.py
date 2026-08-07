@@ -145,6 +145,13 @@ def _tarea_save(sender, instance, created, **kw):
 @receiver(post_delete, sender=Tarea)
 def _tarea_delete(sender, instance, **kw):
     _log('tarea', instance, 'delete', _opp_extra(instance))
+    # Notificacion.tarea_id es un entero suelto, no una FK: sin esto las
+    # notificaciones de la tarea borrada se quedan apuntando a la nada y al
+    # hacer clic solo sale "Error al cargar la tarea".
+    try:
+        Notificacion.objects.filter(tarea_id=instance.id).delete()
+    except Exception:
+        pass
 
 
 # ── Calendario ─────────────────────────────────────────────────────────

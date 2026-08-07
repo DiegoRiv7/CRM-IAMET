@@ -231,6 +231,20 @@ Vacío.
   */15 * * * * /usr/bin/docker exec gesti-n-de-ventas-web-1 python manage.py procesar_vencimientos >> /home/iamet2026/backups/procesar_vencimientos.log 2>&1
   ```
 
+- **`limpiar_notificaciones_caducas`** (2026-08-05). Barre los avisos de
+  vencimiento que ya no aplican: tareas completadas, reprogramadas o borradas.
+  La API ya depura al leer, así que el usuario no las ve aunque el cron no
+  corra; esto vacía el histórico y evita que la tabla siga creciendo.
+
+  ```
+  30 3 * * * /usr/bin/docker exec gesti-n-de-ventas-web-1 python manage.py limpiar_notificaciones_caducas >> /home/iamet2026/backups/limpiar_notificaciones.log 2>&1
+  ```
+
+  Para la primera pasada conviene verla en seco antes de aplicar:
+  ```
+  docker exec gesti-n-de-ventas-web-1 python manage.py limpiar_notificaciones_caducas --dry-run
+  ```
+
 ---
 
 ## 8. Backups

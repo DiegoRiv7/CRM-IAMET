@@ -1416,6 +1416,8 @@ def crm_home(request):
         'total_cobrado': total_cobrado,
         'es_supervisor': es_supervisor,
         'es_ingeniero': es_ingeniero,
+        # Ingeniero sin acceso de supervisor: gobierna qué pestañas se pintan.
+        'solo_consulta': es_ingeniero_restringido(user),
         'es_administrador': es_administrador,
         'vendedores_list': vendedores_list,
         'vendedores_filter': vendedores_filter,
@@ -4260,7 +4262,12 @@ def editar_oportunidad_api(request, oportunidad_id):
     """
     try:
         oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
-        
+
+        # El ingeniero sin acceso de supervisor entra a consultar: puede compartir
+        # grupo con el dueño (y colarse por la regla de abajo), así que se corta antes.
+        if es_ingeniero_restringido(request.user):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para editar esta oportunidad'}, status=403)
+
         # Verificar permisos - supervisores y compañeros de grupo pueden editar
         if not is_supervisor(request.user) and oportunidad.usuario != request.user:
             from .views_grupos import comparten_grupo
@@ -4492,6 +4499,8 @@ def actualizar_po(request, id):
         return JsonResponse({'error': 'No autenticado'}, status=401)
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+    if es_ingeniero_restringido(request.user):
+        return JsonResponse({'error': 'Sin permiso para editar esta oportunidad'}, status=403)
     try:
         todo = TodoItem.objects.get(pk=id)
         update_fields = []
@@ -5179,6 +5188,17 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
                 data['contacto'] = f"{todo.contacto.nombre} {todo.contacto.apellido or ''}".strip()
             else:
                 data['contacto'] = str(todo.contacto)
+
+        # Ingeniero sin acceso de supervisor: entra a consultar. Ve de qué va la
+        # oportunidad, sus cotizaciones y su conversación, pero los metadatos
+        # comerciales no salen del servidor — ocultarlos solo en el front dejaba
+        # las cifras en la respuesta, al alcance de cualquiera que la mirara.
+        data['solo_consulta'] = es_ingeniero_restringido(request.user)
+        if data['solo_consulta']:
+            for campo in ('monto', 'probabilidad_cierre'):
+                data[campo] = 0
+            for campo in ('po_number', 'factura_numero', 'mes_cierre', 'producto', 'area'):
+                data[campo] = ''
 
         return JsonResponse(data)
     except Exception as e:

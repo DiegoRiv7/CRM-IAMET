@@ -851,7 +851,11 @@ def api_programacion_actividad_completar(request, actividad_id):
     # Sincronizar actividad del calendario vinculada (marcar como completada)
     if act.actividad_calendario_id:
         try:
-            Actividad.objects.filter(pk=act.actividad_calendario_id).update(completada=True)
+            # Igual que arriba: por instancia, para que corra la reconciliación
+            # de notificaciones que cuelga de post_save.
+            for _a in Actividad.objects.filter(pk=act.actividad_calendario_id):
+                _a.completada = True
+                _a.save(update_fields=['completada'])
         except Exception:
             pass
 
@@ -3057,10 +3061,15 @@ def actividad_detail(request, pk):
             if actividad.completada and actividad.oportunidad_id:
                 try:
                     from .models import TareaOportunidad
-                    TareaOportunidad.objects.filter(
+                    # save() una por una en vez de .update(): el bulk no dispara
+                    # post_save, así que la reconciliación de notificaciones no
+                    # corría y los avisos de vencimiento quedaban colgados.
+                    for _t in TareaOportunidad.objects.filter(
                         actividad_calendario=actividad,
                         estado='pendiente',
-                    ).update(estado='completada')
+                    ):
+                        _t.estado = 'completada'
+                        _t.save(update_fields=['estado'])
                 except Exception:
                     pass
             # Si es actividad del programa de obra, sincronizar la ProgramacionActividad vinculada
@@ -3844,9 +3853,13 @@ def api_completar_tarea(request, tarea_id):
         # Notificar al creador si es distinto al que completó
         if tarea.creado_por and tarea.creado_por != request.user:
             completador = request.user.get_full_name() or request.user.username
+            # Ojo: esto iba como tipo='tarea_vencida'. Se creaba DESPUÉS del
+            # save(), o sea después de que la reconciliación borra las de
+            # vencimiento, así que cada tarea completada dejaba un aviso nuevo
+            # en el grupo "Vencimientos" diciendo justamente lo contrario.
             crear_notificacion(
                 usuario_destinatario=tarea.creado_por,
-                tipo='tarea_vencida',
+                tipo='tarea_completada',
                 titulo=f'Tarea completada: {tarea.titulo}',
                 mensaje=f'{completador} marcó como completada la tarea "{tarea.titulo}".',
                 usuario_remitente=request.user,

@@ -14,7 +14,7 @@ import os
 from django.conf import settings
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -457,6 +457,10 @@ def _resolver_o_crear_marca(nombre_raw):
 @csrf_exempt
 @xframe_options_sameorigin
 def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
+    # El ingeniero sin acceso de supervisor consulta cotizaciones, no las hace.
+    if es_ingeniero_restringido(request.user):
+        return HttpResponseForbidden('No tienes permiso para crear cotizaciones.')
+
     cliente_seleccionado = None
     oportunidad_seleccionada = None
 
@@ -955,6 +959,10 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
 @login_required
 @xframe_options_sameorigin
 def editar_cotizacion_view(request, cotizacion_id):
+    # Solo consulta: la cotización se puede ver y descargar en PDF, no reescribir.
+    if es_ingeniero_restringido(request.user):
+        return HttpResponseForbidden('No tienes permiso para editar cotizaciones.')
+
     cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
     detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original).order_by('id')
 
