@@ -2066,7 +2066,12 @@
         '<div class="pend-foc-fld"><div class="pend-foc-k">Título</div>' +
           '<input type="text" class="pend-foc-in" id="focOppTitulo" value="' + _esc(d.titulo || '') + '" placeholder="Título de la oportunidad"></div>' +
         '<div class="pend-foc-fld"><div class="pend-foc-k">Cliente ' + tag + '</div>' +
-          '<input type="text" class="pend-foc-in" id="focOppCliente" value="' + _esc(d.cliente_nombre || '') + '" data-cid="' + (d.cliente_id || '') + '" placeholder="Cliente" oninput="this.dataset.cid=\'\';var t=el(\'focOppTag\');if(t)t.style.display=\'none\';"></div>' +
+          '<div style="position:relative;">' +
+            '<input type="text" class="pend-foc-in" id="focOppCliente" value="' + _esc(d.cliente_nombre || '') + '" data-cid="' + (d.cliente_id || '') + '" placeholder="Busca un cliente o escribe uno nuevo" autocomplete="off" ' +
+              'oninput="this.dataset.cid=\'\';var t=el(\'focOppTag\');if(t)t.style.display=\'none\';pendOppCliBuscar(this.value);" ' +
+              'onfocus="pendOppCliBuscar(this.value);" onblur="setTimeout(pendOppCliCerrar,180);">' +
+            '<div id="focOppCliDD" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #E5E7EB;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,20,0.14);z-index:60;max-height:220px;overflow-y:auto;"></div>' +
+          '</div></div>' +
         '<div class="pend-foc-fld"><div class="pend-foc-k">Tipo</div>' +
           '<div class="pend-foc-seg" id="focOppTipo">' +
             '<button type="button" data-tipo="runrate" onclick="pendOppdSetTipo(\'runrate\')">Runrate</button>' +
@@ -2086,6 +2091,49 @@
       b.classList.toggle('on', b.getAttribute('data-tipo') === t);
     });
     var seg = el('focOppTipo'); if (seg) seg.dataset.tipo = t;
+  };
+  /* ── Autocomplete de cliente en el borrador de oportunidad: la misma
+     búsqueda del formulario real (/api/buscar-clientes/), para corregir a
+     mano cuando la detección automática no atine. ── */
+  var _oppCliTO = null;
+  window.pendOppCliBuscar = function (q) {
+    clearTimeout(_oppCliTO);
+    q = (q || '').trim();
+    if (q.length < 2) { pendOppCliCerrar(); return; }
+    _oppCliTO = setTimeout(function () {
+      fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var dd = el('focOppCliDD');
+          var inp = el('focOppCliente');
+          if (!dd || !inp || (inp.value || '').trim() !== q) return;
+          var lista = (d && d.clientes) || [];
+          var h = '';
+          lista.slice(0, 8).forEach(function (c) {
+            h += '<div onmousedown="pendOppCliPick(' + c.id + ',\'' + _esc(String(c.nombre || '').replace(/'/g, '\\\'')) + '\')" ' +
+              'style="padding:9px 12px;font-size:0.83rem;color:#1F2937;cursor:pointer;display:flex;align-items:center;gap:8px;" ' +
+              'onmouseenter="this.style.background=\'#F0F7FF\'" onmouseleave="this.style.background=\'\'">' +
+              '<span style="background:#EEF3FF;color:#0052D4;border-radius:5px;font-size:0.6rem;font-weight:800;padding:2px 6px;flex-shrink:0;">CLIENTE</span>' +
+              '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(c.nombre || '') + '</span></div>';
+          });
+          h += '<div onmousedown="pendOppCliCerrar()" style="padding:9px 12px;font-size:0.8rem;color:#6B7280;cursor:pointer;border-top:1px solid #F0F2F5;" ' +
+            'onmouseenter="this.style.background=\'#F9FAFB\'" onmouseleave="this.style.background=\'\'">+ Crear cliente nuevo «' + _esc(q) + '»</div>';
+          dd.innerHTML = h;
+          dd.style.display = 'block';
+        })
+        .catch(function () { });
+    }, 250);
+  };
+  window.pendOppCliPick = function (id, nombre) {
+    var inp = el('focOppCliente');
+    if (inp) { inp.value = nombre; inp.dataset.cid = id; }
+    var t = el('focOppTag'); if (t) t.style.display = '';
+    pendOppCliCerrar();
+  };
+  window.pendOppCliCerrar = function () {
+    clearTimeout(_oppCliTO);
+    var dd = el('focOppCliDD');
+    if (dd) { dd.style.display = 'none'; dd.innerHTML = ''; }
   };
   window.pendMiniFocusCerrar = function () { _oppDraft = null; _updDraft = null; _segDraft = null; _feedRedraw(); };
   window.pendOppDraftCrear = function () {

@@ -17,6 +17,7 @@
 
 import json
 import logging
+import re
 import requests
 import mimetypes
 import os
@@ -8431,9 +8432,28 @@ def _hueco_libre_ahora(user, now):
     return (True, prox)
 
 
-def _cliente_por_correo(correo):
-    """Detecta el Cliente a partir del remitente del correo: por email exacto
-    (Cliente/Contacto) o por dominio (no público). Devuelve Cliente o None."""
+_CLI_STOP = {'de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'sa', 'cv', 's', 'a', 'c', 'v',
+             'rl', 'sc', 'sas', 'sapi', 'inc', 'llc', 'corp', 'co', 'mexico', 'the'}
+
+
+def _cli_palabras(nombre):
+    """Palabras significativas del nombre de un cliente, normalizadas
+    (sin acentos, sin siglas societarias tipo SA de CV)."""
+    limpio = re.sub(r'[^a-z0-9 ]+', ' ', _cor_norm(nombre))
+    return [w for w in limpio.split() if w and w not in _CLI_STOP]
+
+
+def _cliente_por_correo(correo, cuerpo=''):
+    """Detecta el CLIENTE (la empresa/institución, no la persona) a partir del
+    correo. Puro código, cero IA. En orden de confianza:
+      1-2) email exacto ya registrado en Contacto/Cliente
+      3)   dominio ya registrado en emails de Contacto/Cliente
+      4)   el dominio ES el cliente (prioridad pedida por el usuario): uabc.edu.mx
+           → 'uabc' se compara contra el catálogo por acrónimo (Universidad
+           Autonoma de Baja California → uabc), nombre pegado o palabra del nombre
+      5)   el cuerpo suele nombrar a la institución completa: buscar nombres
+           del catálogo dentro del texto del correo
+    Devuelve Cliente o None."""
     from .models import Cliente, Contacto
     rem = (correo.remitente_email or '').strip().lower()
     if not rem or '@' not in rem:
@@ -8455,7 +8475,32 @@ def _cliente_por_correo(correo):
         cli = Cliente.objects.filter(email__iendswith='@' + dom).first()
         if cli:
             return cli
-    return None
+    # 4-5) Contra el catálogo completo: por dominio y por mención en el cuerpo
+    token = dom.split('.')[0] if (dom and dom not in _COR_PUBLIC_DOM) else ''
+    texto = _cor_norm(((correo.asunto or '') + '\n' + (cuerpo or ''))[:20000])
+    if not token and not texto.strip():
+        return None
+    candidato_dom, candidato_txt = None, None
+    for cand in Cliente.objects.only('id', 'nombre_empresa').iterator():
+        nombre = cand.nombre_empresa or ''
+        palabras = _cli_palabras(nombre)
+        if not palabras:
+            continue
+        if token and not candidato_dom:
+            acronimo = ''.join(w[0] for w in palabras)
+            pegado = ''.join(palabras)
+            if ((len(token) >= 3 and token == acronimo)
+                    or (len(token) >= 4 and token == pegado)
+                    or (len(token) >= 4 and token in palabras)):
+                candidato_dom = cand
+        if texto and not candidato_txt and (len(palabras) >= 2 or len(''.join(palabras)) >= 8):
+            if _cor_norm(nombre).strip() in texto:
+                candidato_txt = cand
+        if candidato_dom and candidato_txt:
+            break
+    # El dominio manda (casi siempre el cliente viene después del @); el
+    # cuerpo confirma o rescata cuando el dominio no dice nada.
+    return candidato_dom or candidato_txt
 
 
 def _oportunidad_draft_ia(asunto, cuerpo):
@@ -8522,14 +8567,21 @@ def api_asistente_oportunidad_draft(request, correo_id):
     cuerpo = _correo_texto(correo, request.user)
     titulo, tipo = _oportunidad_draft_ia(correo.asunto, cuerpo)
 
-    cliente = _cliente_por_correo(correo)
+    cliente = _cliente_por_correo(correo, cuerpo)
     if cliente:
         cliente_id, cliente_nombre = cliente.id, cliente.nombre_empresa
     else:
-        # Sugerir nombre a partir del remitente (nombre o dominio) para que el usuario confirme.
+        # Sin match en el catálogo: sugerir el DOMINIO del correo (el cliente
+        # casi siempre viene después del @) antes que el nombre de la persona,
+        # que es el usuario, no la empresa. Dominios públicos → nombre.
         rem_nom = (correo.remitente_nombre or '').strip()
-        dom = (correo.remitente_email or '').split('@')[-1].split('.')[0]
-        cliente_id, cliente_nombre = None, (rem_nom or dom.capitalize() or '')
+        dom_full = (correo.remitente_email or '').split('@')[-1].lower()
+        dom = dom_full.split('.')[0]
+        if dom and dom_full not in _COR_PUBLIC_DOM:
+            sugerencia = dom.upper() if len(dom) <= 5 else dom.capitalize()
+        else:
+            sugerencia = rem_nom
+        cliente_id, cliente_nombre = None, (sugerencia or rem_nom or '')
 
     ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
     etapa = ep.nombre if ep else ('Oportunidad' if tipo == 'proyecto' else 'En Solicitud')
