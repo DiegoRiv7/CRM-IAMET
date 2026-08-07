@@ -492,10 +492,52 @@ document.addEventListener('click', function(ev) {
         return data.etapa === 'cerrado_ganado' || data.etapa === 'cerrado_perdido';
     }
 
+    /* Tarjeta "Oportunidades generadas": el rastro de lo que salió de este
+       prospecto. Se pinta desde el detalle (FK prospecto_origen_directo), así
+       que se consulta cuando sea y no solo mientras se marca como ganado. */
+    function _wpRenderOppsGeneradas(opps) {
+        var card = document.getElementById('wpOppsCard');
+        var list = document.getElementById('wpOppsList');
+        var count = document.getElementById('wpOppsCount');
+        if (!card || !list) return;
+        opps = opps || [];
+        if (!opps.length) { card.style.display = 'none'; list.innerHTML = ''; return; }
+        card.style.display = '';
+        if (count) count.textContent = opps.length;
+        list.innerHTML = opps.map(function(o) {
+            var meta = (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate');
+            if (o.etapa) meta += ' · ' + escapeHtml(o.etapa);
+            return '<div data-wp-opp="' + o.id + '" title="Abrir oportunidad" ' +
+                'style="display:flex;align-items:center;gap:8px;padding:7px 9px;margin:0 -9px;' +
+                'border-radius:9px;cursor:pointer;">' +
+                '<span style="width:7px;height:7px;border-radius:50%;background:#16A34A;flex-shrink:0;"></span>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.82rem;font-weight:600;color:#1D1D1F;white-space:nowrap;' +
+                    'overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(o.titulo) + '</div>' +
+                    '<div style="font-size:0.7rem;color:#86868B;">' + meta + '</div>' +
+                '</div>' +
+                '<svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2.4" ' +
+                'viewBox="0 0 24 24" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>' +
+            '</div>';
+        }).join('');
+        if (!list._wpHooked) {
+            list._wpHooked = true;
+            list.addEventListener('click', function(ev) {
+                var fila = ev.target.closest('[data-wp-opp]');
+                if (!fila) return;
+                var oid = parseInt(fila.getAttribute('data-wp-opp'), 10);
+                if (oid && typeof window.openDetalle === 'function') {
+                    window.openDetalle(oid, { asWindow: true });
+                }
+            });
+        }
+    }
+
     function renderProspectoDetalle(data) {
         // Store current prospecto
         window._currentProspectoId = data.id;
         window._currentProspectoData = data;
+        _wpRenderOppsGeneradas(data.oportunidades);
 
         document.getElementById('wpTitle').textContent = data.nombre || '';
         document.getElementById('wpCliente').textContent = data.cliente || '-';
@@ -737,8 +779,16 @@ document.addEventListener('click', function(ev) {
         var data = window._currentProspectoData || {};
         var modal = document.getElementById('widgetCrearOppDesdeProspecto');
         if (!modal) return;
-        // Reset estado de sesión
-        _wcoOppsCreadas = [];
+        // El registro NO arranca vacío: se siembra con lo que ya existe en la
+        // base para este prospecto. Las de esta sesión se marcan como nuevas.
+        _wcoOppsCreadas = (data.oportunidades || []).map(function(o) {
+            return {
+                id: o.id, titulo: o.titulo,
+                tipo_negociacion: o.tipo_negociacion,
+                etapa: o.etapa, responsable: o.responsable, fecha: o.fecha,
+                nueva: false,
+            };
+        });
         _wcoRenderCreatedList();
         _wcoResetForm(true);
 
@@ -748,7 +798,8 @@ document.addEventListener('click', function(ev) {
         var setTxt = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v || '-'; };
         setTxt('wcoCliente', data.cliente);
         setTxt('wcoContacto', data.contacto);
-        setVal('wcoTitulo', data.nombre || '');
+        // El título lo propone _wcoResetForm, que ya numera según cuántas
+        // oportunidades lleva el prospecto.
         setVal('wcoProducto', data.producto || 'SOFTWARE');
         setVal('wcoArea', data.area || 'SISTEMAS');
         setVal('wcoMonto', '');
@@ -857,21 +908,25 @@ document.addEventListener('click', function(ev) {
         if (!listWrap || !items || !status) return;
 
         var btnTxt = document.getElementById('wcoTerminarTxt');
+        var badge = document.getElementById('wcoCreatedCount');
         var n = _wcoOppsCreadas.length;
+        var nuevas = _wcoOppsCreadas.filter(function(o) { return o.nueva; }).length;
+
+        if (badge) badge.textContent = n;
 
         if (n === 0) {
-            listWrap.style.display = 'none';
-            items.innerHTML = '';
+            items.innerHTML = '<div class="wco-creadas-vacio">Todavía no hay ninguna. Las que agregues aquí quedan guardadas y se seguirán viendo al volver a abrir.</div>';
             status.textContent = 'Aún no has agregado ninguna oportunidad.';
             // El botón dice exactamente lo que va a pasar. Terminar sin ninguna
             // oportunidad es válido, pero que no sea una sorpresa.
             if (btnTxt) btnTxt.textContent = 'Marcar ganado sin oportunidades';
             return;
         }
-        listWrap.style.display = 'block';
         items.innerHTML = _wcoOppsCreadas.map(function(o) {
             var meta = (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate');
-            return '<div class="wco-item">' +
+            if (o.etapa) meta += ' · ' + escapeHtml(o.etapa);
+            else if (o.fecha) meta += ' · ' + escapeHtml(o.fecha);
+            return '<div class="wco-item' + (o.nueva ? ' wco-item-nueva' : '') + '">' +
                 '<span class="wco-item-ic">' +
                     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
                 '</span>' +
@@ -882,9 +937,10 @@ document.addEventListener('click', function(ev) {
                 (o.id ? '<button type="button" class="wco-item-ver" data-wco-abrir="' + o.id + '">Abrir</button>' : '') +
             '</div>';
         }).join('');
-        status.textContent = n === 1
-            ? '1 oportunidad lista para registrarse.'
-            : (n + ' oportunidades listas para registrarse.');
+        status.textContent = nuevas > 0
+            ? (nuevas === 1 ? '1 oportunidad agregada ahora.' : nuevas + ' oportunidades agregadas ahora.')
+            : (n === 1 ? 'Este prospecto ya tiene 1 oportunidad.'
+                       : 'Este prospecto ya tiene ' + n + ' oportunidades.');
         if (btnTxt) btnTxt.textContent = 'Terminar y marcar ganado';
     }
 
@@ -1012,11 +1068,12 @@ document.addEventListener('click', function(ev) {
                 _wcoMostrarError((data && data.error) || 'No se pudo crear la oportunidad.');
                 return;
             }
-            _wcoOppsCreadas.push({
+            _wcoOppsCreadas.unshift({
                 id: data.oportunidad_id,
                 titulo: data.titulo || titulo,
-                monto: data.monto || 0,
-                tipo_negociacion: data.tipo_negociacion || tipoNeg
+                tipo_negociacion: data.tipo_negociacion || tipoNeg,
+                etapa: '', responsable: '', fecha: '',
+                nueva: true,
             });
             _wcoRenderCreatedList();
             // Listo para crear otra: limpiar editables pero conservar pipeline.
