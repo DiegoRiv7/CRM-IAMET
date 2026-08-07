@@ -169,6 +169,20 @@
                             </div>
                         </div>
 
+                        {% comment %}
+                        Oportunidades que salieron de este prospecto. Se pinta solo
+                        si hay alguna; el registro vive en la base (FK
+                        prospecto_origen_directo), así que se puede consultar
+                        cuando sea, no solo al marcar el prospecto como ganado.
+                        {% endcomment %}
+                        <div class="wo-card" id="wpOppsCard" style="padding:0.85rem 1rem;display:none;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+                                <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">OPORTUNIDADES GENERADAS</span>
+                                <span id="wpOppsCount" style="padding:2px 8px;border-radius:999px;background:#ECFDF5;color:#047857;font-size:0.68rem;font-weight:800;">0</span>
+                            </div>
+                            <div id="wpOppsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+                        </div>
+
                         <!-- Vendedor / Cliente card -->
                         <div class="wo-card">
                             <div class="wo-stakeholder">
@@ -317,7 +331,9 @@
 
 #widgetCrearOppDesdeProspecto .wco-card {
     background: #F7F8FA; border-radius: 18px;
-    width: 620px; max-width: 94vw; max-height: 92vh;
+    /* Al ancho del resto de los widgets del CRM: en 620px el formulario a dos
+       columnas quedaba apretado y la lista de creadas sin sitio. */
+    width: 1040px; max-width: 94vw; max-height: 92vh;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -353,7 +369,9 @@
 
 /* ── Cuerpo ── */
 #widgetCrearOppDesdeProspecto .wco-body {
-    flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px 18px;
+    flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px;
+    display: grid; grid-template-columns: 1fr 320px; gap: 16px;
+    align-items: start;
 }
 #widgetCrearOppDesdeProspecto .wco-panel {
     background: #fff; border: 1px solid #E9EBEF; border-radius: 14px;
@@ -441,12 +459,27 @@
 #widgetCrearOppDesdeProspecto .wco-ghost:hover { border-color: #BFD9FF; color: #0052D4; }
 
 /* ── Lista de creadas ── */
-#widgetCrearOppDesdeProspecto .wco-creadas { margin-top: 14px; }
+/* El registro vive en su propia columna: es histórico del prospecto, no un
+   resultado momentáneo del formulario. */
+#widgetCrearOppDesdeProspecto .wco-creadas {
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 14px;
+    padding: 14px 15px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    position: sticky; top: 0;
+}
 #widgetCrearOppDesdeProspecto .wco-creadas-t {
-    display: block; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-bottom: 10px;
     font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
     color: #94A3B8; text-transform: uppercase;
 }
+#widgetCrearOppDesdeProspecto .wco-creadas-n {
+    padding: 2px 8px; border-radius: 999px;
+    background: #ECFDF5; color: #047857; font-size: 11px; font-weight: 800;
+}
+#widgetCrearOppDesdeProspecto .wco-creadas-vacio {
+    font-size: 12.5px; color: #94A3B8; line-height: 1.5; padding: 6px 0 2px;
+}
+#widgetCrearOppDesdeProspecto .wco-item-nueva { border-color: #86EFAC; background: #F0FDF4; }
 #widgetCrearOppDesdeProspecto .wco-item {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 12px; margin-bottom: 6px;
@@ -487,6 +520,10 @@
 }
 #widgetCrearOppDesdeProspecto .wco-terminar:hover { background: #1E293B; }
 
+@media (max-width: 980px) {
+    #widgetCrearOppDesdeProspecto .wco-body { grid-template-columns: 1fr; }
+    #widgetCrearOppDesdeProspecto .wco-creadas { position: static; }
+}
 @media (max-width: 640px) {
     #widgetCrearOppDesdeProspecto .wco-grid { grid-template-columns: 1fr; }
     #widgetCrearOppDesdeProspecto .wco-acciones { flex-wrap: wrap; }
@@ -604,9 +641,16 @@ sin tocar la etapa (antes ambos hacían lo mismo y no se sabía cuál era cuál)
                 </form>
             </div>
 
-            {% comment %} Oportunidades creadas en esta sesión {% endcomment %}
-            <div class="wco-creadas" id="wcoCreatedList" style="display:none;">
-                <span class="wco-creadas-t">Oportunidades creadas</span>
+            {% comment %}
+            Registro de oportunidades del prospecto. Se carga del servidor
+            (FK prospecto_origen_directo), así que sigue ahí al cerrar y volver
+            a abrir; las de esta sesión se marcan como nuevas.
+            {% endcomment %}
+            <div class="wco-creadas" id="wcoCreatedList">
+                <div class="wco-creadas-t">
+                    <span>Oportunidades de este prospecto</span>
+                    <span class="wco-creadas-n" id="wcoCreatedCount">0</span>
+                </div>
                 <div id="wcoCreatedItems"></div>
             </div>
         </div>

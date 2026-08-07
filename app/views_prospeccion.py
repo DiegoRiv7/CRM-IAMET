@@ -559,6 +559,31 @@ def api_crear_prospecto(request):
     })
 
 
+def _opps_del_prospecto(p):
+    """Oportunidades generadas desde un prospecto, de la más nueva a la más vieja.
+
+    Se lee por la FK prospecto_origen_directo, que apunta a TODAS. Se incluye
+    también oportunidad_creada porque las opps anteriores a esa FK solo quedaron
+    enlazadas por ahí; el dict evita repetir la que aparece en ambas.
+    """
+    encontradas = {}
+    for opp in p.opps_generadas.select_related('usuario').all():
+        encontradas[opp.id] = opp
+    if p.oportunidad_creada_id and p.oportunidad_creada_id not in encontradas:
+        encontradas[p.oportunidad_creada_id] = p.oportunidad_creada
+    return [
+        {
+            'id': o.id,
+            'titulo': o.oportunidad or f'Oportunidad #{o.id}',
+            'tipo_negociacion': o.tipo_negociacion or 'runrate',
+            'etapa': o.etapa_corta or '',
+            'responsable': (o.usuario.get_full_name() or o.usuario.username) if o.usuario else '',
+            'fecha': o.fecha_creacion.strftime('%d/%m/%Y') if o.fecha_creacion else '',
+        }
+        for o in sorted(encontradas.values(), key=lambda x: x.id, reverse=True)
+    ]
+
+
 @login_required
 def api_prospecto_detalle(request, prospecto_id):
     """GET: devuelve toda la info del prospecto para el widget."""
@@ -615,6 +640,10 @@ def api_prospecto_detalle(request, prospecto_id):
         # enseñaba a cualquiera que abriera la ficha, supervisores incluidos.
         'usuario_id': p.usuario_id,
         'es_mio': p.usuario_id == request.user.id,
+        # Oportunidades que salieron de este prospecto. El registro vive en la
+        # base (FK prospecto_origen_directo), no en la sesión del modal: así
+        # sigue ahí al cerrarlo y volver a abrirlo.
+        'oportunidades': _opps_del_prospecto(p),
     })
 
 
