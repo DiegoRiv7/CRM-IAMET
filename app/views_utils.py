@@ -117,6 +117,63 @@ def is_engineer(user):
     return user.groups.filter(name='Ingenieros').exists()
 
 
+#: Jornada laboral de IAMET: lunes a viernes, 8:00 a 18:00 (hora local).
+HORA_INICIO_JORNADA = 8
+HORA_FIN_JORNADA = 18
+
+
+def siguiente_horario_habil(base_dt=None, dias=1, hora_default=9):
+    """Fecha de recordatorio dentro de la jornada: L-V, 8:00 a 18:00.
+
+    Existía una función por módulo haciendo esto y ninguna quedaba bien:
+      · views_prospeccion conservaba la hora tal cual, así que un prospecto
+        creado a las 23:28 dejaba el recordatorio a las 23:28.
+      · views_asistente_prospeccion sumaba los días y evaluaba weekday() sobre
+        UTC, no sobre la hora local. Cerca de medianoche eso cambia el día:
+        un jueves 17:06 en Tijuana es viernes 00:06 en UTC, y la cuenta de fin
+        de semana se corría un día — de ahí los recordatorios en sábado.
+
+    Aquí la cuenta se hace SIEMPRE en hora local (la que ve el usuario) y el
+    resultado se garantiza en día hábil y dentro de la jornada. Fuera de ese
+    rango cae a `hora_default`.
+    """
+    from django.utils import timezone as _tz
+
+    base = base_dt or _tz.now()
+    local = _tz.localtime(base) if _tz.is_aware(base) else base
+    nxt = local + timedelta(days=max(1, int(dias or 1)))
+    while nxt.weekday() >= 5:  # 5=sábado, 6=domingo
+        nxt = nxt + timedelta(days=1)
+    if not (HORA_INICIO_JORNADA <= nxt.hour < HORA_FIN_JORNADA):
+        nxt = nxt.replace(hour=hora_default, minute=0)
+    nxt = nxt.replace(second=0, microsecond=0)
+    if _tz.is_aware(base) and _tz.is_naive(nxt):
+        nxt = _tz.make_aware(nxt)
+    return nxt
+
+
+def es_ingeniero_restringido(user):
+    """Ingeniero SIN acceso de supervisor: entra a consultar, no a operar.
+
+    El toggle "Acceso Supervisor" del widget de Admin mete/saca al usuario del
+    grupo 'Supervisores', así que un ingeniero con ese toggle prendido pasa por
+    is_supervisor() y NO queda restringido.
+
+    Restringido significa: en Proyectos no ve Resumen ni Finanzas, y en una
+    Oportunidad ve la conversación, las cotizaciones ya hechas y sus tareas y
+    actividades, pero ni los metadatos comerciales ni ningún control de edición.
+
+    Se evalúa SIEMPRE en el servidor: la bandera viaja en los payloads para que
+    el front sepa qué pintar, pero cada escritura la vuelve a checar (el front
+    se puede saltar; el 403 no).
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if user.is_superuser or is_supervisor(user):
+        return False
+    return is_ingeniero(user)
+
+
 def _get_display_for_value(value, choices_list):
     return dict(choices_list).get(value, value)
 
