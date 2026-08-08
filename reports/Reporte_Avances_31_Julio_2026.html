@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 31 de Julio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ TEASER ═══════ */
+        .card-teaser {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border: none;
+            color: white;
+        }
+        .card-teaser h3 { color: white; }
+        .card-teaser p { color: rgba(255,255,255,0.75); }
+        .card-teaser .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0F172A;
+            background: #F59E0B;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ═══════ PROGRESO (barra Fase 1) ═══════ */
+        .progress-wrap { grid-column: 1 / -1; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-track { height: 10px; background: var(--border); border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--primary-accent), var(--success)); border-radius: 20px; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+        .footer-note { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 300px; }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-teaser { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Fase 4: Avisos Inteligentes, Confiabilidad y Banco de Pruebas</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">31 JULIO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Fase 4</span>
+            <span class="summary-lbl">Avisos que no Estorban</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Confiabilidad</span>
+            <span class="summary-lbl">Un Veredicto por Correo</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Entrenamiento</span>
+            <span class="summary-lbl">Banco de Pruebas</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Rediseño</span>
+            <span class="summary-lbl">Tareas y Oportunidad</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Entramos a la <strong>Fase 4</strong>. El asistente aprendió a interrumpir bien —un aviso discreto en la esquina, no un panel que tapa la pantalla—, ganó casos nuevos que detectar y, sobre todo, <strong>confiabilidad</strong>. Y arrancó la etapa de entrenamiento: ya tenemos un banco de pruebas para corregirlo con casos reales.
+        </div>
+
+        <div class="section-title">Fase 4 · Avisar sin Estorbar</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🔔</div>
+                <div>
+                    <h3>El aviso ya no interrumpe, acompaña</h3>
+                    <p>En vez del panel grande, ahora aparece un <strong>aviso compacto en la esquina</strong> con lo importante y su acción. Si hay más pendientes te lo dice, pero <strong>no te los echa todos encima</strong>: quedan guardados en el panel.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📅 Agendar de un Clic</h3>
+                <p>El botón <strong>"Agendar"</strong> crea el seguimiento directo, sin formularios, en el primer hueco libre real de tu calendario. El aviso se calla hasta ese día.</p>
+            </div>
+
+            <div class="card">
+                <h3>✔️ Revisado</h3>
+                <p>Para quitarte el ruido sin hacer nada. Los correos se descartan y las oportunidades se silencian unos días, <strong>sin cerrarlas</strong>.</p>
+            </div>
+
+            <div class="card">
+                <h3>💬 Botones que Dicen lo que Hacen</h3>
+                <p>Antes decía "Mañana" y no quedaba claro si posponía o qué. Ahora cada botón nombra su acción.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Casos Nuevos que Detecta</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">⏳</div>
+                <div>
+                    <h3>Aprovecha tus huecos libres</h3>
+                    <p>El asistente mira tu calendario y, cuando detecta un rato libre, te propone la oportunidad más importante que tienes detenida: <strong>"Buen momento — libre hasta las 4"</strong>. Prioriza por monto y por qué tan avanzada está.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📩 Al Responder, Actualiza</h3>
+                <p>Cuando respondes un correo ligado a una oportunidad, el asistente <strong>ofrece actualizarla</strong> en ese momento, mientras tienes el contexto fresco.</p>
+            </div>
+
+            <div class="card">
+                <h3>🎯 Facturas y Órdenes de Compra</h3>
+                <p>Si llega una factura, una OC firmada o un pago, lo reconoce como <strong>un hito</strong> y propone mover la oportunidad sin esperar a que respondas.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Confiabilidad · Que no se Equivoque</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🧠</div>
+                <div>
+                    <h3>Cada correo se analiza una sola vez</h3>
+                    <p>El veredicto de cada correo se calcula <strong>una vez y se guarda</strong>. Antes se recalculaba a cada rato: costaba más y podía dar respuestas distintas para el mismo correo. Ahora todo el sistema ve el mismo resultado.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>💰 Primero lo Gratis</h3>
+                <p>Spam y respuestas automáticas se descartan <strong>sin gastar nada</strong>. La IA solo se usa para los correos que de verdad son candidatos.</p>
+            </div>
+
+            <div class="card">
+                <h3>🚫 Menos Confusiones</h3>
+                <p>Ya no toma una "liberación de pedido" por una venta nueva, ni cuenta como hito una confirmación automática de compra en línea.</p>
+            </div>
+
+            <div class="card">
+                <h3>🆕 Lo Reciente Primero</h3>
+                <p>Un correo que acaba de llegar ya no queda enterrado bajo los viejos: <strong>lo de las últimas horas sube al frente</strong>.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Entrenamiento · Banco de Pruebas</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🧪</div>
+                <div>
+                    <h3>Un simulador para entrenarlo con casos reales</h3>
+                    <p>Nueva herramienta interna que <strong>inyecta correos de prueba</strong> —posible venta, duda, factura, cliente que insiste, publicidad— y muestra al instante qué entendió el asistente y con cuánta seguridad. Sin tocar el correo real.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔍 Auditar la Bandeja</h3>
+                <p>Permite revisar qué veredicto le puso a <strong>los correos reales</strong> de los últimos días, para detectar dónde se equivoca.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Corregir y Reintentar</h3>
+                <p>Un botón vuelve a analizar todo con las reglas nuevas. Ese es el ciclo: <strong>probar, corregir, reintentar</strong>.</p>
+            </div>
+
+            <div class="card">
+                <h3>✅ Ya Dio Frutos</h3>
+                <p>De la primera corrida salieron cuatro correcciones reales, aplicadas el mismo día.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Rediseño · Tareas y Oportunidad</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>🕐 Reagendar en un Clic</h3>
+                <p>Las tareas vencidas muestran arriba <strong>"Mover a: Mañana · Lunes"</strong>, con la acción de completar siempre a la vista.</p>
+            </div>
+
+            <div class="card">
+                <h3>📄 La Descripción Manda</h3>
+                <p>En una tarea, la instrucción es lo que se entra a leer: ahora ocupa el doble que la actividad.</p>
+            </div>
+
+            <div class="card">
+                <h3>🏷️ Identidad Arriba</h3>
+                <p>En Oportunidad, el proyecto y el tipo de venta se leen junto al nombre. Los datos de consulta bajaron al pie.</p>
+            </div>
+
+            <div class="card">
+                <h3>💬 La Conversación al Centro</h3>
+                <p>Ganó una columna completa: es donde ocurre el trabajo diario y ahora se ve como tal.</p>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label"><span>Asistente Proactivo</span><span>Fase 4 · entrenamiento y pruebas</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:82%"></div></div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+        <div class="footer-note">
+            Cambios desplegados en el entorno de pruebas el 31 de Julio 2026. En fase de entrenamiento y afinación antes de producción.
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>

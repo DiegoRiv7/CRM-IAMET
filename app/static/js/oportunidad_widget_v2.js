@@ -416,6 +416,9 @@
             case 'conv-cancelar-respuesta':
                 cancelarRespuesta(inst);
                 break;
+            case 'ver-vistas':
+                abrirPanelVistas(inst);
+                break;
             case 'toggle-info':
                 var card = q(inst, 'infoCard');
                 var abierto = card.classList.toggle('is-open');
@@ -546,9 +549,21 @@
         if (window.crmWidgetUrl) window.crmWidgetUrl.set('opp', oppId);
 
         fetch('/app/api/oportunidad-detalle-crm/' + oppId + '/')
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                // 403 = a este usuario le negaron ESTA oportunidad. Se marca
+                // aparte para no enseñarlo como un error del sistema.
+                return r.json().then(function (j) { j._sinAcceso = (r.status === 403); return j; });
+            })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;  // cerrada o reusada mientras cargaba
+                if (data._sinAcceso) {
+                    q(inst, 'loading').innerHTML =
+                        '<svg width="30" height="30" fill="none" stroke="#94A3B8" stroke-width="1.7" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+                        '<div style="color:#0F172A;font-size:0.95rem;font-weight:700;margin-bottom:6px;">No tienes acceso a esta oportunidad</div>' +
+                        '<div style="color:#86868B;font-size:0.82rem;max-width:340px;margin:0 auto 16px;">Un supervisor restringió el acceso. Si crees que es un error, pídele que te lo devuelva.</div>' +
+                        '<button type="button" data-action="close" style="background:#F2F2F7;border:none;border-radius:10px;padding:0.55rem 1.4rem;font-weight:600;cursor:pointer;">Cerrar</button>';
+                    return;
+                }
                 if (data.error) {
                     notify('Error: ' + data.error, 'error');
                     doClose(inst);
@@ -747,6 +762,24 @@
         q(inst, 'clienteName').textContent = clienteNombre;
         q(inst, 'contactoName').textContent = d.contacto || 'No asignado';
 
+        // ── Cliente en la franja ──
+        var cabCli = q(inst, 'clienteHead');
+        if (cabCli) {
+            var nomCli = (d.cliente && d.cliente.nombre) || '';
+            if (nomCli) {
+                cabCli.style.display = '';
+                q(inst, 'cabClienteAv').textContent = getInitials(nomCli);
+                q(inst, 'cabClienteNombre').textContent = nomCli;
+                var cont = q(inst, 'cabClienteContacto');
+                cont.textContent = d.contacto || 'Sin contacto';
+            } else {
+                cabCli.style.display = 'none';
+            }
+        }
+
+        // ── Ojo: quién ha visto la oportunidad ──
+        cargarVistas(inst);
+
         // ── Cotizaciones ──
         renderCotizaciones(inst, d);
 
@@ -804,6 +837,162 @@
                 openEditCotizacionV2(cot.id, inst);
             });
             contenedor.appendChild(card);
+        });
+    }
+
+    /* ── Quién ha visto la oportunidad ──────────────────────────────
+       El ojo del encabezado muestra los tres últimos que la abrieron; al
+       hacer clic sale el panel con todos, qué fue lo último que hizo cada
+       uno, y —para administradores, superusuarios y supervisores— el botón
+       para negarle el acceso a esta oportunidad en concreto. */
+
+    function _avatarHtml(p, cls) {
+        return '<span class="' + cls + '" title="' + esc(p.nombre) + '">' +
+            (p.avatar
+                ? '<img src="' + esc(p.avatar) + '" alt="">'
+                : esc(p.iniciales || '?')) +
+            '</span>';
+    }
+
+    function cargarVistas(inst) {
+        var btn = q(inst, 'ojoBtn');
+        if (!btn) return;
+        fetch('/app/api/oportunidad/' + inst.oppId + '/vistas/', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.success || !alive(inst)) return;
+                inst.vistas = data;
+                var avs = q(inst, 'ojoAvatares');
+                var tot = q(inst, 'ojoTotal');
+                // Solo los tres más recientes en la franja; el resto en el panel.
+                var top = (data.vistas || []).filter(function (v) { return v.ultima_vez; }).slice(0, 3);
+                if (avs) avs.innerHTML = top.map(function (v) {
+                    return _avatarHtml(v, 'wo4-ojo-av');
+                }).join('');
+                var n = (data.vistas || []).filter(function (v) { return v.ultima_vez; }).length;
+                if (tot) tot.textContent = n > 3 ? ('+' + (n - 3)) : '';
+                btn.title = n === 1 ? '1 persona ha visto esta oportunidad'
+                                    : n + ' personas han visto esta oportunidad';
+            })
+            .catch(function () { /* el ojo es informativo: si falla, se queda vacío */ });
+    }
+
+    function abrirPanelVistas(inst) {
+        var previo = document.getElementById('wo4VistasOverlay');
+        if (previo) previo.remove();
+
+        var ov = document.createElement('div');
+        ov.id = 'wo4VistasOverlay';
+        ov.className = 'wo4-vistas-ov';
+        ov.innerHTML =
+            '<div class="wo4-vistas-card">' +
+            '<div class="wo4-vistas-head">' +
+            '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>' +
+            '<h3>Quién ha visto esta oportunidad</h3>' +
+            '<button type="button" class="wo4-vistas-x" data-cerrar title="Cerrar">' +
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+            '</div>' +
+            '<div class="wo4-vistas-body" data-lista>' +
+            '<div class="wo4-vistas-vacio">Cargando…</div>' +
+            '</div>' +
+            '<div class="wo4-vistas-pie" data-pie></div>' +
+            '</div>';
+        document.body.appendChild(ov);
+
+        ov.addEventListener('click', function (ev) {
+            if (ev.target === ov || ev.target.closest('[data-cerrar]')) ov.remove();
+        });
+        var escKey = function (ev) {
+            if (ev.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', escKey); }
+        };
+        document.addEventListener('keydown', escKey);
+
+        var pintar = function (data) {
+            var lista = ov.querySelector('[data-lista]');
+            var pie = ov.querySelector('[data-pie]');
+            var vistas = (data && data.vistas) || [];
+            if (!vistas.length) {
+                lista.innerHTML = '<div class="wo4-vistas-vacio">Todavía nadie más ha abierto esta oportunidad.</div>';
+                if (pie) pie.textContent = '';
+                return;
+            }
+            lista.innerHTML = vistas.map(function (v) {
+                var meta = v.ultima_vez
+                    ? ('Última vez: ' + esc(v.ultima_vez) +
+                       (v.veces > 1 ? ' · ' + v.veces + ' veces' : ''))
+                    : 'Nunca la ha abierto';
+                var acc = v.ultima_accion
+                    ? '<div class="wo4-vista-acc">' + esc(v.ultima_accion) +
+                      (v.ultima_accion_fecha ? ' · ' + esc(v.ultima_accion_fecha) : '') + '</div>'
+                    : '';
+                var tags = '';
+                if (v.es_dueno) tags += '<span class="wo4-vista-tag">Dueño</span>';
+                if (v.bloqueado) tags += '<span class="wo4-vista-tag bloq">Sin acceso</span>';
+                // El dueño nunca se puede bloquear; el servidor lo rechaza igual.
+                var btn = (data.puede_bloquear && !v.es_dueno)
+                    ? '<button type="button" class="wo4-vista-btn' + (v.bloqueado ? ' des' : '') +
+                      '" data-toggle-bloqueo="' + v.id + '" data-bloquear="' + (v.bloqueado ? '0' : '1') + '">' +
+                      (v.bloqueado ? 'Dar acceso' : 'Quitar acceso') + '</button>'
+                    : '';
+                return '<div class="wo4-vista' + (v.bloqueado ? ' is-bloqueado' : '') + '">' +
+                    _avatarHtml(v, 'wo4-vista-av') +
+                    '<div class="wo4-vista-b">' +
+                        '<div class="wo4-vista-n">' + esc(v.nombre) + tags + '</div>' +
+                        '<div class="wo4-vista-m">' + meta + '</div>' + acc +
+                    '</div>' + btn +
+                '</div>';
+            }).join('');
+            if (pie) {
+                pie.textContent = data.puede_bloquear
+                    ? 'Quitar el acceso impide que esa persona abra esta oportunidad. No aplica al dueño ni a otros supervisores.'
+                    : 'Solo supervisores y administradores pueden restringir el acceso.';
+            }
+        };
+
+        var recargar = function () {
+            fetch('/app/api/oportunidad/' + inst.oppId + '/vistas/', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!document.body.contains(ov)) return;
+                    inst.vistas = data;
+                    pintar(data);
+                })
+                .catch(function () {
+                    var lista = ov.querySelector('[data-lista]');
+                    if (lista) lista.innerHTML = '<div class="wo4-vistas-vacio">No se pudo cargar. Inténtalo otra vez.</div>';
+                });
+        };
+
+        // Si el ojo ya trajo los datos, se pintan de una y se refrescan detrás.
+        if (inst.vistas) pintar(inst.vistas);
+        recargar();
+
+        ov.addEventListener('click', function (ev) {
+            var b = ev.target.closest('[data-toggle-bloqueo]');
+            if (!b) return;
+            var uid = parseInt(b.getAttribute('data-toggle-bloqueo'), 10);
+            var bloquear = b.getAttribute('data-bloquear') === '1';
+            b.disabled = true;
+            b.textContent = bloquear ? 'Quitando…' : 'Dando…';
+            fetch('/app/api/oportunidad/' + inst.oppId + '/bloquear-acceso/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ usuario_id: uid, bloquear: bloquear }),
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.success) {
+                        notify((d && d.error) || 'No se pudo cambiar el acceso', 'error');
+                    } else {
+                        notify(bloquear ? 'Acceso retirado' : 'Acceso restituido', 'success');
+                    }
+                    recargar();
+                    cargarVistas(inst);
+                })
+                .catch(function () {
+                    notify('No se pudo cambiar el acceso', 'error');
+                    recargar();
+                });
         });
     }
 

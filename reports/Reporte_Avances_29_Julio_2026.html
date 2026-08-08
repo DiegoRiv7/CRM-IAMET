@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 29 de Julio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ TEASER ═══════ */
+        .card-teaser {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border: none;
+            color: white;
+        }
+        .card-teaser h3 { color: white; }
+        .card-teaser p { color: rgba(255,255,255,0.75); }
+        .card-teaser .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0F172A;
+            background: #F59E0B;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ═══════ PROGRESO (barra Fase 1) ═══════ */
+        .progress-wrap { grid-column: 1 / -1; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-track { height: 10px; background: var(--border); border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--primary-accent), var(--success)); border-radius: 20px; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+        .footer-note { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 300px; }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-teaser { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Asistente Proactivo, Respuestas con IA y Reportes de Desempeño</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">29 JULIO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Asistente</span>
+            <span class="summary-lbl">Ahora Proactivo</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Correo</span>
+            <span class="summary-lbl">Respuestas con IA</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Mi Desempeño</span>
+            <span class="summary-lbl">Reportes Exportables</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Oportunidad</span>
+            <span class="summary-lbl">Rediseño Completo</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            El cambio del día: <strong>el asistente dejó de esperar</strong>. Ya no hay que abrirlo para saber qué falta — avisa solo, desde una esquina de la pantalla. Además aprendió a <strong>redactar respuestas de correo</strong> y ahora cada vendedor puede ver y descargar su propio desempeño.
+        </div>
+
+        <div class="section-title">Hito: El Asistente te Busca</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🔔</div>
+                <div>
+                    <h3>Siempre presente, sin estorbar</h3>
+                    <p>Un aviso discreto vive en la esquina de la pantalla y dice lo que importa: <strong>"3 correos importantes y 2 clientes sin atender"</strong>. Late cuando llega algo nuevo. Ya no depende de que el vendedor se acuerde de revisar.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Un Clic y Ves Todo</h3>
+                <p>Al hacer clic se abre un panel con las tarjetas de lo urgente. Si necesitas más detalle, se expande al panel completo. <strong>Tres niveles según lo que busques.</strong></p>
+            </div>
+
+            <div class="card">
+                <h3>⚡ Acciones sin Salir</h3>
+                <p>Cada aviso trae sus botones: ver el borrador, abrir el correo, crear la oportunidad o agendar. <strong>Se resuelve ahí mismo.</strong></p>
+            </div>
+
+            <div class="card">
+                <h3>⏳ Oportunidades Detenidas</h3>
+                <p>El asistente ahora también avisa de las oportunidades que llevan <strong>más de una semana sin movimiento</strong>, para que ninguna se enfríe sin que nadie lo note.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Al Momento</h3>
+                <p>El aviso se actualiza solo cada minuto mientras trabajas. Lo nuevo aparece sin recargar ni volver a entrar.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Correo · Respuestas con IA</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">✍️</div>
+                <div>
+                    <h3>El sistema te redacta la respuesta</h3>
+                    <p>Botón <strong>"Generar respuesta"</strong>: la IA lee el correo y propone un borrador. Se revisa, se ajusta y se envía desde el módulo de Correo. El vendedor arranca de algo escrito en vez de una hoja en blanco.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🧹 Solo lo que Importa Leer</h3>
+                <p>Al mostrar un correo se quitan la firma, las imágenes y el hilo citado. <strong>Queda el mensaje real</strong>, sin tener que buscarlo entre el ruido.</p>
+            </div>
+
+            <div class="card">
+                <h3>✅ Marcar como Listo</h3>
+                <p>Los correos que solo informan y no piden respuesta se marcan como atendidos y <strong>cuentan como trabajo del día</strong>.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Mi Desempeño · Reportes</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>📊 Mis Números a la Vista</h3>
+                <p>Nueva sección con los indicadores del vendedor en cifras grandes y legibles, sin tener que pedir el reporte a nadie.</p>
+            </div>
+
+            <div class="card">
+                <h3>🗓️ El Período que Quieras</h3>
+                <p>Día, semana, mes o año, y con flechas para <strong>moverte a cualquier fecha pasada</strong>. Ya no es solo "lo de hoy".</p>
+            </div>
+
+            <div class="card">
+                <h3>💰 Facturado y Cobrado</h3>
+                <p>El dinero del período se suma automáticamente, incluyendo la vista anual completa de los doce meses.</p>
+            </div>
+
+            <div class="card">
+                <h3>📥 Excel y PDF</h3>
+                <p>Dos botones para <strong>descargar el reporte</strong> del período y compartirlo o guardarlo fuera del sistema.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Oportunidad · Todo en una Pantalla</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>🗂️ Información Ordenada</h3>
+                <p>Los datos se acomodaron en columnas alineadas y <strong>PO y facturas comparten fila</strong>, con sitio para agregar más de una factura.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔗 Proyecto al Frente</h3>
+                <p>El proyecto vinculado subió junto al título, con el <strong>nombre completo y clicable</strong> para saltar directo a él.</p>
+            </div>
+
+            <div class="card">
+                <h3>📎 Drive Siempre Abierto</h3>
+                <p>Los archivos se ven sin abrir nada, y se pueden <strong>arrastrar y soltar</strong> para subirlos al instante.</p>
+            </div>
+
+            <div class="card">
+                <h3>📋 Tareas y Actividades</h3>
+                <p>El cuadro se partió a la mitad: <strong>tareas de un lado, actividades del otro</strong>, cada una con su propio botón.</p>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label"><span>Asistente Proactivo</span><span>Fase 2 en marcha</span></div>
+                <div class="progress-track"><div class="progress-fill"></div></div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+        <div class="footer-note">
+            Cambios desplegados en el entorno de pruebas el 29 de Julio 2026. Pendiente su paso a producción.
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>

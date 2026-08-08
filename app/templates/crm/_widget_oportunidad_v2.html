@@ -23,6 +23,7 @@ Los widgets satélite (Drive, crear actividad, todas-tareas, conversación,
 modal vincular proyecto, confirm tipo) siguen siendo singletons en sus
 archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
 {% endcomment %}
+{% load static %}
 <template id="tplOppWidgetV2">
 <div class="widget-overlay opp-v2 opp-v4" data-wo="root" data-widget-title="Oportunidad">
     <div class="widget-card widget-card-lg" data-wo="card">
@@ -38,22 +39,51 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
         <!-- Content (oculto hasta cargar) -->
         <div data-wo="content" style="display:none;flex-direction:column;height:100%;">
 
-            <!-- ═══ ENCABEZADO ═══ -->
+            {% comment %}
+            ═══ ENCABEZADO ═══
+            La franja ocupaba dos renglones (migaja + título) para muy poco dato.
+            Ahora trabaja: logo a la izquierda, título y tipo al centro, y a la
+            derecha el cliente y el ojo de quién la ha visto. Lo que antes vivía
+            en la tarjeta de "Vendedor / Cliente" del lateral sube aquí y libera
+            ese espacio abajo.
+            {% endcomment %}
             <div class="wo4-head wo-header">
-                <div class="wo4-crumb">
+                <img class="wo4-logo" src="{% static 'images/iamet_logo_tight.png' %}" alt="IAMET">
+
+                <div class="wo4-head-mid">
                     <!-- Proyecto vinculado como ruta, no como pastilla -->
                     <span class="wo4-crumb-proy" data-wo="proyectoHeader" style="display:none;"></span>
+                    <div class="wo4-title-row">
+                        <h1 class="wo4-title wo-title" data-wo="title"></h1>
+                        <!-- Tipo de venta: chip discreto. El clic sigue abriendo el modal de
+                             confirmación, porque cambiarlo reinicia las etapas. -->
+                        <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
+                    </div>
+                </div>
+
+                <div class="wo4-head-right">
+                    <!-- Cliente: sube del lateral a la franja -->
+                    <div class="wo4-cliente" data-wo="clienteHead" style="display:none;">
+                        <span class="wo4-cliente-av" data-wo="cabClienteAv"></span>
+                        <span class="wo4-cliente-b">
+                            <span class="wo4-cliente-n" data-wo="cabClienteNombre"></span>
+                            <span class="wo4-cliente-c" data-wo="cabClienteContacto"></span>
+                        </span>
+                    </div>
+
+                    <!-- Ojo: quién ha abierto esta oportunidad -->
+                    <button type="button" class="wo4-ojo" data-action="ver-vistas"
+                        data-wo="ojoBtn" title="Quién ha visto esta oportunidad">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="wo4-ojo-avs" data-wo="ojoAvatares"></span>
+                        <span class="wo4-ojo-n" data-wo="ojoTotal"></span>
+                    </button>
+
                     <div class="wo4-win">
                         <button type="button" class="wo4-ic widget-close" data-wo="close" data-action="close" title="Cerrar">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                     </div>
-                </div>
-                <div class="wo4-title-row">
-                    <h1 class="wo4-title wo-title" data-wo="title"></h1>
-                    <!-- Tipo de venta: chip discreto. El clic sigue abriendo el modal de
-                         confirmación, porque cambiarlo reinicia las etapas. -->
-                    <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
                 </div>
             </div>
 
@@ -191,6 +221,15 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                         <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
                                     </div>
                                 </div>
+                            </div>
+                            {% comment %}
+                            Porcentaje de utilidad: por ahora se pinta vacío. La
+                            lógica de cálculo se trabaja aparte; el hueco queda
+                            listo para llenarlo sin volver a mover el layout.
+                            {% endcomment %}
+                            <div>
+                                <span class="wo4-lbl">% de utilidad</span>
+                                <div class="wo4-extra-v" data-wo="utilidadPct">—</div>
                             </div>
                             <div>
                                 <span class="wo4-lbl">Producto</span>

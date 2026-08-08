@@ -163,7 +163,74 @@ body {
 /* ── Encabezado ── */
 /* El encabezado conserva la franja de cada tema (lleva también .wo-header,
    que es lo que los cinco temas pintan). Solo el CUERPO es neutro. */
-.opp-v4 .wo4-head { padding: 16px 26px 12px !important; flex-shrink: 0; }
+/* La franja ahora trabaja: logo | título y tipo | cliente y ojo. Antes eran
+   dos renglones para muy poco dato y el cliente vivía abajo en el lateral. */
+.opp-v4 .wo4-head {
+    padding: 12px 20px !important; flex-shrink: 0;
+    display: flex; align-items: center; gap: 16px;
+}
+.opp-v4 .wo4-logo {
+    height: 30px; width: auto; flex-shrink: 0;
+    object-fit: contain; opacity: .95;
+}
+.opp-v4 .wo4-head-mid { flex: 1; min-width: 0; }
+.opp-v4 .wo4-head-right {
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto;
+}
+
+/* ── Cliente en la franja ── */
+.opp-v4 .wo4-cliente {
+    display: flex; align-items: center; gap: 9px; max-width: 260px;
+    padding: 5px 12px 5px 6px; border-radius: 999px;
+    background: rgba(255, 255, 255, .14);
+}
+.opp-v4 .wo4-cliente-av {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #2563EB; color: #fff; font-size: 11px; font-weight: 800;
+}
+.opp-v4 .wo4-cliente-b { display: flex; flex-direction: column; min-width: 0; }
+.opp-v4 .wo4-cliente-n {
+    font-size: 12.5px; font-weight: 700; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.opp-v4 .wo4-cliente-c {
+    font-size: 11px; opacity: .78; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── El ojo: quién ha visto la oportunidad ── */
+.opp-v4 .wo4-ojo {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 11px 5px 9px; border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .26); background: rgba(255, 255, 255, .12);
+    color: inherit; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background .12s, border-color .12s;
+}
+.opp-v4 .wo4-ojo:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .42); }
+.opp-v4 .wo4-ojo-avs { display: inline-flex; }
+.opp-v4 .wo4-ojo-av {
+    width: 21px; height: 21px; border-radius: 50%; margin-left: -6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; color: #fff; overflow: hidden;
+    border: 1.5px solid rgba(255, 255, 255, .85); background: #6B7280;
+}
+.opp-v4 .wo4-ojo-av:first-child { margin-left: 0; }
+.opp-v4 .wo4-ojo-av img { width: 100%; height: 100%; object-fit: cover; }
+.opp-v4 .wo4-ojo-n { opacity: .85; }
+
+/* En los temas claros la franja es blanca: el cliente y el ojo necesitan
+   contraste propio, si no quedan en blanco sobre blanco. */
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-cliente {
+    background: #F1F3F7;
+}
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-ojo {
+    background: #F1F3F7; border-color: #E4E7EC; color: var(--w4-texto);
+}
+
+@container oppv4 (max-width: 900px) {
+    .opp-v4 .wo4-cliente { display: none !important; }
+}
 .opp-v4 .wo4-title { color: inherit; }
 .opp-v4 .wo4-crumb {
     display: flex; align-items: center; gap: 8px;
@@ -406,6 +473,76 @@ body {
 }
 .opp-v4 .wo4-nota.mia .wo4-cita { border-left-color: rgba(255, 255, 255, .6); }
 .opp-v4 .wo4-cita-n { display: block; font-weight: 700; font-size: .76rem; }
+
+/* ═══ Panel del ojo: quién ha visto la oportunidad ═══
+   Se monta como overlay propio, fuera del widget, para que no lo recorte el
+   overflow del encabezado. */
+.wo4-vistas-ov {
+    position: fixed; inset: 0; z-index: 10600;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(15, 23, 42, .42); backdrop-filter: blur(2px);
+}
+.wo4-vistas-card {
+    width: 560px; max-width: 94vw; max-height: 84vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: #F7F8FA; border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .3);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.wo4-vistas-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 15px 18px; background: #fff; border-bottom: 1px solid #E9EBEF; flex-shrink: 0;
+}
+.wo4-vistas-head h3 {
+    margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; flex: 1;
+}
+.wo4-vistas-head svg { color: #64748B; flex-shrink: 0; }
+.wo4-vistas-x {
+    width: 28px; height: 28px; border: none; background: none; border-radius: 8px;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.wo4-vistas-x:hover { background: #F1F3F7; color: #0F172A; }
+.wo4-vistas-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 16px; }
+.wo4-vista {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px; margin-bottom: 7px;
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 12px;
+}
+.wo4-vista.is-bloqueado { background: #FFF8F8; border-color: #FECDD3; }
+.wo4-vista-av {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #2563EB; color: #fff; font-size: 12px; font-weight: 800;
+}
+.wo4-vista-av img { width: 100%; height: 100%; object-fit: cover; }
+.wo4-vista-b { flex: 1; min-width: 0; }
+.wo4-vista-n {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13.5px; font-weight: 700; color: #0F172A;
+}
+.wo4-vista-tag {
+    padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800;
+    letter-spacing: .03em; background: #EFF4FF; color: #1D4ED8;
+}
+.wo4-vista-tag.bloq { background: #FFF1F2; color: #BE123C; }
+.wo4-vista-m { font-size: 11.5px; color: #64748B; margin-top: 2px; line-height: 1.45; }
+.wo4-vista-acc { font-size: 11.5px; color: #475569; margin-top: 1px; }
+.wo4-vista-btn {
+    flex-shrink: 0; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid #E4E7EC; background: #fff;
+    font: inherit; font-size: 12px; font-weight: 600; color: #BE123C; cursor: pointer;
+    transition: border-color .12s, background .12s;
+}
+.wo4-vista-btn:hover { border-color: #FDA4AF; background: #FFF1F2; }
+.wo4-vista-btn.des { color: #047857; }
+.wo4-vista-btn.des:hover { border-color: #A7F3D0; background: #ECFDF5; }
+.wo4-vistas-vacio {
+    padding: 26px 10px; text-align: center; color: #94A3B8; font-size: 13px;
+}
+.wo4-vistas-pie {
+    padding: 11px 18px; background: #fff; border-top: 1px solid #E9EBEF;
+    font-size: 11.5px; color: #94A3B8; flex-shrink: 0;
+}
 
 /* Barra de "respondiendo a", entre el feed y el compositor. */
 .opp-v4 .wo4-replybar {

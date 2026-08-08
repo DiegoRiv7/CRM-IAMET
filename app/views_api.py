@@ -761,6 +761,15 @@ def api_chat_oportunidad(request, opp_id):
             reply_to=reply_obj,
         )
 
+        # Panel del ojo: lo último que hizo este usuario en la oportunidad.
+        try:
+            from .views_crm import registrar_vista_oportunidad
+            registrar_vista_oportunidad(
+                request.user, opp.id,
+                'Adjuntó un archivo' if (imagen and not texto) else 'Escribió una nota')
+        except Exception:
+            pass
+
         remitente_nombre = request.user.get_full_name() or request.user.username
         preview = texto[:100] + ('…' if len(texto) > 100 else '') if texto else '📎 Archivo adjunto'
 

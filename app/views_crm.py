@@ -4346,6 +4346,8 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.etapa_corta = nueva_etapa
             oportunidad.etapa_completa = nueva_etapa
             updated_values['etapa_corta'] = nueva_etapa
+            registrar_vista_oportunidad(request.user, oportunidad.id,
+                                        f'Movió la etapa a {nueva_etapa}')
 
             # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
             if nueva_etapa in ('Vendido s/PO', 'Vendido c/PO'):
@@ -5132,6 +5134,192 @@ def api_crear_oportunidad(request):
         return JsonResponse({'ok': False, 'error': str(e)})
 
 
+def puede_ver_oportunidad(user, oportunidad_id):
+    """False si a este usuario le bloquearon ESTA oportunidad en concreto.
+
+    Es un veto puntual que ponen administradores, superusuarios y supervisores
+    desde el panel del ojo; no sustituye a los permisos por rol. Quien puede
+    bloquear no puede quedar bloqueado: si no, un supervisor podria encerrarse
+    a si mismo o a otro que deberia poder desbloquearlo.
+    """
+    from .models import OportunidadAccesoBloqueado
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if puede_bloquear_oportunidad(user):
+        return True
+    return not OportunidadAccesoBloqueado.objects.filter(
+        oportunidad_id=oportunidad_id, usuario=user,
+    ).exists()
+
+
+def puede_bloquear_oportunidad(user):
+    """Administradores, superusuarios y supervisores."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    return bool(user.is_superuser or is_supervisor(user) or is_administrador(user))
+
+
+def registrar_vista_oportunidad(user, oportunidad_id, accion=''):
+    """Deja constancia de que este usuario abrio la oportunidad.
+
+    Una fila por (oportunidad, usuario): se actualiza en vez de acumular. Nunca
+    revienta la vista que la llama — si el registro falla, la oportunidad se
+    abre igual.
+    """
+    from .models import OportunidadVista
+    if not user or not getattr(user, 'is_authenticated', False):
+        return
+    try:
+        vista, creada = OportunidadVista.objects.get_or_create(
+            oportunidad_id=oportunidad_id, usuario=user,
+        )
+        campos = ['ultima_vez']
+        if not creada:
+            vista.veces = (vista.veces or 0) + 1
+            campos.append('veces')
+        if accion:
+            vista.ultima_accion = accion[:200]
+            vista.ultima_accion_fecha = timezone.now()
+            campos += ['ultima_accion', 'ultima_accion_fecha']
+        vista.save(update_fields=campos)
+    except Exception:
+        pass
+
+
+@login_required
+def api_oportunidad_vistas(request, oportunidad_id):
+    """GET: quién ha abierto esta oportunidad, cuándo y qué hizo.
+
+    Alimenta el panel del ojo del encabezado. Devuelve además la lista de
+    bloqueados y si el que pregunta puede bloquear, para que el front sepa qué
+    pintar sin adivinar por rol.
+    """
+    from .models import OportunidadVista, OportunidadAccesoBloqueado
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_ver_oportunidad(request.user, opp.id):
+        return JsonResponse({'error': 'No tienes acceso a esta oportunidad'}, status=403)
+
+    def _persona(u):
+        perfil = getattr(u, 'userprofile', None)
+        avatar = ''
+        if perfil:
+            try:
+                avatar = perfil.get_avatar_url() or ''
+            except Exception:
+                avatar = ''
+        nombre = (u.get_full_name() or u.username).strip()
+        iniciales = ''.join([p[0].upper() for p in nombre.split()[:2]]) or '?'
+        return {'id': u.id, 'nombre': nombre, 'iniciales': iniciales, 'avatar': avatar}
+
+    bloqueados = {
+        b.usuario_id: {
+            'por': (b.bloqueado_por.get_full_name() or b.bloqueado_por.username)
+                   if b.bloqueado_por else '',
+            'fecha': timezone.localtime(b.fecha).strftime('%d/%m/%Y %H:%M') if b.fecha else '',
+        }
+        for b in OportunidadAccesoBloqueado.objects.filter(oportunidad=opp)
+                                           .select_related('usuario', 'bloqueado_por')
+    }
+
+    vistas = []
+    qs = (OportunidadVista.objects.filter(oportunidad=opp)
+          .select_related('usuario', 'usuario__userprofile')
+          .order_by('-ultima_vez'))
+    for v in qs:
+        d = _persona(v.usuario)
+        d.update({
+            'ultima_vez': timezone.localtime(v.ultima_vez).strftime('%d/%m/%Y %H:%M') if v.ultima_vez else '',
+            'ultima_vez_iso': v.ultima_vez.isoformat() if v.ultima_vez else '',
+            'veces': v.veces or 1,
+            'ultima_accion': v.ultima_accion or '',
+            'ultima_accion_fecha': (timezone.localtime(v.ultima_accion_fecha).strftime('%d/%m/%Y %H:%M')
+                                    if v.ultima_accion_fecha else ''),
+            'bloqueado': v.usuario_id in bloqueados,
+            'bloqueo': bloqueados.get(v.usuario_id) or None,
+            'es_dueno': v.usuario_id == opp.usuario_id,
+        })
+        vistas.append(d)
+
+    # Bloqueados que nunca la abrieron: también deben salir en la lista.
+    ids_vistos = {v['id'] for v in vistas}
+    for uid, info in bloqueados.items():
+        if uid in ids_vistos:
+            continue
+        try:
+            u = User.objects.get(pk=uid)
+        except User.DoesNotExist:
+            continue
+        d = _persona(u)
+        d.update({
+            'ultima_vez': '', 'ultima_vez_iso': '', 'veces': 0,
+            'ultima_accion': '', 'ultima_accion_fecha': '',
+            'bloqueado': True, 'bloqueo': info, 'es_dueno': uid == opp.usuario_id,
+        })
+        vistas.append(d)
+
+    return JsonResponse({
+        'success': True,
+        'vistas': vistas,
+        'total': len(vistas),
+        'puede_bloquear': puede_bloquear_oportunidad(request.user),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_oportunidad_bloquear_acceso(request, oportunidad_id):
+    """POST: bloquea o desbloquea a un usuario en ESTA oportunidad.
+
+    Body: {usuario_id, bloquear: true|false, motivo?}
+    Solo administradores, superusuarios y supervisores.
+    """
+    from .models import OportunidadAccesoBloqueado
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_bloquear_oportunidad(request.user):
+        return JsonResponse(
+            {'success': False, 'error': 'Solo supervisores y administradores pueden restringir el acceso'},
+            status=403,
+        )
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    try:
+        uid = int(data.get('usuario_id'))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'usuario_id requerido'}, status=400)
+
+    if uid == request.user.id:
+        return JsonResponse({'success': False, 'error': 'No puedes bloquearte a ti mismo'}, status=400)
+    if uid == opp.usuario_id:
+        return JsonResponse(
+            {'success': False, 'error': 'No puedes bloquear al dueño de la oportunidad'}, status=400)
+
+    try:
+        objetivo = User.objects.get(pk=uid)
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=404)
+
+    # Quien puede bloquear no puede ser bloqueado: si no, dos supervisores
+    # podrian encerrarse mutuamente y nadie podria deshacerlo.
+    if puede_bloquear_oportunidad(objetivo):
+        return JsonResponse(
+            {'success': False, 'error': 'No puedes bloquear a un supervisor o administrador'}, status=400)
+
+    bloquear = bool(data.get('bloquear', True))
+    if bloquear:
+        OportunidadAccesoBloqueado.objects.get_or_create(
+            oportunidad=opp, usuario=objetivo,
+            defaults={'bloqueado_por': request.user,
+                      'motivo': (data.get('motivo') or '')[:200]},
+        )
+    else:
+        OportunidadAccesoBloqueado.objects.filter(oportunidad=opp, usuario=objetivo).delete()
+
+    return JsonResponse({'success': True, 'bloqueado': bloquear, 'usuario_id': uid})
+
+
 @login_required
 def api_oportunidad_detalle_crm(request, oportunidad_id):
     """
@@ -5139,6 +5327,15 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
     """
     try:
         todo = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+        # Veto puntual: a este usuario le cerraron ESTA oportunidad.
+        if not puede_ver_oportunidad(request.user, todo.id):
+            return JsonResponse(
+                {'error': 'No tienes acceso a esta oportunidad'}, status=403,
+            )
+
+        # Queda constancia de quién la abrió y cuándo (panel del ojo).
+        registrar_vista_oportunidad(request.user, todo.id, 'Abrió la oportunidad')
 
         # Obtener cotizaciones de esta oportunidad
         cotizaciones = Cotizacion.objects.filter(oportunidad=todo).order_by('-fecha_creacion')

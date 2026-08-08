@@ -6685,6 +6685,61 @@ class CrmCambio(models.Model):
         return f'{self.entidad}#{self.objeto_id} {self.accion}'
 
 
+class OportunidadVista(models.Model):
+    """Quién ha abierto una oportunidad, cuándo y qué fue lo último que hizo ahí.
+
+    Una fila por (oportunidad, usuario): al abrirla de nuevo se actualiza
+    `ultima_vez` y sube el contador, no se acumulan filas.
+
+    `ultima_accion` se guarda AQUÍ y no se deduce de CrmCambio porque ese log
+    se purga a las 48 horas; esto tiene que sobrevivir.
+    """
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='vistas',
+    )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    primera_vez = models.DateTimeField(auto_now_add=True)
+    ultima_vez = models.DateTimeField(auto_now=True)
+    veces = models.PositiveIntegerField(default=1)
+    ultima_accion = models.CharField(max_length=200, blank=True, default='')
+    ultima_accion_fecha = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Vista de oportunidad'
+        verbose_name_plural = 'Vistas de oportunidad'
+        unique_together = [('oportunidad', 'usuario')]
+        indexes = [models.Index(fields=['oportunidad', '-ultima_vez'])]
+
+    def __str__(self):
+        return f'{self.usuario} vio #{self.oportunidad_id}'
+
+
+class OportunidadAccesoBloqueado(models.Model):
+    """Veto de un usuario sobre UNA oportunidad concreta.
+
+    Lo ponen administradores, superusuarios y supervisores desde el panel del
+    ojo. No es lo mismo que los permisos por rol: esto es puntual, para cuando
+    alguien no debe ver un trato en particular.
+    """
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='accesos_bloqueados',
+    )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    bloqueado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    motivo = models.CharField(max_length=200, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Acceso bloqueado a oportunidad'
+        verbose_name_plural = 'Accesos bloqueados a oportunidad'
+        unique_together = [('oportunidad', 'usuario')]
+
+    def __str__(self):
+        return f'{self.usuario} bloqueado en #{self.oportunidad_id}'
+
+
 class PerfEvent(models.Model):
     """Telemetría del Modo Ligero (ver perf_mode.js / perf_lite.css).
 
