@@ -184,12 +184,21 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <!-- Orden: cifras del trato arriba, luego los papeles (cotizaciones
                          y drive) y hasta abajo las personas. -->
                     <div class="wo4-card wo4-pad" data-wo="infoCard">
+                        {% comment %}
+                        Monto y utilidad juntos: son las dos cifras que se miran
+                        primero. El % de utilidad se pinta vacío por ahora — la
+                        lógica de cálculo se trabaja aparte y el hueco ya queda.
+                        {% endcomment %}
                         <div class="wo4-monto-row">
-                            <div>
+                            <div class="wo4-monto-i">
                                 <span class="wo4-lbl">Monto</span>
                                 <div class="wo4-monto" data-wo="monto">$0</div>
                             </div>
-                            <div class="wo4-cierre">
+                            <div class="wo4-monto-i wo4-util">
+                                <span class="wo4-lbl">% utilidad</span>
+                                <div class="wo4-util-v" data-wo="utilidadPct">—</div>
+                            </div>
+                            <div class="wo4-monto-i wo4-cierre">
                                 <span class="wo4-lbl">Cierre</span>
                                 <div class="wo4-cierre-v" data-wo="fechaCierre">-</div>
                             </div>
@@ -221,15 +230,6 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                         <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
                                     </div>
                                 </div>
-                            </div>
-                            {% comment %}
-                            Porcentaje de utilidad: por ahora se pinta vacío. La
-                            lógica de cálculo se trabaja aparte; el hueco queda
-                            listo para llenarlo sin volver a mover el layout.
-                            {% endcomment %}
-                            <div>
-                                <span class="wo4-lbl">% de utilidad</span>
-                                <div class="wo4-extra-v" data-wo="utilidadPct">—</div>
                             </div>
                             <div>
                                 <span class="wo4-lbl">Producto</span>

@@ -168,7 +168,20 @@ body {
 .opp-v4 .wo4-head {
     padding: 12px 20px !important; flex-shrink: 0;
     display: flex; align-items: center; gap: 16px;
+    position: relative;
 }
+/* Velo sobre la greca del tema: el patrón competía con el logo y los chips y
+   nada se leía bien. Baja el contraste del fondo sin apagar el tema. */
+.opp-v4 .wo4-head::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(15, 23, 42, .34);
+    /* Hereda el redondeo que cada tema le da a la franja; si no, cuadra las
+       esquinas de arriba. */
+    border-radius: inherit;
+    pointer-events: none;
+}
+/* El contenido va encima del velo. */
+.opp-v4 .wo4-head > * { position: relative; z-index: 1; }
 .opp-v4 .wo4-logo {
     height: 30px; width: auto; flex-shrink: 0;
     object-fit: contain; opacity: .95;
@@ -181,8 +194,10 @@ body {
 /* ── Cliente en la franja ── */
 .opp-v4 .wo4-cliente {
     display: flex; align-items: center; gap: 9px; max-width: 260px;
-    padding: 5px 12px 5px 6px; border-radius: 999px;
-    background: rgba(255, 255, 255, .14);
+    padding: 5px 13px 5px 6px; border-radius: 999px;
+    /* Sólido, no translúcido: sobre la greca el blanco al 14% desaparecía. */
+    background: #fff; color: var(--w4-tinta);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .22);
 }
 .opp-v4 .wo4-cliente-av {
     width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
@@ -195,37 +210,39 @@ body {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .opp-v4 .wo4-cliente-c {
-    font-size: 11px; opacity: .78; line-height: 1.25;
+    font-size: 11px; color: var(--w4-gris); line-height: 1.25;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* ── El ojo: quién ha visto la oportunidad ── */
 .opp-v4 .wo4-ojo {
     display: inline-flex; align-items: center; gap: 7px;
-    padding: 5px 11px 5px 9px; border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, .26); background: rgba(255, 255, 255, .12);
-    color: inherit; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
-    transition: background .12s, border-color .12s;
+    padding: 5px 12px 5px 10px; border-radius: 999px; border: none;
+    background: #fff; color: var(--w4-texto);
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .22);
+    transition: background .12s;
 }
-.opp-v4 .wo4-ojo:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .42); }
+.opp-v4 .wo4-ojo:hover { background: #EEF1F6; }
 .opp-v4 .wo4-ojo-avs { display: inline-flex; }
 .opp-v4 .wo4-ojo-av {
     width: 21px; height: 21px; border-radius: 50%; margin-left: -6px;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 9px; font-weight: 800; color: #fff; overflow: hidden;
-    border: 1.5px solid rgba(255, 255, 255, .85); background: #6B7280;
+    border: 1.5px solid #fff; background: #6B7280;
 }
 .opp-v4 .wo4-ojo-av:first-child { margin-left: 0; }
 .opp-v4 .wo4-ojo-av img { width: 100%; height: 100%; object-fit: cover; }
 .opp-v4 .wo4-ojo-n { opacity: .85; }
 
-/* En los temas claros la franja es blanca: el cliente y el ojo necesitan
-   contraste propio, si no quedan en blanco sobre blanco. */
-body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-cliente {
-    background: #F1F3F7;
+/* Los temas claros no pintan franja: ahí el velo sobraría y los chips blancos
+   quedarían sobre blanco. Se apaga el velo y los chips toman borde. */
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-head::after {
+    display: none;
 }
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-cliente,
 body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-ojo {
-    background: #F1F3F7; border-color: #E4E7EC; color: var(--w4-texto);
+    background: #F4F5F7; box-shadow: inset 0 0 0 1px #E4E7EC;
 }
 
 @container oppv4 (max-width: 900px) {
@@ -586,13 +603,23 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 }
 
 /* ── Lateral ── */
+/* Monto | % utilidad | Cierre: las tres cifras de cabecera, en una fila.
+   La utilidad estaba escondida en "Ver más detalles" y es de las que más se
+   miran, así que sube a la primera línea. */
 .opp-v4 .wo4-monto-row {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 14px; margin-bottom: 14px;
+    display: flex; align-items: flex-start;
+    gap: 12px; margin-bottom: 14px;
+}
+.opp-v4 .wo4-monto-i { min-width: 0; }
+.opp-v4 .wo4-util {
+    padding-left: 12px; border-left: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-util-v {
+    font-size: 1.28rem; font-weight: 700; letter-spacing: -.02em; color: #047857;
 }
 .opp-v4 .wo4-lbl { font-size: .78rem; color: var(--w4-gris); display: block; margin-bottom: 3px; }
-.opp-v4 .wo4-monto { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
-.opp-v4 .wo4-cierre { text-align: right; }
+.opp-v4 .wo4-monto { font-size: 1.42rem; font-weight: 700; letter-spacing: -.02em; }
+.opp-v4 .wo4-cierre { margin-left: auto; text-align: right; }
 .opp-v4 .wo4-cierre-v { font-size: 1.02rem; font-weight: 600; }
 .opp-v4 .wo4-docs { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .opp-v4 .wo4-doc { background: var(--w4-panel); border-radius: 9px; padding: 8px 12px; }
