@@ -2189,7 +2189,8 @@
           correo_id: mailId, opp_id: d.opp_id, opp_nombre: d.opp_nombre,
           etapa: d.etapa_sugerida, prob: (d.prob_sugerida != null ? d.prob_sugerida : (d.prob_actual || 0)),
           seg_fecha: d.seg_fecha, seg_hora: d.seg_hora,
-          pdf: d.pdf || null, monto_actual: d.monto_actual || 0, po_actual: d.po_actual || ''
+          pdf: d.pdf || null, monto_actual: d.monto_actual || 0, po_actual: d.po_actual || '',
+          factura_actual: d.factura_actual || ''
         };
         _focusUpdRender(box, d);
       })
@@ -2219,6 +2220,9 @@
     if (d.pdf && d.pdf.po) {
       plan += '<div class="pend-foc-plan-row">Registro la orden de compra <b>' + _esc(d.pdf.po) + '</b> <span class="was">(del PDF adjunto)</span></div>';
     }
+    if (d.pdf && d.pdf.factura) {
+      plan += '<div class="pend-foc-plan-row">Registro la factura <b>' + _esc(d.pdf.factura) + '</b> <span class="was">(del PDF adjunto)</span></div>';
+    }
     if (d.seg_fecha) {
       plan += '<div class="pend-foc-plan-row">Agendo un <b>seguimiento</b> para el <b>' + _fechaLegible(d.seg_fecha) + '</b>' +
         (d.seg_hora ? ' a las <b>' + _esc(d.seg_hora) + '</b>' : '') + '</div>';
@@ -2241,6 +2245,8 @@
             '<input type="number" step="0.01" min="0" class="pend-foc-in" id="focUpdMonto" value="' + ((d.pdf && d.pdf.monto) || d.monto_actual || 0) + '"></div>' +
           '<div class="pend-foc-fld"><div class="pend-foc-k">Orden de compra (PO)</div>' +
             '<input type="text" class="pend-foc-in" id="focUpdPo" value="' + _esc((d.pdf && d.pdf.po) || d.po_actual || '') + '" placeholder="Sin orden de compra"></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Factura</div>' +
+            '<input type="text" class="pend-foc-in" id="focUpdFactura" value="' + _esc((d.pdf && d.pdf.factura) || d.factura_actual || '') + '" placeholder="Sin factura"></div>' +
           '<div class="pend-foc-fld"><div class="pend-foc-k">Resumen para la conversación</div>' +
             '<textarea class="pend-foc-in pend-foc-sel" id="focUpdResumen" rows="3">' + _esc(d.resumen || '') + '</textarea></div>' +
         '</div>' +
@@ -2266,7 +2272,7 @@
     var btn = el('focUpdBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
     // Si el usuario abrió "Ajustar", tomamos los campos; si no, usamos lo que propuso la IA.
     var eEtapa = el('focUpdEtapa'), eProb = el('focUpdProb'), eResumen = el('focUpdResumen');
-    var eMonto = el('focUpdMonto'), ePo = el('focUpdPo');
+    var eMonto = el('focUpdMonto'), ePo = el('focUpdPo'), eFac = el('focUpdFactura');
     var payload = {
       correo_id: _updDraft.correo_id, opp_id: _updDraft.opp_id,
       etapa: (eEtapa && eEtapa.value) || _updDraft.etapa || '',
@@ -2275,7 +2281,8 @@
       seg_fecha: _updDraft.seg_fecha, seg_hora: _updDraft.seg_hora,
       // Monto/PO: lo del PDF (o lo ajustado a mano); si no cambió, el backend no toca nada
       monto: (eMonto ? eMonto.value : ((_updDraft.pdf && _updDraft.pdf.monto) || '')),
-      po_number: (ePo ? ePo.value : ((_updDraft.pdf && _updDraft.pdf.po) || ''))
+      po_number: (ePo ? ePo.value : ((_updDraft.pdf && _updDraft.pdf.po) || '')),
+      factura_numero: (eFac ? eFac.value : ((_updDraft.pdf && _updDraft.pdf.factura) || ''))
     };
     fetch('/app/api/asistente/oportunidad/actualizar/', {
       method: 'POST', credentials: 'same-origin',
@@ -2292,6 +2299,7 @@
         var montoNuevo = parseFloat(payload.monto || 0) || 0;
         var montoCambio = montoNuevo > 0 && montoNuevo !== (_updDraft.monto_actual || 0);
         var poCambio = (payload.po_number || '') && payload.po_number !== (_updDraft.po_actual || '');
+        var facCambio = (payload.factura_numero || '') && payload.factura_numero !== (_updDraft.factura_actual || '');
         var seg = d.seguimiento || {};
         _updDraft = null;
         if (box) {
@@ -2299,6 +2307,7 @@
             ', con el resumen en la bitácora.';
           if (montoCambio) sub += ' Monto: <b>$' + montoNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + '</b>.';
           if (poCambio) sub += ' Orden de compra: <b>' + _esc(payload.po_number) + '</b>.';
+          if (facCambio) sub += ' Factura: <b>' + _esc(payload.factura_numero) + '</b>.';
           if (seg.creado && seg.fecha) sub += ' Agendé un seguimiento para el <b>' + _fechaLegible(seg.fecha) + '</b>.';
           box.innerHTML =
             '<div class="pend-foc-lbl">Listo</div>' +

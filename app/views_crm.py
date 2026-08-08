@@ -9032,6 +9032,13 @@ def _pdf_datos_finos(texto):
             if 4 <= len(po) <= 20 and any(ch.isdigit() for ch in po):
                 datos['po'] = po
                 break
+    # Número de factura: "Factura A1234", "Invoice 0427736", "Folio 12345"
+    m = re.search(r'(?:factura|invoice|folio)\s*(?:no\.?|num\.?|#|:)?\s*([A-Z]{0,4}-?\d{3,12})\b',
+                  texto, re.I)
+    if m:
+        fac = m.group(1).strip().strip('.-:')
+        if 3 <= len(fac) <= 20 and any(ch.isdigit() for ch in fac):
+            datos['factura'] = fac
     # Monto: primero importes pegados a "total/importe"; si no, el mayor $ del doc
     montos = re.findall(
         r'(?:total|importe)[^\n\d$]{0,30}\$?\s*(\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})',
@@ -9179,7 +9186,9 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
         'seg_hora': '%02d:00' % hora_seg,
         'monto_actual': float(opp.monto or 0),
         'po_actual': opp.po_number or '',
+        'factura_actual': opp.factura_numero or '',
         'pdf': ({'po': pdf_datos.get('po', ''), 'monto': pdf_datos.get('monto'),
+                 'factura': pdf_datos.get('factura', ''),
                  'moneda': pdf_datos.get('moneda', ''), 'archivos': pdf_archivos}
                 if pdf_datos else None),
     })
@@ -9236,6 +9245,10 @@ def api_asistente_oportunidad_update_aplicar(request):
     if po and po != (opp.po_number or ''):
         opp.po_number = po[:50]
         campos.append('po_number')
+    fac = (data.get('factura_numero') or '').strip()
+    if fac and fac != (opp.factura_numero or ''):
+        opp.factura_numero = fac[:100]
+        campos.append('factura_numero')
     if campos:
         opp.save(update_fields=list(set(campos)))
         try:
