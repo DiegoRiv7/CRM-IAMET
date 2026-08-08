@@ -11124,6 +11124,52 @@ def _sim_opp(user, titulo, monto=185000, prob=60):
     )
 
 
+def _sim_pdf_po(numero, total_str):
+    """PDF de UNA página generado a mano (bytes crudos, sin librerías): una
+    orden de compra realista con número y total, suficiente para que
+    pdfplumber le extraiga el texto y _pdf_datos_finos saque PO/monto."""
+    lineas = [
+        'ACEROS DEL NORTE S.A. DE C.V.',
+        'Av. Industrial 2400, Parque Norte, Monterrey N.L.',
+        '',
+        'ORDEN DE COMPRA No. %s' % numero,
+        'Proveedor: IAMET',
+        'Concepto: Tableros de control — planta Este',
+        '',
+        'Subtotal: $362,068.97',
+        'IVA (16%%): $57,931.03',
+        'Total: $%s MXN' % total_str,
+        '',
+        'Autorizado por: Direccion de Compras',
+    ]
+    partes = ['BT /F1 12 Tf 16 TL 50 760 Td']
+    for ln in lineas:
+        ln = ln.replace('\\', r'\\').replace('(', r'\(').replace(')', r'\)')
+        partes.append('(%s) Tj T*' % ln)
+    partes.append('ET')
+    stream = ' '.join(partes).encode('latin-1', 'replace')
+    objs = [
+        b'<< /Type /Catalog /Pages 2 0 R >>',
+        b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        (b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+         b'/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>'),
+        b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        b'<< /Length %d >>\nstream\n%s\nendstream' % (len(stream), stream),
+    ]
+    out = bytearray(b'%PDF-1.4\n')
+    offsets = []
+    for i, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b'%d 0 obj\n' % i + o + b'\nendobj\n'
+    xref_pos = len(out)
+    out += b'xref\n0 %d\n0000000000 65535 f \n' % (len(objs) + 1)
+    for off in offsets:
+        out += b'%010d 00000 n \n' % off
+    out += (b'trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n'
+            % (len(objs) + 1, xref_pos))
+    return bytes(out)
+
+
 # Escenarios: cada uno inyecta datos y declara qué DEBERÍA hacer el asistente,
 # para comparar contra lo que realmente haga.
 _SIM_ESCENARIOS = {
@@ -11146,6 +11192,12 @@ _SIM_ESCENARIOS = {
     'hito_ligado': {
         'nombre': 'OC firmada ligada a oportunidad',
         'esperado': "Toast 'Factura / orden recibida' con Actualizar oportunidad de inmediato (sin esperar respuesta).",
+    },
+    'po_pdf': {
+        'nombre': 'PO en PDF adjunto (extracción sin IA)',
+        'esperado': ("Toast hito con Actualizar. La propuesta debe traer 'Registro la orden de "
+                     "compra OC-77123' y 'Pongo el monto en $420,000.00 MXN' — sacados del PDF "
+                     "adjunto por CÓDIGO, cero tokens."),
     },
     'insiste': {
         'nombre': 'Cliente insiste (2do correo del hilo)',
@@ -11209,6 +11261,26 @@ def _sim_ejecutar(user, esc):
             'Saludos,\nLaura Mendoza', opp=opp)
         return {'correo_id': m.id, 'opp_id': opp.id,
                 'detalle': 'OC firmada ligada a oportunidad de $420,000. Debe ofrecer actualizar YA.'}
+    if esc == 'po_pdf':
+        from .models import MailAdjunto
+        import base64 as _b64
+        opp = _sim_opp(user, '[DEMO] Tableros de control planta Este', monto=0, prob=70)
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Adjunto orden de compra en PDF',
+            'Estimado proveedor:\n\nLe adjunto en PDF la orden de compra debidamente '
+            'autorizada, correspondiente a los tableros de control de la planta Este. '
+            'Favor de confirmar recepción y tiempo de entrega.\n\n'
+            'Laura Mendoza\nCompras — Aceros del Norte', opp=opp)
+        pdf = _sim_pdf_po('OC-77123', '420,000.00')
+        MailAdjunto.objects.create(
+            correo=m, nombre_archivo='OC-77123.pdf', content_type='application/pdf',
+            tamanio_bytes=len(pdf), datos_b64=_b64.b64encode(pdf).decode())
+        m.tiene_adjuntos = True
+        m.save(update_fields=['tiene_adjuntos'])
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'Correo ligado con PDF de OC real adjunto (opp sin monto ni PO). '
+                           'La propuesta debe llenar ambos desde el PDF.'}
     if esc == 'insiste':
         asunto = 'Seguimiento a muestra de material'
         _sim_correo(
