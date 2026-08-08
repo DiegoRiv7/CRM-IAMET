@@ -186,11 +186,11 @@ que importa es cuándo se sacó.
   <table class="tabla">
     <tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th>Estado</th></tr>
     {% for t in tareas %}
-    <tr class="{% if t.completada %}hecha{% endif %}">
+    <tr class="{% if t.estado == 'completada' %}hecha{% endif %}">
       <td>{{ t.titulo|default:"Sin título" }}</td>
-      <td>{% if t.asignado_a %}{{ t.asignado_a.get_full_name|default:t.asignado_a.username }}{% else %}—{% endif %}</td>
+      <td>{% if t.responsable %}{{ t.responsable.get_full_name|default:t.responsable.username }}{% else %}—{% endif %}</td>
       <td>{{ t.fecha_limite|date:"d/m/Y"|default:"—" }}</td>
-      <td>{% if t.completada %}Completada{% else %}{{ t.estado|default:"Pendiente" }}{% endif %}</td>
+      <td>{{ t.get_estado_display|default:"Pendiente" }}</td>
     </tr>
     {% endfor %}
   </table>

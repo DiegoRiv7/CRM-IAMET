@@ -670,7 +670,10 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 /* Vendedor y contacto en UNA línea, mitad y mitad: el rol se cae porque el
    avatar de color ya distingue quién es quién y el título lo aclara al pasar
    el cursor. Esa tarjeta ocupaba tres renglones para dos nombres. */
-.opp-v4 .wo4-personas {
+/* La regla del lateral (.opp-v4 .wo4-side > .wo4-card) impone flex-direction
+   column con MÁS especificidad, así que aquí hay que igualarla o los dos
+   quedan uno debajo del otro en vez de lado a lado. */
+.opp-v4 .wo4-side > .wo4-card.wo4-personas {
     display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;
 }
 .opp-v4 .wo4-personas .wo4-persona { margin-top: 0; gap: 9px; min-width: 0; }

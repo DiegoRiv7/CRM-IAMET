@@ -5214,8 +5214,10 @@ def oportunidad_pdf(request, oportunidad_id):
 
     registrar_vista_oportunidad(request.user, opp.id, 'Imprimió el expediente')
 
+    # TareaOportunidad usa `estado` y `responsable` — NO `completada` ni
+    # `asignado_a`, que son los del modelo Tarea (el de proyectos).
     tareas = list(TareaOportunidad.objects.filter(oportunidad=opp)
-                  .select_related('asignado_a').order_by('completada', 'fecha_limite')[:40])
+                  .select_related('responsable').order_by('estado', 'fecha_limite')[:40])
     actividades = list(Actividad.objects.filter(oportunidad=opp)
                        .order_by('-fecha_inicio')[:40])
     cotizaciones = list(Cotizacion.objects.filter(oportunidad=opp)
