@@ -9016,13 +9016,15 @@ _PDF_RE_PO = [
 ]
 
 
-def _pdf_datos_finos(texto):
+def _pdf_datos_finos(texto, archivos=None):
     """Datos duros de una factura/OC sacados por CÓDIGO (cero tokens): número
     de orden, monto total y moneda. Solo devuelve lo que matchea claro; lo
-    dudoso se queda fuera (precisión sobre cobertura)."""
+    dudoso se queda fuera (precisión sobre cobertura). `archivos` = nombres de
+    los PDFs (el nombre suele traer la PO: PO-6901704943_v1_20260713.pdf)."""
     datos = {}
-    if not texto:
+    if not texto and not archivos:
         return datos
+    texto = texto or ''
     for rx in _PDF_RE_PO:
         m = rx.search(texto)
         if m:
@@ -9032,6 +9034,22 @@ def _pdf_datos_finos(texto):
             if 4 <= len(po) <= 20 and any(ch.isdigit() for ch in po):
                 datos['po'] = po
                 break
+    # Sin etiqueta clara en el texto: el NOMBRE del archivo suele traerla
+    # (formato real de clientes: PO-6901704943_v1_20260713.pdf).
+    if 'po' not in datos:
+        for nom in (archivos or []):
+            m = re.search(r'\bPO[-_ ]?(\d{5,12})\b', nom or '', re.I)
+            if m:
+                datos['po'] = m.group(1)
+                break
+    # Layouts de tabla (tipo BD): "PO NUMBER" queda en el encabezado y el
+    # número aparece líneas después, SOLO en su renglón. Se acepta un número
+    # de 9-12 dígitos sin cero inicial (los códigos internos tipo 0000022116
+    # empiezan en cero) únicamente si el doc habla de purchase order / OC.
+    if 'po' not in datos and re.search(r'purchase\s+order|orden\s+de\s+compra', texto, re.I):
+        m = re.search(r'^\s*([1-9]\d{8,11})\s*$', texto, re.M)
+        if m:
+            datos['po'] = m.group(1)
     # Número de factura: "Factura A1234", "Invoice 0427736", "Folio 12345"
     m = re.search(r'(?:factura|invoice|folio)\s*(?:no\.?|num\.?|#|:)?\s*([A-Z]{0,4}-?\d{3,12})\b',
                   texto, re.I)
@@ -9044,7 +9062,9 @@ def _pdf_datos_finos(texto):
         r'(?:total|importe)[^\n\d$]{0,30}\$?\s*(\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})',
         texto, re.I)
     if not montos:
+        # "$25,000.00" o el formato con la moneda de sufijo: "648.00 USD"
         montos = re.findall(r'\$\s*(\d{1,3}(?:,\d{3})+\.\d{2})', texto)
+        montos += [m[0] for m in re.findall(r'(\d[\d,]*\.\d{2})\s*(USD|MXN|MN)\b', texto)]
     try:
         vals = sorted({float(s.replace(',', '')) for s in montos}, reverse=True)
         if vals and vals[0] >= 100:  # importes chicos suelen ser ruido (IVA unitario, flete)
@@ -9165,11 +9185,11 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
     pdf_datos, pdf_archivos = {}, []
     try:
         pdf_texto, pdf_archivos = _pdf_texto_correo(client_correo)
-        pdf_datos = _pdf_datos_finos(pdf_texto)
+        pdf_datos = _pdf_datos_finos(pdf_texto, pdf_archivos)
         pdf_datos.pop('factura', None)  # el cliente no nos factura
         if reply_correo:
             t_env, arch_env = _pdf_texto_correo(reply_correo)
-            fac = _pdf_datos_finos(t_env).get('factura')
+            fac = _pdf_datos_finos(t_env, arch_env).get('factura')
             if fac:
                 pdf_datos['factura'] = fac
                 pdf_archivos += arch_env
