@@ -274,6 +274,16 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                         <div class="wo4-drive" data-wo="driveList"></div>
                     </div>
 
+                    {% comment %}
+                    El CLIENTE ya vive en la franja de arriba; repetirlo aquí
+                    anulaba el espacio que se ganó al subirlo. Queda el vendedor
+                    y el contacto, que no están arriba.
+
+                    clienteName sigue en el DOM (oculto): es el elemento sobre el
+                    que trabaja el autocompletado para cambiar de cliente. El
+                    enlace de abajo es el que lo dispara, para no perder esa
+                    función al quitar la fila.
+                    {% endcomment %}
                     <div class="wo4-card wo4-pad wo4-personas">
                         <div class="wo4-persona">
                             <span class="wo4-av blue" data-wo="vendedorAvatar"></span>
@@ -285,9 +295,13 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                         <div class="wo4-persona">
                             <span class="wo4-av purple" data-wo="clienteAvatar"></span>
                             <div style="min-width:0;">
-                                <div class="wo4-persona-n" data-wo="clienteName"></div>
-                                <div class="wo4-persona-r">Cliente · <span data-wo="contactoName"></span></div>
+                                <div class="wo4-persona-n" data-wo="contactoName"></div>
+                                <div class="wo4-persona-r">Contacto</div>
                             </div>
+                        </div>
+                        <div class="wo4-cambiar-cli">
+                            <span class="wo4-persona-n" data-wo="clienteName" style="display:none;"></span>
+                            <button type="button" class="wo4-link" data-action="cambiar-cliente">Cambiar cliente</button>
                         </div>
                     </div>
 

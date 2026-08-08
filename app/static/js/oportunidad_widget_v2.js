@@ -419,6 +419,13 @@
             case 'ver-vistas':
                 abrirPanelVistas(inst);
                 break;
+            case 'cambiar-cliente':
+                /* El autocompletado vive sobre el nodo clienteName, que ahora
+                   está oculto. Se muestra para que el usuario vea sobre qué
+                   escribe y lo cabecea el mismo setupEditable de siempre. */
+                var cn = q(inst, 'clienteName');
+                if (cn) { cn.style.display = ''; if (cn.onclick) cn.onclick(); }
+                break;
             case 'abrir-cliente':
                 var cli = inst.data && inst.data.cliente;
                 if (!cli || !cli.id) {
@@ -785,7 +792,11 @@
         var clienteNombre = d.cliente ? d.cliente.nombre : 'Sin empresa';
         q(inst, 'clienteAvatar').textContent = getInitials(clienteNombre);
         q(inst, 'clienteName').textContent = clienteNombre;
-        q(inst, 'contactoName').textContent = d.contacto || 'No asignado';
+        // La fila de abajo ya es el CONTACTO; el cliente vive en la franja.
+        var contacto = d.contacto || 'Sin contacto';
+        q(inst, 'contactoName').textContent = contacto;
+        q(inst, 'clienteAvatar').textContent = getInitials(
+            d.contacto ? contacto : clienteNombre);
 
         // ── Cliente en la franja ──
         var cabCli = q(inst, 'clienteHead');
@@ -887,13 +898,19 @@
                 inst.vistas = data;
                 var avs = q(inst, 'ojoAvatares');
                 var tot = q(inst, 'ojoTotal');
-                // Solo los tres más recientes en la franja; el resto en el panel.
-                var top = (data.vistas || []).filter(function (v) { return v.ultima_vez; }).slice(0, 3);
-                if (avs) avs.innerHTML = top.map(function (v) {
-                    return _avatarHtml(v, 'wo4-ojo-av');
-                }).join('');
-                var n = (data.vistas || []).filter(function (v) { return v.ultima_vez; }).length;
-                if (tot) tot.textContent = n > 3 ? ('+' + (n - 3)) : '';
+                var vistos = (data.vistas || []).filter(function (v) { return v.ultima_vez; });
+                var n = vistos.length;
+                /* Con una sola persona los avatares apilados no aportan y el
+                   círculo compite con el icono del ojo: ahí va solo el número.
+                   A partir de dos sí se leen como grupo. */
+                if (avs) {
+                    avs.innerHTML = n >= 2
+                        ? vistos.slice(0, 3).map(function (v) {
+                              return _avatarHtml(v, 'wo4-ojo-av');
+                          }).join('')
+                        : '';
+                }
+                if (tot) tot.textContent = (n >= 2 && n > 3) ? ('+' + (n - 3)) : String(n);
                 btn.title = n === 1 ? '1 persona ha visto esta oportunidad'
                                     : n + ' personas han visto esta oportunidad';
             })
@@ -1188,8 +1205,16 @@
             if (clienteNameEl.querySelector('.wo-inline-ac')) return;
             makeAutocomplete(clienteNameEl, 'Buscar cliente...', '/app/api/buscar-clientes/', function (item) {
                 clienteNameEl.textContent = item.nombre;
-                clienteAvatarEl.textContent = getInitials(item.nombre);
+                clienteNameEl.style.display = 'none';   // vuelve a ocultarse
                 if (item.contacto_principal) contactoEl.textContent = item.contacto_principal;
+                // El avatar de esa fila es el del CONTACTO; si no hay, el del cliente.
+                clienteAvatarEl.textContent = getInitials(
+                    item.contacto_principal || item.nombre);
+                // El cliente se muestra arriba: hay que refrescar la franja.
+                var cabN = q(inst, 'cabClienteNombre');
+                var cabA = q(inst, 'cabClienteAv');
+                if (cabN) cabN.textContent = item.nombre;
+                if (cabA) cabA.textContent = getInitials(item.nombre);
                 if (item.id !== (inst.data.cliente ? inst.data.cliente.id : null)) {
                     fieldChanged(inst, 'cliente', item.id);
                 }
