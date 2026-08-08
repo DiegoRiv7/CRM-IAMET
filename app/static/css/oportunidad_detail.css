@@ -242,9 +242,10 @@ body {
 .opp-v4 .wo4-ojo-n { color: var(--w4-gris); font-variant-numeric: tabular-nums; }
 /* Sin avatares (una sola persona) el hueco del contenedor sobra. */
 .opp-v4 .wo4-ojo-avs:empty { display: none; }
+/* Imprimir: mismo molde que el ojo, solo el icono. */
+.opp-v4 .wo4-imprimir { width: 32px; padding: 0; justify-content: center; color: var(--w4-gris); }
 
 /* Enlace "Cambiar cliente" al pie de la tarjeta de personas. */
-.opp-v4 .wo4-cambiar-cli { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--w4-linea); }
 
 /* Los temas claros no pintan franja: ahí el velo sobraría y los chips blancos
    quedarían sobre blanco. Se apaga el velo y los chips toman borde. */
@@ -300,6 +301,14 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 .opp-v4 .wo4-tipo:hover { background: var(--w4-azul-dark); }
 .opp-v4 .wo4-tipo.is-fijo { cursor: default; }
 .opp-v4 .wo4-tipo.is-fijo:hover { background: var(--w4-azul); }
+
+/* Tipo de venta dentro del cuadro del trato, con su etiqueta. */
+.opp-v4 .wo4-tipo-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding-bottom: 12px; margin-bottom: 12px;
+    border-bottom: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-tipo-row .wo4-lbl { margin-bottom: 0; }
 
 /* ── Barra de etapa ──
    El pipeline usa las clases de siempre (.wo-pipeline-container, .wo-stage-btn…)
@@ -658,6 +667,18 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 .opp-v4 .wo4-persona { display: flex; align-items: center; gap: 11px; margin-top: 13px; }
 /* En su propia tarjeta, la primera persona no necesita el margen de arriba. */
 .opp-v4 .wo4-personas .wo4-persona:first-child { margin-top: 0; }
+/* Vendedor y contacto en UNA línea, mitad y mitad: el rol se cae porque el
+   avatar de color ya distingue quién es quién y el título lo aclara al pasar
+   el cursor. Esa tarjeta ocupaba tres renglones para dos nombres. */
+.opp-v4 .wo4-personas {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;
+}
+.opp-v4 .wo4-personas .wo4-persona { margin-top: 0; gap: 9px; min-width: 0; }
+.opp-v4 .wo4-personas .wo4-persona:last-of-type {
+    padding-left: 10px; border-left: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-personas .wo4-av { width: 28px; height: 28px; font-size: .68rem; }
+.opp-v4 .wo4-personas .wo4-persona-n { font-size: .84rem; min-width: 0; }
 .opp-v4 .wo4-av {
     width: 35px; height: 35px; border-radius: 50%; color: #fff;
     font-size: .76rem; font-weight: 700;

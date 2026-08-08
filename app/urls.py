@@ -189,6 +189,8 @@ urlpatterns = [
     path('api/crear-oportunidad/', views.api_crear_oportunidad, name='api_crear_oportunidad'),
     path('api/oportunidad/<int:id>/detalle/', views.oportunidad_detalle_api, name='oportunidad_detalle_api'),
     path('api/oportunidad-detalle-crm/<int:oportunidad_id>/', views.api_oportunidad_detalle_crm, name='api_oportunidad_detalle_crm'),
+    # Expediente en PDF de la oportunidad (formato de factura).
+    path('oportunidad/<int:oportunidad_id>/pdf/', views.oportunidad_pdf, name='oportunidad_pdf'),
     # Panel del ojo: quién ha abierto la oportunidad y veto puntual de acceso.
     path('api/oportunidad/<int:oportunidad_id>/vistas/', views.api_oportunidad_vistas, name='api_oportunidad_vistas'),
     path('api/oportunidad/<int:oportunidad_id>/bloquear-acceso/', views.api_oportunidad_bloquear_acceso, name='api_oportunidad_bloquear_acceso'),

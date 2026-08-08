@@ -1,0 +1,238 @@
+{% comment %}
+Expediente de la oportunidad en PDF, con aire de factura.
+
+Lo pinta views_crm.oportunidad_pdf con WeasyPrint, así que aquí NO se usan
+estáticos por URL (el logo llega en base64) ni nada que dependa de JS.
+
+La fecha de arriba es la de EMISIÓN, no la de cierre: en una hoja impresa lo
+que importa es cuándo se sacó.
+{% endcomment %}{% load l10n %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Oportunidad #{{ opp.id }}</title>
+<style>
+  @page { size: letter; margin: 14mm 13mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 9.5pt; color: #1F2937; margin: 0; line-height: 1.45;
+  }
+  h1, h2, h3 { margin: 0; }
+
+  /* ── Encabezado ── */
+  .cab { display: flex; align-items: flex-start; border-bottom: 2.5pt solid #0F172A; padding-bottom: 9pt; }
+  .cab-logo { width: 40%; }
+  .cab-logo img { height: 30pt; }
+  .cab-emp { font-size: 7.5pt; color: #6B7280; margin-top: 4pt; line-height: 1.35; }
+  .cab-doc { width: 60%; text-align: right; }
+  .cab-doc h1 { font-size: 15pt; letter-spacing: .5pt; color: #0F172A; }
+  .cab-doc .folio { font-size: 10pt; font-weight: bold; color: #2563EB; margin-top: 2pt; }
+  .cab-doc .fecha { font-size: 8pt; color: #6B7280; margin-top: 3pt; }
+
+  /* ── Título del trato ── */
+  .trato { margin-top: 12pt; }
+  .trato h2 { font-size: 13pt; color: #0F172A; }
+  .trato .tipo {
+    display: inline-block; margin-top: 4pt; padding: 2pt 7pt;
+    background: #2563EB; color: #fff; font-size: 7.5pt; font-weight: bold;
+    border-radius: 3pt; letter-spacing: .3pt;
+  }
+  .trato .etapa {
+    display: inline-block; margin-top: 4pt; margin-left: 5pt; padding: 2pt 7pt;
+    background: #F1F5F9; color: #334155; font-size: 7.5pt; font-weight: bold;
+    border-radius: 3pt;
+  }
+
+  /* ── Partes ── */
+  .partes { display: flex; gap: 10pt; margin-top: 12pt; }
+  .parte { width: 50%; border: .6pt solid #D1D5DB; border-radius: 3pt; padding: 7pt 9pt; }
+  .parte .lbl { font-size: 7pt; font-weight: bold; color: #6B7280; letter-spacing: .5pt; text-transform: uppercase; }
+  .parte .val { font-size: 10pt; font-weight: bold; color: #0F172A; margin-top: 2pt; }
+  .parte .sub { font-size: 8.5pt; color: #4B5563; margin-top: 1pt; }
+
+  /* ── Metadatos: lo importante de la hoja ── */
+  .meta { margin-top: 12pt; border: .6pt solid #D1D5DB; border-radius: 3pt; }
+  .meta-t {
+    background: #0F172A; color: #fff; font-size: 8pt; font-weight: bold;
+    letter-spacing: .6pt; padding: 4pt 9pt; text-transform: uppercase;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 5pt 9pt; border-bottom: .5pt solid #E5E7EB; vertical-align: top; }
+  .meta tr:last-child td { border-bottom: none; }
+  .meta .k { width: 22%; font-size: 8pt; color: #6B7280; }
+  .meta .v { width: 28%; font-size: 9.5pt; font-weight: bold; color: #0F172A; }
+  .meta .destacado { color: #047857; }
+
+  /* ── Secciones ── */
+  .sec { margin-top: 12pt; page-break-inside: avoid; }
+  .sec-t {
+    font-size: 8pt; font-weight: bold; letter-spacing: .6pt; color: #0F172A;
+    text-transform: uppercase; border-bottom: 1.2pt solid #0F172A;
+    padding-bottom: 3pt; margin-bottom: 5pt;
+  }
+  .tabla td, .tabla th { padding: 4pt 6pt; border-bottom: .5pt solid #E5E7EB; font-size: 8.5pt; }
+  .tabla th {
+    text-align: left; font-size: 7pt; color: #6B7280; text-transform: uppercase;
+    letter-spacing: .4pt; border-bottom: .8pt solid #D1D5DB;
+  }
+  .tabla .der { text-align: right; }
+  .hecha { color: #6B7280; text-decoration: line-through; }
+  .vacio { font-size: 8.5pt; color: #9CA3AF; padding: 5pt 0; }
+
+  /* ── Conversación ── */
+  .msg { padding: 5pt 0; border-bottom: .5pt solid #F1F5F9; page-break-inside: avoid; }
+  .msg:last-child { border-bottom: none; }
+  .msg-cab { font-size: 7.5pt; color: #6B7280; }
+  .msg-cab b { color: #334155; }
+  .msg-txt { font-size: 8.5pt; color: #1F2937; margin-top: 1pt; }
+
+  .pie {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    border-top: .5pt solid #D1D5DB; padding-top: 4pt;
+    font-size: 7pt; color: #9CA3AF; display: flex;
+  }
+  .pie .izq { width: 70%; }
+  .pie .der { width: 30%; text-align: right; }
+</style>
+</head>
+<body>
+
+<div class="cab">
+  <div class="cab-logo">
+    {% if logo_b64 %}<img src="data:image/png;base64,{{ logo_b64 }}" alt="IAMET">{% endif %}
+    <div class="cab-emp">IAMET · Evolución Tecnológica<br>Expediente generado desde el CRM</div>
+  </div>
+  <div class="cab-doc">
+    <h1>EXPEDIENTE DE OPORTUNIDAD</h1>
+    <div class="folio">OPP-{{ opp.id|unlocalize }}</div>
+    <div class="fecha">Emitido: {{ fecha_emision|date:"d/m/Y H:i" }}<br>Por: {{ emitido_por }}</div>
+  </div>
+</div>
+
+<div class="trato">
+  <h2>{{ opp.oportunidad|default:"Sin título" }}</h2>
+  <span class="tipo">
+    {% if opp.tipo_negociacion == 'proyecto' %}VENTA PROYECTO
+    {% elif opp.tipo_negociacion == 'bitrix_proyecto' %}PROYECTO BITRIX24
+    {% else %}VENTA RUNRATE{% endif %}
+  </span>
+  {% if opp.etapa_corta %}<span class="etapa">{{ opp.etapa_corta }}</span>{% endif %}
+</div>
+
+<div class="partes">
+  <div class="parte">
+    <div class="lbl">Cliente</div>
+    <div class="val">{{ cliente }}</div>
+    <div class="sub">Contacto: {{ contacto }}</div>
+  </div>
+  <div class="parte">
+    <div class="lbl">Responsable</div>
+    <div class="val">{{ vendedor|default:"Sin asignar" }}</div>
+    <div class="sub">Creada: {{ opp.fecha_creacion|date:"d/m/Y" }}</div>
+  </div>
+</div>
+
+<div class="meta">
+  <div class="meta-t">Datos de la oportunidad</div>
+  <table>
+    <tr>
+      <td class="k">Monto</td>
+      <td class="v">${{ opp.monto|floatformat:2|default:"0.00" }}</td>
+      <td class="k">Orden de compra (PO)</td>
+      <td class="v">{{ opp.po_number|default:"—" }}</td>
+    </tr>
+    <tr>
+      <td class="k">Probabilidad de cierre</td>
+      <td class="v">{{ opp.probabilidad_cierre|default:0 }}%</td>
+      <td class="k">Factura</td>
+      <td class="v">{{ opp.factura_numero|default:"—" }}</td>
+    </tr>
+    <tr>
+      <td class="k">Producto</td>
+      <td class="v">{{ opp.producto|default:"—" }}</td>
+      <td class="k">Área</td>
+      <td class="v">{{ opp.area|default:"—" }}</td>
+    </tr>
+    <tr>
+      <td class="k">Etapa actual</td>
+      <td class="v">{{ opp.etapa_corta|default:"—" }}</td>
+      <td class="k">Último movimiento</td>
+      <td class="v">{{ opp.fecha_actualizacion|date:"d/m/Y"|default:"—" }}</td>
+    </tr>
+  </table>
+</div>
+
+{% if cotizaciones %}
+<div class="sec">
+  <div class="sec-t">Cotizaciones</div>
+  <table class="tabla">
+    <tr><th>Folio</th><th>Título</th><th>Fecha</th><th class="der">Total</th></tr>
+    {% for c in cotizaciones %}
+    <tr>
+      <td>COT-{{ c.id|unlocalize }}</td>
+      <td>{{ c.titulo|default:"Sin título" }}</td>
+      <td>{{ c.fecha_creacion|date:"d/m/Y" }}</td>
+      <td class="der">${{ c.total|floatformat:2|default:"0.00" }} {{ c.moneda|default:"MXN" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<div class="sec">
+  <div class="sec-t">Tareas</div>
+  {% if tareas %}
+  <table class="tabla">
+    <tr><th>Tarea</th><th>Responsable</th><th>Vence</th><th>Estado</th></tr>
+    {% for t in tareas %}
+    <tr class="{% if t.completada %}hecha{% endif %}">
+      <td>{{ t.titulo|default:"Sin título" }}</td>
+      <td>{% if t.asignado_a %}{{ t.asignado_a.get_full_name|default:t.asignado_a.username }}{% else %}—{% endif %}</td>
+      <td>{{ t.fecha_limite|date:"d/m/Y"|default:"—" }}</td>
+      <td>{% if t.completada %}Completada{% else %}{{ t.estado|default:"Pendiente" }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<div class="vacio">Sin tareas registradas.</div>{% endif %}
+</div>
+
+<div class="sec">
+  <div class="sec-t">Actividades</div>
+  {% if actividades %}
+  <table class="tabla">
+    <tr><th>Actividad</th><th>Tipo</th><th>Fecha</th><th>Estado</th></tr>
+    {% for a in actividades %}
+    <tr class="{% if a.completada %}hecha{% endif %}">
+      <td>{{ a.titulo|default:"Sin título" }}</td>
+      <td>{{ a.get_tipo_actividad_display|default:a.tipo_actividad }}</td>
+      <td>{{ a.fecha_inicio|date:"d/m/Y H:i"|default:"—" }}</td>
+      <td>{% if a.completada %}Completada{% else %}Pendiente{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<div class="vacio">Sin actividades registradas.</div>{% endif %}
+</div>
+
+<div class="sec">
+  <div class="sec-t">Resumen de la conversación</div>
+  {% if mensajes %}
+    {% for m in mensajes %}
+    <div class="msg">
+      <div class="msg-cab">
+        <b>{% if m.usuario %}{{ m.usuario.get_full_name|default:m.usuario.username }}{% else %}Sistema{% endif %}</b>
+        · {{ m.fecha|date:"d/m/Y H:i" }}
+      </div>
+      <div class="msg-txt">{{ m.texto|default:"(archivo adjunto)"|truncatechars:280 }}</div>
+    </div>
+    {% endfor %}
+  {% else %}<div class="vacio">Sin mensajes en la conversación.</div>{% endif %}
+</div>
+
+<div class="pie">
+  <div class="izq">Documento interno de IAMET · Generado desde el CRM el {{ fecha_emision|date:"d/m/Y H:i" }} por {{ emitido_por }}.</div>
+  <div class="der">OPP-{{ opp.id|unlocalize }}</div>
+</div>
+
+</body>
+</html>

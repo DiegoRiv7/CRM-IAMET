@@ -55,9 +55,6 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <span class="wo4-crumb-proy" data-wo="proyectoHeader" style="display:none;"></span>
                     <div class="wo4-title-row">
                         <h1 class="wo4-title wo-title" data-wo="title"></h1>
-                        <!-- Tipo de venta: chip discreto. El clic sigue abriendo el modal de
-                             confirmación, porque cambiarlo reinicia las etapas. -->
-                        <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
                     </div>
                 </div>
 
@@ -76,6 +73,12 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
                         <span class="wo4-ojo-avs" data-wo="ojoAvatares"></span>
                         <span class="wo4-ojo-n" data-wo="ojoTotal"></span>
+                    </button>
+
+                    <!-- Imprimir el expediente en PDF -->
+                    <button type="button" class="wo4-ojo wo4-imprimir" data-action="imprimir-pdf"
+                        data-wo="btnImprimir" title="Imprimir el expediente en PDF">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                     </button>
 
                     <div class="wo4-win">
@@ -238,6 +241,13 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                 <span class="wo4-lbl">Área</span>
                                 <div class="wo4-extra-v" data-wo="area">-</div>
                             </div>
+                            {% comment %}
+                            El cliente se muestra en la franja de arriba; cambiarlo
+                            vive aquí, con el resto de los campos editables.
+                            {% endcomment %}
+                            <div class="wo4-extra-full">
+                                <button type="button" class="wo4-link" data-action="cambiar-cliente">Cambiar cliente</button>
+                            </div>
                         </div>
 
                     </div>
@@ -285,29 +295,27 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     función al quitar la fila.
                     {% endcomment %}
                     <div class="wo4-card wo4-pad wo4-personas">
-                        <div class="wo4-persona">
+                        <div class="wo4-persona" title="Vendedor">
                             <span class="wo4-av blue" data-wo="vendedorAvatar"></span>
-                            <div style="min-width:0;">
-                                <div class="wo4-persona-n" data-wo="vendedorName"></div>
-                                <div class="wo4-persona-r">Vendedor</div>
-                            </div>
+                            <span class="wo4-persona-n" data-wo="vendedorName"></span>
                         </div>
-                        <div class="wo4-persona">
+                        <div class="wo4-persona" title="Contacto">
                             <span class="wo4-av purple" data-wo="clienteAvatar"></span>
-                            <div style="min-width:0;">
-                                <div class="wo4-persona-n" data-wo="contactoName"></div>
-                                <div class="wo4-persona-r">Contacto</div>
-                            </div>
+                            <span class="wo4-persona-n" data-wo="contactoName"></span>
                         </div>
-                        <div class="wo4-cambiar-cli">
-                            <span class="wo4-persona-n" data-wo="clienteName" style="display:none;"></span>
-                            <button type="button" class="wo4-link" data-action="cambiar-cliente">Cambiar cliente</button>
-                        </div>
+                        <span class="wo4-persona-n" data-wo="clienteName" style="display:none;"></span>
                     </div>
 
-                    <!-- Proyecto: solo en oportunidades de tipo proyecto. Cuando no hay
-                         ninguno vinculado, el atajo para vincularlo. -->
-                    <div class="wo4-card wo4-pad" data-wo="proyectoCard" style="display:none;">
+                    {% comment %}
+                    Cuadro del trato: permanente (antes solo salía en las de tipo
+                    proyecto) y ahora también carga el tipo de venta, que estaba
+                    en la franja de arriba y la tenía apretada.
+                    {% endcomment %}
+                    <div class="wo4-card wo4-pad" data-wo="proyectoCard">
+                        <div class="wo4-tipo-row">
+                            <span class="wo4-lbl">Tipo de venta</span>
+                            <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
+                        </div>
                         <div class="wo4-chead">
                             <h3>Proyecto</h3>
                             <button type="button" class="wo4-link" data-action="vincular-proyecto">Vincular</button>

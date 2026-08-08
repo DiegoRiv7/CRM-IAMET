@@ -419,6 +419,11 @@
             case 'ver-vistas':
                 abrirPanelVistas(inst);
                 break;
+            case 'imprimir-pdf':
+                // Pestaña nueva: WeasyPrint devuelve el PDF inline y el
+                // navegador ya trae su propio visor con botón de imprimir.
+                window.open('/app/oportunidad/' + inst.oppId + '/pdf/', '_blank');
+                break;
             case 'cambiar-cliente':
                 /* El autocompletado vive sobre el nodo clienteName, que ahora
                    está oculto. Se muestra para que el usuario vea sobre qué
@@ -1972,12 +1977,20 @@
     /* Proyecto: cuando existe se muestra como RUTA en el encabezado (ahí
        cabe el nombre completo, que suele ser largo); cuando no, aparece la
        tarjeta del lateral con el atajo para vincularlo. Nunca los dos. */
+    /* El cuadro ahora es permanente: además del proyecto carga el tipo de
+       venta, que vivía en la franja. En las de runrate no se buscan proyectos
+       vinculados, pero el cuadro se queda con el tipo y el atajo de vincular. */
     function renderProyecto(inst, d) {
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
         q(inst, 'proyectoHeader').style.display = 'none';
-        q(inst, 'proyectoCard').style.display = 'none';
-        if (esProyecto) cargarProyectos(inst);
+        q(inst, 'proyectoCard').style.display = '';
+        if (esProyecto) {
+            cargarProyectos(inst);
+        } else {
+            q(inst, 'proyectoList').innerHTML =
+                '<div class="wo4-vacio">Sin proyecto vinculado</div>';
+        }
     }
 
     function cargarProyectos(inst) {

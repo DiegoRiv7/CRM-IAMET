@@ -5187,6 +5187,98 @@ def registrar_vista_oportunidad(user, oportunidad_id, accion=''):
 
 
 @login_required
+def oportunidad_pdf(request, oportunidad_id):
+    """Imprime la oportunidad como expediente en PDF, con formato de factura.
+
+    Lleva lo que se necesita para revisarla fuera del CRM: los metadatos (que
+    son lo importante), PO y factura, cliente y contacto, las tareas y
+    actividades, y un resumen de la conversación.
+
+    La fecha de cierre NO va: en una hoja impresa lo que importa es cuándo se
+    sacó, así que arriba va la fecha de emisión.
+    """
+    from .models import (Cotizacion, TareaOportunidad, Actividad,
+                         MensajeOportunidad)
+    from django.template.loader import render_to_string
+    import base64 as _b64
+    import os as _os
+
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_ver_oportunidad(request.user, opp.id):
+        return HttpResponse('No tienes acceso a esta oportunidad.', status=403)
+
+    # Al ingeniero sin acceso de supervisor se le ocultan los metadatos en
+    # pantalla; imprimirlos seria la puerta de atras.
+    if es_ingeniero_restringido(request.user):
+        return HttpResponse('No tienes permiso para imprimir esta oportunidad.', status=403)
+
+    registrar_vista_oportunidad(request.user, opp.id, 'Imprimió el expediente')
+
+    tareas = list(TareaOportunidad.objects.filter(oportunidad=opp)
+                  .select_related('asignado_a').order_by('completada', 'fecha_limite')[:40])
+    actividades = list(Actividad.objects.filter(oportunidad=opp)
+                       .order_by('-fecha_inicio')[:40])
+    cotizaciones = list(Cotizacion.objects.filter(oportunidad=opp)
+                        .order_by('-fecha_creacion')[:20])
+
+    # Resumen de la conversación: las notas y correos, sin la bitácora de
+    # Bitrix ni los marcadores internos, que en papel solo estorban.
+    mensajes = list(
+        MensajeOportunidad.objects.filter(oportunidad=opp)
+        .exclude(texto__startswith='[mail:')
+        .exclude(texto__startswith='[ACT')
+        .exclude(texto__startswith='[BITRIX_')
+        .select_related('usuario')
+        .order_by('-fecha')[:25]
+    )
+    mensajes.reverse()
+
+    logo_b64 = ''
+    try:
+        ruta = _os.path.join(settings.BASE_DIR, 'app', 'static', 'images', 'iamet_logo_tight.png')
+        with open(ruta, 'rb') as fh:
+            logo_b64 = _b64.b64encode(fh.read()).decode('ascii')
+    except Exception:
+        pass
+
+    contacto = ''
+    if opp.contacto:
+        if hasattr(opp.contacto, 'nombre'):
+            contacto = f"{opp.contacto.nombre} {opp.contacto.apellido or ''}".strip()
+        else:
+            contacto = str(opp.contacto)
+
+    ctx = {
+        'opp': opp,
+        'cliente': opp.cliente.nombre_empresa if opp.cliente else 'Sin cliente',
+        'contacto': contacto or 'Sin contacto',
+        'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario else '',
+        'emitido_por': request.user.get_full_name() or request.user.username,
+        # La fecha de la hoja es la de emisión, no la de cierre.
+        'fecha_emision': timezone.localtime(timezone.now()),
+        'tareas': tareas,
+        'actividades': actividades,
+        'cotizaciones': cotizaciones,
+        'mensajes': mensajes,
+        'logo_b64': logo_b64,
+    }
+
+    html = render_to_string('crm/oportunidad_pdf.html', ctx)
+    try:
+        from weasyprint import HTML as _HTML
+        pdf = _HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        logger.error('Oportunidad PDF: %s', e)
+        return HttpResponse('No se pudo generar el PDF: %s' % e, status=500)
+
+    nombre = 'Oportunidad-%s-%s.pdf' % (
+        opp.id, timezone.localtime(timezone.now()).strftime('%Y%m%d'))
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = 'inline; filename="%s"' % nombre
+    return resp
+
+
+@login_required
 def api_oportunidad_vistas(request, oportunidad_id):
     """GET: quién ha abierto esta oportunidad, cuándo y qué hizo.
 
