@@ -2218,7 +2218,7 @@
         _esc((d.pdf.archivos && d.pdf.archivos[0]) || 'adjunto') + ')</span></div>';
     }
     if (d.pdf && d.pdf.po) {
-      plan += '<div class="pend-foc-plan-row">Registro la orden de compra <b>' + _esc(d.pdf.po) + '</b> <span class="was">(del PDF adjunto)</span></div>';
+      plan += '<div class="pend-foc-plan-row">Registro la PO <b>' + _esc(d.pdf.po) + '</b> <span class="was">(del PDF adjunto)</span></div>';
     }
     if (d.pdf && d.pdf.factura) {
       plan += '<div class="pend-foc-plan-row">Registro la factura <b>' + _esc(d.pdf.factura) + '</b> <span class="was">(del PDF adjunto)</span></div>';
@@ -2243,7 +2243,7 @@
             '<input type="number" class="pend-foc-in" id="focUpdProb" min="0" max="100" value="' + prob + '"></div>' +
           '<div class="pend-foc-fld"><div class="pend-foc-k">Monto</div>' +
             '<input type="number" step="0.01" min="0" class="pend-foc-in" id="focUpdMonto" value="' + ((d.pdf && d.pdf.monto) || d.monto_actual || 0) + '"></div>' +
-          '<div class="pend-foc-fld"><div class="pend-foc-k">Orden de compra (PO)</div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">PO (orden de compra)</div>' +
             '<input type="text" class="pend-foc-in" id="focUpdPo" value="' + _esc((d.pdf && d.pdf.po) || d.po_actual || '') + '" placeholder="Sin orden de compra"></div>' +
           '<div class="pend-foc-fld"><div class="pend-foc-k">Factura</div>' +
             '<input type="text" class="pend-foc-in" id="focUpdFactura" value="' + _esc((d.pdf && d.pdf.factura) || d.factura_actual || '') + '" placeholder="Sin factura"></div>' +
@@ -2306,7 +2306,7 @@
           var sub = 'La etapa quedó en <b>' + _esc(payload.etapa || '-') + '</b> al <b>' + payload.probabilidad + '%</b>' +
             ', con el resumen en la bitácora.';
           if (montoCambio) sub += ' Monto: <b>$' + montoNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + '</b>.';
-          if (poCambio) sub += ' Orden de compra: <b>' + _esc(payload.po_number) + '</b>.';
+          if (poCambio) sub += ' PO: <b>' + _esc(payload.po_number) + '</b>.';
           if (facCambio) sub += ' Factura: <b>' + _esc(payload.factura_numero) + '</b>.';
           if (seg.creado && seg.fecha) sub += ' Agendé un seguimiento para el <b>' + _fechaLegible(seg.fecha) + '</b>.';
           box.innerHTML =

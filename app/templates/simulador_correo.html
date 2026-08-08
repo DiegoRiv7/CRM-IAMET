@@ -101,7 +101,7 @@
     { id: 'liberacion',  t: 'Liberación de pedido ⭐',             d: 'El caso real que antes salía como "posible venta". Ahora debe ser hito (Factura / orden recibida).' },
     { id: 'ligado',      t: 'Correo ligado a oportunidad (3-A)',   d: 'Crea oportunidad demo + correo ligado. Sale "te escribió sobre…". Respóndelo desde Correo y a los ~60s debe salir "Respondiste — ¿actualizo?".' },
     { id: 'hito_ligado', t: 'OC firmada ligada (hito)',            d: 'Orden de compra firmada sobre una oportunidad de $420,000. Debe ofrecer Actualizar de inmediato, sin esperar tu respuesta.' },
-    { id: 'po_pdf',      t: 'PO en PDF adjunto 📄',                 d: 'Correo ligado a una oportunidad SIN monto ni PO, con la orden de compra en PDF adjunto. Al abrir "Actualizar", la propuesta debe traer PO OC-77123 y monto $420,000.00 MXN leídos del PDF por código, cero IA.' },
+    { id: 'po_pdf',      t: 'PO en PDF adjunto 📄',                 d: 'Correo ligado a una oportunidad SIN monto ni PO, con la purchase order en PDF adjunto. El toast debe ofrecer Actualizar (hito), y la propuesta traer PO-77123 y $420,000.00 MXN leídos del PDF por código, cero IA.' },
     { id: 'insiste',     t: 'Cliente insiste (2º correo)',         d: 'Hilo con un correo de hace 3 días + uno de ahora, sin responder. El contexto debe decir "Es la segunda vez que te escribe".' },
     { id: 'ruido',       t: 'Promoción / newsletter',              d: 'Webinar promocional. NO debe pasar nada: veredicto ruido por filtro gratis, cero notificación, cero gasto de IA.' }
   ];

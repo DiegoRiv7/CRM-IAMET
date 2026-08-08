@@ -9011,8 +9011,8 @@ def _pdf_texto_correo(correo, max_chars=12000):
 _PDF_RE_PO = [
     re.compile(r'(?:orden\s+de\s+compra|purchase\s+order|p\.\s?o\.|no\.\s?de\s?orden)'
                r'\s*(?:no\.?|num\.?|#|:)?\s*([A-Z0-9][A-Z0-9\-/]{3,19})', re.I),
-    re.compile(r'\b(60\d{8})\b'),              # Skyworks: órdenes 60XXXXXXXX
-    re.compile(r'\b(PO[A-Z]{0,4}\d{3,10})\b'),  # POIAM1661 y similares
+    re.compile(r'\b(60\d{8})\b'),                     # Skyworks: órdenes 60XXXXXXXX
+    re.compile(r'\b(PO[-#]?[A-Z]{0,4}\d{3,10})\b'),   # POIAM1661, PO-77123 y similares
 ]
 
 
@@ -10356,10 +10356,12 @@ def _feed_correos_items(user, limite=6):
         item['opp_nombre'] = (opp.oportunidad if opp else '')
         a = ana.get(m.id)
         resumen = (a.resumen if a else '') or ''
-        # ¿Es hito? Solo con veredicto guardado (IA o reglas); sin análisis aún,
-        # tarjeta neutra de "responder" — no arriesgar una etiqueta de factura
-        # por puras palabras clave (confianza primero).
-        es_hito = bool(a and a.categoria == 'hito')
+        # ¿Es hito? Requiere veredicto guardado (confianza primero: sin análisis
+        # aún, tarjeta neutra). PERO en un correo YA LIGADO a la oportunidad,
+        # las palabras duras (orden de compra / factura / purchase order / pago)
+        # mandan aunque la IA lo haya etiquetado 'respuesta' — el código es las
+        # manos: si el cliente manda su PO, hay que ofrecer actualizar SIEMPRE.
+        es_hito = bool(a) and (a.categoria == 'hito' or _cor_es_hito(m.asunto, m.cuerpo_texto))
         if es_hito:
             item['categoria'] = 'Factura / orden recibida'
             item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
@@ -11132,8 +11134,8 @@ def _sim_pdf_po(numero, total_str):
         'ACEROS DEL NORTE S.A. DE C.V.',
         'Av. Industrial 2400, Parque Norte, Monterrey N.L.',
         '',
-        'ORDEN DE COMPRA No. %s' % numero,
-        'Proveedor: IAMET',
+        'PURCHASE ORDER No. %s' % numero,
+        'Vendor / Proveedor: IAMET',
         'Concepto: Tableros de control — planta Este',
         '',
         'Subtotal: $362,068.97',
@@ -11195,9 +11197,9 @@ _SIM_ESCENARIOS = {
     },
     'po_pdf': {
         'nombre': 'PO en PDF adjunto (extracción sin IA)',
-        'esperado': ("Toast hito con Actualizar. La propuesta debe traer 'Registro la orden de "
-                     "compra OC-77123' y 'Pongo el monto en $420,000.00 MXN' — sacados del PDF "
-                     "adjunto por CÓDIGO, cero tokens."),
+        'esperado': ("Toast hito con Actualizar (aunque la IA diga 'respuesta': las palabras "
+                     "PO/orden mandan en correos ligados). La propuesta debe traer 'Registro la "
+                     "PO PO-77123' y 'Pongo el monto en $420,000.00 MXN' — del PDF, cero tokens."),
     },
     'insiste': {
         'nombre': 'Cliente insiste (2do correo del hilo)',
@@ -11267,14 +11269,14 @@ def _sim_ejecutar(user, esc):
         opp = _sim_opp(user, '[DEMO] Tableros de control planta Este', monto=0, prob=70)
         m = _sim_correo(
             user, 'Laura Mendoza', 'compras@%s' % dom,
-            'Adjunto orden de compra en PDF',
-            'Estimado proveedor:\n\nLe adjunto en PDF la orden de compra debidamente '
+            'PO PO-77123 — tableros planta Este',
+            'Estimado proveedor:\n\nLe adjunto en PDF la purchase order debidamente '
             'autorizada, correspondiente a los tableros de control de la planta Este. '
             'Favor de confirmar recepción y tiempo de entrega.\n\n'
             'Laura Mendoza\nCompras — Aceros del Norte', opp=opp)
-        pdf = _sim_pdf_po('OC-77123', '420,000.00')
+        pdf = _sim_pdf_po('PO-77123', '420,000.00')
         MailAdjunto.objects.create(
-            correo=m, nombre_archivo='OC-77123.pdf', content_type='application/pdf',
+            correo=m, nombre_archivo='PO-77123.pdf', content_type='application/pdf',
             tamanio_bytes=len(pdf), datos_b64=_b64.b64encode(pdf).decode())
         m.tiene_adjuntos = True
         m.save(update_fields=['tiene_adjuntos'])
