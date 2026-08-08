@@ -419,6 +419,31 @@
             case 'ver-vistas':
                 abrirPanelVistas(inst);
                 break;
+            case 'abrir-cliente':
+                var cli = inst.data && inst.data.cliente;
+                if (!cli || !cli.id) {
+                    notify('Esta oportunidad no tiene cliente vinculado', 'error');
+                    break;
+                }
+                /* openClienteModal vive en crm_main.js y pinta sobre el widget
+                   #widgetClienteOportunidades, que no está en todas las páginas
+                   donde vive la oportunidad (reportes, por ejemplo). Si no se
+                   puede abrir ahí, se manda a la ficha del cliente. */
+                if (typeof window.openClienteModal === 'function'
+                    && document.getElementById('widgetClienteOportunidades')) {
+                    setFocus(inst);
+                    try {
+                        window.openClienteModal(cli.id, cli.nombre || '', 'info');
+                    } catch (e) {
+                        console.error('[oppV2] openClienteModal:', e);
+                        notify('No se pudo abrir la ficha del cliente', 'error');
+                    }
+                } else {
+                    // No hay página de clientes suelta: viven como pestaña del
+                    // CRM, así que ahí se manda en vez de inventar una ruta.
+                    notify('Abre la ficha desde la pestaña Clientes del CRM', 'error');
+                }
+                break;
             case 'toggle-info':
                 var card = q(inst, 'infoCard');
                 var abierto = card.classList.toggle('is-open');
@@ -766,14 +791,12 @@
         var cabCli = q(inst, 'clienteHead');
         if (cabCli) {
             var nomCli = (d.cliente && d.cliente.nombre) || '';
+            // Solo el nombre: el contacto ya vive en la tarjeta de personas y
+            // aquí robaba ancho al título.
+            cabCli.style.display = nomCli ? 'inline-flex' : 'none';
             if (nomCli) {
-                cabCli.style.display = '';
                 q(inst, 'cabClienteAv').textContent = getInitials(nomCli);
                 q(inst, 'cabClienteNombre').textContent = nomCli;
-                var cont = q(inst, 'cabClienteContacto');
-                cont.textContent = d.contacto || 'Sin contacto';
-            } else {
-                cabCli.style.display = 'none';
             }
         }
 

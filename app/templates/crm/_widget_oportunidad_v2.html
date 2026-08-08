@@ -63,13 +63,12 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
 
                 <div class="wo4-head-right">
                     <!-- Cliente: sube del lateral a la franja -->
-                    <div class="wo4-cliente" data-wo="clienteHead" style="display:none;">
+                    <button type="button" class="wo4-cliente" data-wo="clienteHead"
+                        data-action="abrir-cliente" style="display:none;"
+                        title="Ver la ficha del cliente">
                         <span class="wo4-cliente-av" data-wo="cabClienteAv"></span>
-                        <span class="wo4-cliente-b">
-                            <span class="wo4-cliente-n" data-wo="cabClienteNombre"></span>
-                            <span class="wo4-cliente-c" data-wo="cabClienteContacto"></span>
-                        </span>
-                    </div>
+                        <span class="wo4-cliente-n" data-wo="cabClienteNombre"></span>
+                    </button>
 
                     <!-- Ojo: quién ha abierto esta oportunidad -->
                     <button type="button" class="wo4-ojo" data-action="ver-vistas"
