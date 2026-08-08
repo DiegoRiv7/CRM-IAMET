@@ -9158,12 +9158,21 @@ def api_asistente_oportunidad_update_draft(request, correo_id):
     etapa_sug, prob_sug, resumen = _update_draft_ia(
         opp, etapas, client_correo.asunto, cuerpo, respuesta)
 
-    # PDFs adjuntos (factura/OC): datos finos por CÓDIGO, cero tokens de IA.
-    # Solo lee la caché en BD; si el PDF no se ha abierto nunca, no hay datos.
+    # PDFs adjuntos: datos finos por CÓDIGO, cero tokens de IA. Solo caché en BD.
+    # La dirección importa (regla del negocio): la PO nos la manda el CLIENTE
+    # (recibido) y la factura la mandamos NOSOTROS (enviado) — cada dato se
+    # busca solo donde de verdad viene, sin procesar de más.
     pdf_datos, pdf_archivos = {}, []
     try:
         pdf_texto, pdf_archivos = _pdf_texto_correo(client_correo)
         pdf_datos = _pdf_datos_finos(pdf_texto)
+        pdf_datos.pop('factura', None)  # el cliente no nos factura
+        if reply_correo:
+            t_env, arch_env = _pdf_texto_correo(reply_correo)
+            fac = _pdf_datos_finos(t_env).get('factura')
+            if fac:
+                pdf_datos['factura'] = fac
+                pdf_archivos += arch_env
     except Exception:
         logger.exception('update-draft: extracción de PDF falló (se ignora)')
 
