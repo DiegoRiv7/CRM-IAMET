@@ -9132,7 +9132,9 @@ def _pdf_datos_finos(texto, archivos=None):
     # (formato real de clientes: PO-6901704943_v1_20260713.pdf).
     if 'po' not in datos:
         for nom in (archivos or []):
-            m = re.search(r'\bPO[-_ ]?(\d{5,12})\b', nom or '', re.I)
+            # (?!\d) y no \b al final: el '_' de 'PO-6901704943_v1' es carácter
+            # de palabra y con \b el match nunca cerraba.
+            m = re.search(r'\bPO[-_ ]?(\d{5,12})(?!\d)', nom or '', re.I)
             if m:
                 datos['po'] = m.group(1)
                 break
