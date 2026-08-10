@@ -782,6 +782,24 @@
         // ── Info card ──
         var montoNum = Number(d.monto) || 0;
         q(inst, 'monto').textContent = '$' + montoNum.toLocaleString('es-MX', { minimumFractionDigits: 0 });
+        /* La etiqueta dice de dónde salió la cifra. Mientras no haya PO en el
+           Drive manda el subtotal de la cotización; en cuanto entra una, el
+           monto pasa a ser la suma de las POs, que es lo que de verdad nos van
+           a comprar. */
+        var montoLbl = q(inst, 'montoLbl');
+        if (montoLbl) {
+            var conPo = d.monto_origen === 'po';
+            var nPo = d.po_count || 0;
+            montoLbl.textContent = conPo
+                ? ('Monto de oportunidad (PO' + (nPo > 1 ? ' ×' + nPo : '') + ')')
+                : 'Monto sin IVA (cotización)';
+            montoLbl.title = conPo
+                ? (nPo > 1
+                    ? 'Suma de las ' + nPo + ' órdenes de compra del cliente en el Drive'
+                    : 'Tomado de la orden de compra del cliente en el Drive')
+                : 'Subtotal sin IVA de la última cotización. Cambiará cuando suba una PO al Drive.';
+            montoLbl.classList.toggle('wo4-lbl-po', conPo);
+        }
         var mesNombre = MES_NOMBRES[d.mes_cierre] || d.mes_cierre || '-';
         q(inst, 'fechaCierre').textContent = mesNombre + ' ' + new Date().getFullYear();
         q(inst, 'producto').textContent = d.producto || 'N/A';

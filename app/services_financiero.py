@@ -13,6 +13,7 @@ Cuando se sube un archivo al drive de una oportunidad:
 4. Se crea automáticamente el registro financiero en el proyecto vinculado
 """
 
+import io
 import re
 import logging
 from decimal import Decimal, InvalidOperation
@@ -354,6 +355,158 @@ def analizar_archivo_proyecto(archivo_proyecto):
 # ═══════════════════════════════════════════════════════════════
 #  EXTRACCIÓN DE DATOS DEL PDF
 # ═══════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════
+# PO DEL CLIENTE → MONTO DE LA OPORTUNIDAD
+# ══════════════════════════════════════════════════════════════════════
+# OJO CON LA PALABRA "OC": en este módulo tipo_financiero='oc' significa la
+# orden que NOSOTROS le emitimos a un proveedor, y alimenta el gasto del
+# proyecto. La PO del cliente es lo contrario —es lo que nos van a comprar—,
+# así que lleva su propio tipo: 'po_cliente'.
+
+#: Marca del archivo cuando resulta ser una PO del cliente.
+TIPO_PO_CLIENTE = 'po_cliente'
+
+#: Pistas de que un PDF es una PO del cliente y no otra cosa.
+_PO_PISTAS_NOMBRE = re.compile(r'\bP\.?\s?O\.?[-_ #]?\s?\d|orden\s*de\s*compra|purchase\s*order', re.I)
+_PO_PISTAS_TEXTO = re.compile(r'purchase\s+order|orden\s+de\s+compra|p\.\s?o\.\s*(?:no|num|#)', re.I)
+
+
+def _texto_pdf(archivo_field, max_paginas=6):
+    """Texto plano de un PDF ya guardado. '' si no se puede leer."""
+    try:
+        import pdfplumber
+        with archivo_field.open('rb') as fh:
+            datos = fh.read()
+        partes = []
+        with pdfplumber.open(io.BytesIO(datos)) as pdf:
+            for pagina in pdf.pages[:max_paginas]:
+                partes.append(pagina.extract_text() or '')
+        return '\n'.join(partes)
+    except Exception as e:
+        logger.warning('PO: no se pudo leer el PDF %s: %s', getattr(archivo_field, 'name', '?'), e)
+        return ''
+
+
+def es_po_de_cliente(nombre, texto):
+    """¿Este PDF es una orden de compra que nos manda el cliente?
+
+    Se exige una pista explícita —en el nombre o en el cuerpo— para no marcar
+    como PO cualquier PDF con un número grande. Precisión sobre cobertura: es
+    peor inflar el monto de una oportunidad que dejar una PO sin detectar.
+    """
+    nombre = nombre or ''
+    texto = texto or ''
+    if _PO_PISTAS_NOMBRE.search(nombre):
+        return True
+    return bool(_PO_PISTAS_TEXTO.search(texto))
+
+
+def analizar_po_cliente(archivo):
+    """Si el archivo es una PO del cliente, le saca el monto y lo deja guardado.
+
+    Devuelve el monto (Decimal) o None. NO recalcula la oportunidad: de eso se
+    encarga recalcular_monto_por_po, para poder subir varios archivos y sumar
+    una sola vez al final.
+    """
+    from decimal import Decimal as _D
+
+    if (archivo.extension or '').lower().lstrip('.') != 'pdf':
+        return None
+
+    texto = _texto_pdf(archivo.archivo)
+    if not es_po_de_cliente(archivo.nombre_original, texto):
+        return None
+
+    # ── El monto sale del SUBTOTAL, no del total ──
+    # El monto de la oportunidad siempre ha sido sin IVA (venía del subtotal de
+    # la cotización), y la utilidad futura —POs menos OCs— también tiene que
+    # compararse sin impuesto. Por eso manda _extraer_datos_pdf, que prefiere
+    # SUBTOTAL y solo cae al TOTAL si no lo encuentra. El extractor del correo
+    # toma el importe MAYOR del documento, que en una PO es el total CON IVA:
+    # sirve para el número de orden, no para la cifra.
+    datos_finos = {}
+    try:
+        from .views_crm import _pdf_datos_finos   # import diferido: views_crm carga modelos
+        datos_finos = _pdf_datos_finos(texto, [archivo.nombre_original]) or {}
+    except Exception as e:
+        logger.warning('PO: fallo el extractor fino: %s', e)
+
+    monto = None
+    moneda = datos_finos.get('moneda')
+    try:
+        fin = _extraer_datos_pdf(archivo.archivo) or {}
+        monto = fin.get('monto')
+        moneda = fin.get('moneda') or moneda
+    except Exception as e:
+        logger.warning('PO: fallo el extractor financiero: %s', e)
+
+    if monto is None:
+        # Último recurso: el importe mayor del documento. Queda anotado en el
+        # log porque puede traer IVA incluido.
+        monto = datos_finos.get('monto')
+        if monto is not None:
+            logger.info('PO %s: sin SUBTOTAL legible, se usa el importe mayor (%s) — puede incluir IVA',
+                        archivo.nombre_original, monto)
+
+    if monto is None:
+        logger.info('PO: %s parece PO pero no se le pudo sacar monto', archivo.nombre_original)
+        return None
+
+    monto = _D(str(monto))
+    # Las POs en dólares se guardan en pesos, que es la moneda del CRM.
+    if (moneda or '').upper() == 'USD':
+        monto = _convertir_a_mxn(monto, 'USD', None)
+
+    archivo.tipo_financiero = TIPO_PO_CLIENTE
+    archivo.monto_extraido = monto
+    archivo.procesado_financiero = True
+    archivo.save(update_fields=['tipo_financiero', 'monto_extraido', 'procesado_financiero'])
+    logger.info('PO detectada en opp %s: %s = %s', archivo.oportunidad_id,
+                archivo.nombre_original, monto)
+    return monto
+
+
+def recalcular_monto_por_po(oportunidad):
+    """Pone en la oportunidad la SUMA de todas sus POs. None si no hay ninguna.
+
+    Es la fuente de verdad del monto en cuanto entra la primera PO: mientras no
+    haya, el monto lo sigue mandando la cotización.
+    """
+    from django.db.models import Sum
+    from decimal import Decimal as _D
+    from .models import ArchivoOportunidad
+
+    agg = (ArchivoOportunidad.objects
+           .filter(oportunidad=oportunidad, tipo_financiero=TIPO_PO_CLIENTE)
+           .exclude(monto_extraido__isnull=True)
+           .aggregate(total=Sum('monto_extraido')))
+    total = agg['total']
+    if total is None:
+        return None
+
+    # TodoItem.monto es DecimalField(max_digits=10): tope 99,999,999.99. Sumar
+    # varias POs puede pasarse y MySQL en modo estricto rechazaría el save.
+    TOPE = _D('99999999.99')
+    if total > TOPE:
+        logger.error('PO: la suma de POs de la opp %s (%s) rebasa el tope del campo; se recorta',
+                     oportunidad.id, total)
+        total = TOPE
+
+    if oportunidad.monto != total:
+        oportunidad.monto = total
+        oportunidad.save(update_fields=['monto', 'fecha_actualizacion'])
+    return total
+
+
+def oportunidad_tiene_po(oportunidad_id):
+    """¿Ya entró al menos una PO con monto? Decide de dónde manda el monto."""
+    from .models import ArchivoOportunidad
+    return (ArchivoOportunidad.objects
+            .filter(oportunidad_id=oportunidad_id, tipo_financiero=TIPO_PO_CLIENTE)
+            .exclude(monto_extraido__isnull=True)
+            .exists())
+
 
 def _extraer_datos_pdf_from_bytes(content_bytes):
     """Versión que acepta bytes en vez de un FileField (para uploads manuales)."""

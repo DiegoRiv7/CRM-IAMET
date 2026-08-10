@@ -5483,6 +5483,24 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             else:
                 data['contacto'] = str(todo.contacto)
 
+        # De dónde sale el monto: en cuanto entra una PO al Drive, manda la suma
+        # de las POs; mientras no haya, manda el subtotal de la cotización. El
+        # front cambia la etiqueta con esto.
+        try:
+            from .services_financiero import TIPO_PO_CLIENTE
+            from django.db.models import Sum as _Sum
+            from .models import ArchivoOportunidad as _AO
+            pos = (_AO.objects.filter(oportunidad=todo, tipo_financiero=TIPO_PO_CLIENTE)
+                   .exclude(monto_extraido__isnull=True))
+            n_po = pos.count()
+            data['monto_origen'] = 'po' if n_po else 'cotizacion'
+            data['po_count'] = n_po
+            data['po_total'] = float(pos.aggregate(t=_Sum('monto_extraido'))['t'] or 0)
+        except Exception:
+            data['monto_origen'] = 'cotizacion'
+            data['po_count'] = 0
+            data['po_total'] = 0
+
         # Ingeniero sin acceso de supervisor: entra a consultar. Ve de qué va la
         # oportunidad, sus cotizaciones y su conversación, pero los metadatos
         # comerciales no salen del servidor — ocultarlos solo en el front dejaba
@@ -5493,6 +5511,8 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
                 data[campo] = 0
             for campo in ('po_number', 'factura_numero', 'mes_cierre', 'producto', 'area'):
                 data[campo] = ''
+            data['po_total'] = 0
+            data['po_count'] = 0
 
         return JsonResponse(data)
     except Exception as e:

@@ -3073,7 +3073,7 @@ class ArchivoOportunidad(models.Model):
     # Tracking de procesamiento financiero automático
     procesado_financiero = models.BooleanField(default=False, verbose_name="Procesado por el módulo financiero")
     tipo_financiero = models.CharField(max_length=20, blank=True, default='', verbose_name="Tipo financiero detectado",
-        help_text="'oc' si es OCC, 'factura' si es Factura de ingreso, '' si no aplica")
+        help_text="'po_cliente' si es una orden de compra DEL cliente (suma al monto de la oportunidad), 'oc' si es una OCC nuestra a proveedor (gasto), 'factura' si es Factura de ingreso, '' si no aplica")
     monto_extraido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
         verbose_name="Monto extraído del PDF")
 

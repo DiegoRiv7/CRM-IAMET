@@ -634,6 +634,9 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
     gap: 12px; margin-bottom: 14px;
 }
 .opp-v4 .wo4-monto-i { min-width: 0; }
+/* Cuando el monto viene de una PO del cliente, la etiqueta lo dice y se marca:
+   es un dato firme, no una estimación de cotización. */
+.opp-v4 .wo4-lbl-po { color: #047857; font-weight: 700; }
 .opp-v4 .wo4-util {
     padding-left: 12px; border-left: 1px solid var(--w4-linea);
 }

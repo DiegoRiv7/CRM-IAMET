@@ -8,6 +8,8 @@ import requests
 import mimetypes
 import os
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
@@ -757,14 +759,32 @@ def api_drive_oportunidad_archivo(request, opp_id):
             traceback.print_exc()
             return JsonResponse({'error': f'Error al guardar archivo: {str(e)}'}, status=500)
 
-        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        # ── PO del cliente: si lo es, el monto de la oportunidad pasa a ser
+        #    la suma de sus POs. Va ANTES del análisis financiero porque ese
+        #    marca procesado_financiero y ya no volvería a mirar el archivo. ──
+        po_info = None
         try:
-            from .services_financiero import analizar_archivo_drive
-            resultado_fin = analizar_archivo_drive(a)
-        except Exception as e_fin:
-            resultado_fin = {'procesado': False, 'error': str(e_fin)}
-            import traceback
-            traceback.print_exc()
+            from .services_financiero import (analizar_po_cliente,
+                                              recalcular_monto_por_po)
+            monto_po = analizar_po_cliente(a)
+            if monto_po is not None:
+                total = recalcular_monto_por_po(opp)
+                po_info = {'monto': float(monto_po),
+                           'total_oportunidad': float(total) if total is not None else None}
+        except Exception as e_po:
+            po_info = {'error': str(e_po)}
+            logger.warning('PO del cliente: %s', e_po)
+
+        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        resultado_fin = {'procesado': False, 'motivo': 'es PO de cliente'}
+        if not po_info or 'monto' not in po_info:
+            try:
+                from .services_financiero import analizar_archivo_drive
+                resultado_fin = analizar_archivo_drive(a)
+            except Exception as e_fin:
+                resultado_fin = {'procesado': False, 'error': str(e_fin)}
+                import traceback
+                traceback.print_exc()
 
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
@@ -772,6 +792,7 @@ def api_drive_oportunidad_archivo(request, opp_id):
             'tamaño': a.tamaño, 'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
             'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo',
             'financiero': resultado_fin,
+            'po_cliente': po_info,
         }})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

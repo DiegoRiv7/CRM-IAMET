@@ -205,6 +205,16 @@ def _drive_archivo_save(sender, instance, created, **kw):
 @receiver(post_delete, sender=ArchivoOportunidad)
 def _drive_archivo_delete(sender, instance, **kw):
     _log('drive', instance, 'delete', _opp_extra(instance))
+    # Si se borra una PO, el monto de la oportunidad deja de cuadrar: se
+    # recalcula la suma de las que quedan. Si era la última, el monto se
+    # queda con el último valor; volver a la cotización requeriría saber
+    # cuál era y eso ya no está.
+    try:
+        from .services_financiero import TIPO_PO_CLIENTE, recalcular_monto_por_po
+        if instance.tipo_financiero == TIPO_PO_CLIENTE and instance.oportunidad_id:
+            recalcular_monto_por_po(instance.oportunidad)
+    except Exception:
+        pass
 
 
 @receiver(post_save, sender=CarpetaOportunidad)
