@@ -402,6 +402,63 @@ def es_po_de_cliente(nombre, texto):
     return bool(_PO_PISTAS_TEXTO.search(texto))
 
 
+#: Un importe con centavos: 540.00, 1,234.56. Es lo que trae una PO de verdad.
+_PO_RE_IMPORTE = r'(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})'
+#: Etiqueta + importe EN LA MISMA LÍNEA. El [ \t]* es deliberado: con \s* el
+#: regex cruza el salto de línea y, en las POs con tabla, "Total" es un
+#: encabezado de columna — se acaba capturando el número de renglón (un "1").
+_PO_RE_SUBTOTAL = re.compile(r'sub\s*-?\s*total[^\n\d]{0,20}\$?[ \t]*' + _PO_RE_IMPORTE, re.I)
+_PO_RE_TOTAL = re.compile(r'\btotal[^\n\d]{0,20}\$?[ \t]*' + _PO_RE_IMPORTE, re.I)
+#: "540.00 USD" — el formato de las POs con la moneda de sufijo (BD BuySmart).
+_PO_RE_SUFIJO = re.compile(_PO_RE_IMPORTE + r'\s*(USD|MXN|MN)\b')
+_PO_RE_PESOS = re.compile(r'\$[ \t]*' + _PO_RE_IMPORTE)
+
+#: Por debajo de esto un número suele ser ruido: cantidad, número de renglón,
+#: precio unitario suelto. Es preferible no detectar monto a inventar uno.
+_PO_MONTO_MINIMO = 100
+
+
+def monto_de_po(texto):
+    """Importe de una PO, en orden de confianza. None si nada convence.
+
+    1. SUBTOTAL con etiqueta — es sin IVA, que es lo que queremos.
+    2. TOTAL con etiqueta.
+    3. Importe con moneda de sufijo ("540.00 USD"), típico de las POs con tabla
+       que no traen ninguna de las dos etiquetas.
+    4. El mayor importe en pesos del documento.
+    """
+    if not texto:
+        return None
+
+    def _mayor(regex, grupo=1):
+        vals = []
+        for m in regex.finditer(texto):
+            try:
+                v = float(m.group(grupo).replace(',', ''))
+            except (TypeError, ValueError):
+                continue
+            if v >= _PO_MONTO_MINIMO:
+                vals.append(v)
+        return max(vals) if vals else None
+
+    for regex in (_PO_RE_SUBTOTAL, _PO_RE_TOTAL, _PO_RE_SUFIJO, _PO_RE_PESOS):
+        v = _mayor(regex)
+        if v is not None:
+            return v
+    return None
+
+
+def moneda_de_po(texto):
+    """USD o MXN. MXN por defecto, que es la moneda del CRM."""
+    if texto:
+        m = re.search(r'\b(USD|MXN|MN|d[oó]lares|pesos)\b', texto, re.I)
+        if m:
+            v = m.group(1).lower()
+            if 'usd' in v or 'dolar' in v or 'dólar' in v:
+                return 'USD'
+    return 'MXN'
+
+
 def analizar_po_cliente(archivo):
     """Si el archivo es una PO del cliente, le saca el monto y lo deja guardado.
 
@@ -418,36 +475,16 @@ def analizar_po_cliente(archivo):
     if not es_po_de_cliente(archivo.nombre_original, texto):
         return None
 
-    # ── El monto sale del SUBTOTAL, no del total ──
-    # El monto de la oportunidad siempre ha sido sin IVA (venía del subtotal de
-    # la cotización), y la utilidad futura —POs menos OCs— también tiene que
-    # compararse sin impuesto. Por eso manda _extraer_datos_pdf, que prefiere
-    # SUBTOTAL y solo cae al TOTAL si no lo encuentra. El extractor del correo
-    # toma el importe MAYOR del documento, que en una PO es el total CON IVA:
-    # sirve para el número de orden, no para la cifra.
-    datos_finos = {}
-    try:
-        from .views_crm import _pdf_datos_finos   # import diferido: views_crm carga modelos
-        datos_finos = _pdf_datos_finos(texto, [archivo.nombre_original]) or {}
-    except Exception as e:
-        logger.warning('PO: fallo el extractor fino: %s', e)
-
-    monto = None
-    moneda = datos_finos.get('moneda')
-    try:
-        fin = _extraer_datos_pdf(archivo.archivo) or {}
-        monto = fin.get('monto')
-        moneda = fin.get('moneda') or moneda
-    except Exception as e:
-        logger.warning('PO: fallo el extractor financiero: %s', e)
-
-    if monto is None:
-        # Último recurso: el importe mayor del documento. Queda anotado en el
-        # log porque puede traer IVA incluido.
-        monto = datos_finos.get('monto')
-        if monto is not None:
-            logger.info('PO %s: sin SUBTOTAL legible, se usa el importe mayor (%s) — puede incluir IVA',
-                        archivo.nombre_original, monto)
+    # ── El monto ──
+    # Lo saca monto_de_po, escrito para este caso: prefiere el SUBTOTAL (sin
+    # IVA, que es como siempre se ha guardado el monto de la oportunidad) y
+    # exige que la etiqueta y el importe estén EN LA MISMA LÍNEA.
+    #
+    # No se usa _extraer_datos_pdf: en las POs con tabla, "Total" es un
+    # encabezado de columna y su regex cruza el salto de línea, así que
+    # devuelve el número de renglón. Con la PO real de BD BuySmart daba 1.
+    monto = monto_de_po(texto)
+    moneda = moneda_de_po(texto)
 
     if monto is None:
         logger.info('PO: %s parece PO pero no se le pudo sacar monto', archivo.nombre_original)

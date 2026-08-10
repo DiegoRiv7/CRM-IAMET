@@ -780,26 +780,7 @@
         }, 50);
 
         // ── Info card ──
-        var montoNum = Number(d.monto) || 0;
-        q(inst, 'monto').textContent = '$' + montoNum.toLocaleString('es-MX', { minimumFractionDigits: 0 });
-        /* La etiqueta dice de dónde salió la cifra. Mientras no haya PO en el
-           Drive manda el subtotal de la cotización; en cuanto entra una, el
-           monto pasa a ser la suma de las POs, que es lo que de verdad nos van
-           a comprar. */
-        var montoLbl = q(inst, 'montoLbl');
-        if (montoLbl) {
-            var conPo = d.monto_origen === 'po';
-            var nPo = d.po_count || 0;
-            montoLbl.textContent = conPo
-                ? ('Monto de oportunidad (PO' + (nPo > 1 ? ' ×' + nPo : '') + ')')
-                : 'Monto sin IVA (cotización)';
-            montoLbl.title = conPo
-                ? (nPo > 1
-                    ? 'Suma de las ' + nPo + ' órdenes de compra del cliente en el Drive'
-                    : 'Tomado de la orden de compra del cliente en el Drive')
-                : 'Subtotal sin IVA de la última cotización. Cambiará cuando suba una PO al Drive.';
-            montoLbl.classList.toggle('wo4-lbl-po', conPo);
-        }
+        pintarMonto(inst, d);
         var mesNombre = MES_NOMBRES[d.mes_cierre] || d.mes_cierre || '-';
         q(inst, 'fechaCierre').textContent = mesNombre + ' ' + new Date().getFullYear();
         q(inst, 'producto').textContent = d.producto || 'N/A';
@@ -2197,12 +2178,55 @@
             });
     }
 
+    /* Vuelve a leer la oportunidad y repinta SOLO el monto y su etiqueta.
+       No se hace un load() completo para no perder lo que el usuario tenga a
+       medias (una nota escrita, un campo en edición). */
+    function recargarMonto(inst, oppId) {
+        fetch('/app/api/oportunidad-detalle-crm/' + oppId + '/', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d || !alive(inst) || inst.oppId !== oppId) return;
+                inst.data.monto = d.monto;
+                inst.data.monto_origen = d.monto_origen;
+                inst.data.po_count = d.po_count;
+                pintarMonto(inst, d);
+            })
+            .catch(function () { /* el monto se verá al reabrir */ });
+    }
+
+    /* El monto y su etiqueta: de dónde salió la cifra. Mientras no haya PO en
+       el Drive manda el subtotal de la cotización; en cuanto entra una, el
+       monto pasa a ser la suma de las POs, que es lo que de verdad nos van a
+       comprar. */
+    function pintarMonto(inst, d) {
+        var montoNum = Number(d.monto) || 0;
+        q(inst, 'monto').textContent = '$' + montoNum.toLocaleString('es-MX', { minimumFractionDigits: 0 });
+        var montoLbl = q(inst, 'montoLbl');
+        if (!montoLbl) return;
+        var conPo = d.monto_origen === 'po';
+        var nPo = d.po_count || 0;
+        montoLbl.textContent = conPo
+            ? ('Monto de oportunidad (PO' + (nPo > 1 ? ' ×' + nPo : '') + ')')
+            : 'Monto sin IVA (cotización)';
+        montoLbl.title = conPo
+            ? (nPo > 1
+                ? 'Suma de las ' + nPo + ' órdenes de compra del cliente en el Drive'
+                : 'Tomado de la orden de compra del cliente en el Drive')
+            : 'Subtotal sin IVA de la última cotización. Cambiará cuando suba una PO al Drive.';
+        montoLbl.classList.toggle('wo4-lbl-po', conPo);
+    }
+
     function subirADrive(inst, fileList) {
         var files = fileList && fileList.length ? Array.prototype.slice.call(fileList) : [];
         if (!files.length) return;
         var oppId = inst.oppId;
         var cont = q(inst, 'driveList');
         cont.innerHTML = '<div class="wo4-vacio">Subiendo…</div>';
+
+        // Si alguno resultó ser PO del cliente, el monto de la oportunidad
+        // cambió en el servidor y hay que traerlo de nuevo: el render del
+        // Drive solo repinta la lista de archivos.
+        var huboPo = false;
 
         function subirUno(f) {
             var fd = new FormData();
@@ -2211,6 +2235,15 @@
                 method: 'POST', body: fd,
                 credentials: 'same-origin',
                 headers: { 'X-CSRFToken': csrf() },
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                var po = d && d.archivo && d.archivo.po_cliente;
+                if (po && po.monto) {
+                    huboPo = true;
+                    notify('Orden de compra detectada: $' +
+                        Number(po.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }),
+                        'success');
+                }
+                return d;
             });
         }
 
@@ -2220,8 +2253,13 @@
         }
         chain.then(function () {
             if (!alive(inst) || inst.oppId !== oppId) return;
-            notify(files.length > 1 ? files.length + ' archivos subidos' : 'Archivo subido', 'success');
+            if (!huboPo) {
+                notify(files.length > 1 ? files.length + ' archivos subidos' : 'Archivo subido', 'success');
+            }
             renderDrive(inst);
+            // Recargar la oportunidad para que el monto y su etiqueta reflejen
+            // la PO recién detectada.
+            if (huboPo) recargarMonto(inst, oppId);
         }).catch(function () {
             notify('No se pudo subir el archivo', 'error');
             if (alive(inst)) renderDrive(inst);
