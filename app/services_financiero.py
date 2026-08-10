@@ -485,6 +485,7 @@ def analizar_po_cliente(archivo):
     # devuelve el número de renglón. Con la PO real de BD BuySmart daba 1.
     monto = monto_de_po(texto)
     moneda = moneda_de_po(texto)
+    datos_moneda_original = monto
 
     if monto is None:
         logger.info('PO: %s parece PO pero no se le pudo sacar monto', archivo.nombre_original)
@@ -492,8 +493,17 @@ def analizar_po_cliente(archivo):
 
     monto = _D(str(monto))
     # Las POs en dólares se guardan en pesos, que es la moneda del CRM.
+    # _convertir_a_mxn devuelve (monto, tipo_de_cambio): hay que desempacar,
+    # o al campo le llega la tupla entera.
+    tc = None
     if (moneda or '').upper() == 'USD':
-        monto = _convertir_a_mxn(monto, 'USD', None)
+        monto, tc = _convertir_a_mxn(monto, 'USD', None)
+        logger.info('PO %s: %s USD a %s = %s MXN',
+                    archivo.nombre_original, datos_moneda_original, tc, monto)
+
+    # A dos decimales: la multiplicación por el tipo de cambio deja tres
+    # (540 × 17.00 = 9180.000) y el campo solo acepta dos.
+    monto = monto.quantize(_D('0.01'))
 
     archivo.tipo_financiero = TIPO_PO_CLIENTE
     archivo.monto_extraido = monto
@@ -530,6 +540,7 @@ def recalcular_monto_por_po(oportunidad):
                      oportunidad.id, total)
         total = TOPE
 
+    total = total.quantize(_D('0.01'))
     if oportunidad.monto != total:
         oportunidad.monto = total
         oportunidad.save(update_fields=['monto', 'fecha_actualizacion'])
