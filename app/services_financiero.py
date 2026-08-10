@@ -459,6 +459,29 @@ def moneda_de_po(texto):
     return 'MXN'
 
 
+def tipo_cambio_para_po(texto):
+    """Tipo de cambio USD→MXN a usar para una PO, en orden de confianza.
+
+    1. El que venga IMPRESO en la propia PO. Si el cliente lo pactó, ese manda.
+    2. El mismo que usan las cotizaciones: la tasa real del día
+       (get_tipo_cambio_usd_mxn, con caché de una hora). Convertir la cotización
+       a una tasa y la PO a otra dejaba montos que no se pueden comparar, y la
+       utilidad —POs menos OCs— saldría torcida.
+    3. El respaldo del módulo financiero (TIPO_CAMBIO_USD_FALLBACK).
+    """
+    tc = _extraer_tipo_cambio(texto)
+    if tc:
+        return tc, 'impreso en la PO'
+    try:
+        from .views_cotizaciones import get_tipo_cambio_usd_mxn
+        tc = get_tipo_cambio_usd_mxn()
+        if tc:
+            return Decimal(str(tc)), 'tasa del día'
+    except Exception as e:
+        logger.warning('PO: no se pudo obtener el tipo de cambio del día: %s', e)
+    return _tipo_cambio_fallback(), 'respaldo fijo'
+
+
 def analizar_po_cliente(archivo):
     """Si el archivo es una PO del cliente, le saca el monto y lo deja guardado.
 
@@ -495,11 +518,11 @@ def analizar_po_cliente(archivo):
     # Las POs en dólares se guardan en pesos, que es la moneda del CRM.
     # _convertir_a_mxn devuelve (monto, tipo_de_cambio): hay que desempacar,
     # o al campo le llega la tupla entera.
-    tc = None
     if (moneda or '').upper() == 'USD':
-        monto, tc = _convertir_a_mxn(monto, 'USD', None)
-        logger.info('PO %s: %s USD a %s = %s MXN',
-                    archivo.nombre_original, datos_moneda_original, tc, monto)
+        tc, fuente_tc = tipo_cambio_para_po(texto)
+        monto, _ = _convertir_a_mxn(monto, 'USD', tc)
+        logger.info('PO %s: %s USD x %s (%s) = %s MXN',
+                    archivo.nombre_original, datos_moneda_original, tc, fuente_tc, monto)
 
     # A dos decimales: la multiplicación por el tipo de cambio deja tres
     # (540 × 17.00 = 9180.000) y el campo solo acepta dos.
