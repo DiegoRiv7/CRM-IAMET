@@ -280,12 +280,23 @@
   .pend-vinc-row:hover{background:#f0f6ff;}
   .pend-vinc-t{font-size:.85rem;font-weight:600;color:#16181d;}
   .pend-vinc-c{font-size:.74rem;color:#9a9ca3;margin-top:2px;}
-  .pend-launcher.pill{width:auto;padding:9px 15px;border-radius:999px;cursor:pointer;}
-  .pend-launcher.pill:hover{box-shadow:0 20px 46px rgba(15,23,42,.2);}
+  /* Píldora en reposo = "liquid glass": translúcida, difumina lo que tenga detrás
+     y baja su presencia para camuflarse con cualquier vista (oportunidad, correo…).
+     Al pasar el cursor recupera cuerpo; el aviso completo conserva su blanco sólido. */
+  .pend-launcher.pill{width:auto;padding:8px 14px;border-radius:999px;cursor:pointer;
+    background:rgba(255,255,255,.4);border-color:rgba(255,255,255,.45);
+    -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+    box-shadow:0 3px 12px rgba(15,23,42,.07),inset 0 1px 0 rgba(255,255,255,.55);
+    opacity:.55;transition:opacity .25s,background .25s,box-shadow .25s,transform .2s;}
+  .pend-launcher.pill:hover{opacity:1;background:rgba(255,255,255,.72);
+    box-shadow:0 14px 34px rgba(15,23,42,.16),inset 0 1px 0 rgba(255,255,255,.65);}
   .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
   /* Píldora (reposo) */
   .pend-toast-pill{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:800;color:#16181d;white-space:nowrap;}
   .pend-toast-pill-badge{background:#16181d;color:#fff;font-size:.68rem;font-weight:800;border-radius:10px;padding:1px 7px;}
+  .pend-launcher.pill .pend-toast-pill{color:#43464d;font-weight:700;}
+  .pend-launcher.pill .pend-toast-pill-badge{background:rgba(22,24,29,.72);}
+  .pend-launcher.pill:hover .pend-toast-pill{color:#16181d;}
   /* Aviso (evento): categoría·hace | 1 de N | × / titular / contexto / cita / acciones */
   .pend-toast-main{cursor:pointer;}
   .pend-toast-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
