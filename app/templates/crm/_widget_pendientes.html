@@ -1433,7 +1433,18 @@
     }
     if (f) f.style.display = 'none';
     var items = (_miniData && _miniData.items) || [];
-    var showPill = (_toastMode === 'pill') || !items.length;
+    // Sin pendientes: el asistente desaparece por completo. Con pendientes SIEMPRE
+    // está presente — el aviso completo, o la píldora si el usuario lo cerró con la ×
+    // (pendFeedRefresh lo despierta de la píldora cuando llega algo nuevo).
+    if (!items.length) {
+      lc.style.display = 'none';
+      lc.classList.remove('pill');
+      return;
+    }
+    var ov = el('widgetPendientes'), mini = el('pendMini');
+    var tapado = (ov && ov.classList.contains('active')) || (mini && mini.style.display !== 'none');
+    if (!tapado) lc.style.display = '';
+    var showPill = (_toastMode === 'pill');
     if (pill) pill.style.display = showPill ? 'flex' : 'none';
     if (main) main.style.display = showPill ? 'none' : '';
     lc.classList.toggle('pill', showPill);
