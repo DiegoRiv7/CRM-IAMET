@@ -402,47 +402,94 @@ def es_po_de_cliente(nombre, texto):
     return bool(_PO_PISTAS_TEXTO.search(texto))
 
 
-#: Un importe con centavos: 540.00, 1,234.56. Es lo que trae una PO de verdad.
-_PO_RE_IMPORTE = r'(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})'
-#: Etiqueta + importe EN LA MISMA LÍNEA. El [ \t]* es deliberado: con \s* el
-#: regex cruza el salto de línea y, en las POs con tabla, "Total" es un
-#: encabezado de columna — se acaba capturando el número de renglón (un "1").
-_PO_RE_SUBTOTAL = re.compile(r'sub\s*-?\s*total[^\n\d]{0,20}\$?[ \t]*' + _PO_RE_IMPORTE, re.I)
-_PO_RE_TOTAL = re.compile(r'\btotal[^\n\d]{0,20}\$?[ \t]*' + _PO_RE_IMPORTE, re.I)
-#: "540.00 USD" — el formato de las POs con la moneda de sufijo (BD BuySmart).
-_PO_RE_SUFIJO = re.compile(_PO_RE_IMPORTE + r'\s*(USD|MXN|MN)\b')
-_PO_RE_PESOS = re.compile(r'\$[ \t]*' + _PO_RE_IMPORTE)
+#: ── Importes ──
+#: Etiquetado ("Total: 25,000") puede venir sin centavos y hasta como entero
+#: pelón: la etiqueta ya es prueba de que es dinero.
+_PO_IMP_ETIQ = r'(\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2}|\d{3,})'
+#: Suelto (sin etiqueta) SÍ exige centavos o separador de miles. Un entero
+#: pelón sin etiqueta puede ser una fecha, un código postal o el propio número
+#: de orden.
+_PO_IMP_SUELTO = r'(\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2})'
+#: Formato europeo: 25.000,00 — el punto agrupa y la coma decimal.
+_PO_IMP_EURO = r'(\d{1,3}(?:\.\d{3})+,\d{2})'
 
-#: Por debajo de esto un número suele ser ruido: cantidad, número de renglón,
-#: precio unitario suelto. Es preferible no detectar monto a inventar uno.
-_PO_MONTO_MINIMO = 100
+#: Palabras que anteceden al importe. Se aceptan las inglesas porque muchas POs
+#: llegan en inglés (SAP escribe "Net Value", Coupa "Grand Total").
+_PO_ETIQ_SUB = r'(?:sub\s*-?\s*total)'
+_PO_ETIQ_TOT = r'(?:total|grand\s+total|importe|amount|net\s+value|monto)'
+
+def _re_etiq(etiqueta, importe):
+    r"""Etiqueta + importe EN LA MISMA LÍNEA.
+
+    El [ \t]* (no \s*) es deliberado: si el regex cruza el salto de línea, en
+    las POs con tabla "Total" es un encabezado de columna y acaba capturando el
+    número del primer renglón.
+    """
+    return re.compile(etiqueta + r'[^\n\d]{0,20}\$?[ \t]*' + importe, re.I)
+
+_PO_RE_SUBTOTAL = _re_etiq(_PO_ETIQ_SUB, _PO_IMP_ETIQ)
+_PO_RE_SUBTOTAL_EURO = _re_etiq(_PO_ETIQ_SUB, _PO_IMP_EURO)
+_PO_RE_TOTAL = _re_etiq(r'\b' + _PO_ETIQ_TOT, _PO_IMP_ETIQ)
+_PO_RE_TOTAL_EURO = _re_etiq(r'\b' + _PO_ETIQ_TOT, _PO_IMP_EURO)
+#: "540.00 USD" — el formato de las POs con tabla y moneda de sufijo.
+_PO_RE_SUFIJO = re.compile(_PO_IMP_SUELTO + r'\s*(?:USD|MXN|MN)\b')
+_PO_RE_PESOS = re.compile(r'\$[ \t]*' + _PO_IMP_SUELTO)
+
+#: Piso solo para los importes SIN etiqueta: ahí un número chico suele ser
+#: ruido (cantidad, número de renglón, precio unitario). Un "Total: $80.00"
+#: etiquetado se respeta tal cual — hay POs chicas.
+_PO_MONTO_MINIMO_SUELTO = 100
+
+
+def _a_float(s, europeo=False):
+    """'25,000.00' o '25.000,00' → 25000.0. None si no se puede."""
+    try:
+        if europeo:
+            s = s.replace('.', '').replace(',', '.')
+        else:
+            s = s.replace(',', '')
+        return float(s)
+    except (TypeError, ValueError):
+        return None
 
 
 def monto_de_po(texto):
     """Importe de una PO, en orden de confianza. None si nada convence.
 
     1. SUBTOTAL con etiqueta — es sin IVA, que es lo que queremos.
-    2. TOTAL con etiqueta.
+    2. TOTAL (o Grand Total / Amount / Net Value / Importe / Monto) etiquetado.
     3. Importe con moneda de sufijo ("540.00 USD"), típico de las POs con tabla
        que no traen ninguna de las dos etiquetas.
     4. El mayor importe en pesos del documento.
+
+    De cada estrategia se toma el MAYOR: en una PO con varias partidas, el que
+    interesa es el acumulado, no el de un renglón.
     """
     if not texto:
         return None
 
-    def _mayor(regex, grupo=1):
+    def _mayor(regex, europeo=False, piso=0):
         vals = []
         for m in regex.finditer(texto):
-            try:
-                v = float(m.group(grupo).replace(',', ''))
-            except (TypeError, ValueError):
-                continue
-            if v >= _PO_MONTO_MINIMO:
+            v = _a_float(m.group(1), europeo)
+            if v is not None and v >= piso:
                 vals.append(v)
         return max(vals) if vals else None
 
-    for regex in (_PO_RE_SUBTOTAL, _PO_RE_TOTAL, _PO_RE_SUFIJO, _PO_RE_PESOS):
-        v = _mayor(regex)
+    # El europeo va PRIMERO en cada pareja: sobre "25.000,00" la variante
+    # normal captura "25.00" (lee el punto como decimal) y devolvería 25.
+    # Al revés no hay riesgo — el patrón europeo exige puntos de millar Y coma
+    # decimal, así que un "1,234.56" normal no lo activa.
+    estrategias = [
+        (_PO_RE_SUBTOTAL_EURO, True, 0),
+        (_PO_RE_SUBTOTAL, False, 0),
+        (_PO_RE_TOTAL_EURO, True, 0),
+        (_PO_RE_TOTAL, False, 0),
+        (_PO_RE_SUFIJO, False, _PO_MONTO_MINIMO_SUELTO),
+        (_PO_RE_PESOS, False, _PO_MONTO_MINIMO_SUELTO),
+    ]
+    for regex, euro, piso in estrategias:
+        v = _mayor(regex, euro, piso)
         if v is not None:
             return v
     return None
