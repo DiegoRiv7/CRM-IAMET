@@ -2745,77 +2745,120 @@ def api_subir_facturacion(request):
         anio_int = now.year
 
     try:
-        import xlrd
-        from xlrd import xldate_as_datetime
         content = archivo.read()
-        wb = xlrd.open_workbook(file_contents=content)
-        sheet = wb.sheet_by_index(0)
+        nombre_arch = (getattr(archivo, 'name', '') or '').lower()
 
-        # Agrupar por mes de emisión: {(mes, anio): {cliente: monto}}
-        datos_por_mes = {}  # { 'MM': { 'YYYY': { cliente_name: monto_str } } }
+        # Agrupar por mes de emisión: {(mes, anio): {entry_key: {nombre, rfc, monto}}}
+        datos_por_mes = {}
         totales_por_mes = {}  # { (mes, anio): Decimal }
 
-        for row_idx in range(1, sheet.nrows):
-            try:
-                estatus = str(sheet.cell_value(row_idx, 40)).strip().lower()
-                if estatus == 'cancelada':
-                    continue
+        def _acumular(row_mes, row_anio, nombre, rfc, monto):
+            if monto <= 0:
+                return
+            key = (row_mes, row_anio)
+            if key not in datos_por_mes:
+                datos_por_mes[key] = {}
+                totales_por_mes[key] = Decimal('0')
+            clientes_mes = datos_por_mes[key]
+            # RFC como key para match preciso; sin RFC, el nombre
+            entry_key = rfc if rfc else nombre
+            if entry_key in clientes_mes:
+                existing = clientes_mes[entry_key]
+                existing['monto'] = str(Decimal(existing['monto']) + monto)
+            else:
+                clientes_mes[entry_key] = {
+                    'nombre': nombre,
+                    'rfc': rfc,
+                    'monto': str(monto),
+                }
+            totales_por_mes[key] += monto
 
-                cliente_name = str(sheet.cell_value(row_idx, 5)).strip()
-                nombre_comercial = str(sheet.cell_value(row_idx, 6)).strip()
+        if nombre_arch.endswith('.csv'):
+            # CSV "Ventas" del ERP — columnas por NOMBRE (el orden puede variar):
+            # Numero, Documento, Fecha, Cliente, ..., Subtotal, ..., Estatus.
+            # Subtotal ya viene en MXN sin IVA (Total = TotalOriginal × TC), así
+            # que equivale al "Subtotal - Descuento" del XLS viejo. Este reporte
+            # no trae RFC: el match con clientes del CRM cae al nombre.
+            import csv as _csv
+            import io as _io
+            try:
+                texto = content.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                texto = content.decode('latin-1')  # el ERP exporta latin-1
+            for fila in _csv.DictReader(_io.StringIO(texto)):
+                def _v(k):
+                    return (fila.get(k) or '').strip()
+                # "Cancelada" y "Cancelada (CFDI Activo)" no cuentan como facturado
+                if _v('Estatus').lower().startswith('cancelada'):
+                    continue
+                cliente_name = _v('Cliente')
                 if not cliente_name:
                     continue
-
-                # Extraer mes/año de la fecha de emisión (col D, idx 3)
+                partes = _v('Fecha').split('/')  # DD/MM/YY o DD/MM/YYYY
+                if len(partes) != 3:
+                    continue
                 try:
-                    date_val = sheet.cell_value(row_idx, 3)
-                    fecha = xldate_as_datetime(date_val, wb.datemode)
-                    row_mes = str(fecha.month).zfill(2)
-                    row_anio = fecha.year
-                except Exception:
-                    continue  # Sin fecha válida, saltar
-
-                # Facturado = Col L Subtotal (idx 11) - Col O Descuento (idx 14)
-                # Los importes ya vienen en pesos, no se multiplica por T.C.
-                subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
-                descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
+                    if not (1 <= int(partes[1]) <= 12):
+                        continue
+                    row_mes = partes[1].zfill(2)
+                    row_anio = int(partes[2])
+                    if row_anio < 100:
+                        row_anio += 2000
+                except ValueError:
+                    continue
                 try:
-                    subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
+                    monto = Decimal(_v('Subtotal').replace(',', '') or '0')
                 except Exception:
-                    subtotal = Decimal('0')
+                    continue
+                _acumular(row_mes, row_anio, cliente_name, '', monto)
+        else:
+            import xlrd
+            from xlrd import xldate_as_datetime
+            wb = xlrd.open_workbook(file_contents=content)
+            sheet = wb.sheet_by_index(0)
+
+            for row_idx in range(1, sheet.nrows):
                 try:
-                    descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
-                except Exception:
-                    descuento = Decimal('0')
-                monto = subtotal - descuento
+                    estatus = str(sheet.cell_value(row_idx, 40)).strip().lower()
+                    if estatus == 'cancelada':
+                        continue
 
-                # RFC del cliente (col G, idx 7)
-                rfc_raw = str(sheet.cell_value(row_idx, 7)).strip()
-                rfc = rfc_raw if rfc_raw and rfc_raw != '0.0' else ''
+                    cliente_name = str(sheet.cell_value(row_idx, 5)).strip()
+                    nombre_comercial = str(sheet.cell_value(row_idx, 6)).strip()
+                    if not cliente_name:
+                        continue
 
-                if monto > 0:
-                    key = (row_mes, row_anio)
-                    if key not in datos_por_mes:
-                        datos_por_mes[key] = {}
-                        totales_por_mes[key] = Decimal('0')
+                    # Extraer mes/año de la fecha de emisión (col D, idx 3)
+                    try:
+                        date_val = sheet.cell_value(row_idx, 3)
+                        fecha = xldate_as_datetime(date_val, wb.datemode)
+                        row_mes = str(fecha.month).zfill(2)
+                        row_anio = fecha.year
+                    except Exception:
+                        continue  # Sin fecha válida, saltar
 
-                    clientes_mes = datos_por_mes[key]
-                    # Usar RFC como key si existe, sino nombre
+                    # Facturado = Col L Subtotal (idx 11) - Col O Descuento (idx 14)
+                    # Los importes ya vienen en pesos, no se multiplica por T.C.
+                    subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
+                    descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
+                    try:
+                        subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
+                    except Exception:
+                        subtotal = Decimal('0')
+                    try:
+                        descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
+                    except Exception:
+                        descuento = Decimal('0')
+                    monto = subtotal - descuento
+
+                    # RFC del cliente (col G, idx 7)
+                    rfc_raw = str(sheet.cell_value(row_idx, 7)).strip()
+                    rfc = rfc_raw if rfc_raw and rfc_raw != '0.0' else ''
+
                     nombre_final = nombre_comercial if nombre_comercial else cliente_name
-                    # Guardar con RFC para match preciso
-                    entry_key = rfc if rfc else nombre_final
-                    if entry_key in clientes_mes:
-                        existing = clientes_mes[entry_key]
-                        existing['monto'] = str(Decimal(existing['monto']) + monto)
-                    else:
-                        clientes_mes[entry_key] = {
-                            'nombre': nombre_final,
-                            'rfc': rfc,
-                            'monto': str(monto),
-                        }
-                    totales_por_mes[key] += monto
-            except (IndexError, ValueError):
-                continue
+                    _acumular(row_mes, row_anio, nombre_final, rfc, monto)
+                except (IndexError, ValueError):
+                    continue
 
         # Guardar un ArchivoFacturacion por cada mes encontrado
         archivo.seek(0)
