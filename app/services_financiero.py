@@ -132,11 +132,27 @@ def analizar_archivo_drive(archivo_oportunidad):
     # Buscar proyecto IAMET vinculado a esta oportunidad
     proyecto = ProyectoIAMET.objects.filter(oportunidad=oportunidad).first()
     if not proyecto:
-        logger.info(f"[Financiero] Archivo '{nombre}' detectado como {tipo} pero la oportunidad {oportunidad.id} no tiene proyecto IAMET vinculado.")
+        # Sin proyecto no hay dónde crear el registro de OC/factura, pero el
+        # monto SÍ se guarda en el archivo: la utilidad de la oportunidad se
+        # calcula con esto y no todas las oportunidades llegan a tener proyecto.
+        # Antes se marcaba el tipo y el importe se perdía.
+        monto_mxn = None
+        if pdf_data.get('monto') is not None:
+            monto_mxn, _tc = _convertir_a_mxn(
+                pdf_data['monto'], pdf_data.get('moneda') or 'MXN',
+                pdf_data.get('tipo_cambio'))
+            if monto_mxn is not None:
+                monto_mxn = monto_mxn.quantize(Decimal('0.01'))
+        logger.info(f"[Financiero] '{nombre}' es {tipo} y la oportunidad {oportunidad.id} "
+                    f"no tiene proyecto vinculado; se guarda el monto ({monto_mxn}) "
+                    f"para la utilidad y no se crea registro de proyecto.")
         archivo_oportunidad.procesado_financiero = True
         archivo_oportunidad.tipo_financiero = tipo
-        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
-        return {'procesado': True, 'tipo': tipo, 'monto': None, 'error': 'Sin proyecto vinculado'}
+        archivo_oportunidad.monto_extraido = monto_mxn
+        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero',
+                                                'monto_extraido'])
+        return {'procesado': True, 'tipo': tipo, 'monto': monto_mxn,
+                'error': None if monto_mxn is not None else 'Sin monto legible'}
 
     # Verificar que no exista ya un registro vinculado a este archivo
     if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(archivo_drive=archivo_oportunidad).exists():
@@ -959,6 +975,44 @@ def recalcular_monto_por_po(oportunidad):
         oportunidad.monto = total
         oportunidad.save(update_fields=['monto', 'fecha_actualizacion'])
     return total
+
+
+#: Marca del archivo cuando es una OC que NOSOTROS le emitimos a un proveedor.
+#: Es el valor que _detectar_tipo_financiero ya venía usando; se nombra aquí
+#: para que la utilidad no dependa de una cadena suelta.
+TIPO_OC_PROVEEDOR = 'oc'
+
+
+def utilidad_de_oportunidad(oportunidad_id):
+    """Lo que deja la oportunidad: (po_total, oc_total, utilidad, porcentaje).
+
+    Todo sale de los archivos del Drive, sin depender de que exista un proyecto:
+    las POs del cliente son el ingreso y las OC a proveedores el gasto. Los dos
+    montos ya están en pesos y sin impuesto, así que se restan directo.
+
+    Hacen falta LAS DOS para que haya utilidad: sin PO no hay ingreso contra el
+    cual medir, y sin OC no se conoce el costo. Si falta cualquiera de las dos,
+    la utilidad y el porcentaje salen en None —que el widget pinta como guion—
+    en vez de un número que se leería como definitivo. Un 100% "porque todavía
+    no suben las OC" engaña más que un guion.
+    """
+    from django.db.models import Sum
+    from .models import ArchivoOportunidad
+
+    montos = (ArchivoOportunidad.objects
+              .filter(oportunidad_id=oportunidad_id,
+                      tipo_financiero__in=[TIPO_PO_CLIENTE, TIPO_OC_PROVEEDOR])
+              .exclude(monto_extraido__isnull=True)
+              .values('tipo_financiero')
+              .annotate(total=Sum('monto_extraido')))
+    por_tipo = {m['tipo_financiero']: (m['total'] or Decimal('0')) for m in montos}
+    po_total = por_tipo.get(TIPO_PO_CLIENTE, Decimal('0'))
+    oc_total = por_tipo.get(TIPO_OC_PROVEEDOR, Decimal('0'))
+    if po_total <= 0 or oc_total <= 0:
+        return po_total, oc_total, None, None
+    utilidad = po_total - oc_total
+    pct = (utilidad / po_total * 100).quantize(Decimal('0.1'))
+    return po_total, oc_total, utilidad, pct
 
 
 def oportunidad_tiene_po(oportunidad_id):

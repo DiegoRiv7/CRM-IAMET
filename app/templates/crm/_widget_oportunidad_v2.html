@@ -188,16 +188,18 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <div class="wo4-card wo4-pad" data-wo="infoCard">
                         {% comment %}
                         Monto y utilidad juntos: son las dos cifras que se miran
-                        primero. El % de utilidad se pinta vacío por ahora — la
-                        lógica de cálculo se trabaja aparte y el hueco ya queda.
+                        primero. La utilidad sale de los papeles del Drive:
+                        suma de las POs del cliente menos suma de las OC que le
+                        emitimos a proveedores. Queda en guion mientras no haya
+                        POs, porque sin ingreso no hay contra qué medirla.
                         {% endcomment %}
                         <div class="wo4-monto-row">
                             <div class="wo4-monto-i">
                                 <span class="wo4-lbl" data-wo="montoLbl">Monto sin IVA (cotización)</span>
                                 <div class="wo4-monto" data-wo="monto">$0</div>
                             </div>
-                            <div class="wo4-monto-i wo4-util">
-                                <span class="wo4-lbl">% utilidad</span>
+                            <div class="wo4-monto-i wo4-util" data-wo="utilBox">
+                                <span class="wo4-lbl" data-wo="utilLbl">% utilidad</span>
                                 <div class="wo4-util-v" data-wo="utilidadPct">—</div>
                             </div>
                             <div class="wo4-monto-i wo4-cierre">

@@ -5530,7 +5530,8 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
         # de las POs; mientras no haya, manda el subtotal de la cotización. El
         # front cambia la etiqueta con esto.
         try:
-            from .services_financiero import TIPO_PO_CLIENTE
+            from .services_financiero import (TIPO_PO_CLIENTE, TIPO_OC_PROVEEDOR,
+                                              utilidad_de_oportunidad)
             from django.db.models import Sum as _Sum
             from .models import ArchivoOportunidad as _AO
             pos = (_AO.objects.filter(oportunidad=todo, tipo_financiero=TIPO_PO_CLIENTE)
@@ -5539,10 +5540,25 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             data['monto_origen'] = 'po' if n_po else 'cotizacion'
             data['po_count'] = n_po
             data['po_total'] = float(pos.aggregate(t=_Sum('monto_extraido'))['t'] or 0)
+
+            # Utilidad: lo que dejan las POs una vez restadas las OC que le
+            # emitimos a proveedores. Se calcula al vuelo desde los archivos del
+            # Drive —no hay campo guardado— para que no pueda quedar desfasada.
+            _po, oc_total, utilidad, pct = utilidad_de_oportunidad(todo.id)
+            data['oc_count'] = (_AO.objects
+                                .filter(oportunidad=todo, tipo_financiero=TIPO_OC_PROVEEDOR)
+                                .exclude(monto_extraido__isnull=True).count())
+            data['oc_total'] = float(oc_total)
+            data['utilidad_monto'] = float(utilidad) if utilidad is not None else None
+            data['utilidad_pct'] = float(pct) if pct is not None else None
         except Exception:
             data['monto_origen'] = 'cotizacion'
             data['po_count'] = 0
             data['po_total'] = 0
+            data['oc_count'] = 0
+            data['oc_total'] = 0
+            data['utilidad_monto'] = None
+            data['utilidad_pct'] = None
 
         # Ingeniero sin acceso de supervisor: entra a consultar. Ve de qué va la
         # oportunidad, sus cotizaciones y su conversación, pero los metadatos

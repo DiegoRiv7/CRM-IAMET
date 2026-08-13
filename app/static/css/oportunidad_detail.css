@@ -643,6 +643,9 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 .opp-v4 .wo4-util-v {
     font-size: 1.28rem; font-weight: 700; letter-spacing: -.02em; color: #047857;
 }
+/* Utilidad negativa: las OC a proveedores se comieron el monto de las POs.
+   Se marca en rojo porque es un dato que hay que ver, no leer de pasada. */
+.opp-v4 .wo4-util-neg .wo4-util-v { color: #B91C1C; }
 .opp-v4 .wo4-lbl { font-size: .78rem; color: var(--w4-gris); display: block; margin-bottom: 3px; }
 .opp-v4 .wo4-monto { font-size: 1.42rem; font-weight: 700; letter-spacing: -.02em; }
 .opp-v4 .wo4-cierre { margin-left: auto; text-align: right; }

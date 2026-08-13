@@ -2214,6 +2214,43 @@
                 : 'Tomado de la orden de compra del cliente en el Drive')
             : 'Subtotal sin IVA de la última cotización. Cambiará cuando suba una PO al Drive.';
         montoLbl.classList.toggle('wo4-lbl-po', conPo);
+        pintarUtilidad(inst, d);
+    }
+
+    // Utilidad = lo que dejan las POs menos las OC que le emitimos a
+    // proveedores. Se queda en guion mientras no haya POs: sin ingreso no hay
+    // porcentaje que calcular, y un 0% se leeria como "no ganamos nada".
+    function pintarUtilidad(inst, d) {
+        var val = q(inst, 'utilidadPct');
+        if (!val) return;
+        var lbl = q(inst, 'utilLbl');
+        var caja = q(inst, 'utilBox');
+        var pct = d.utilidad_pct;
+        var nOc = d.oc_count || 0;
+        var tieneOc = nOc > 0;
+
+        if (pct === null || pct === undefined) {
+            val.textContent = '—';
+            if (lbl) lbl.textContent = '% utilidad';
+            val.title = tieneOc
+                ? 'Hay OC de proveedor pero aun no hay PO del cliente: falta el ingreso.'
+                : (d.po_count
+                    ? 'Hay PO del cliente pero aun no hay OC de proveedores: falta el costo.'
+                    : 'Se calcula cuando entren al Drive la PO del cliente y las OC de proveedores.');
+            if (caja) caja.classList.remove('wo4-util-neg');
+            return;
+        }
+        val.textContent = pct.toFixed(1).replace('.0', '') + '%';
+        if (lbl) lbl.textContent = tieneOc
+            ? ('% utilidad (OC' + (nOc > 1 ? ' \u00d7' + nOc : '') + ')')
+            : '% utilidad';
+        var money = function (n) {
+            return '$' + (Number(n) || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 });
+        };
+        val.title = money(d.po_total) + ' de PO \u2212 ' + money(d.oc_total) + ' de OC = '
+            + money(d.utilidad_monto);
+        // En rojo cuando el gasto se comio el ingreso.
+        if (caja) caja.classList.toggle('wo4-util-neg', pct < 0);
     }
 
     function subirADrive(inst, fileList) {
@@ -2226,7 +2263,7 @@
         // Si alguno resultó ser PO del cliente, el monto de la oportunidad
         // cambió en el servidor y hay que traerlo de nuevo: el render del
         // Drive solo repinta la lista de archivos.
-        var huboPo = false;
+        var huboPo = false;   // PO del cliente u OC de proveedor: ambas mueven las cifras
 
         function subirUno(f) {
             var fd = new FormData();
@@ -2239,9 +2276,17 @@
                 var po = d && d.archivo && d.archivo.po_cliente;
                 if (po && po.monto) {
                     huboPo = true;
-                    notify('Orden de compra detectada: $' +
+                    notify('Orden de compra del cliente detectada: $' +
                         Number(po.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }),
                         'success');
+                }
+                // Una OC de proveedor tambien mueve las cifras: baja la utilidad.
+                var fin = d && d.archivo && d.archivo.financiero;
+                if (fin && fin.tipo === 'oc' && fin.monto) {
+                    huboPo = true;
+                    notify('Orden de compra a proveedor detectada: $' +
+                        Number(fin.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }) +
+                        ' \u2014 se resta de la utilidad', 'success');
                 }
                 return d;
             });
@@ -2257,8 +2302,8 @@
                 notify(files.length > 1 ? files.length + ' archivos subidos' : 'Archivo subido', 'success');
             }
             renderDrive(inst);
-            // Recargar la oportunidad para que el monto y su etiqueta reflejen
-            // la PO recién detectada.
+            // Recargar la oportunidad para que el monto, su etiqueta y la
+            // utilidad reflejen el documento recién detectado.
             if (huboPo) recargarMonto(inst, oppId);
         }).catch(function () {
             notify('No se pudo subir el archivo', 'error');
