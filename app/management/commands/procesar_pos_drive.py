@@ -54,8 +54,8 @@ class Command(BaseCommand):
         for archivo in qs.iterator():
             if seco:
                 # En seco solo se mira si PARECE PO; no se abre para extraer.
-                from app.services_financiero import _texto_pdf, es_po_de_cliente
-                if es_po_de_cliente(archivo.nombre_original, _texto_pdf(archivo.archivo)):
+                from app.services_financiero import texto_de_po, es_po_de_cliente
+                if es_po_de_cliente(archivo.nombre_original, texto_de_po(archivo.archivo)[0]):
                     encontradas += 1
                     self.stdout.write('  [PO?] opp %-6s %s' % (
                         archivo.oportunidad_id, archivo.nombre_original))

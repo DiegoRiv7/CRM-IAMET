@@ -49,7 +49,7 @@ class Command(BaseCommand):
         self.stdout.write('1. Archivos encontrados: %d' % len(archivos))
 
         from app.services_financiero import (
-            _texto_pdf, es_po_de_cliente, monto_de_po, moneda_de_po,
+            texto_de_po, es_po_de_cliente, monto_de_po, moneda_de_po,
             TIPO_PO_CLIENTE,
         )
 
@@ -83,12 +83,14 @@ class Command(BaseCommand):
                 self.stdout.write('     ruta en el modelo: %r' % getattr(a.archivo, 'name', None))
                 continue
 
-            texto = _texto_pdf(a.archivo)
-            self.stdout.write('   caracteres de texto: %d' % len(texto))
+            texto, uso_ocr = texto_de_po(a.archivo)
+            self.stdout.write('   caracteres de texto: %d%s' % (
+                len(texto), '   (por OCR: el PDF no traía texto)' if uso_ocr else ''))
             if not texto.strip():
                 self.stdout.write(self.style.ERROR(
-                    '   → SE CAE aquí: pdfplumber no sacó texto. Suele ser un PDF '
-                    'escaneado (imagen), que necesitaría OCR.'))
+                    '   → SE CAE aquí: no se sacó texto. El PDF es escaneado y el '
+                    'OCR no está disponible o no reconoció nada. Revisa que '
+                    'pypdfium2 y rapidocr-onnxruntime estén instalados.'))
                 continue
             if opts['texto']:
                 self.stdout.write('   ── texto ──')
@@ -103,7 +105,7 @@ class Command(BaseCommand):
                     '(nombre tipo PO-123, "orden de compra" o "purchase order").'))
                 continue
 
-            monto = monto_de_po(texto)
+            monto = monto_de_po(texto, ocr=uso_ocr)
             moneda = moneda_de_po(texto)
             self.stdout.write('   monto detectado    : %s %s' % (monto, moneda))
             if monto is None:

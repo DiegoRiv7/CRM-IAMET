@@ -34,3 +34,9 @@ rapidfuzz==3.10.1
 pdfplumber==0.11.4
 qrcode==7.4.2
 litellm==1.55.0
+# OCR para las POs escaneadas (PDF sin capa de texto, p.ej. Fisher & Paykel).
+# Solo pip, sin paquetes del sistema: no hay que tocar el Dockerfile. Si estas
+# dos faltan, el lector de PO sigue funcionando y esos PDF simplemente no
+# aportan monto — que es como estaba antes.
+pypdfium2==5.12.1
+rapidocr-onnxruntime==1.2.3
