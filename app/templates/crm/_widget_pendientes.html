@@ -1831,6 +1831,7 @@
         if (!d || !d.success) return;
         var prev = _lcTotal;
         _miniData = d; _lcTotal = d.total;
+        _sinCorreoAplicar(d);
         _toastDraw();
         // Si aumentó (llegó algo nuevo): despierta de la píldora y late para avisar.
         if (prev >= 0 && d.total > prev) {
@@ -2745,13 +2746,25 @@
     var big = el('pendAsisBig');
     if (big && big.style.display !== 'none' && ov && ov.classList.contains('active')) _asisBigDraw();
   }
+  // Sin buzón vinculado: el asistente no existe para ese usuario — se retira la
+  // columna "Asistente" (feed + chat) y la sección de correos de Mi día. La
+  // burbuja de la esquina ya se oculta sola (el feed llega vacío). Mi día sigue
+  // con su resumen de tareas/agenda, que no depende del correo.
+  function _sinCorreoAplicar(d) {
+    var sin = !!(d && d.sin_correo);
+    var aside = document.querySelector('#widgetPendientes .pend-asis');
+    if (aside) aside.style.display = sin ? 'none' : '';
+    var navCor = document.querySelector('#widgetPendientes .pend-side-item[data-nav="correo"]');
+    if (navCor) navCor.style.display = sin ? 'none' : '';
+    return sin;
+  }
   window.pendAsisFeedLoad = function () {
     var box = el('pendAsisFeed'); if (!box) return;
-    if (_miniData) { _asisDraw(); _asisBigDraw(); }
-    else box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
+    if (_miniData && !_sinCorreoAplicar(_miniData)) { _asisDraw(); _asisBigDraw(); }
+    else if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
     fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisLastLoad = Date.now(); _asisDraw(); _asisBigDraw(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisLastLoad = Date.now(); if (_sinCorreoAplicar(d)) return; _asisDraw(); _asisBigDraw(); })
       .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
   };
 

@@ -10690,6 +10690,18 @@ def api_asistente_feed(request):
     (saludo del mini-panel), conteos por grupo e ítems con acciones."""
     from django.utils import timezone
     user = request.user
+
+    # Regla general: sin buzón vinculado NO hay asistente — ni burbuja en la
+    # esquina, ni avisos, ni columna "Asistente" en Mi día. Mi día sigue
+    # funcionando con su resumen de tareas/agenda, que no depende del correo.
+    from .models import MailConexion
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return JsonResponse({
+            'success': True, 'sin_correo': True,
+            'total': 0, 'correos': 0, 'pipeline': 0,
+            'resumen': '', 'brief': '', 'hueco': {'libre': False}, 'items': [],
+        })
+
     now = timezone.now()
     today = timezone.localdate()
 
