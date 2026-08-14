@@ -71,7 +71,6 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     <button type="button" class="wo4-ojo wo4-imprimir" data-action="imprimir-pdf"
                         data-wo="btnImprimir" title="Descargar el expediente en PDF">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-                        <span class="wo4-imprimir-t">PDF</span>
                     </button>
 
                     <div class="wo4-win">
@@ -280,10 +279,10 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     </div>
 
                     {% comment %}
-                    Las tres personas del trato en una línea: quién lo lleva,
-                    para qué cliente y con quién se habla. El cliente estuvo un
-                    tiempo en la franja de arriba y volvió aquí, al lado del
-                    responsable, que es donde se le busca.
+                    Dos mitades en UNA sola línea: el responsable a la
+                    izquierda y el cliente a la derecha, con el contacto colgando
+                    debajo en chico. Puestos como tres columnas se envolvían a
+                    dos renglones en cuanto el nombre de la empresa era largo.
 
                     El nombre del cliente es el elemento sobre el que trabaja el
                     autocompletado para cambiarlo, así que ahora se ve y se puede
@@ -294,13 +293,12 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                             <span class="wo4-av blue" data-wo="vendedorAvatar"></span>
                             <span class="wo4-persona-n" data-wo="vendedorName"></span>
                         </div>
-                        <div class="wo4-persona" title="Cliente">
+                        <div class="wo4-persona" title="Cliente y contacto">
                             <span class="wo4-av green" data-wo="clienteAvatarEmp"></span>
-                            <span class="wo4-persona-n" data-wo="clienteName"></span>
-                        </div>
-                        <div class="wo4-persona" title="Contacto">
-                            <span class="wo4-av purple" data-wo="clienteAvatar"></span>
-                            <span class="wo4-persona-n" data-wo="contactoName"></span>
+                            <span class="wo4-persona-dos">
+                                <span class="wo4-persona-n" data-wo="clienteName"></span>
+                                <span class="wo4-persona-sub" data-wo="contactoName"></span>
+                            </span>
                         </div>
                     </div>
 

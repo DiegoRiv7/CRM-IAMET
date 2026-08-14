@@ -213,10 +213,9 @@ body {
 /* Sin avatares (una sola persona) el hueco del contenedor sobra. */
 .opp-v4 .wo4-ojo-avs:empty { display: none; }
 /* Imprimir: mismo molde que el ojo, solo el icono. */
-/* Descarga del expediente: el icono va con la palabra PDF para que se
-   entienda que abre un documento, no que manda a la impresora. */
-.opp-v4 .wo4-imprimir { gap: 5px; padding: 0 9px; color: var(--w4-gris); }
-.opp-v4 .wo4-imprimir-t { font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
+/* Descarga del expediente: flecha hacia abajo, no impresora — lo que hace es
+   abrir el PDF, y de ahi se guarda o se imprime. */
+.opp-v4 .wo4-imprimir { width: 32px; padding: 0; justify-content: center; color: var(--w4-gris); }
 
 /* Enlace "Cambiar cliente" al pie de la tarjeta de personas. */
 
@@ -654,6 +653,16 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 }
 .opp-v4 .wo4-personas .wo4-av { width: 28px; height: 28px; font-size: .68rem; }
 .opp-v4 .wo4-personas .wo4-persona-n { font-size: .84rem; min-width: 0; }
+/* Cliente y contacto comparten celda: la empresa arriba y su contacto colgando
+   debajo en chico. Asi la tarjeta se mantiene en UNA linea aunque el nombre de
+   la empresa sea largo — puestos como tres columnas se envolvian. */
+.opp-v4 .wo4-persona-dos {
+    display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.25;
+}
+.opp-v4 .wo4-persona-sub {
+    font-size: .74rem; color: var(--w4-gris); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .opp-v4 .wo4-av {
     width: 35px; height: 35px; border-radius: 50%; color: #fff;
     font-size: .76rem; font-weight: 700;
@@ -661,7 +670,7 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 }
 .opp-v4 .wo4-av.blue { background: #2563EB; }
 .opp-v4 .wo4-av.purple { background: #7C3AED; }
-/* Verde para el cliente: distingue a la empresa de las dos personas. */
+/* Verde para el cliente: distingue a la empresa de la persona que la lleva. */
 .opp-v4 .wo4-av.green { background: #059669; }
 .opp-v4 .wo4-persona-n {
     font-size: .9rem; font-weight: 600;

@@ -516,6 +516,33 @@ def texto_de_po(archivo_field):
                       basta=lambda t: monto_de_po(t, ocr=True) is not None), True
 
 
+#: ── Nuestras propias OC, que NO son POs del cliente ──
+#: Las ordenes que le emitimos a un proveedor se titulan "Orden de compra"
+#: igual que las del cliente, asi que el detector de POs las enganchaba y las
+#: sumaba como INGRESO cuando son GASTO: el monto de la oportunidad salia
+#: inflado y la utilidad nunca se calculaba, porque el archivo se quedaba
+#: marcado como PO y ya no pasaba por el modulo financiero.
+#:
+#: No sirve el detector generico de OC para distinguirlas: da 'oc' a cualquier
+#: archivo con "orden de compra" EN EL NOMBRE, y la PO de Lateral Fulfillment
+#: se llama justo "IT PO#TJ00176 Orden de Compra - Iamet.pdf". Hace falta la
+#: firma de NUESTRO sistema, que ninguna PO de cliente trae:
+#:   · el nombre empieza con OCC-
+#:   · el cuerpo trae "Elaborado por" y "Aprobado por"
+#:   · o el renglon "Documento: OrdenDeCompra-<folio>"
+_OC_PROPIA_NOMBRE = re.compile(r'^\s*OCC[\s\-_]?', re.I)
+_OC_PROPIA_TEXTO = re.compile(
+    r'elaborado\s*por[\s\S]{0,300}aprobado\s*por'
+    r'|documento\s*:\s*orden\s*de\s*compra\s*-', re.I)
+
+
+def es_oc_a_proveedor(nombre, texto):
+    """¿Es una orden que NOSOTROS le emitimos a un proveedor?"""
+    if _OC_PROPIA_NOMBRE.search(nombre or ''):
+        return True
+    return bool(_OC_PROPIA_TEXTO.search(texto or ''))
+
+
 def es_po_de_cliente(nombre, texto):
     """¿Este PDF es una orden de compra que nos manda el cliente?
 
@@ -525,6 +552,10 @@ def es_po_de_cliente(nombre, texto):
     """
     nombre = nombre or ''
     texto = texto or ''
+    # Lo primero: descartar las nuestras. Comparten titulo con las del cliente
+    # y sumarlas como ingreso es el peor error posible aqui.
+    if es_oc_a_proveedor(nombre, texto):
+        return False
     if _PO_PISTAS_NOMBRE.search(nombre):
         return True
     return bool(_PO_PISTAS_TEXTO.search(texto))

@@ -798,10 +798,9 @@
         if (avEmp) avEmp.textContent = getInitials(clienteNombre);
         // El avatar morado acompaña al CONTACTO; si no hay, cae al cliente
         // para no dejar un círculo en blanco.
-        var contacto = d.contacto || 'Sin contacto';
-        q(inst, 'contactoName').textContent = contacto;
-        q(inst, 'clienteAvatar').textContent = getInitials(
-            d.contacto ? contacto : clienteNombre);
+        // El contacto cuelga del cliente, sin avatar propio: comparten el
+        // circulo verde de la empresa.
+        q(inst, 'contactoName').textContent = d.contacto || 'Sin contacto';
 
         // ── Ojo: quién ha visto la oportunidad ──
         cargarVistas(inst);
@@ -1190,7 +1189,6 @@
 
         // Cliente (autocomplete)
         var clienteNameEl = q(inst, 'clienteName');
-        var clienteAvatarEl = q(inst, 'clienteAvatar');
         var contactoEl = q(inst, 'contactoName');
         clienteNameEl.classList.add('editable');
         clienteNameEl.onclick = function () {
@@ -1199,10 +1197,7 @@
                 clienteNameEl.textContent = item.nombre;
                 var avEmpEl = q(inst, 'clienteAvatarEmp');
                 if (avEmpEl) avEmpEl.textContent = getInitials(item.nombre);
-                if (item.contacto_principal) contactoEl.textContent = item.contacto_principal;
-                // El avatar morado es el del CONTACTO; si no hay, el del cliente.
-                clienteAvatarEl.textContent = getInitials(
-                    item.contacto_principal || item.nombre);
+                contactoEl.textContent = item.contacto_principal || 'Sin contacto';
                 if (item.id !== (inst.data.cliente ? inst.data.cliente.id : null)) {
                     fieldChanged(inst, 'cliente', item.id);
                 }

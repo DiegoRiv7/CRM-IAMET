@@ -448,7 +448,12 @@ class Command(BaseCommand):
         for desc, nombre, texto, monto_esp, moneda_esp, num_esp in CASOS_OC:
             tipo = _detectar_tipo_financiero(nombre) or _detectar_tipo_por_contenido(texto)
             moneda = _detectar_moneda(texto)
-            bien = tipo == 'oc' and moneda == moneda_esp
+            # Lo mas importante de estas dos: que NO se cuenten como PO del
+            # cliente. Comparten el titulo "Orden de compra", y colarse ahi
+            # inflaba el monto de la oportunidad y dejaba la utilidad sin
+            # calcular, porque el archivo ya no llegaba al modulo financiero.
+            como_po = es_po_de_cliente(nombre, texto)
+            bien = tipo == 'oc' and moneda == moneda_esp and not como_po
             if bien and not verboso:
                 continue
             estilo = self.style.SUCCESS if bien else self.style.ERROR
@@ -457,6 +462,9 @@ class Command(BaseCommand):
                 self.stdout.write('        archivo  : %s' % nombre)
                 self.stdout.write('        tipo     : %s   (esperado oc)' % tipo)
                 self.stdout.write('        moneda   : %s   (esperado %s)' % (moneda, moneda_esp))
+                if como_po:
+                    self.stdout.write(self.style.ERROR(
+                        '        ¡SE CUENTA COMO PO DEL CLIENTE! Sumaria como ingreso.'))
                 fallas += 1
 
         total = len(CASOS_REALES) + len(CASOS_OC)
