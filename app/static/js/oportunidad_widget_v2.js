@@ -425,11 +425,10 @@
                 window.open('/app/oportunidad/' + inst.oppId + '/pdf/', '_blank');
                 break;
             case 'cambiar-cliente':
-                /* El autocompletado vive sobre el nodo clienteName, que ahora
-                   está oculto. Se muestra para que el usuario vea sobre qué
-                   escribe y lo cabecea el mismo setupEditable de siempre. */
+                /* El autocompletado vive sobre el nodo clienteName, que ya
+                   está a la vista en la tarjeta de personas. */
                 var cn = q(inst, 'clienteName');
-                if (cn) { cn.style.display = ''; if (cn.onclick) cn.onclick(); }
+                if (cn && cn.onclick) cn.onclick();
                 break;
             case 'abrir-cliente':
                 var cli = inst.data && inst.data.cliente;
@@ -794,26 +793,15 @@
         q(inst, 'vendedorAvatar').textContent = getInitials(vendedor);
         q(inst, 'vendedorName').textContent = vendedor;
         var clienteNombre = d.cliente ? d.cliente.nombre : 'Sin empresa';
-        q(inst, 'clienteAvatar').textContent = getInitials(clienteNombre);
         q(inst, 'clienteName').textContent = clienteNombre;
-        // La fila de abajo ya es el CONTACTO; el cliente vive en la franja.
+        var avEmp = q(inst, 'clienteAvatarEmp');
+        if (avEmp) avEmp.textContent = getInitials(clienteNombre);
+        // El avatar morado acompaña al CONTACTO; si no hay, cae al cliente
+        // para no dejar un círculo en blanco.
         var contacto = d.contacto || 'Sin contacto';
         q(inst, 'contactoName').textContent = contacto;
         q(inst, 'clienteAvatar').textContent = getInitials(
             d.contacto ? contacto : clienteNombre);
-
-        // ── Cliente en la franja ──
-        var cabCli = q(inst, 'clienteHead');
-        if (cabCli) {
-            var nomCli = (d.cliente && d.cliente.nombre) || '';
-            // Solo el nombre: el contacto ya vive en la tarjeta de personas y
-            // aquí robaba ancho al título.
-            cabCli.style.display = nomCli ? 'inline-flex' : 'none';
-            if (nomCli) {
-                q(inst, 'cabClienteAv').textContent = getInitials(nomCli);
-                q(inst, 'cabClienteNombre').textContent = nomCli;
-            }
-        }
 
         // ── Ojo: quién ha visto la oportunidad ──
         cargarVistas(inst);
@@ -1209,16 +1197,12 @@
             if (clienteNameEl.querySelector('.wo-inline-ac')) return;
             makeAutocomplete(clienteNameEl, 'Buscar cliente...', '/app/api/buscar-clientes/', function (item) {
                 clienteNameEl.textContent = item.nombre;
-                clienteNameEl.style.display = 'none';   // vuelve a ocultarse
+                var avEmpEl = q(inst, 'clienteAvatarEmp');
+                if (avEmpEl) avEmpEl.textContent = getInitials(item.nombre);
                 if (item.contacto_principal) contactoEl.textContent = item.contacto_principal;
-                // El avatar de esa fila es el del CONTACTO; si no hay, el del cliente.
+                // El avatar morado es el del CONTACTO; si no hay, el del cliente.
                 clienteAvatarEl.textContent = getInitials(
                     item.contacto_principal || item.nombre);
-                // El cliente se muestra arriba: hay que refrescar la franja.
-                var cabN = q(inst, 'cabClienteNombre');
-                var cabA = q(inst, 'cabClienteAv');
-                if (cabN) cabN.textContent = item.nombre;
-                if (cabA) cabA.textContent = getInitials(item.nombre);
                 if (item.id !== (inst.data.cliente ? inst.data.cliente.id : null)) {
                     fieldChanged(inst, 'cliente', item.id);
                 }

@@ -150,16 +150,15 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 .tw4 .tw4-main > .tw4-card:not(.tw4-card-act) {
     flex: 1 1 auto; min-height: 0; margin-bottom: 14px; padding-bottom: 6px;
 }
-/* La conversación de la tarea se despega del lienzo igual que la de la
-   oportunidad: cabecera y compositor en gris, el feed en blanco, borde más
-   marcado y sombra. Blanco sobre blanco no se leía como cuadro. */
+/* La conversación de la tarea se despega del lienzo por el fondo gris y el
+   borde marcado, sin sombra: blanco sobre blanco no se leía como cuadro, pero
+   la sombra la hacía flotar de más. */
 /* La conversación pide solo lo que ocupa: con el hilo vacío se queda en su
    alto mínimo —cabecera, aviso y compositor— y crece con los mensajes hasta
    la mitad del alto, punto en el que empieza a scrollear por dentro. */
 .tw4 .tw4-card-act {
     flex: 0 1 auto; min-height: 196px; max-height: 50%; padding: 0;
     background: #F7F8FA; border-color: #D3D7DE;
-    box-shadow: 0 8px 24px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .09);
 }
 .tw4 .tw4-card-act .tw4-sec-t {
     position: sticky; top: 0; z-index: 2;

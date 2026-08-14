@@ -42,31 +42,21 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
             {% comment %}
             ═══ ENCABEZADO ═══
             La franja ocupaba dos renglones (migaja + título) para muy poco dato.
-            Ahora trabaja: logo a la izquierda, título y tipo al centro, y a la
-            derecha el cliente y el ojo de quién la ha visto. Lo que antes vivía
-            en la tarjeta de "Vendedor / Cliente" del lateral sube aquí y libera
-            ese espacio abajo.
+            La franja carga el título con su tipo de venta al lado, y a la
+            derecha el ojo de quién la ha visto, la descarga del expediente y
+            el cierre. El cliente vive abajo, junto al responsable.
             {% endcomment %}
             <div class="wo4-head wo-header">
-                <img class="wo4-logo" src="{% static 'images/iamet_logo_tight.png' %}" alt="IAMET">
-
                 <div class="wo4-head-mid">
                     <!-- Proyecto vinculado como ruta, no como pastilla -->
                     <span class="wo4-crumb-proy" data-wo="proyectoHeader" style="display:none;"></span>
                     <div class="wo4-title-row">
                         <h1 class="wo4-title wo-title" data-wo="title"></h1>
+                        <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
                     </div>
                 </div>
 
                 <div class="wo4-head-right">
-                    <!-- Cliente: sube del lateral a la franja -->
-                    <button type="button" class="wo4-cliente" data-wo="clienteHead"
-                        data-action="abrir-cliente" style="display:none;"
-                        title="Ver la ficha del cliente">
-                        <span class="wo4-cliente-av" data-wo="cabClienteAv"></span>
-                        <span class="wo4-cliente-n" data-wo="cabClienteNombre"></span>
-                    </button>
-
                     <!-- Ojo: quién ha abierto esta oportunidad -->
                     <button type="button" class="wo4-ojo" data-action="ver-vistas"
                         data-wo="ojoBtn" title="Quién ha visto esta oportunidad">
@@ -75,10 +65,13 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                         <span class="wo4-ojo-n" data-wo="ojoTotal"></span>
                     </button>
 
-                    <!-- Imprimir el expediente en PDF -->
+                    <!-- Expediente en PDF. Icono de descarga y no de impresora:
+                         lo que hace es abrir el PDF, y de ahi se guarda o se
+                         imprime. La impresora prometia una sola de las dos. -->
                     <button type="button" class="wo4-ojo wo4-imprimir" data-action="imprimir-pdf"
-                        data-wo="btnImprimir" title="Imprimir el expediente en PDF">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        data-wo="btnImprimir" title="Descargar el expediente en PDF">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                        <span class="wo4-imprimir-t">PDF</span>
                     </button>
 
                     <div class="wo4-win">
@@ -287,37 +280,35 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                     </div>
 
                     {% comment %}
-                    El CLIENTE ya vive en la franja de arriba; repetirlo aquí
-                    anulaba el espacio que se ganó al subirlo. Queda el vendedor
-                    y el contacto, que no están arriba.
+                    Las tres personas del trato en una línea: quién lo lleva,
+                    para qué cliente y con quién se habla. El cliente estuvo un
+                    tiempo en la franja de arriba y volvió aquí, al lado del
+                    responsable, que es donde se le busca.
 
-                    clienteName sigue en el DOM (oculto): es el elemento sobre el
-                    que trabaja el autocompletado para cambiar de cliente. El
-                    enlace de abajo es el que lo dispara, para no perder esa
-                    función al quitar la fila.
+                    El nombre del cliente es el elemento sobre el que trabaja el
+                    autocompletado para cambiarlo, así que ahora se ve y se puede
+                    editar de nuevo desde aquí.
                     {% endcomment %}
                     <div class="wo4-card wo4-pad wo4-personas">
-                        <div class="wo4-persona" title="Vendedor">
+                        <div class="wo4-persona" title="Responsable">
                             <span class="wo4-av blue" data-wo="vendedorAvatar"></span>
                             <span class="wo4-persona-n" data-wo="vendedorName"></span>
+                        </div>
+                        <div class="wo4-persona" title="Cliente">
+                            <span class="wo4-av green" data-wo="clienteAvatarEmp"></span>
+                            <span class="wo4-persona-n" data-wo="clienteName"></span>
                         </div>
                         <div class="wo4-persona" title="Contacto">
                             <span class="wo4-av purple" data-wo="clienteAvatar"></span>
                             <span class="wo4-persona-n" data-wo="contactoName"></span>
                         </div>
-                        <span class="wo4-persona-n" data-wo="clienteName" style="display:none;"></span>
                     </div>
 
                     {% comment %}
-                    Cuadro del trato: permanente (antes solo salía en las de tipo
-                    proyecto) y ahora también carga el tipo de venta, que estaba
-                    en la franja de arriba y la tenía apretada.
+                    Cuadro del trato: permanente, antes solo salía en las de tipo
+                    proyecto. El tipo de venta volvió arriba, junto al título.
                     {% endcomment %}
                     <div class="wo4-card wo4-pad" data-wo="proyectoCard">
-                        <div class="wo4-tipo-row">
-                            <span class="wo4-lbl">Tipo de venta</span>
-                            <button type="button" class="wo4-tipo" data-wo="typeBadge">Venta runrate</button>
-                        </div>
                         <div class="wo4-chead">
                             <h3>Proyecto</h3>
                             <button type="button" class="wo4-link" data-action="vincular-proyecto">Vincular</button>
