@@ -424,12 +424,6 @@
                 // navegador ya trae su propio visor con botón de imprimir.
                 window.open('/app/oportunidad/' + inst.oppId + '/pdf/', '_blank');
                 break;
-            case 'cambiar-cliente':
-                /* El autocompletado vive sobre el nodo clienteName, que ya
-                   está a la vista en la tarjeta de personas. */
-                var cn = q(inst, 'clienteName');
-                if (cn && cn.onclick) cn.onclick();
-                break;
             case 'abrir-cliente':
                 var cli = inst.data && inst.data.cliente;
                 if (!cli || !cli.id) {
@@ -908,6 +902,90 @@
             .catch(function () { /* el ojo es informativo: si falla, se queda vacío */ });
     }
 
+    // Buscador en cuadro. El autocompletado en linea escribia dentro de la
+    // celda de la tarjeta de personas, que mide unos pocos centimetros: el
+    // texto se cortaba y los resultados no cabian. Aqui hay sitio de sobra.
+    function abrirBuscador(opts) {
+        var previo = document.getElementById('wo4BuscarOverlay');
+        if (previo) previo.remove();
+
+        var ov = document.createElement('div');
+        ov.id = 'wo4BuscarOverlay';
+        ov.className = 'wo4-vistas-ov';
+        ov.innerHTML =
+            '<div class="wo4-vistas-card wo4-buscar-card">' +
+            '<div class="wo4-vistas-head">' +
+            '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+            '<h3>' + esc(opts.titulo) + '</h3>' +
+            '<button type="button" class="wo4-vistas-x" data-cerrar title="Cerrar">' +
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+            '</div>' +
+            '<div class="wo4-buscar-inp-wrap">' +
+            '<input type="text" class="wo4-buscar-inp" data-inp placeholder="' + esc(opts.placeholder) + '" />' +
+            '</div>' +
+            '<div class="wo4-vistas-body" data-lista>' +
+            '<div class="wo4-vistas-vacio">Escribe para buscar…</div>' +
+            '</div>' +
+            (opts.pie ? '<div class="wo4-vistas-pie"><button type="button" ' +
+                'class="wo4-link" data-pie>' + esc(opts.pie) + '</button></div>' : '') +
+            '</div>';
+        document.body.appendChild(ov);
+
+        var cerrar = function () {
+            ov.remove();
+            document.removeEventListener('keydown', escKey);
+        };
+        ov.addEventListener('click', function (ev) {
+            if (ev.target === ov || ev.target.closest('[data-cerrar]')) cerrar();
+        });
+        var escKey = function (ev) { if (ev.key === 'Escape') cerrar(); };
+        document.addEventListener('keydown', escKey);
+
+        var inp = ov.querySelector('[data-inp]');
+        var lista = ov.querySelector('[data-lista]');
+        var btnPie = ov.querySelector('[data-pie]');
+        if (btnPie) btnPie.onclick = function () { cerrar(); opts.alPie(); };
+        inp.focus();
+
+        var pintar = function (items) {
+            if (!items.length) {
+                lista.innerHTML = '<div class="wo4-vistas-vacio">Sin resultados.</div>';
+                return;
+            }
+            lista.innerHTML = '';
+            items.forEach(function (item) {
+                var fila = document.createElement('button');
+                fila.type = 'button';
+                fila.className = 'wo4-buscar-item';
+                var etq = opts.etiqueta(item);
+                fila.innerHTML = '<span class="wo4-buscar-av">' + esc(getInitials(etq.titulo)) + '</span>' +
+                    '<span class="wo4-buscar-txt"><span class="wo4-buscar-n">' + esc(etq.titulo) + '</span>' +
+                    (etq.sub ? '<span class="wo4-buscar-sub">' + esc(etq.sub) + '</span>' : '') + '</span>';
+                fila.onclick = function () { opts.alElegir(item); cerrar(); };
+                lista.appendChild(fila);
+            });
+        };
+
+        var timer = null;
+        var buscar = function () {
+            var qStr = inp.value.trim();
+            var sep = opts.url.indexOf('?') !== -1 ? '&' : '?';
+            fetch(opts.url + sep + 'q=' + encodeURIComponent(qStr), { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    pintar(data.clientes || data.usuarios || data.contactos || []);
+                })
+                .catch(function () {
+                    lista.innerHTML = '<div class="wo4-vistas-vacio">No se pudo buscar.</div>';
+                });
+        };
+        inp.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(buscar, 220);
+        });
+        buscar();   // la lista inicial, sin que el usuario teclee nada
+    }
+
     function abrirPanelVistas(inst) {
         var previo = document.getElementById('wo4VistasOverlay');
         if (previo) previo.remove();
@@ -1192,30 +1270,53 @@
         var contactoEl = q(inst, 'contactoName');
         clienteNameEl.classList.add('editable');
         clienteNameEl.onclick = function () {
-            if (clienteNameEl.querySelector('.wo-inline-ac')) return;
-            makeAutocomplete(clienteNameEl, 'Buscar cliente...', '/app/api/buscar-clientes/', function (item) {
-                clienteNameEl.textContent = item.nombre;
-                var avEmpEl = q(inst, 'clienteAvatarEmp');
-                if (avEmpEl) avEmpEl.textContent = getInitials(item.nombre);
-                contactoEl.textContent = item.contacto_principal || 'Sin contacto';
-                if (item.id !== (inst.data.cliente ? inst.data.cliente.id : null)) {
-                    fieldChanged(inst, 'cliente', item.id);
-                }
+            var actual = inst.data && inst.data.cliente;
+            abrirBuscador({
+                titulo: 'Cambiar el cliente',
+                placeholder: 'Buscar cliente por nombre…',
+                url: '/app/api/buscar-clientes/',
+                // La ficha del cliente se abria desde el chip de la franja, que
+                // ya no existe; vive aqui para no perder esa consulta.
+                pie: actual && actual.id ? ('Ver la ficha de ' + actual.nombre) : '',
+                alPie: function () { handleAction(inst, 'abrir-cliente'); },
+                etiqueta: function (item) {
+                    return { titulo: item.nombre, sub: item.contacto_principal || '' };
+                },
+                alElegir: function (item) {
+                    clienteNameEl.textContent = item.nombre;
+                    var avEmpEl = q(inst, 'clienteAvatarEmp');
+                    if (avEmpEl) avEmpEl.textContent = getInitials(item.nombre);
+                    contactoEl.textContent = item.contacto_principal || 'Sin contacto';
+                    if (item.id !== (inst.data.cliente ? inst.data.cliente.id : null)) {
+                        fieldChanged(inst, 'cliente', item.id);
+                    }
+                },
             });
         };
 
-        // Contacto (autocomplete, depende del cliente)
+        // Contacto: depende del cliente, asi que primero hay que tener uno.
         contactoEl.classList.add('editable');
         contactoEl.onclick = function () {
-            if (contactoEl.querySelector('.wo-inline-ac')) return;
             var cId = inst.edited.cliente || (inst.data.cliente ? inst.data.cliente.id : '');
-            if (!cId) return;
-            makeAutocomplete(contactoEl, 'Buscar contacto...', '/app/api/buscar-contactos/?cliente_id=' + cId, function (item) {
-                var name = item.nombre_completo || (item.nombre + ' ' + (item.apellido || '')).trim();
-                contactoEl.textContent = name;
-                if (item.id !== inst.data.contacto_id) {
-                    fieldChanged(inst, 'contacto', item.id);
-                }
+            if (!cId) {
+                notify('Primero elige el cliente: los contactos son suyos', 'error');
+                return;
+            }
+            abrirBuscador({
+                titulo: 'Cambiar el contacto',
+                placeholder: 'Buscar contacto…',
+                url: '/app/api/buscar-contactos/?cliente_id=' + cId,
+                etiqueta: function (item) {
+                    var n = item.nombre_completo || (item.nombre + ' ' + (item.apellido || '')).trim();
+                    return { titulo: n, sub: item.puesto || item.email || '' };
+                },
+                alElegir: function (item) {
+                    var name = item.nombre_completo || (item.nombre + ' ' + (item.apellido || '')).trim();
+                    contactoEl.textContent = name;
+                    if (item.id !== inst.data.contacto_id) {
+                        fieldChanged(inst, 'contacto', item.id);
+                    }
+                },
             });
         };
 
@@ -2202,16 +2303,19 @@
     function pintarUtilidad(inst, d) {
         var val = q(inst, 'utilidadPct');
         if (!val) return;
-        var lbl = q(inst, 'utilLbl');
+        var sub = q(inst, 'utilidadMonto');
         var caja = q(inst, 'utilBox');
         var pct = d.utilidad_pct;
-        var nOc = d.oc_count || 0;
-        var tieneOc = nOc > 0;
+        var money = function (n) {
+            return '$' + (Number(n) || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 });
+        };
 
         if (pct === null || pct === undefined) {
             val.textContent = '—';
-            if (lbl) lbl.textContent = '% utilidad';
-            val.title = tieneOc
+            if (sub) sub.textContent = d.oc_count
+                ? 'falta la PO del cliente'
+                : (d.po_count ? 'faltan las OC de proveedor' : 'sin PO ni OC');
+            val.title = d.oc_count
                 ? 'Hay OC de proveedor pero aun no hay PO del cliente: falta el ingreso.'
                 : (d.po_count
                     ? 'Hay PO del cliente pero aun no hay OC de proveedores: falta el costo.'
@@ -2220,12 +2324,8 @@
             return;
         }
         val.textContent = pct.toFixed(1).replace('.0', '') + '%';
-        if (lbl) lbl.textContent = tieneOc
-            ? ('% utilidad (OC' + (nOc > 1 ? ' \u00d7' + nOc : '') + ')')
-            : '% utilidad';
-        var money = function (n) {
-            return '$' + (Number(n) || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 });
-        };
+        // El importe debajo del porcentaje: un 41% no dice si son mil o cien mil.
+        if (sub) sub.textContent = money(d.utilidad_monto) + ' pesos mexicanos';
         val.title = money(d.po_total) + ' de PO \u2212 ' + money(d.oc_total) + ' de OC = '
             + money(d.utilidad_monto);
         // En rojo cuando el gasto se comio el ingreso.

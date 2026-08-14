@@ -165,8 +165,10 @@ body {
    que es lo que los cinco temas pintan). Solo el CUERPO es neutro. */
 /* La franja ahora trabaja: logo | título y tipo | cliente y ojo. Antes eran
    dos renglones para muy poco dato y el cliente vivía abajo en el lateral. */
+/* El margen lateral es el mismo que el de las etapas y el cuerpo (26px): con
+   20px la franja arrancaba y terminaba corrida respecto a todo lo de abajo. */
 .opp-v4 .wo4-head {
-    padding: 12px 20px !important; flex-shrink: 0;
+    padding: 12px 26px !important; flex-shrink: 0;
     display: flex; align-items: center; gap: 16px;
     position: relative;
 }
@@ -482,6 +484,39 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 /* ═══ Panel del ojo: quién ha visto la oportunidad ═══
    Se monta como overlay propio, fuera del widget, para que no lo recorte el
    overflow del encabezado. */
+/* Buscador de cliente/contacto: mismo cuadro que el panel del ojo, con una
+   caja de texto arriba y los resultados abajo. Antes se escribia dentro de la
+   celda de la tarjeta de personas, de unos pocos centimetros de ancho: el
+   texto se cortaba y los resultados no cabian. */
+.wo4-buscar-card { max-width: 460px; }
+.wo4-buscar-inp-wrap { padding: 12px 18px 0; }
+.wo4-buscar-inp {
+    width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px;
+    border: 1px solid #D7DBE2; border-radius: 9px;
+    font: inherit; font-size: .92rem; outline: none;
+}
+.wo4-buscar-inp:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, .13); }
+.wo4-buscar-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 9px 10px; border: none; background: none; border-radius: 9px;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.wo4-buscar-item:hover { background: #F1F5F9; }
+.wo4-buscar-av {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #059669; color: #fff; font-size: .7rem; font-weight: 700;
+}
+.wo4-buscar-txt { display: flex; flex-direction: column; min-width: 0; }
+.wo4-buscar-n {
+    font-size: .9rem; font-weight: 600; color: #0F172A;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wo4-buscar-sub {
+    font-size: .76rem; color: #64748B;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .wo4-vistas-ov {
     position: fixed; inset: 0; z-index: 10600;
     display: flex; align-items: center; justify-content: center;
@@ -608,13 +643,20 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 .opp-v4 .wo4-util-v {
     font-size: 1.28rem; font-weight: 700; letter-spacing: -.02em; color: #047857;
 }
+/* La moneda y el importe de la utilidad, en chico bajo su cifra: el monto se
+   guarda siempre en pesos y conviene que se lea, porque las POs llegan en
+   dolares y se convierten al entrar. */
+.opp-v4 .wo4-moneda {
+    display: block; margin-top: 2px;
+    font-size: .72rem; color: var(--w4-gris); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 /* Utilidad negativa: las OC a proveedores se comieron el monto de las POs.
    Se marca en rojo porque es un dato que hay que ver, no leer de pasada. */
 .opp-v4 .wo4-util-neg .wo4-util-v { color: #B91C1C; }
 .opp-v4 .wo4-lbl { font-size: .78rem; color: var(--w4-gris); display: block; margin-bottom: 3px; }
 .opp-v4 .wo4-monto { font-size: 1.42rem; font-weight: 700; letter-spacing: -.02em; }
-.opp-v4 .wo4-cierre { margin-left: auto; text-align: right; }
-.opp-v4 .wo4-cierre-v { font-size: 1.02rem; font-weight: 600; }
+.opp-v4 .wo4-util { margin-left: auto; }
 .opp-v4 .wo4-docs { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .opp-v4 .wo4-doc { background: var(--w4-panel); border-radius: 9px; padding: 8px 12px; }
 .opp-v4 .wo4-doc:hover { background: #F3F4F6; }

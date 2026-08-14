@@ -189,14 +189,12 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                             <div class="wo4-monto-i">
                                 <span class="wo4-lbl" data-wo="montoLbl">Monto sin IVA (cotización)</span>
                                 <div class="wo4-monto" data-wo="monto">$0</div>
+                                <span class="wo4-moneda">pesos mexicanos</span>
                             </div>
                             <div class="wo4-monto-i wo4-util" data-wo="utilBox">
-                                <span class="wo4-lbl" data-wo="utilLbl">% utilidad</span>
+                                <span class="wo4-lbl">Utilidad</span>
                                 <div class="wo4-util-v" data-wo="utilidadPct">—</div>
-                            </div>
-                            <div class="wo4-monto-i wo4-cierre">
-                                <span class="wo4-lbl">Cierre</span>
-                                <div class="wo4-cierre-v" data-wo="fechaCierre">-</div>
+                                <span class="wo4-moneda" data-wo="utilidadMonto"></span>
                             </div>
                         </div>
 
@@ -236,11 +234,17 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                                 <div class="wo4-extra-v" data-wo="area">-</div>
                             </div>
                             {% comment %}
-                            El cliente se muestra en la franja de arriba; cambiarlo
-                            vive aquí, con el resto de los campos editables.
+                            El mes de cierre baja aquí: la primera línea la ocupan
+                            ahora el monto y la utilidad, que son las dos cifras
+                            que de verdad se miran. Sigue siendo editable.
+
+                            El cliente ya no se cambia desde aquí: se hace con un
+                            clic sobre su nombre en la tarjeta de personas, que
+                            abre el buscador.
                             {% endcomment %}
-                            <div class="wo4-extra-full">
-                                <button type="button" class="wo4-link" data-action="cambiar-cliente">Cambiar cliente</button>
+                            <div>
+                                <span class="wo4-lbl">Mes de cierre</span>
+                                <div class="wo4-extra-v" data-wo="fechaCierre">-</div>
                             </div>
                         </div>
 
