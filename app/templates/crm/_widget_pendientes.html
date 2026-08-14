@@ -594,6 +594,13 @@
   .pend-maintop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;border-bottom:1px solid #f0f1f3;background:#fff;}
   #widgetPendientes .pend-maintop .pend-vend{margin-left:auto;}   /* siempre a la derecha, aunque no haya sub-tabs */
   .pend-asis{width:392px;flex:none;background:#fff;border-left:1px solid #f0f1f3;display:flex;flex-direction:column;min-width:0;}
+  /* Panorama del equipo (solo supervisores/administradores) */
+  .pend-eq{background:#f7f8fa;border:1px solid #eef0f3;border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+  .pend-eq-h{font-size:.68rem;font-weight:800;letter-spacing:.05em;color:#8a8c93;text-transform:uppercase;margin-bottom:4px;}
+  .pend-eq-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;}
+  .pend-eq-row:hover{background:#eef4ff;}
+  .pend-eq-nom{font-size:.84rem;font-weight:700;color:#1c1d22;white-space:nowrap;}
+  .pend-eq-det{font-size:.76rem;color:#5b5d63;text-align:right;line-height:1.35;}
   .pend-asis-head{padding:16px 18px 12px;border-bottom:1px solid #f0f1f3;flex:none;}
   .pend-asis-h1{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:800;color:#1c1d22;}
   .pend-asis-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;}
@@ -2713,6 +2720,25 @@
   function _asideTabBtn(k, lbl, n) {
     return '<button type="button" class="pend-mini-tab' + (_asideTab === k ? ' on' : '') + '" onclick="pendAsisTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
   }
+  // Panorama del equipo (solo llega para supervisores/administradores): filas
+  // compactas bajo el saludo; el clic abre Mi día filtrado a ese vendedor.
+  function _equipoHtml(d) {
+    var eq = (d && d.equipo) || [];
+    if (!eq.length) return '';
+    var rows = eq.map(function (v) {
+      var partes = [];
+      if (v.correos) partes.push(v.correos + ' correo' + (v.correos > 1 ? 's' : '') + ' sin responder');
+      if (v.pipeline) partes.push(v.pipeline + ' oportunidad' + (v.pipeline > 1 ? 'es' : '') + ' sin avance');
+      return '<div class="pend-eq-row" onclick="pendEquipoVer(' + v.id + ',\'' + _esc(v.nombre).replace(/'/g, '&#39;') + '\')">' +
+        '<span class="pend-eq-nom">' + _esc(v.nombre) + '</span>' +
+        '<span class="pend-eq-det">' + partes.join(' · ') + '</span></div>';
+    }).join('');
+    return '<div class="pend-eq"><div class="pend-eq-h">Tu equipo</div>' + rows + '</div>';
+  }
+  window.pendEquipoVer = function (id, nombre) {
+    pendNav('dia');
+    if (typeof pendSelVendedor === 'function') pendSelVendedor(String(id), nombre);
+  };
   function _asisDraw() {
     var box = el('pendAsisFeed'); if (!box || !_miniData) return;
     var d = _miniData;
@@ -2733,7 +2759,7 @@
         ? items.map(_miniCard).join('')
         : '<div class="pend-mini-empty">Nada urgente por ahora. Te aviso si llega algo.</div>';
     }
-    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + tabs + cards;
+    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + _equipoHtml(d) + tabs + cards;
     if (_atendidos === null) _atFetch();
   }
   function _feedRedraw() {
@@ -2762,7 +2788,7 @@
     var box = el('pendAsisFeed'); if (!box) return;
     if (_miniData && !_sinCorreoAplicar(_miniData)) { _asisDraw(); _asisBigDraw(); }
     else if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
-    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+    fetch('/app/api/asistente/feed/?panorama=1', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisLastLoad = Date.now(); if (_sinCorreoAplicar(d)) return; _asisDraw(); _asisBigDraw(); })
       .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });

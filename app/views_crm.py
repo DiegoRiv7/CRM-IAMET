@@ -10623,6 +10623,52 @@ def _etapa_avance_map():
     return out
 
 
+def _feed_equipo_panorama(user, today, limite=8):
+    """Panorama del equipo para el asistente por ROL: supervisores globales,
+    supervisores de grupo y administradores ven cuántos correos importantes sin
+    responder y oportunidades sin avance trae cada vendedor suyo (misma
+    visibilidad que el resto del CRM). Solo conteos por código — el detalle se
+    ve en Mi día con el selector de vendedor. Un vendedor raso NO recibe
+    panorama: ver los pendientes de sus compañeros no es su rol."""
+    from django.contrib.auth.models import User as _User
+    from .models import UserProfile, GrupoTrabajo
+    from .views_grupos import get_usuarios_visibles_ids
+
+    es_admin = UserProfile.objects.filter(user=user, rol='administrador').exists()
+    if is_supervisor(user) or es_admin:
+        visibles = get_usuarios_visibles_ids(user)   # None = ve a todos
+    else:
+        # ¿Supervisor de grupo sin ser supervisor global? Ve solo a sus miembros.
+        miembros = set()
+        for g in GrupoTrabajo.objects.filter(supervisor_grupo=user, activo=True):
+            miembros.update(g.miembros.values_list('id', flat=True))
+        miembros.discard(user.id)
+        if not miembros:
+            return []
+        visibles = miembros
+
+    if visibles is None:
+        vqs = _User.objects.filter(is_active=True).exclude(id=user.id).exclude(groups__name='Supervisores')
+    else:
+        visibles = set(visibles)
+        visibles.discard(user.id)
+        vqs = _User.objects.filter(is_active=True, id__in=visibles)
+
+    roles = dict(UserProfile.objects.filter(user__in=vqs).values_list('user_id', 'rol'))
+    out = []
+    for u in vqs.order_by('first_name', 'last_name')[:20]:
+        if roles.get(u.id, 'vendedor') != 'vendedor':
+            continue
+        n_cor = len(_feed_correos_items(u))
+        n_opp = len(_feed_opps_estancadas(u, today))
+        if not (n_cor or n_opp):
+            continue
+        out.append({'id': u.id, 'nombre': u.get_full_name() or u.username,
+                    'correos': n_cor, 'pipeline': n_opp})
+    out.sort(key=lambda v: -(v['correos'] + v['pipeline']))
+    return out[:limite]
+
+
 def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
     """Oportunidades ABIERTAS del usuario sin movimiento en >= dias_min (usa
     fecha_actualizacion como 'última vez que se tocó'). Se excluyen las que ya
@@ -10691,13 +10737,23 @@ def api_asistente_feed(request):
     from django.utils import timezone
     user = request.user
 
+    # Regla por rol: al INGENIERO el asistente comercial no le aplica — su
+    # trabajo no es vender, y su Mi día ya tiene vista propia de tareas y
+    # actividades. Mismo tratamiento que sin-buzón: el asistente no existe.
+    if is_ingeniero(user) and not is_supervisor(user):
+        return JsonResponse({
+            'success': True, 'sin_correo': True, 'motivo': 'rol_ingeniero',
+            'total': 0, 'correos': 0, 'pipeline': 0,
+            'resumen': '', 'brief': '', 'hueco': {'libre': False}, 'items': [],
+        })
+
     # Regla general: sin buzón vinculado NO hay asistente — ni burbuja en la
     # esquina, ni avisos, ni columna "Asistente" en Mi día. Mi día sigue
     # funcionando con su resumen de tareas/agenda, que no depende del correo.
     from .models import MailConexion
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
         return JsonResponse({
-            'success': True, 'sin_correo': True,
+            'success': True, 'sin_correo': True, 'motivo': 'sin_buzon',
             'total': 0, 'correos': 0, 'pipeline': 0,
             'resumen': '', 'brief': '', 'hueco': {'libre': False}, 'items': [],
         })
@@ -10749,6 +10805,17 @@ def api_asistente_feed(request):
         brief = '%s%s. Revisé tu correo y tu pipeline y no hay nada urgente por ahora. Sigue así.' % (
             saludo, (', ' + nombre) if nombre else '')
 
+    # Panorama del equipo — solo cuando el panel Mi día lo pide (?panorama=1):
+    # el sondeo de la burbuja cada 60s no lo necesita y así se mantiene barato.
+    equipo = []
+    if request.GET.get('panorama') == '1':
+        equipo = _feed_equipo_panorama(user, today)
+        if equipo:
+            n_eq = len(equipo)
+            brief += (' Ojo con tu equipo: %d vendedor%s trae%s pendientes '
+                      'acumulados; te dejo el detalle aquí abajo.') % (
+                n_eq, '' if n_eq == 1 else 'es', '' if n_eq == 1 else 'n')
+
     return JsonResponse({
         'success': True,
         'total': total,
@@ -10757,6 +10824,7 @@ def api_asistente_feed(request):
         'resumen': resumen,
         'brief': brief,
         'hueco': hueco,
+        'equipo': equipo,
         'items': correos_items + opps_items,
     })
 
