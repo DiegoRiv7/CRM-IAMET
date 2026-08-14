@@ -139,12 +139,15 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     overflow-y: auto;
     padding: 22px 24px 0;
 }
-/* El contenido de la tarea —título, descripción y subtareas— es lo que se
-   viene a leer, así que se queda con el espacio libre. Antes se encogía a lo
-   que midiera su texto y todo el sobrante se lo llevaba la conversación: con
-   una descripción de dos renglones, media pantalla quedaba en un recuadro de
-   actividad vacío. */
-.tw4 .tw4-main > .tw4-card:first-of-type {
+/* El contenido de la tarea —título, descripción y subtareas— se queda con el
+   espacio libre, de modo que la conversación quede abajo y pegada al fondo en
+   vez de flotando a media altura.
+
+   OJO con el selector: el primer hijo de .tw4-main es la barra de acciones,
+   que también es un div, asi que un ":first-of-type" apuntaba a ELLA y esta
+   regla no se aplicaba a nada. Por eso se selecciona por lo que la distingue
+   —no ser la tarjeta de actividad— y no por su posicion. */
+.tw4 .tw4-main > .tw4-card:not(.tw4-card-act) {
     flex: 1 1 auto; min-height: 0; margin-bottom: 14px; padding-bottom: 6px;
 }
 /* La conversación de la tarea se despega del lienzo igual que la de la
@@ -413,7 +416,8 @@ body[data-theme="mundial"] .tw4 .tw4-sep { background: rgba(255, 255, 255, .28);
     .tw4 .tw4-main { overflow: visible; }
     .tw4 .tw4-card { overflow: visible; }
     /* En una sola columna ya no hay alto que repartir: cada cuadro crece. */
-    .tw4 .tw4-main > .tw4-card:first-of-type { max-height: none; }
+    .tw4 .tw4-main > .tw4-card:not(.tw4-card-act) { flex: 0 1 auto; max-height: none; }
+    .tw4 .tw4-card-act { max-height: none; }
     .tw4 .tw4-side { border-left: none; border-top: 1px solid #E9EBEF; overflow: visible; }
     .tw4 .tw4-tray { position: static; }
 }
