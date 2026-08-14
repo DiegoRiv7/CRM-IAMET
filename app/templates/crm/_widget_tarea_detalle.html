@@ -139,16 +139,22 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
     overflow-y: auto;
     padding: 22px 24px 0;
 }
-/* La tarea manda el alto que pida su contenido, sin pasarse de la mitad; el
-   resto se lo lleva la conversación. */
+/* El contenido de la tarea —título, descripción y subtareas— es lo que se
+   viene a leer, así que se queda con el espacio libre. Antes se encogía a lo
+   que midiera su texto y todo el sobrante se lo llevaba la conversación: con
+   una descripción de dos renglones, media pantalla quedaba en un recuadro de
+   actividad vacío. */
 .tw4 .tw4-main > .tw4-card:first-of-type {
-    flex: 0 1 auto; max-height: 52%; margin-bottom: 14px; padding-bottom: 6px;
+    flex: 1 1 auto; min-height: 0; margin-bottom: 14px; padding-bottom: 6px;
 }
 /* La conversación de la tarea se despega del lienzo igual que la de la
    oportunidad: cabecera y compositor en gris, el feed en blanco, borde más
    marcado y sombra. Blanco sobre blanco no se leía como cuadro. */
+/* La conversación pide solo lo que ocupa: con el hilo vacío se queda en su
+   alto mínimo —cabecera, aviso y compositor— y crece con los mensajes hasta
+   la mitad del alto, punto en el que empieza a scrollear por dentro. */
 .tw4 .tw4-card-act {
-    flex: 1 1 auto; min-height: 220px; padding: 0;
+    flex: 0 1 auto; min-height: 196px; max-height: 50%; padding: 0;
     background: #F7F8FA; border-color: #D3D7DE;
     box-shadow: 0 8px 24px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .09);
 }
@@ -189,14 +195,15 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 
 /* Actividad: se estira hasta el compositor para que no quede lienzo muerto */
 .tw4 .tw4-actividad {
-    flex: 1 1 auto; min-height: 150px; padding-bottom: 8px;
+    flex: 1 1 auto; min-height: 0; padding-bottom: 8px;
     display: flex; flex-direction: column;
 }
 .tw4 .tw4-feed { flex: 1; min-height: 0; }
+/* El aviso de "sin actividad" ya no infla la caja: ocupa lo justo. */
 .tw4 .crm-tw-feed-empty {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 4px;
-    color: #A0AAB8; font-size: 13px; text-align: center; padding: 24px 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    color: #A0AAB8; font-size: 13px; text-align: center; padding: 10px 0 4px;
 }
 .tw4 .crm-tw-feed-empty .crm-tw-feed-empty-sub { font-size: 12px; color: #B6BECB; }
 
