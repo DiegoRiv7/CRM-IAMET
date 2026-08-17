@@ -581,8 +581,8 @@ matarían los bindings posteriores del mismo try-block. El markup original
             </div>
 
             <div>
-                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Resultado</label>
-                <textarea id="woActResTexto" rows="4" placeholder="Describe el resultado de la actividad (opcional)…"
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Resultado <span style="color:#FF3B30;">*</span></label>
+                <textarea id="woActResTexto" rows="4" placeholder="Describe qué pasó en la actividad…"
                     style="width:100%;padding:0.6rem 0.75rem;border:1px solid #E5E5EA;border-radius:8px;font-size:0.9rem;color:#1D1D1F;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
             </div>
 
@@ -597,6 +597,8 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 <input type="file" id="woActResFileInput" multiple style="display:none;" onchange="woActResHandleFiles(this.files)">
                 <div id="woActResLista" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.6rem;"></div>
             </div>
+
+            <div id="woActResAviso" style="display:none;background:#FFF1F0;border:1px solid #FFCCC7;color:#B91C1C;border-radius:9px;padding:0.6rem 0.75rem;font-size:0.83rem;line-height:1.4;"></div>
 
             <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;border-top:1px dashed #E5E5EA;">
                 <button type="button" onclick="woActResCerrar()"
@@ -3274,8 +3276,12 @@ matarían los bindings posteriores del mismo try-block. El markup original
             window._woActResActId = actId;
             window._woActResArchivos = [];
             window._woActResUploading = 0;
+            // El aviso de la vez pasada no debe recibir a la siguiente actividad.
+            var _av = document.getElementById('woActResAviso');
+            if (_av) _av.style.display = 'none';
             var sel = document.getElementById('woActResEstatus');
             var txt = document.getElementById('woActResTexto');
+            if (txt) txt.style.borderColor = '#E5E5EA';
             var lista = document.getElementById('woActResLista');
             if (sel) sel.value = '';
             if (txt) txt.value = '';
@@ -3365,9 +3371,28 @@ matarían los bindings posteriores del mismo try-block. El markup original
             if (!window._woActResActId) return;
             var actId = window._woActResActId;
             var btn = document.getElementById('woActResGuardarBtn');
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
             var estatus = document.getElementById('woActResEstatus');
             var texto = document.getElementById('woActResTexto');
+            var aviso = document.getElementById('woActResAviso');
+
+            // Completar exige constancia: el resultado escrito o un archivo.
+            // Una actividad cerrada sin nada no deja rastro de que paso, y el
+            // calendario se llena de completadas que no dicen nada.
+            var hayTexto = !!(texto && texto.value.trim());
+            var hayArchivo = !!(window._woActResArchivos && window._woActResArchivos.length);
+            if (!hayTexto && !hayArchivo) {
+                if (aviso) {
+                    aviso.textContent = 'Para completarla hay que dejar constancia: escribe el ' +
+                        'resultado o adjunta un archivo.';
+                    aviso.style.display = '';
+                }
+                if (texto) { texto.style.borderColor = '#FF3B30'; texto.focus(); }
+                return;
+            }
+            if (aviso) aviso.style.display = 'none';
+            if (texto) texto.style.borderColor = '#E5E5EA';
+
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
             var payload = {
                 completada: true,
                 resultado: texto ? texto.value : '',
@@ -3379,7 +3404,13 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 body: JSON.stringify(payload)
             }).then(function (r) { return r.json(); }).then(function (res) {
                 if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
-                if (res && res.error) { console.error(res.error); return; }
+                if (res && res.error) {
+                    // El servidor tambien exige la constancia: si rechaza, se
+                    // dice aqui en vez de fallar en silencio.
+                    if (aviso) { aviso.textContent = res.error; aviso.style.display = ''; }
+                    console.error(res.error);
+                    return;
+                }
                 // Actualizar badge y ocultar botón Completar en el visor.
                 var badge = document.getElementById('woVerActEstadoBadge');
                 if (badge) {
