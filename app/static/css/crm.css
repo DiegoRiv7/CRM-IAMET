@@ -12482,6 +12482,10 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .wci-resp-btn:hover { text-decoration: underline; }
 
 /* ── Cuadro propio, en lugar del confirm() del navegador ── */
+/* Monto de la factura: lo extrae el modulo financiero al subirla; queda en
+   guion cuando el PDF no dejo leerlo. */
+.wco-fact-monto { font-weight: 700; color: #0F172A; white-space: nowrap; }
+
 .wci-dlg-ov {
     position: fixed; inset: 0; z-index: 10600;
     background: rgba(15, 23, 42, .45);

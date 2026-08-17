@@ -4824,7 +4824,18 @@
                 var listWrap = document.getElementById('clienteOppListWrap');
                 var filtersBar = document.querySelector('#widgetClienteOportunidades .wco-filters');
                 if (listWrap) listWrap.style.display = (isInfo || isFact) ? 'none' : '';
-                if (filtersBar) filtersBar.style.display = (isInfo || isFact) ? 'none' : '';
+                // Facturacion SI usa la barra: busca por nombre de factura,
+                // oportunidad o quien la subio, y filtra por periodo. Solo
+                // Informacion, que es una ficha, se queda sin ella.
+                if (filtersBar) filtersBar.style.display = isInfo ? 'none' : '';
+                if (clienteOppSearch) {
+                    clienteOppSearch.placeholder = isFact
+                        ? 'Buscar factura, oportunidad o quién la subió…'
+                        : 'Buscar oportunidad...';
+                }
+                // Los selectores de area y producto son de oportunidades.
+                if (clienteOppFilterArea) clienteOppFilterArea.style.display = isFact ? 'none' : '';
+                if (clienteOppFilterProducto) clienteOppFilterProducto.style.display = isFact ? 'none' : '';
                 if (infoPanel) infoPanel.style.display = isInfo ? 'block' : 'none';
                 if (factPanel) factPanel.style.display = isFact ? 'block' : 'none';
                 // Marcar tab activo
@@ -4898,29 +4909,72 @@
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;');
             }
+            // Las facturas se traen UNA vez y se filtran en el navegador, igual
+            // que las oportunidades: buscar o cambiar de mes no vuelve a pedir
+            // nada al servidor.
+            var _factRows = [];
+
             function _cargarClienteFacturas(){
+                var tbody = document.getElementById('clienteOppFactTbody');
+                var count = document.getElementById('clienteOppFactCount');
+                if (!tbody) return;
+                if (count) count.textContent = '…';
+                tbody.innerHTML = '<tr><td colspan="7" class="wco-empty">Cargando…</td></tr>';
+                fetch('/app/api/cliente-facturas/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        _factRows = (data && data.rows) || [];
+                        _renderFacturas();
+                    }).catch(function(){
+                        _factRows = [];
+                        if (count) count.textContent = '0';
+                        tbody.innerHTML = '<tr><td colspan="7" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
+                    });
+            }
+
+            function _renderFacturas(){
                 var tbody = document.getElementById('clienteOppFactTbody');
                 var empty = document.getElementById('clienteOppFactEmpty');
                 var table = document.getElementById('clienteOppFactTable');
                 var count = document.getElementById('clienteOppFactCount');
                 if (!tbody) return;
-                if (count) count.textContent = '…';
-                if (empty) empty.style.display = 'none';
+
+                var q = (clienteOppSearch && clienteOppSearch.value || '').trim().toLowerCase();
+                var rows = _factRows.filter(function(r){
+                    if (q) {
+                        var heno = ((r.nombre || '') + ' ' + (r.oportunidad_titulo || '') + ' ' +
+                                    (r.subido_por || '')).toLowerCase();
+                        if (heno.indexOf(q) === -1) return false;
+                    }
+                    // El periodo se mide sobre la fecha en que entro la factura.
+                    if ((_clienteOppMes || _clienteOppAnio) && r.fecha_subida_iso) {
+                        var iso = r.fecha_subida_iso;
+                        if (_clienteOppAnio && iso.slice(0, 4) !== String(_clienteOppAnio)) return false;
+                        if (_clienteOppMes && iso.slice(5, 7) !== String(_clienteOppMes)) return false;
+                    }
+                    return true;
+                });
+
+                if (count) count.textContent = String(rows.length);
+                if (!rows.length) {
+                    tbody.innerHTML = '';
+                    if (table) table.style.display = 'none';
+                    if (empty) {
+                        empty.style.display = 'flex';
+                        var t = empty.querySelector('.wco-fact-empty-t');
+                        var s = empty.querySelector('.wco-fact-empty-s');
+                        var hayFiltro = q || _clienteOppMes || _clienteOppAnio;
+                        if (t) t.textContent = hayFiltro
+                            ? 'Ninguna factura coincide con el filtro'
+                            : 'Sin facturas para este cliente todavía';
+                        if (s) s.textContent = hayFiltro
+                            ? 'Prueba con otro texto o quita el periodo.'
+                            : 'Las facturas que entren al Drive de cualquier oportunidad de este cliente aparecerán aquí.';
+                    }
+                    return;
+                }
                 if (table) table.style.display = '';
-                tbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
-                fetch('/app/api/cliente-facturas/' + currentClienteId + '/')
-                    .then(function(r){ return r.json(); })
-                    .then(function(data){
-                        var rows = (data && data.rows) || [];
-                        if (count) count.textContent = String(rows.length);
-                        if (!rows.length) {
-                            tbody.innerHTML = '';
-                            if (table) table.style.display = 'none';
-                            if (empty) empty.style.display = 'flex';
-                            return;
-                        }
-                        if (table) table.style.display = '';
-                        if (empty) empty.style.display = 'none';
+                if (empty) empty.style.display = 'none';
                         var html = '';
                         for (var i = 0; i < rows.length; i++) {
                             var r = rows[i];
@@ -4935,11 +4989,15 @@
                             var subido = _escapeFactHtml(r.subido_por || '—');
                             var dl = _escapeFactHtml(r.download_url || '#');
                             var pv = _escapeFactHtml(r.preview_url || '#');
+                            var monto = (r.monto === null || r.monto === undefined)
+                                ? '—'
+                                : '$' + Number(r.monto).toLocaleString('es-MX', { maximumFractionDigits: 0 });
                             html += '<tr class="wco-fact-row">' +
                                 '<td class="wco-fact-name"><span class="wco-fact-ic">' +
                                     '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
                                 '</span><span class="wco-fact-name-t" title="' + nombre + '">' + nombre + '</span></td>' +
                                 '<td class="wco-fact-opp">' + oppHtml + '</td>' +
+                                '<td class="wco-fact-monto">' + monto + '</td>' +
                                 '<td class="wco-fact-fecha">' + fecha + '</td>' +
                                 '<td class="wco-fact-size">' + tamano + '</td>' +
                                 '<td class="wco-fact-by">' + subido + '</td>' +
@@ -4953,11 +5011,7 @@
                                 '</td>' +
                             '</tr>';
                         }
-                        tbody.innerHTML = html;
-                    }).catch(function(){
-                        if (count) count.textContent = '0';
-                        tbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
-                    });
+                tbody.innerHTML = html;
             }
 
             // ── Modal: Subir factura manualmente ──
@@ -5945,7 +5999,13 @@
                 });
             }
 
-            if (clienteOppSearch) clienteOppSearch.addEventListener('input', renderClienteData);
+            // Un solo punto de repintado: cada pestaña sabe como pintarse.
+            function _repintarTabActivo(){
+                if (currentMode === 'facturacion') { _renderFacturas(); return; }
+                if (currentMode === 'info') return;
+                renderClienteData();
+            }
+            if (clienteOppSearch) clienteOppSearch.addEventListener('input', _repintarTabActivo);
             if (clienteOppFilterArea) clienteOppFilterArea.addEventListener('change', renderClienteData);
             if (clienteOppFilterProducto) clienteOppFilterProducto.addEventListener('change', renderClienteData);
 

@@ -1855,11 +1855,20 @@ def api_verificar_empleado_mes(request):
 @login_required
 def api_cliente_facturas(request, cliente_id):
     """
-    Lista de archivos de tipo "factura" para todas las oportunidades de un cliente.
+    Facturas de TODAS las oportunidades de un cliente.
 
-    Heurística: cualquier `OportunidadArchivo` cuyo `nombre_original` contenga
-    "factura" (case-insensitive) — esto cubre tanto los nombres que arrancan
-    con "Factura …" como los que la traen al interior del nombre.
+    Las facturas viven en el Drive de cada oportunidad (ArchivoOportunidad).
+    Se reconocen por dos señales, y basta una:
+
+      · tipo_financiero == 'factura' — la clasificación que ya dejó hecha el
+        módulo financiero al subir el archivo, que mira nombre Y contenido.
+      · el nombre contiene "factura" — para lo subido antes de esa
+        clasificación.
+
+    Se lee tambien el modelo viejo (OportunidadArchivo) para no esconder lo
+    que se hubiera cargado por ahi. Son dos tablas distintas con nombres casi
+    iguales: el Drive escribe en ArchivoOportunidad, y esta vista consultaba
+    solo la vieja — por eso salia vacia teniendo facturas.
 
     Permisos: si el usuario no es supervisor, se limita a las oportunidades
     cuyos dueños están dentro de su grupo de trabajo (usa
@@ -1870,62 +1879,75 @@ def api_cliente_facturas(request, cliente_id):
     except Cliente.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
 
-    qs = (
-        OportunidadArchivo.objects
-        .filter(
-            oportunidad__cliente_id=cliente.id,
-            nombre_original__icontains='factura',
-        )
-        .select_related('oportunidad', 'oportunidad__cliente', 'usuario')
-        .order_by('-fecha_subida')
-    )
-
-    # Permisos: vendedores solo ven facturas de oportunidades visibles para ellos.
-    if not is_supervisor(request.user):
+    def _visibles(qs):
+        """Vendedores solo ven facturas de oportunidades visibles para ellos."""
+        if is_supervisor(request.user):
+            return qs
         from .views_grupos import get_usuarios_visibles_ids
         _gids = get_usuarios_visibles_ids(request.user)
         if _gids and len(_gids) > 1:
-            qs = qs.filter(oportunidad__usuario_id__in=_gids)
-        else:
-            qs = qs.filter(oportunidad__usuario=request.user)
+            return qs.filter(oportunidad__usuario_id__in=_gids)
+        return qs.filter(oportunidad__usuario=request.user)
 
-    rows = []
-    for a in qs:
+    drive_qs = _visibles(
+        ArchivoOportunidad.objects
+        .filter(oportunidad__cliente_id=cliente.id)
+        .filter(Q(tipo_financiero='factura') | Q(nombre_original__icontains='factura'))
+        .select_related('oportunidad', 'subido_por')
+    )
+    viejo_qs = _visibles(
+        OportunidadArchivo.objects
+        .filter(oportunidad__cliente_id=cliente.id, nombre_original__icontains='factura')
+        .select_related('oportunidad', 'usuario')
+    )
+
+    def _quien(usr):
+        if not usr:
+            return '—'
+        return (usr.get_full_name() or usr.username or '').strip() or usr.username
+
+    def _fila(a, usr, download_url, preview_url, monto=None):
         opp = a.oportunidad
         opp_id = opp.id if opp else None
-        opp_titulo = opp.oportunidad if opp else '—'
-        # Año para URL al kanban
         try:
             anio_opp = (opp.anio_cierre or opp.fecha_creacion.year) if opp else ''
         except Exception:
             anio_opp = ''
-        # Quién subió
-        usr = a.usuario
-        if usr:
-            subido_por = (usr.get_full_name() or usr.username or '').strip() or usr.username
-        else:
-            subido_por = '—'
-        # URL al archivo (sirve a través del endpoint de descarga existente)
-        download_url = f'/app/api/descargar-archivo-oportunidad/{a.id}/'
-        preview_url = f'/app/api/vista-previa-archivo-oportunidad/{a.id}/'
-        # URL para abrir la oportunidad en el CRM
-        opp_url = ''
-        if opp_id:
-            opp_url = f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
-        rows.append({
+        return {
             'id': a.id,
             'nombre': a.nombre_original or '',
-            'tipo': a.tipo or '',
             'oportunidad_id': opp_id,
-            'oportunidad_titulo': opp_titulo,
-            'oportunidad_url': opp_url,
+            'oportunidad_titulo': opp.oportunidad if opp else '—',
+            'oportunidad_url': (f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
+                                if opp_id else ''),
             'fecha_subida_iso': a.fecha_subida.isoformat() if a.fecha_subida else '',
             'fecha_subida_legible': a.fecha_subida.strftime('%d %b %Y') if a.fecha_subida else '',
-            'tamano_legible': a.tamaño_legible if a.tamaño else '—',
-            'subido_por': subido_por,
+            # El modelo del Drive expone tamaño_formateado; el viejo, tamaño_legible.
+            'tamano_legible': (getattr(a, 'tamaño_formateado', None)
+                               or getattr(a, 'tamaño_legible', None) or '—') if a.tamaño else '—',
+            'subido_por': _quien(usr),
+            'monto': float(monto) if monto is not None else None,
             'download_url': download_url,
             'preview_url': preview_url,
-        })
+        }
+
+    rows = []
+    for a in drive_qs:
+        rows.append(_fila(
+            a, a.subido_por,
+            # El mismo endpoint sirve las dos cosas: ?dl=1 fuerza la descarga,
+            # sin el se muestra en el navegador.
+            f'/app/api/oportunidad/{a.oportunidad_id}/drive/archivo/{a.id}/stream/?dl=1',
+            f'/app/api/oportunidad/{a.oportunidad_id}/drive/archivo/{a.id}/stream/',
+            a.monto_extraido,
+        ))
+    for a in viejo_qs:
+        rows.append(_fila(
+            a, a.usuario,
+            f'/app/api/descargar-archivo-oportunidad/{a.id}/',
+            f'/app/api/vista-previa-archivo-oportunidad/{a.id}/',
+        ))
+    rows.sort(key=lambda r: r['fecha_subida_iso'], reverse=True)
 
     return JsonResponse({
         'ok': True,
