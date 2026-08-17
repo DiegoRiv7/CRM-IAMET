@@ -341,7 +341,12 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 }
 
 /* Tareas | Actividades */
+/* El min-width:0 es lo que hace que 1fr 1fr sea de verdad mitad y mitad: sin
+   el, el ancho minimo de cada tarjeta lo dicta su contenido y un titulo de
+   tarea largo —"Cliente / Etapa / Nombre del trabajo"— ensanchaba Tareas y
+   dejaba Actividades apretada. */
 .opp-v4 .wo4-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.opp-v4 .wo4-duo > * { min-width: 0; }
 .opp-v4 .wo4-lista { display: flex; flex-direction: column; }
 .opp-v4 .wo4-fila {
     display: flex; align-items: center; gap: 9px; padding: 5px 0;
@@ -353,8 +358,11 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 }
 .opp-v4 .wo4-fila.done .wo4-punto { background: #16A34A; }
 .opp-v4 .wo4-fila.venc .wo4-punto { background: #EF4444; }
+/* El titulo se recorta con puntos suspensivos y no envuelve: la lista es un
+   vistazo, no el lugar para leer el nombre completo. Completo se ve al pasar
+   el cursor y al abrir la tarea. */
 .opp-v4 .wo4-fila-t {
-    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .opp-v4 .wo4-fila.done .wo4-fila-t { color: var(--w4-tenue); text-decoration: line-through; }
 .opp-v4 .wo4-fila.venc .wo4-fila-t { color: #EF4444; }

@@ -1562,9 +1562,13 @@
         var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < now;
         var row = document.createElement('div');
         row.className = 'wo4-fila' + (done ? ' done' : '') + (venc ? ' venc' : '');
+        // El titulo se recorta en pantalla; completo va en el tooltip, porque
+        // suele traer cliente y etapa antes del nombre del trabajo.
+        var tit = t.titulo || 'Sin título';
+        row.title = tit;
         row.innerHTML =
             '<span class="wo4-punto"></span>' +
-            '<span class="wo4-fila-t">' + esc(t.titulo || 'Sin título') + '</span>' +
+            '<span class="wo4-fila-t">' + esc(tit) + '</span>' +
             '<span class="wo4-fila-d">' +
             (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '') +
             '</span>';

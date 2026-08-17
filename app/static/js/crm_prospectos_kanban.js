@@ -515,24 +515,24 @@
             var previa = card.dataset.etapa;
             if (!nueva || nueva === previa) return;
 
-            var id = card.dataset.prospectoId;
-            // Se mueve de inmediato para que el gesto se sienta; si el servidor
-            // la rechaza, regresa a su columna.
-            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, nueva);
-
-            fetch('/app/api/prospecto/' + id + '/etapa/', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': pkCsrf() },
-                body: JSON.stringify({ etapa: nueva }),
-            }).then(function (r) { return r.json(); }).then(function (data) {
-                if (data && data.success) return;
-                if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
-                pkAviso((data && data.error) || 'No se pudo cambiar la etapa');
-            }).catch(function () {
-                if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
-                pkAviso('No se pudo cambiar la etapa');
-            });
+            // Dos etapas piden algo antes de poder guardarse; se pregunta ANTES
+            // de mover la tarjeta, para que cancelar no la deje dando saltos.
+            if (nueva === 'reunion') {
+                // El servidor rechaza 'reunion' sin tipo: devolvia 400 y la
+                // tarjeta regresaba sin que se supiera por que.
+                pedirTipoReunion(function (tipo) {
+                    if (tipo) aplicarEtapa(card, previa, nueva, { reunion_tipo: tipo });
+                });
+                return;
+            }
+            if (nueva === 'cerrado_ganado') {
+                // Cerrar como ganado CREA una oportunidad: no es un movimiento
+                // cualquiera y conviene confirmarlo.
+                pkConfirmar('Cerrar como ganado', 'Se creara la oportunidad de este prospecto.',
+                    function (ok) { if (ok) aplicarEtapa(card, previa, nueva, {}); });
+                return;
+            }
+            aplicarEtapa(card, previa, nueva, {});
         });
 
         // Un arrastre termina en un clic sintetico sobre la tarjeta: se atrapa
@@ -544,6 +544,73 @@
                 ev.preventDefault();
             }
         }, true);
+    }
+
+    // Mueve la tarjeta y guarda. Se mueve antes de la respuesta para que el
+    // gesto se sienta; si el servidor la rechaza, regresa a su columna.
+    function aplicarEtapa(card, previa, nueva, extra) {
+        var id = card.dataset.prospectoId;
+        var body = { etapa: nueva };
+        for (var k in extra) body[k] = extra[k];
+        if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, nueva);
+
+        fetch('/app/api/prospecto/' + id + '/etapa/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': pkCsrf() },
+            body: JSON.stringify(body),
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data && data.success) {
+                if (nueva === 'cerrado_ganado' && data.oportunidad_id) {
+                    pkAviso('Prospecto ganado. Oportunidad #' + data.oportunidad_id + ' creada.');
+                }
+                return;
+            }
+            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+            pkAviso((data && data.error) || 'No se pudo cambiar la etapa');
+        }).catch(function () {
+            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+            pkAviso('No se pudo cambiar la etapa');
+        });
+    }
+
+    // Cuadro chico reutilizable: titulo, texto y los botones que se le pasen.
+    function pkDialogo(titulo, texto, botones, alCerrar) {
+        var ov = document.createElement('div');
+        ov.className = 'pk-dlg-ov';
+        var html = '<div class="pk-dlg"><h3>' + escapeHtml(titulo) + '</h3>';
+        if (texto) html += '<p>' + escapeHtml(texto) + '</p>';
+        html += '<div class="pk-dlg-btns">';
+        botones.forEach(function (b, i) {
+            html += '<button type="button" data-i="' + i + '" class="pk-dlg-b' +
+                (b.tono ? ' pk-dlg-b--' + b.tono : '') + '">' + escapeHtml(b.texto) + '</button>';
+        });
+        html += '</div><button type="button" class="pk-dlg-x" data-cancel>Cancelar</button></div>';
+        ov.innerHTML = html;
+        document.body.appendChild(ov);
+
+        var cerrar = function (valor) {
+            ov.remove();
+            document.removeEventListener('keydown', esc);
+            alCerrar(valor);
+        };
+        var esc = function (e) { if (e.key === 'Escape') cerrar(null); };
+        document.addEventListener('keydown', esc);
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov || e.target.closest('[data-cancel]')) { cerrar(null); return; }
+            var b = e.target.closest('[data-i]');
+            if (b) cerrar(botones[parseInt(b.getAttribute('data-i'), 10)].valor);
+        });
+    }
+
+    function pedirTipoReunion(cb) {
+        pkDialogo('Tipo de reunión', 'La etapa Reunión necesita saber de qué tipo es.',
+            [{ texto: 'Virtual', valor: 'virtual' }, { texto: 'Presencial', valor: 'presencial' }], cb);
+    }
+
+    function pkConfirmar(titulo, texto, cb) {
+        pkDialogo(titulo, texto, [{ texto: 'Sí, continuar', valor: true, tono: 'ok' }],
+            function (v) { cb(!!v); });
     }
 
     function pkCsrf() {

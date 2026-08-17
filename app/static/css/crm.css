@@ -12411,6 +12411,36 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     background: rgba(255, 255, 255, .10);
 }
 
+/* Cuadro para lo que el arrastre no puede adivinar: el tipo de reunión —que el
+   servidor exige— y la confirmación de cerrar como ganado, que crea la
+   oportunidad. */
+.pk-dlg-ov {
+    position: fixed; inset: 0; z-index: 10500;
+    background: rgba(15, 23, 42, .42);
+    display: flex; align-items: center; justify-content: center;
+}
+.pk-dlg {
+    background: #fff; border-radius: 16px; padding: 22px;
+    width: 90%; max-width: 330px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+.pk-dlg h3 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #0F172A; }
+.pk-dlg p { margin: 0 0 16px; font-size: 12.5px; color: #64748B; line-height: 1.45; }
+.pk-dlg-btns { display: flex; gap: 10px; }
+.pk-dlg-b {
+    flex: 1; padding: 12px; border-radius: 10px; cursor: pointer;
+    border: 2px solid #92400E; background: rgba(146, 64, 14, .13); color: #92400E;
+    font: inherit; font-weight: 700; font-size: 13px;
+}
+.pk-dlg-b:hover { background: rgba(146, 64, 14, .22); }
+.pk-dlg-b--ok { border-color: #059669; background: rgba(5, 150, 105, .13); color: #047857; }
+.pk-dlg-b--ok:hover { background: rgba(5, 150, 105, .22); }
+.pk-dlg-x {
+    margin-top: 12px; width: 100%; padding: 8px; border: none;
+    background: #F2F2F7; border-radius: 8px; color: #86868B;
+    font: inherit; font-size: 12px; cursor: pointer;
+}
+
 /* Popover wrapper (para filtro/ordenar dentro del crm-bar-left) */
 .pk-pop-wrap {
     position: relative;
