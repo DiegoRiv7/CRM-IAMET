@@ -197,6 +197,21 @@ body.cotizador-open #crmWidgetBreadcrumb {
                         <span id="wciRfc"></span>
                     </div>
 
+                    {% comment %}
+                    Vendedor responsable, bajo el RFC. Lo ve todo el mundo; solo
+                    administradores, superusuarios y supervisores pueden
+                    cambiarlo. Es la misma asignación del panel de
+                    administración, puesta donde se consulta al cliente.
+                    {% endcomment %}
+                    <div class="wci-resp" id="wciRespRow">
+                        <span class="wci-resp-av" id="wciRespAv">—</span>
+                        <span class="wci-resp-txt">
+                            <span class="wci-resp-lbl">Vendedor responsable</span>
+                            <span class="wci-resp-n" id="wciRespNombre">Sin asignar</span>
+                        </span>
+                        <button type="button" class="wci-resp-btn" id="wciRespBtn" style="display:none;">Cambiar</button>
+                    </div>
+
                     <div class="wco-info-id-divider"></div>
 
                     <div class="wco-info-id-field">

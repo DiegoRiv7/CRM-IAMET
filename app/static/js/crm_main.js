@@ -5369,6 +5369,124 @@
                 field.classList.add('is-editing');
             }
 
+            // ── Cuadro propio para confirmar y para elegir ──
+            // El confirm() del navegador saca el dominio y no se puede vestir;
+            // aqui el aviso se lee como parte del sistema. El mismo cuadro
+            // sirve de lista cuando hay que escoger a alguien.
+            function _wciDialogo(opts){
+                var previo = document.getElementById('wciDlgOv');
+                if (previo) previo.remove();
+                var ov = document.createElement('div');
+                ov.id = 'wciDlgOv';
+                ov.className = 'wci-dlg-ov';
+                ov.innerHTML =
+                    '<div class="wci-dlg">' +
+                    '<h3>' + _wciEsc(opts.titulo) + '</h3>' +
+                    (opts.texto ? '<p>' + _wciEsc(opts.texto) + '</p>' : '') +
+                    (opts.lista ? '<div class="wci-dlg-buscar"><input type="text" data-q placeholder="Buscar…"></div>' +
+                                  '<div class="wci-dlg-lista" data-lista></div>' : '') +
+                    '<div class="wci-dlg-pie">' +
+                    '<button type="button" class="wci-dlg-x" data-cancel>Cancelar</button>' +
+                    (opts.ok ? '<button type="button" class="wci-dlg-ok" data-ok>' + _wciEsc(opts.ok) + '</button>' : '') +
+                    '</div></div>';
+                document.body.appendChild(ov);
+
+                var cerrar = function(){ ov.remove(); document.removeEventListener('keydown', esc); };
+                var esc = function(e){ if (e.key === 'Escape') cerrar(); };
+                document.addEventListener('keydown', esc);
+                ov.addEventListener('click', function(e){
+                    if (e.target === ov || e.target.closest('[data-cancel]')) { cerrar(); return; }
+                    if (e.target.closest('[data-ok]')) { cerrar(); if (opts.alAceptar) opts.alAceptar(); return; }
+                    var fila = e.target.closest('[data-val]');
+                    if (fila) { cerrar(); if (opts.alElegir) opts.alElegir(fila.getAttribute('data-val'), fila.getAttribute('data-nom')); }
+                });
+                if (!opts.lista) return;
+
+                var inp = ov.querySelector('[data-q]');
+                var lista = ov.querySelector('[data-lista]');
+                inp.focus();
+                var pintar = function(items){
+                    if (!items.length) { lista.innerHTML = '<div class="wci-dlg-vacio">Sin resultados.</div>'; return; }
+                    lista.innerHTML = items.map(function(it){
+                        return '<button type="button" class="wci-dlg-item" data-val="' + _wciEsc(String(it.val)) +
+                            '" data-nom="' + _wciEsc(it.nombre) + '">' +
+                            '<span class="wci-dlg-av">' + _wciEsc(it.iniciales || '?') + '</span>' +
+                            '<span class="wci-dlg-n">' + _wciEsc(it.nombre) + '</span>' +
+                            (it.sub ? '<span class="wci-dlg-sub">' + _wciEsc(it.sub) + '</span>' : '') +
+                            '</button>';
+                    }).join('');
+                };
+                var timer = null;
+                var buscar = function(){
+                    opts.lista(inp.value.trim(), pintar);
+                };
+                inp.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(buscar, 220); });
+                buscar();
+            }
+
+            function _wciEsc(s){
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+                    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                });
+            }
+
+            // ── Vendedor responsable ──
+            function _wciPintarResp(c){
+                var av = document.getElementById('wciRespAv');
+                var nom = document.getElementById('wciRespNombre');
+                var btn = document.getElementById('wciRespBtn');
+                if (!nom) return;
+                var a = c.asignado;
+                nom.textContent = a ? a.nombre : 'Sin asignar';
+                nom.classList.toggle('is-vacio', !a);
+                if (av) {
+                    av.textContent = a ? (a.iniciales || '?') : '—';
+                    av.classList.toggle('is-vacio', !a);
+                }
+                if (!btn) return;
+                if (!c.puede_cambiar_tipo) { btn.style.display = 'none'; return; }
+                btn.style.display = '';
+                btn.textContent = a ? 'Cambiar' : 'Asignar';
+                btn.onclick = function(){
+                    _wciDialogo({
+                        titulo: 'Vendedor responsable',
+                        texto: 'Quién lleva a este cliente.',
+                        lista: function(q, pintar){
+                            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                                .then(function(r){ return r.json(); })
+                                .then(function(d){
+                                    var us = (d && (d.usuarios || d.results)) || [];
+                                    var items = us.map(function(u){
+                                        var n = u.nombre_completo || u.nombre || u.username || '';
+                                        return { val: u.id, nombre: n, iniciales: u.iniciales || '', sub: u.rol || u.cargo || '' };
+                                    });
+                                    items.unshift({ val: '', nombre: 'Sin asignar', iniciales: '—', sub: '' });
+                                    pintar(items);
+                                })
+                                .catch(function(){ pintar([]); });
+                        },
+                        alElegir: function(val){ _wciGuardarCampo('asignado_a', val, _wciPintarResp); },
+                    });
+                };
+            }
+
+            // POST de un solo campo de la caratula, repintando con lo que
+            // devuelve el servidor y no con lo que se supone que quedo.
+            function _wciGuardarCampo(campo, valor, alTerminar){
+                var fd = new FormData();
+                fd.append(campo, valor);
+                fetch('/app/api/cliente-info/' + currentClienteId + '/', {
+                    method: 'POST', body: fd,
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': window.getCsrf ? window.getCsrf() : '' },
+                }).then(function(r){ return r.json(); }).then(function(d){
+                    if (d && d.ok) { if (alTerminar) alTerminar(d.cliente || {}); return; }
+                    _wciDialogo({ titulo: 'No se pudo guardar', texto: (d && d.error) || 'Intenta de nuevo.' });
+                }).catch(function(){
+                    _wciDialogo({ titulo: 'No se pudo guardar', texto: 'Problema de red.' });
+                });
+            }
+
             // Cliente / prospecto: etiqueta y, para quien puede, el boton de
             // cambiarla. Es una marca — no mueve ni borra nada; solo decide si
             // la empresa se puede elegir al abrir una oportunidad nueva.
@@ -5390,25 +5508,16 @@
                     : queHace;
                 if (!puede) { badge.onclick = null; return; }
                 badge.onclick = function(){
-                    var aviso = esPros
-                        ? 'Pasara a CLIENTE: volvera a aparecer al crear oportunidades.'
-                        : 'Pasara a PROSPECTO: dejara de aparecer al crear oportunidades y ' +
-                          'aparecera en prospeccion. Conserva sus oportunidades e historial.';
-                    if (!window.confirm(aviso)) return;
-                    badge.disabled = true;
-                    var fd = new FormData();
-                    fd.append('es_prospecto', esPros ? '0' : '1');
-                    fetch('/app/api/cliente-info/' + currentClienteId + '/', {
-                        method: 'POST', body: fd,
-                        credentials: 'same-origin',
-                        headers: { 'X-CSRFToken': window.getCsrf ? window.getCsrf() : '' },
-                    }).then(function(r){ return r.json(); }).then(function(d){
-                        badge.disabled = false;
-                        if (d && d.ok) { _wciPintarTipo(d.cliente || {}); return; }
-                        alert((d && d.error) || 'No se pudo cambiar');
-                    }).catch(function(){
-                        badge.disabled = false;
-                        alert('No se pudo cambiar');
+                    _wciDialogo({
+                        titulo: esPros ? 'Pasar a cliente' : 'Bajar a prospecto',
+                        texto: esPros
+                            ? 'Volverá a aparecer al crear oportunidades.'
+                            : 'Dejará de aparecer al crear oportunidades y aparecerá en ' +
+                              'prospección. Conserva sus oportunidades, cotizaciones e historial.',
+                        ok: esPros ? 'Pasar a cliente' : 'Bajar a prospecto',
+                        alAceptar: function(){
+                            _wciGuardarCampo('es_prospecto', esPros ? '0' : '1', _wciPintarTipo);
+                        },
                     });
                 };
             }
@@ -5421,7 +5530,7 @@
                 if (!currentClienteId) return;
                 fetch('/app/api/cliente-info/' + currentClienteId + '/')
                     .then(function(r){ return r.json(); })
-                    .then(function(d){ if (d && d.ok) _wciPintarTipo(d.cliente || {}); })
+                    .then(function(d){ if (d && d.ok) { _wciPintarTipo(d.cliente || {}); _wciPintarResp(d.cliente || {}); } })
                     .catch(function(){});
             }
 
@@ -5438,6 +5547,7 @@
                         _wciSetText('wciNombre', c.nombre || '—');
                         _wciSetText('wciRfc', c.rfc || '', true);
                         _wciPintarTipo(c);
+                        _wciPintarResp(c);
                         _wciRenderLogo(c.logo_url);
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);

@@ -3365,6 +3365,23 @@ def api_cliente_info(request, cliente_id):
                     {'ok': False, 'error': 'Solo un supervisor o administrador puede cambiarlo'},
                     status=403)
             cliente.es_prospecto = request.POST.get('es_prospecto') in ('1', 'true', 'on')
+        # Vendedor responsable. Se ve siempre; cambiarlo es del mismo grupo que
+        # la marca de cliente/prospecto. Es la misma asignacion del panel de
+        # administracion, a la mano en la caratula.
+        if 'asignado_a' in request.POST:
+            if not puede_bloquear_oportunidad(request.user):
+                return JsonResponse(
+                    {'ok': False, 'error': 'Solo un supervisor o administrador puede cambiarlo'},
+                    status=403)
+            uid = (request.POST.get('asignado_a') or '').strip()
+            if not uid:
+                cliente.asignado_a = None
+            else:
+                from django.contrib.auth.models import User as _U
+                try:
+                    cliente.asignado_a = _U.objects.get(id=int(uid))
+                except (_U.DoesNotExist, ValueError):
+                    return JsonResponse({'ok': False, 'error': 'Usuario no encontrado'}, status=400)
         for f in CAMPOS:
             if f in request.POST:
                 setattr(cliente, f, request.POST.get(f, '') or '')
@@ -3384,6 +3401,13 @@ def api_cliente_info(request, cliente_id):
     data['logo_url'] = cliente.logo.url if cliente.logo else ''
     data['es_prospecto'] = bool(cliente.es_prospecto)
     data['puede_cambiar_tipo'] = puede_bloquear_oportunidad(request.user)
+    u = cliente.asignado_a
+    if u:
+        nom = (u.get_full_name() or '').strip() or u.username
+        data['asignado'] = {'id': u.id, 'nombre': nom,
+                            'iniciales': ''.join([p[0] for p in nom.split()[:2]]).upper()}
+    else:
+        data['asignado'] = None
     return JsonResponse({'ok': True, 'cliente': data})
 
 
