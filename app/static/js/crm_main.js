@@ -5374,25 +5374,28 @@
             // la empresa se puede elegir al abrir una oportunidad nueva.
             function _wciPintarTipo(c){
                 var badge = document.getElementById('wciTipoBadge');
-                var btn = document.getElementById('wciTipoBtn');
                 if (!badge) return;
                 var esPros = !!c.es_prospecto;
+                var puede = !!c.puede_cambiar_tipo;
+                badge.style.display = '';
                 badge.textContent = esPros ? 'Prospecto' : 'Cliente';
                 badge.classList.toggle('is-prospecto', esPros);
-                badge.title = esPros
-                    ? 'No aparece al crear una oportunidad; si aparece en prospeccion.'
-                    : 'Aparece al crear oportunidades y en prospeccion.';
-                if (!btn) return;
-                if (!c.puede_cambiar_tipo) { btn.style.display = 'none'; return; }
-                btn.style.display = '';
-                btn.textContent = esPros ? 'Pasar a cliente' : 'Bajar a prospecto';
-                btn.onclick = function(){
+                badge.classList.toggle('is-editable', puede);
+                badge.disabled = !puede;
+                var queHace = esPros
+                    ? 'Prospecto: no aparece al crear una oportunidad; si aparece en prospeccion.'
+                    : 'Cliente: aparece al crear oportunidades y en prospeccion.';
+                badge.title = puede
+                    ? queHace + '\nClic para ' + (esPros ? 'pasarlo a cliente.' : 'bajarlo a prospecto.')
+                    : queHace;
+                if (!puede) { badge.onclick = null; return; }
+                badge.onclick = function(){
                     var aviso = esPros
                         ? 'Pasara a CLIENTE: volvera a aparecer al crear oportunidades.'
                         : 'Pasara a PROSPECTO: dejara de aparecer al crear oportunidades y ' +
                           'aparecera en prospeccion. Conserva sus oportunidades e historial.';
                     if (!window.confirm(aviso)) return;
-                    btn.disabled = true;
+                    badge.disabled = true;
                     var fd = new FormData();
                     fd.append('es_prospecto', esPros ? '0' : '1');
                     fetch('/app/api/cliente-info/' + currentClienteId + '/', {
@@ -5400,14 +5403,26 @@
                         credentials: 'same-origin',
                         headers: { 'X-CSRFToken': window.getCsrf ? window.getCsrf() : '' },
                     }).then(function(r){ return r.json(); }).then(function(d){
-                        btn.disabled = false;
+                        badge.disabled = false;
                         if (d && d.ok) { _wciPintarTipo(d.cliente || {}); return; }
                         alert((d && d.error) || 'No se pudo cambiar');
                     }).catch(function(){
-                        btn.disabled = false;
+                        badge.disabled = false;
                         alert('No se pudo cambiar');
                     });
                 };
+            }
+
+            // La etiqueta vive en la cabecera, asi que se carga al abrir el
+            // widget y no solo cuando se entra a la pestaña Informacion.
+            function _wciCargarTipo(){
+                var badge = document.getElementById('wciTipoBadge');
+                if (badge) badge.style.display = 'none';
+                if (!currentClienteId) return;
+                fetch('/app/api/cliente-info/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){ if (d && d.ok) _wciPintarTipo(d.cliente || {}); })
+                    .catch(function(){});
             }
 
             function _cargarClienteInfo(){
@@ -5694,6 +5709,7 @@
                 var mode = modeMap[tab] || 'oportunidades';
                 var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones', facturacion: 'Facturación' };
                 clienteOppTitle.textContent = labelMap[mode] + ' — ' + clienteNombre;
+                _wciCargarTipo();
                 widgetClienteOpp.style.display = 'flex';
 
                 if (clienteOppSearch) clienteOppSearch.value = '';

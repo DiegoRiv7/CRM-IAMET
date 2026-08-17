@@ -12435,25 +12435,22 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .pk-dlg-b:hover { background: rgba(146, 64, 14, .22); }
 .pk-dlg-b--ok { border-color: #059669; background: rgba(5, 150, 105, .13); color: #047857; }
 .pk-dlg-b--ok:hover { background: rgba(5, 150, 105, .22); }
-/* Cliente / prospecto en la caratula. La marca no mueve datos: solo decide si
-   la empresa se puede elegir al abrir una oportunidad nueva. */
-.wci-tipo-row {
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px; flex-wrap: wrap; margin-top: 6px;
-}
+/* Cliente / prospecto, junto al nombre en la cabecera del widget. La marca no
+   mueve datos: solo decide si la empresa se puede elegir al abrir una
+   oportunidad nueva. Para quien puede cambiarla la etiqueta ES el boton; para
+   el resto es un rotulo y por eso nace deshabilitada. */
 .wci-tipo {
-    display: inline-flex; align-items: center;
-    padding: 3px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    padding: 3px 10px; border: none; border-radius: 999px;
+    font: inherit; font-size: 11px; font-weight: 800;
+    letter-spacing: .04em; text-transform: uppercase;
     background: #DBEAFE; color: #1D4ED8;
+    cursor: default;
 }
 .wci-tipo.is-prospecto { background: #FEF3C7; color: #92400E; }
-.wci-tipo-btn {
-    border: none; background: none; padding: 0; cursor: pointer;
-    font: inherit; font-size: 11.5px; font-weight: 600; color: #2563EB;
-}
-.wci-tipo-btn:hover { text-decoration: underline; }
-.wci-tipo-btn[disabled] { opacity: .5; cursor: default; text-decoration: none; }
+.wci-tipo.is-editable { cursor: pointer; }
+.wci-tipo.is-editable:hover { filter: brightness(.94); }
+.wci-tipo[disabled] { opacity: 1; }
 
 .pk-dlg-x {
     margin-top: 12px; width: 100%; padding: 8px; border: none;

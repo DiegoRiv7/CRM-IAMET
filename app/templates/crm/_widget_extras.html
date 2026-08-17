@@ -43,6 +43,15 @@ body.cotizador-open #crmWidgetBreadcrumb {
                     </svg>
                 </div>
                 <h1 class="wco-title" id="clienteOppTitle">Oportunidades del Cliente</h1>
+                {% comment %}
+                Cliente o prospecto, junto al nombre y visible en todas las
+                pestañas. Es una MARCA: bajar un cliente a prospecto no le quita
+                nada —conserva oportunidades, cotizaciones e historial—, solo
+                deja de aparecer al crear una oportunidad y pasa a aparecer en
+                prospección. Para quien puede cambiarla, la propia etiqueta es
+                el botón; para el resto es solo un rótulo.
+                {% endcomment %}
+                <button type="button" class="wci-tipo" id="wciTipoBadge" style="display:none;">Cliente</button>
             </div>
             <button type="button" class="wco-close" id="clienteOppClose">&times;</button>
         </div>
@@ -184,18 +193,6 @@ body.cotizador-open #crmWidgetBreadcrumb {
                         </label>
                     </div>
                     <div class="wco-info-id-name" id="wciNombre">—</div>
-                    {% comment %}
-                    Cliente o prospecto. Es una MARCA: bajar un cliente a
-                    prospecto no le quita nada —conserva oportunidades,
-                    cotizaciones e historial—, solo deja de aparecer al crear
-                    una oportunidad nueva y pasa a aparecer en prospección.
-                    El botón de cambiarlo lo destapa el JS solo para
-                    administradores, superusuarios y supervisores.
-                    {% endcomment %}
-                    <div class="wci-tipo-row">
-                        <span class="wci-tipo" id="wciTipoBadge">Cliente</span>
-                        <button type="button" class="wci-tipo-btn" id="wciTipoBtn" style="display:none;"></button>
-                    </div>
                     <div class="wco-info-id-rfc" id="wciRfcRow" style="display:none;">
                         <span id="wciRfc"></span>
                     </div>
