@@ -3355,6 +3355,16 @@ def api_cliente_info(request, cliente_id):
     ]
 
     if request.method == 'POST':
+        # Cliente <-> prospecto. Solo administradores, superusuarios y
+        # supervisores: decide si la empresa se puede elegir al abrir una
+        # oportunidad. No toca ni un dato mas — la ficha y todo el historial
+        # se quedan igual.
+        if 'es_prospecto' in request.POST:
+            if not puede_bloquear_oportunidad(request.user):
+                return JsonResponse(
+                    {'ok': False, 'error': 'Solo un supervisor o administrador puede cambiarlo'},
+                    status=403)
+            cliente.es_prospecto = request.POST.get('es_prospecto') in ('1', 'true', 'on')
         for f in CAMPOS:
             if f in request.POST:
                 setattr(cliente, f, request.POST.get(f, '') or '')
@@ -3372,6 +3382,8 @@ def api_cliente_info(request, cliente_id):
     data['rfc'] = cliente.rfc or ''
     data['categoria'] = cliente.get_categoria_display() if cliente.categoria else ''
     data['logo_url'] = cliente.logo.url if cliente.logo else ''
+    data['es_prospecto'] = bool(cliente.es_prospecto)
+    data['puede_cambiar_tipo'] = puede_bloquear_oportunidad(request.user)
     return JsonResponse({'ok': True, 'cliente': data})
 
 
@@ -5626,8 +5638,17 @@ def api_buscar_clientes(request):
     from .views_grupos import get_clientes_visibles_q
     clientes = Cliente.objects.filter(
         Q(nombre_empresa__icontains=query) & get_clientes_visibles_q(request.user)
-    ).order_by('nombre_empresa')[:10]
-    
+    ).order_by('nombre_empresa')
+
+    # Un cliente marcado como PROSPECTO no se puede elegir para una oportunidad
+    # nueva: todavia no es cliente. En prospeccion (?potenciales=1) si aparece,
+    # que es justo donde toca trabajarlo. Conserva todo su historial: la marca
+    # solo decide donde se le puede elegir.
+    modo_prospeccion = request.GET.get('potenciales') == '1'
+    if not modo_prospeccion:
+        clientes = clientes.filter(es_prospecto=False)
+    clientes = clientes[:10]
+
     clientes_data = []
     for cliente in clientes:
         clientes_data.append({
@@ -5636,13 +5657,13 @@ def api_buscar_clientes(request):
             'contacto_principal': cliente.contacto_principal or '',
             'email': cliente.email or '',
             'telefono': cliente.telefono or '',
-            'tipo': 'cliente',
+            'tipo': 'prospecto' if cliente.es_prospecto else 'cliente',
         })
 
     # ?potenciales=1 (modo prospecto del composer de prospección): incluir
     # también los ClientePotencial visibles — los creados desde el panel
     # admin o el mini-form, que antes NUNCA aparecían en la búsqueda.
-    if request.GET.get('potenciales') == '1':
+    if modo_prospeccion:
         from .models import ClientePotencial
         from .views_grupos import get_usuarios_visibles_ids
         pot_qs = ClientePotencial.objects.filter(nombre__icontains=query)

@@ -184,6 +184,18 @@ body.cotizador-open #crmWidgetBreadcrumb {
                         </label>
                     </div>
                     <div class="wco-info-id-name" id="wciNombre">—</div>
+                    {% comment %}
+                    Cliente o prospecto. Es una MARCA: bajar un cliente a
+                    prospecto no le quita nada —conserva oportunidades,
+                    cotizaciones e historial—, solo deja de aparecer al crear
+                    una oportunidad nueva y pasa a aparecer en prospección.
+                    El botón de cambiarlo lo destapa el JS solo para
+                    administradores, superusuarios y supervisores.
+                    {% endcomment %}
+                    <div class="wci-tipo-row">
+                        <span class="wci-tipo" id="wciTipoBadge">Cliente</span>
+                        <button type="button" class="wci-tipo-btn" id="wciTipoBtn" style="display:none;"></button>
+                    </div>
                     <div class="wco-info-id-rfc" id="wciRfcRow" style="display:none;">
                         <span id="wciRfc"></span>
                     </div>

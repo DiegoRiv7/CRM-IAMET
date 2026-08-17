@@ -265,6 +265,15 @@ class Cliente(models.Model):
 
     # Cuándo (si fue el caso) este Cliente se promovió desde un ClientePotencial.
     # Se usa para los KPIs del dashboard de prospectos ("convertidos este mes").
+    # Cliente o prospecto: es una MARCA, no un cambio de tabla. Bajar un cliente
+    # a prospecto no le quita nada —conserva sus oportunidades, cotizaciones e
+    # historial—; lo unico que cambia es donde se le puede elegir:
+    #   · prospecto -> NO aparece al crear una oportunidad, si en prospeccion.
+    #   · cliente   -> aparece en las dos.
+    # Se resolvio asi a proposito: moverlo a la tabla de clientes potenciales
+    # habria borrado en cascada sus oportunidades, cotizaciones y volumetrias.
+    es_prospecto = models.BooleanField(
+        default=False, db_index=True, verbose_name="Es prospecto (cliente potencial)")
     convertido_de_potencial_at = models.DateTimeField(null=True, blank=True, verbose_name="Convertido desde Prospecto")
 
     # ── Carátula del cliente (tab "Información" del widget) ────────────────

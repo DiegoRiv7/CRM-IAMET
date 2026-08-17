@@ -5369,6 +5369,47 @@
                 field.classList.add('is-editing');
             }
 
+            // Cliente / prospecto: etiqueta y, para quien puede, el boton de
+            // cambiarla. Es una marca — no mueve ni borra nada; solo decide si
+            // la empresa se puede elegir al abrir una oportunidad nueva.
+            function _wciPintarTipo(c){
+                var badge = document.getElementById('wciTipoBadge');
+                var btn = document.getElementById('wciTipoBtn');
+                if (!badge) return;
+                var esPros = !!c.es_prospecto;
+                badge.textContent = esPros ? 'Prospecto' : 'Cliente';
+                badge.classList.toggle('is-prospecto', esPros);
+                badge.title = esPros
+                    ? 'No aparece al crear una oportunidad; si aparece en prospeccion.'
+                    : 'Aparece al crear oportunidades y en prospeccion.';
+                if (!btn) return;
+                if (!c.puede_cambiar_tipo) { btn.style.display = 'none'; return; }
+                btn.style.display = '';
+                btn.textContent = esPros ? 'Pasar a cliente' : 'Bajar a prospecto';
+                btn.onclick = function(){
+                    var aviso = esPros
+                        ? 'Pasara a CLIENTE: volvera a aparecer al crear oportunidades.'
+                        : 'Pasara a PROSPECTO: dejara de aparecer al crear oportunidades y ' +
+                          'aparecera en prospeccion. Conserva sus oportunidades e historial.';
+                    if (!window.confirm(aviso)) return;
+                    btn.disabled = true;
+                    var fd = new FormData();
+                    fd.append('es_prospecto', esPros ? '0' : '1');
+                    fetch('/app/api/cliente-info/' + currentClienteId + '/', {
+                        method: 'POST', body: fd,
+                        credentials: 'same-origin',
+                        headers: { 'X-CSRFToken': window.getCsrf ? window.getCsrf() : '' },
+                    }).then(function(r){ return r.json(); }).then(function(d){
+                        btn.disabled = false;
+                        if (d && d.ok) { _wciPintarTipo(d.cliente || {}); return; }
+                        alert((d && d.error) || 'No se pudo cambiar');
+                    }).catch(function(){
+                        btn.disabled = false;
+                        alert('No se pudo cambiar');
+                    });
+                };
+            }
+
             function _cargarClienteInfo(){
                 var saved = document.getElementById('wciSavedHint');
                 if (saved) saved.textContent = 'Cargando…';
@@ -5381,6 +5422,7 @@
                         var c = data.cliente || {};
                         _wciSetText('wciNombre', c.nombre || '—');
                         _wciSetText('wciRfc', c.rfc || '', true);
+                        _wciPintarTipo(c);
                         _wciRenderLogo(c.logo_url);
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);
