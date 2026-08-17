@@ -293,7 +293,11 @@
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 e.preventDefault();
-                var oppId = parseInt(qbtn.getAttribute('data-opp-id') || '0', 10);
+                // Los digitos se limpian antes de parsear: si el id llega
+                // localizado ("1,443"), parseInt se detiene en la coma y
+                // devuelve 1 — abria la cotizacion de OTRA oportunidad.
+                var crudo = String(qbtn.getAttribute('data-opp-id') || '').replace(/[^\d]/g, '');
+                var oppId = parseInt(crudo || '0', 10);
                 if (oppId && typeof window.openCotizador === 'function') window.openCotizador(oppId);
                 return false;
             }
