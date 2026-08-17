@@ -3071,20 +3071,14 @@ def actividad_detail(request, pk):
             # Completar una actividad exige EVIDENCIA: el resultado escrito o
             # al menos un archivo. Se valida aqui y no solo en la pantalla,
             # porque es una regla del negocio y no un detalle de la forma.
-            #
-            # Quedan fuera las actividades de prospeccion: ahi completar no
-            # cierra el trabajo, obliga a agendar la siguiente, y ese flujo
-            # tiene su propio control.
+            # Aplica a TODAS, incluidas las de prospeccion.
             if data['completada'] and not actividad.completada:
-                es_prospeccion = 'prospecto_id:' in (actividad.descripcion or '')
-                if not es_prospeccion:
-                    texto = (actividad.resultado or '').strip()
-                    tiene_archivo = actividad.resultado_archivos.exists()
-                    if not texto and not tiene_archivo:
-                        return JsonResponse(
-                            {'error': 'Para completarla hay que dejar constancia: '
-                                      'escribe el resultado o adjunta un archivo.'},
-                            status=400)
+                texto = (actividad.resultado or '').strip()
+                if not texto and not actividad.resultado_archivos.exists():
+                    return JsonResponse(
+                        {'error': 'Para completarla hay que dejar constancia: '
+                                  'escribe el resultado o adjunta un archivo.'},
+                        status=400)
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
             # Si es actividad de oportunidad, completar la TareaOportunidad vinculada

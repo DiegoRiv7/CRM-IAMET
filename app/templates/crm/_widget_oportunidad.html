@@ -3272,8 +3272,13 @@ matarían los bindings posteriores del mismo try-block. El markup original
             return el ? el.value : '';
         }
 
-        window.woActResAbrir = function (actId) {
+        // prospectoId llega solo desde el calendario, al cerrar una actividad
+        // de prospección: al guardar se abre ese prospecto para agendar la
+        // siguiente. Va como argumento y no como variable suelta, para que
+        // abrir el diálogo por otra vía no arrastre el prospecto anterior.
+        window.woActResAbrir = function (actId, prospectoId) {
             window._woActResActId = actId;
+            window._woActResProspectoId = prospectoId || null;
             window._woActResArchivos = [];
             window._woActResUploading = 0;
             // El aviso de la vez pasada no debe recibir a la siguiente actividad.
@@ -3425,10 +3430,17 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 if (ov) ov.style.display = 'none';
                 var visor = document.getElementById('widgetOppVerActividad');
                 if (visor) visor.style.display = 'none';
-                // Si hay oportunidad ligada, abrirla para agendar la próxima actividad.
-                if (window._calCurrentOppId && typeof window.openDetalle === 'function') {
+                // Si venía de una actividad de prospección, se abre el prospecto
+                // para agendar la siguiente — es el cierre de ese ciclo y por eso
+                // manda sobre la oportunidad.
+                if (window._woActResProspectoId && typeof abrirWidgetProspecto === 'function') {
+                    var _pid = window._woActResProspectoId;
+                    setTimeout(function () { abrirWidgetProspecto(_pid); }, 300);
+                } else if (window._calCurrentOppId && typeof window.openDetalle === 'function') {
+                    // Si hay oportunidad ligada, abrirla para agendar la próxima actividad.
                     window.openDetalle(window._calCurrentOppId);
                 }
+                window._woActResProspectoId = null;
                 window._woActResActId = null;
             }).catch(function (err) {
                 if (btn) { btn.disabled = false; btn.style.opacity = '1'; }

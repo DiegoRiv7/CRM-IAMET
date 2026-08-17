@@ -5341,30 +5341,25 @@
         overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     };
 
+    // Completar una actividad de prospeccion pasa por el mismo cuadro de
+    // evidencia que las demas: se pide el resultado, y solo cuando se guarda
+    // se cierra la actividad y se abre el prospecto para agendar la siguiente.
+    // Antes se completaba de golpe, sin dejar constancia de que paso.
     window._calCompletarProspecto = function(actividadId) {
-        fetch('/app/api/actividades/' + actividadId + '/', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
-            body: JSON.stringify({ completada: true })
-        }).then(function(r) { return r.json(); }).then(function(data) {
-            var overlay = document.getElementById('calProspectoInfoOverlay');
-            if (overlay) overlay.remove();
-            // Recargar calendario inmediatamente
-            if (typeof calGlobalRefetch === 'function') calGlobalRefetch();
-            // Abrir widget del prospecto para forzar nueva actividad
-            var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(actividadId); });
-            if (evt) {
-                var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
-                if (pMatch && typeof abrirWidgetProspecto === 'function') {
-                    setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 300);
-                }
-            }
-            // Toast
-            var toast = document.createElement('div');
-            toast.textContent = 'Actividad completada';
-            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#34C759;color:#fff;padding:10px 24px;border-radius:10px;font-size:0.85rem;z-index:99999;font-weight:600;';
-            document.body.appendChild(toast);
-            setTimeout(function() { toast.remove(); }, 3000);
-        }).catch(function(e) { console.error('Error completando actividad:', e); });
+        var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(actividadId); });
+        var pMatch = evt && (evt.description || '').match(/prospecto_id:(\d+)/);
+        var prospectoId = pMatch ? parseInt(pMatch[1]) : null;
+
+        var overlay = document.getElementById('calProspectoInfoOverlay');
+        if (overlay) overlay.remove();
+
+        // El diálogo recibe el prospecto y lo abre al guardar.
+        if (typeof window.woActResAbrir === 'function') {
+            window.woActResAbrir(actividadId, prospectoId);
+            return;
+        }
+        // Sin el cuadro de evidencia no se completa a ciegas: el servidor lo
+        // rechazaria igual y el usuario no sabria por que.
+        alert('No se pudo abrir el formulario de resultado. Recarga la pagina e intentalo de nuevo.');
     };
 </script>
