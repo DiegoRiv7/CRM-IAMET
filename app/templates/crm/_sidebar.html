@@ -251,8 +251,8 @@
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
         <!-- Mi Asistente (centro de mando del vendedor; reemplaza a Novedades/Resumen).
-             OCULTO salvo RESUMEN_HABILITADO=1 en el .env (feature flag) —
-             la funcionalidad queda desplegada, solo sin icono. -->
+             VISIBLE por default desde el lanzamiento (2026-08-17); se puede
+             ocultar en un ambiente con RESUMEN_HABILITADO=0 en su .env. -->
         {% if resumen_habilitado %}
         <button type="button" class="crm-sb-btn" id="btnPendientes"
             onclick="if(window.pendAbrir){pendAbrir();}"

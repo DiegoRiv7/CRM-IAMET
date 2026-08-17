@@ -3,11 +3,11 @@ import os
 from .views import is_supervisor, is_engineer
 from .models import UserProfile
 
-# Feature flag: la sección "Resumen" (icono del sidebar) solo se muestra
-# donde el .env tenga RESUMEN_HABILITADO=1 (pruebas). En producción, sin la
-# variable, el icono queda OCULTO — la funcionalidad completa sigue
-# desplegada e intacta, solo invisible para los usuarios.
-RESUMEN_HABILITADO = os.environ.get('RESUMEN_HABILITADO', '0') == '1'
+# Feature flag de "Mi día" (icono del sidebar). Nació OCULTO por default para
+# el soft-launch; con Mi Asistente listo para liberar (2026-08-17) el default
+# es VISIBLE en todos lados — el merge a producción basta, sin tocar su .env.
+# Para ocultarlo en un ambiente: RESUMEN_HABILITADO=0 en su .env.
+RESUMEN_HABILITADO = os.environ.get('RESUMEN_HABILITADO', '1') == '1'
 
 def supervisor_flag(request):
     user_authenticated = request.user.is_authenticated
