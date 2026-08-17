@@ -646,10 +646,13 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 /* La moneda y el importe de la utilidad, en chico bajo su cifra: el monto se
    guarda siempre en pesos y conviene que se lea, porque las POs llegan en
    dolares y se convierten al entrar. */
+/* Se deja envolver a dos renglones en vez de cortarse: en la mitad de la
+   utilidad no cabe "$-2,770 pesos mexicanos" en una linea, y con puntos
+   suspensivos la moneda —que es justo el dato— era lo que desaparecia. */
 .opp-v4 .wo4-moneda {
     display: block; margin-top: 2px;
     font-size: .72rem; color: var(--w4-gris); font-weight: 500;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: normal; line-height: 1.3;
 }
 /* Utilidad negativa: las OC a proveedores se comieron el monto de las POs.
    Se marca en rojo porque es un dato que hay que ver, no leer de pasada. */

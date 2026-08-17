@@ -12392,6 +12392,25 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     width: auto;
 }
 
+/* ── Arrastrar la tarjeta para cambiar de etapa ──
+   La tarjeta se agarra y se suelta en otra columna. Las tres señales: la
+   tarjeta se ve levantada mientras viaja, las columnas se insinúan como
+   destino posible, y la de abajo del cursor se marca claramente. */
+.pk-board .crm-kanban-card[draggable="true"]:active { cursor: grabbing; }
+.pk-board .crm-kanban-card.pk-dragging {
+    opacity: .45;
+    transform: rotate(-1.2deg) scale(.985);
+    box-shadow: 0 14px 30px -10px rgba(15, 23, 42, .35);
+}
+.pk-board .crm-kanban-col--prospecto.pk-drop-listo .crm-kanban-col-body {
+    outline: 1px dashed rgba(255, 255, 255, .35);
+    outline-offset: -4px; border-radius: 14px;
+}
+.pk-board .crm-kanban-col--prospecto.pk-drop-encima .crm-kanban-col-body {
+    outline: 2px dashed rgba(255, 255, 255, .85);
+    background: rgba(255, 255, 255, .10);
+}
+
 /* Popover wrapper (para filtro/ordenar dentro del crm-bar-left) */
 .pk-pop-wrap {
     position: relative;

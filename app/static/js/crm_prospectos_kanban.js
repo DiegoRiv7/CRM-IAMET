@@ -443,6 +443,143 @@
         return true;
     };
 
+    // ── Arrastrar la tarjeta para cambiar de etapa ──
+    // Es el unico camino: la tarjeta se agarra y se suelta en otra columna. Un
+    // clic sigue abriendo el prospecto, asi que hay que distinguir el gesto —
+    // por eso se marca la tarjeta con .pk-dragging y se anula el clic que el
+    // navegador dispara al terminar un arrastre corto.
+    var arrastrando = null;
+
+    function marcarZonas(activo) {
+        Array.prototype.forEach.call(
+            document.querySelectorAll('.crm-kanban-col--prospecto'),
+            function (col) { col.classList.toggle('pk-drop-listo', activo); });
+    }
+
+    function wireArrastre() {
+        var board = document.getElementById('pkKanbanBoard');
+        if (!board || board._pkDnDWired) return;
+        board._pkDnDWired = true;
+
+        board.addEventListener('dragstart', function (ev) {
+            var card = ev.target.closest && ev.target.closest('.crm-kanban-card');
+            if (!card) return;
+            arrastrando = card;
+            card.classList.add('pk-dragging');
+            marcarZonas(true);
+            try {
+                // Sin datos en el dataTransfer, Firefox cancela el arrastre.
+                ev.dataTransfer.setData('text/plain', card.dataset.prospectoId || '');
+                ev.dataTransfer.effectAllowed = 'move';
+            } catch (e) { }
+        });
+
+        board.addEventListener('dragend', function () {
+            if (arrastrando) arrastrando.classList.remove('pk-dragging');
+            marcarZonas(false);
+            Array.prototype.forEach.call(
+                document.querySelectorAll('.pk-drop-encima'),
+                function (c) { c.classList.remove('pk-drop-encima'); });
+            // El clic sintetico llega despues del dragend: se ignora una vez
+            // para que soltar la tarjeta no abra el prospecto.
+            var recien = arrastrando;
+            arrastrando = null;
+            if (recien) {
+                recien._pkIgnorarClic = true;
+                setTimeout(function () { recien._pkIgnorarClic = false; }, 250);
+            }
+        });
+
+        board.addEventListener('dragover', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (!col || !arrastrando) return;
+            ev.preventDefault();   // sin esto el navegador no permite soltar
+            ev.dataTransfer.dropEffect = 'move';
+            if (col.dataset.stage !== arrastrando.dataset.etapa) {
+                col.classList.add('pk-drop-encima');
+            }
+        });
+
+        board.addEventListener('dragleave', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (col && !col.contains(ev.relatedTarget)) col.classList.remove('pk-drop-encima');
+        });
+
+        board.addEventListener('drop', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (!col || !arrastrando) return;
+            ev.preventDefault();
+            col.classList.remove('pk-drop-encima');
+            var card = arrastrando;
+            var nueva = col.dataset.stage;
+            var previa = card.dataset.etapa;
+            if (!nueva || nueva === previa) return;
+
+            var id = card.dataset.prospectoId;
+            // Se mueve de inmediato para que el gesto se sienta; si el servidor
+            // la rechaza, regresa a su columna.
+            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, nueva);
+
+            fetch('/app/api/prospecto/' + id + '/etapa/', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': pkCsrf() },
+                body: JSON.stringify({ etapa: nueva }),
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                if (data && data.success) return;
+                if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+                pkAviso((data && data.error) || 'No se pudo cambiar la etapa');
+            }).catch(function () {
+                if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+                pkAviso('No se pudo cambiar la etapa');
+            });
+        });
+
+        // Un arrastre termina en un clic sintetico sobre la tarjeta: se atrapa
+        // en captura para que no llegue al onclick que abre el prospecto.
+        board.addEventListener('click', function (ev) {
+            var card = ev.target.closest && ev.target.closest('.crm-kanban-card');
+            if (card && card._pkIgnorarClic) {
+                ev.stopPropagation();
+                ev.preventDefault();
+            }
+        }, true);
+    }
+
+    function pkCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function pkAviso(msg) {
+        var toast = document.getElementById('widgetToast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 3000);
+    }
+
+    // Las tarjetas nacen en la plantilla y tambien al recargar el kanban, asi
+    // que el atributo se pone aqui en lugar de repetirlo en el HTML.
+    function marcarArrastrables() {
+        Array.prototype.forEach.call(
+            document.querySelectorAll('.crm-kanban-card[data-prospecto-id]'),
+            function (c) {
+                c.setAttribute('draggable', 'true');
+                c.style.cursor = 'grab';
+            });
+    }
+
+    var _pkRehidratar = window.pkKanbanRehydrate;
+    window.pkKanbanRehydrate = function () {
+        if (typeof _pkRehidratar === 'function') _pkRehidratar();
+        wireArrastre();
+        marcarArrastrables();
+    };
+
+    wireArrastre();
+    marcarArrastrables();
+
     setupToolbar();
     applyFilters();   // aplicar filtros guardados al cargar
     applyCollapsed(); // restaurar columnas colapsadas
