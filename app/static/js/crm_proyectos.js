@@ -613,7 +613,23 @@
         var fMeta = el('proyKpiFinMeta');
         if (fAmt && fMeta) {
             fMeta.classList.remove('is-danger', 'is-warn');
-            if (ov && ov.financiero) {
+            var cmp = ov && ov.compras;
+            if (cmp && cmp.presupuesto > 0) {
+                // Con volumetría sincronizada, el presupuesto REAL de gasto es el
+                // de la volumetría (costos), no el monto de venta: comprado /
+                // presupuesto + pendiente por comprar + eficiencia del motor.
+                fAmt.innerHTML =
+                    '<span class="proy-v3-kpi-value">' + _esc(_fmtMoneyShort(cmp.comprado)) + '</span>' +
+                    '<span class="proy-v3-kpi-value-small">/ ' + _esc(_fmtMoneyShort(cmp.presupuesto)) + '</span>';
+                var piezas = [];
+                if (cmp.pendiente > 0) piezas.push('Por comprar ' + _fmtMoneyShort(cmp.pendiente));
+                if (cmp.eficiencia_pct != null) {
+                    piezas.push('Eficiencia ' + Math.round(cmp.eficiencia_pct) + '%');
+                    if (cmp.eficiencia_pct < 85)      fMeta.classList.add('is-danger');
+                    else if (cmp.eficiencia_pct < 97) fMeta.classList.add('is-warn');
+                }
+                fMeta.textContent = piezas.length ? piezas.join(' · ') : 'Sin compras registradas aún';
+            } else if (ov && ov.financiero) {
                 var f = ov.financiero;
                 var gastado = Number(f.gastado || 0);
                 var presupuesto = Number(f.contratado || 0);
