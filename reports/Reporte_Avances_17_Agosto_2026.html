@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 17 de Agosto 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ TEASER ═══════ */
+        .card-teaser {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border: none;
+            color: white;
+        }
+        .card-teaser h3 { color: white; }
+        .card-teaser p { color: rgba(255,255,255,0.75); }
+        .card-teaser .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0F172A;
+            background: #F59E0B;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ═══════ PROGRESO (barra Fase 1) ═══════ */
+        .progress-wrap { grid-column: 1 / -1; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-track { height: 10px; background: var(--border); border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--primary-accent), var(--success)); border-radius: 20px; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+        .footer-note { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 300px; }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-teaser { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    
+        /* ═══════ REJILLA DE EMPRESAS ═══════ */
+        .empresas {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .emp {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+        .emp:nth-child(2n) { border-right: none; }
+        .emp:nth-last-child(-n+2) { border-bottom: none; }
+        .emp-num {
+            font-size: 11px; font-weight: 800; color: var(--primary-accent);
+            min-width: 18px;
+        }
+        .emp-nom { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .emp-sis { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+        .nota {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--accent-bg);
+            border-left: 3px solid var(--warning);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin-top: -26px;
+        }
+        @media print { .empresas { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Salida a Producción · Trazabilidad y Proyectos</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">17 AGOSTO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Producción</span>
+            <span class="summary-lbl">Merge Realizado</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">4</span>
+            <span class="summary-lbl">Fallas Corregidas</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Evidencia</span>
+            <span class="summary-lbl">Ahora Obligatoria</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Proyectos</span>
+            <span class="summary-lbl">Arranca su Mejora</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Hoy <strong>el trabajo acumulado salió a producción</strong>. En paralelo se cerraron cuatro fallas que estaban dando datos equivocados sin avisar, se volvió <strong>obligatoria la evidencia</strong> al completar una actividad, y arrancó el trabajo de fondo sobre el <strong>módulo de Proyectos</strong>.
+        </div>
+
+        <div class="section-title">Salida a Producción</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🚀</div>
+                <div>
+                    <h3>Se subió a producción todo lo trabajado</h3>
+                    <p>Producción llevaba desde el <strong>7 de agosto</strong> con una entrega parcial. Ya está al día con el lector de órdenes de compra, la utilidad automática, el control de accesos y todo lo verificado en el entorno de pruebas.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">Fallas que Daban Datos Equivocados</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🔍</div>
+                <div>
+                    <h3>Cuatro problemas que no se veían</h3>
+                    <p>Ninguno mostraba un error en pantalla: todos entregaban un resultado plausible que resultaba ser el equivocado. Es el tipo de falla que se descubre tarde, cuando alguien nota que un número no cuadra.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🧾 Facturas que no Aparecían</h3>
+                <p>La pestaña de Facturación del cliente salía <strong>vacía para todos</strong> aunque hubiera facturas cargadas. Consultaba un almacén distinto al que usa el Drive. Ahora aparecen todas las históricas, con su monto.</p>
+            </div>
+
+            <div class="card">
+                <h3>📄 Cotizar Abría Otra Oportunidad</h3>
+                <p>Desde la lista, el botón de cotizar abría <strong>siempre la oportunidad más antigua</strong> en vez de la del renglón. Un detalle de formato de números lo provocaba, y afectaba también a marcas, proveedores, reportes y proyectos.</p>
+            </div>
+
+            <div class="card">
+                <h3>💸 Nuestras Órdenes se Contaban como Ingreso</h3>
+                <p>Las órdenes que emitimos a proveedores <strong>se sumaban al monto de la oportunidad</strong> en lugar de restarse. Inflaban la venta y dejaban la utilidad sin calcular.</p>
+            </div>
+
+            <div class="card">
+                <h3>🖱️ Mover Prospectos Fallaba</h3>
+                <p>Al arrastrar una tarjeta a la etapa de Reunión, el sistema la rechazaba sin explicar por qué. Ahora pregunta si es <strong>virtual o presencial</strong>, que era el dato que faltaba.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Actividades · La Evidencia se Vuelve Obligatoria</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">📝</div>
+                <div>
+                    <h3>No se puede completar una actividad sin dejar constancia</h3>
+                    <p>Al marcar una actividad como completada, ahora hay que <strong>escribir el resultado o adjuntar un archivo</strong>. Sin eso no se cierra. Aplica también a las actividades de prospección, que antes se completaban de golpe sin dejar rastro de qué pasó: ahora piden el resultado y al guardarlo <strong>abren el prospecto para agendar la siguiente</strong>.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔒 La Regla es del Sistema</h3>
+                <p>Se valida en el servidor, no solo en la pantalla. No hay forma de saltársela desde ninguna vista.</p>
+            </div>
+
+            <div class="card">
+                <h3>🖐️ Prospectos con Arrastre</h3>
+                <p>La etapa de un prospecto ya se cambia <strong>arrastrando su tarjeta</strong> entre columnas. Cerrar como ganado pide confirmación, porque crea la oportunidad.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Ficha del Cliente · Quién es y Quién lo Lleva</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>🏷️ Cliente o Prospecto</h3>
+                <p>Una etiqueta junto al nombre indica si la empresa es <strong>cliente o prospecto</strong>. Los supervisores y administradores lo cambian desde ahí. Un prospecto deja de aparecer al crear oportunidades y pasa a aparecer en prospección, <strong>conservando todo su historial</strong>.</p>
+            </div>
+
+            <div class="card">
+                <h3>👤 Vendedor Responsable a la Vista</h3>
+                <p>La carátula muestra <strong>quién lleva al cliente</strong>. Todos lo ven; supervisores y administradores lo reasignan desde ahí, sin entrar al panel de administración.</p>
+            </div>
+
+            <div class="card">
+                <h3>💵 Utilidad más Clara</h3>
+                <p>Junto al monto se muestran <strong>el porcentaje y el importe</strong>, ambos especificando pesos mexicanos. Antes solo el porcentaje, que no dice si son mil o cien mil.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔎 Buscar en Cuadro, no en la Celda</h3>
+                <p>Cambiar el cliente o el contacto abre un <strong>cuadro de búsqueda con espacio</strong>. Antes se escribía dentro de una celda de pocos centímetros y el texto se cortaba.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Proyectos · Empieza su Mejora</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🏗️</div>
+                <div>
+                    <h3>Arranca el trabajo de fondo sobre el módulo de Proyectos</h3>
+                    <p>Es la siguiente zona a mejorar y hoy dio sus primeros pasos. La meta es que un proyecto se pueda leer de un vistazo: <strong>cuánto se presupuestó, cuánto se ha comprado y cuánto falta por comprar</strong>.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🛒 Motor de Compras (Fase 1)</h3>
+                <p>Nueva base que compara <strong>lo comprado contra lo presupuestado</strong> en la volumetría, y calcula lo que queda pendiente. Distingue además las compras hechas fuera de volumetría.</p>
+            </div>
+
+            <div class="card">
+                <h3>📊 Resumen que se Entiende</h3>
+                <p>Se depuró el panel de resumen para que <strong>cada dato diga algo distinto</strong>. El contraste entre avance y tiempo transcurrido —el dato clave— ahora se destaca por color según su gravedad.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Otros Ajustes</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>📱 Levantamientos en Celular</h3>
+                <p>La lista de proyectos de la aplicación móvil <strong>volvía a abrirse desplazada una pantalla</strong> hacia abajo. Corregido.</p>
+            </div>
+
+            <div class="card">
+                <h3>🌅 Mi Día de Entrada</h3>
+                <p>La sección Mi Día queda <strong>visible por defecto</strong> para todos, como preparación del lanzamiento.</p>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label"><span>Ciclo Comercial Automatizado</span><span>En producción</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+            </div>
+        </div>
+
+        <div class="section-title">Lo que Sigue</div>
+
+        <div class="feature-grid">
+            <div class="card card-teaser">
+                <div style="font-size: 32px;">🧰</div>
+                <div>
+                    <span class="badge">Siguiente Fase</span>
+                    <h3>Proyectos, de principio a fin</h3>
+                    <p>Con el motor de compras en pie, sigue conectar el resto del módulo: que el avance, el gasto y lo pendiente de comprar se lean juntos, y que el responsable de un proyecto sepa en qué punto está sin tener que armar el cuadro a mano.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+        <div class="footer-note">
+            El trabajo acumulado se desplegó en producción el 17 de Agosto 2026. El módulo de Proyectos continúa en desarrollo en el entorno de pruebas.
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>
