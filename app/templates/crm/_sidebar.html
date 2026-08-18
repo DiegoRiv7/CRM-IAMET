@@ -57,7 +57,7 @@
 
         <!-- Tareas -->
         <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}"
-            {% if tab_activo == 'calendario' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
             </svg>
@@ -66,7 +66,7 @@
 
         <!-- Proyectos -->
         <button type="button" class="crm-sb-btn" id="btnProyectos" data-tooltip="Proyectos"
-            {% if tab_activo == 'calendario' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
@@ -83,13 +83,13 @@
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
         </a>
 
-        <!-- Correo -->
-        <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
+        <!-- Correo — sección completa (page-mode, como Calendario) -->
+        <a href="/app/home/?tab=correo" data-turbo="true" class="crm-sb-btn{% if tab_activo == 'correo' %} active{% endif %}" id="btnMail" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}</span>
-        </button>
+        </a>
 
         <!-- Muro -->
         <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
@@ -182,7 +182,8 @@
         {% endif %}
 
         <!-- Tareas -->
-        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}">
+        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}"
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
             </svg>
@@ -190,7 +191,8 @@
         </button>
 
         <!-- Proyectos (visible para todos) -->
-        <button type="button" class="crm-sb-btn" id="btnProyectos" onclick="proyectosAbrir()" data-tooltip="Proyectos">
+        <button type="button" class="crm-sb-btn" id="btnProyectos" data-tooltip="Proyectos"
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
@@ -215,13 +217,13 @@
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
         </a>
 
-        <!-- Correo -->
-        <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
+        <!-- Correo — sección completa (page-mode, como Calendario) -->
+        <a href="/app/home/?tab=correo" data-turbo="true" class="crm-sb-btn{% if tab_activo == 'correo' %} active{% endif %}" id="btnMail" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}</span>
-        </button>
+        </a>
 
         {% if not es_ingeniero %}
         <!-- Muro (vendedor: después de Correo) -->
@@ -248,17 +250,17 @@
 
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
-        <!-- Resumen (centro de mando del vendedor; reemplaza a Novedades).
-             OCULTO salvo RESUMEN_HABILITADO=1 en el .env (feature flag) —
-             la funcionalidad queda desplegada, solo sin icono. -->
+        <!-- Mi Asistente (centro de mando del vendedor; reemplaza a Novedades/Resumen).
+             VISIBLE por default desde el lanzamiento (2026-08-17); se puede
+             ocultar en un ambiente con RESUMEN_HABILITADO=0 en su .env. -->
         {% if resumen_habilitado %}
         <button type="button" class="crm-sb-btn" id="btnPendientes"
             onclick="if(window.pendAbrir){pendAbrir();}"
-            data-tooltip="Resumen">
+            data-tooltip="Mi día">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span class="crm-sb-label">Resumen</span>
+            <span class="crm-sb-label">Mi día</span>
         </button>
         {% endif %}
 

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 13 de Agosto 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ TEASER ═══════ */
+        .card-teaser {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border: none;
+            color: white;
+        }
+        .card-teaser h3 { color: white; }
+        .card-teaser p { color: rgba(255,255,255,0.75); }
+        .card-teaser .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0F172A;
+            background: #F59E0B;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ═══════ PROGRESO (barra Fase 1) ═══════ */
+        .progress-wrap { grid-column: 1 / -1; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-track { height: 10px; background: var(--border); border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--primary-accent), var(--success)); border-radius: 20px; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+        .footer-note { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 300px; }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-teaser { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    
+        /* ═══════ REJILLA DE EMPRESAS ═══════ */
+        .empresas {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .emp {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+        .emp:nth-child(2n) { border-right: none; }
+        .emp:nth-last-child(-n+2) { border-bottom: none; }
+        .emp-num {
+            font-size: 11px; font-weight: 800; color: var(--primary-accent);
+            min-width: 18px;
+        }
+        .emp-nom { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .emp-sis { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+        .nota {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--accent-bg);
+            border-left: 3px solid var(--warning);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin-top: -26px;
+        }
+        @media print { .empresas { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Utilidad Automática de la Oportunidad</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">13 AGOSTO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Utilidad</span>
+            <span class="summary-lbl">Se Calcula Sola</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">14</span>
+            <span class="summary-lbl">Empresas Reconocidas</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">16</span>
+            <span class="summary-lbl">Formatos Verificados</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Pruebas</span>
+            <span class="summary-lbl">Todo Desplegado</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Hoy se cerró el circuito completo del dinero de una oportunidad: <strong>las órdenes de compra del cliente entran por el Drive y se convierten en el monto; las órdenes que emitimos a proveedores se restan, y la utilidad aparece sola</strong>. Se sumaron cuatro clientes más al lector y se subió todo al entorno de pruebas.
+        </div>
+
+        <div class="section-title">Utilidad · El Cierre del Circuito</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">📊</div>
+                <div>
+                    <h3>La utilidad de cada oportunidad se calcula sola</h3>
+                    <p>Al subir una orden de compra de proveedor al Drive, el sistema la lee y <strong>la resta del monto de la oportunidad</strong>. El porcentaje que queda aparece junto al monto, con la cuenta completa al pasar el cursor. Funciona <strong>tenga o no un proyecto vinculado</strong>: antes, si la oportunidad no tenía proyecto, el importe de la orden se perdía y no había forma de calcular nada.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🧮 Sin Cifras a Medias</h3>
+                <p>Hacen falta <strong>las dos</strong> para mostrarla. Si falta la orden del cliente no hay ingreso contra el cual medir; si faltan las de proveedor no se conoce el costo. En ambos casos aparece un guion y no un número: un 100% "porque todavía no se suben" engaña más que dejarlo vacío.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔴 La Pérdida se Ve</h3>
+                <p>Si el gasto se pasa del ingreso, el porcentaje sale <strong>en negativo y en rojo</strong>. Es el dato que hay que ver, no leer de pasada.</p>
+            </div>
+
+            <div class="card">
+                <h3>💵 El Monto no Cambia de Significado</h3>
+                <p>El monto de la oportunidad <strong>sigue siendo lo que vale la venta</strong>. Se usa en reportes, tableros y pipeline, y ahí debe seguir midiendo ventas, no ganancias. La utilidad va aparte, a un lado.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Al Instante</h3>
+                <p>Las cifras se actualizan <strong>en cuanto entra el documento</strong>, con aviso de lo detectado. No hay que recargar ni capturar nada a mano.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Órdenes a Proveedor · Un Error de 18 Veces</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">💱</div>
+                <div>
+                    <h3>Las órdenes en dólares se estaban tomando como pesos</h3>
+                    <p>Los dos formatos que emitimos —BAJANET e IAMET— imprimen el total con letra y el código de moneda pegado al final, sin espacio. El sistema no lo reconocía y <strong>asumía pesos</strong>: una orden de 702.94 dólares se registraba como 702.94 pesos, <strong>dieciocho veces menos gasto</strong>. Corregido y verificado contra los documentos reales. Era justo el lado que resta en la utilidad, así que el resultado habría salido inflado.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>✅ Lo Demás ya Servía</h3>
+                <p>El importe, el número de orden, el proveedor y la fecha ya se extraían bien, y el monto ya venía <strong>sin impuesto</strong>. Solo faltaba la moneda.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔗 Las Órdenes Apuntan a su Origen</h3>
+                <p>Ambos formatos anotan en las notas <strong>el número de la orden del cliente</strong> que las originó. Queda registrado: permitiría amarrar gasto e ingreso documento por documento.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Lector de Órdenes de Compra · Cuatro Clientes Más</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🎓</div>
+                <div>
+                    <h3>De 10 a 14 empresas reconocidas</h3>
+                    <p>Se sumaron <strong>Autoliv, Aptiv, SDS de México y Skyworks</strong>. Dos de ellas se leyeron bien sin tocar nada —señal de que las reglas están madurando— y las otras dos revelaron huecos reales.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>👻 Un Canal Entero que se Ignoraba</h3>
+                <p>La orden de Skyworks <strong>no se detectaba en absoluto</strong>: nunca dice "orden de compra", dice <strong>"Pedido de compra"</strong>, que es como lo nombra SAP. Todo lo que llega por ese canal quedaba fuera sin aviso.</p>
+            </div>
+
+            <div class="card">
+                <h3>🧾 Impuesto sin Subtotal</h3>
+                <p>Autoliv y Aptiv separan el impuesto pero <strong>no imprimen subtotal</strong>. Ahora el importe neto se despeja restando, comprobando que la tasa resultante sea creíble antes de darla por buena.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔤 Títulos Letra por Letra</h3>
+                <p>Aptiv imprime el encabezado con las letras separadas. Se reconocía <strong>de casualidad</strong>, por una frase suelta en la letra chica cuatro párrafos abajo.</p>
+            </div>
+
+            <div class="card">
+                <h3>📛 El Nombre no es Garantía</h3>
+                <p><strong>Cinco de los catorce</strong> archivos no dicen nada de orden de compra en su nombre. Todos se reconocen por su contenido.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Empresas cuyas Órdenes ya se Reconocen</div>
+
+        <div class="feature-grid">
+            <div class="empresas">
+                <div class="emp"><span class="emp-num">01</span><span class="emp-nom">Schlage / Allegion</span><span class="emp-sis">Oracle</span></div>
+                <div class="emp"><span class="emp-num">02</span><span class="emp-nom">Eaton</span><span class="emp-sis">Oracle</span></div>
+                <div class="emp"><span class="emp-num">03</span><span class="emp-nom">Baxter / Welch Allyn</span><span class="emp-sis">SAP</span></div>
+                <div class="emp"><span class="emp-num">04</span><span class="emp-nom">Becton Dickinson (BD)</span><span class="emp-sis">BuySmart</span></div>
+                <div class="emp"><span class="emp-num">05</span><span class="emp-nom">Telnor</span><span class="emp-sis">Sistema propio</span></div>
+                <div class="emp"><span class="emp-num">06</span><span class="emp-nom">Essilor / EssilorLuxottica</span><span class="emp-sis">SAP</span></div>
+                <div class="emp"><span class="emp-num">07</span><span class="emp-nom">CDA Industrial</span><span class="emp-sis">Procore</span></div>
+                <div class="emp"><span class="emp-num">08</span><span class="emp-nom">Carl Zeiss</span><span class="emp-sis">Jaggaer</span></div>
+                <div class="emp"><span class="emp-num">09</span><span class="emp-nom">Lateral Fulfillment</span><span class="emp-sis">PandaDoc</span></div>
+                <div class="emp"><span class="emp-num">10</span><span class="emp-nom">Fisher &amp; Paykel</span><span class="emp-sis">Escaneada · OCR</span></div>
+                <div class="emp"><span class="emp-num">11</span><span class="emp-nom">Autoliv</span><span class="emp-sis">Nueva hoy</span></div>
+                <div class="emp"><span class="emp-num">12</span><span class="emp-nom">Aptiv</span><span class="emp-sis">Nueva hoy</span></div>
+                <div class="emp"><span class="emp-num">13</span><span class="emp-nom">SDS de México</span><span class="emp-sis">Nueva hoy</span></div>
+                <div class="emp"><span class="emp-num">14</span><span class="emp-nom">Skyworks Solutions</span><span class="emp-sis">SAP Ariba · Nueva hoy</span></div>
+            </div>
+            <div class="nota">
+                Más las 2 órdenes que emitimos nosotros (BAJANET e IAMET): <strong>16 formatos verificados</strong>, cada uno con su prueba permanente para que ningún ajuste futuro rompa un formato ya resuelto.
+            </div>
+        </div>
+
+        <div class="section-title">Facturado y Asistente · Trabajo en Paralelo</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>📥 El Reporte de Ventas del ERP se Carga Directo</h3>
+                <p>El botón de carga del tablero de Facturado <strong>ya acepta el archivo CSV "Ventas"</strong> tal como lo exporta el ERP, sin convertirlo a Excel antes. Lee las columnas por su nombre, así que no importa en qué orden vengan.</p>
+            </div>
+
+            <div class="card">
+                <h3>📭 Asistente solo para Quien Tiene Buzón</h3>
+                <p>A los usuarios <strong>sin correo vinculado</strong> ya no se les muestra la columna del asistente ni la sección de correos: eran apartados que nunca podían usar. Mi Día les sigue mostrando tareas y agenda, que no dependen del correo.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Detalle de Tarea · Una Regla que Llevaba Rota</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🧱</div>
+                <div>
+                    <h3>El espacio se reparte como se pretendía desde el rediseño</h3>
+                    <p>El bloque de la tarea se encogía a lo que midiera su texto y la conversación absorbía todo lo demás: con una descripción de dos renglones, media pantalla quedaba en un recuadro vacío. Al corregirlo salió a la luz que <strong>la regla que repartía ese espacio llevaba rota desde el rediseño</strong> —apuntaba al elemento equivocado— y el resultado anterior se daba por casualidad. Ahora el contenido se queda con el alto libre y la conversación queda abajo, al alcance.</p>
+                </div>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label"><span>Monto y Utilidad Automáticos</span><span>Ciclo completo en pruebas</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:96%"></div></div>
+            </div>
+        </div>
+
+        <div class="section-title">Lo que Sigue</div>
+
+        <div class="feature-grid">
+            <div class="card card-teaser">
+                <div style="font-size: 32px;">🚀</div>
+                <div>
+                    <span class="badge">Siguiente Paso</span>
+                    <h3>Revisión en pruebas y salida a producción</h3>
+                    <p>Todo lo anterior está desplegado en el entorno de pruebas para revisarse con documentos reales. Falta comprobar la lectura de <strong>órdenes escaneadas</strong> en el servidor, que es lo único que no pudo verificarse fuera del entorno de desarrollo. Después, la salida a producción.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+        <div class="footer-note">
+            Todos los avances del día quedaron desplegados en el entorno de pruebas. Producción conserva la entrega parcial del 7 de Agosto.
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>

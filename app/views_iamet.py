@@ -561,6 +561,13 @@ def _proyecto_overview(proyecto):
     except Exception:
         breakdown_presupuesto = []
 
+    # ── Compras vs volumetría (motor en services_compras) ──
+    try:
+        from .services_compras import resumen_compras
+        compras = resumen_compras(proyecto)
+    except Exception:
+        compras = None
+
     return {
         'codigo': _extraer_codigo_proyecto(proyecto.nombre, opp),
         'status': status_code,
@@ -590,6 +597,7 @@ def _proyecto_overview(proyecto):
         },
         'counts': counts,
         'breakdown_presupuesto': breakdown_presupuesto,
+        'compras': compras,
     }
 
 

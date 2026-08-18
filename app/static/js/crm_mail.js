@@ -16,6 +16,53 @@
         var _mailConexionId = null;
         var _mailConexiones = [];
 
+        /* ── Layout: ancho de la lista (divisor arrastrable, se recuerda) y
+           menú de buzones SIEMPRE en riel de iconos de 64px — se expande solo
+           al pasar el cursor (CSS :hover), flotando sobre la lista. ── */
+        var _mailColLista = 340;
+        try {
+            var _mclw = parseInt(localStorage.getItem('mailColLista'), 10);
+            if (_mclw >= 260 && _mclw <= 640) _mailColLista = _mclw;
+        } catch (e) { }
+        window._mailCtxAbierto = false;
+        function _mailAplicarCols() {
+            var g = document.getElementById('mailBodyGrid');
+            var hg = document.getElementById('mailHeaderGrid');
+            var cols = '64px ' + _mailColLista + 'px 1fr' +
+                (window._mailCtxAbierto ? ' 290px' : '');
+            if (g) g.style.gridTemplateColumns = cols;
+            if (hg) hg.style.gridTemplateColumns = cols;
+        }
+        window._mailAplicarCols = _mailAplicarCols;
+        function _mailAplicarLayoutPrefs() {
+            var nav = document.getElementById('mailNavCol');
+            if (nav) nav.classList.add('mw-colapsado');
+            _mailAplicarCols();
+        }
+        // Divisor lista/cuerpo: delegado en document para sobrevivir a Turbo
+        document.addEventListener('mousedown', function (ev) {
+            if (!ev.target || ev.target.id !== 'mailColResizer') return;
+            ev.preventDefault();
+            var h = ev.target, x0 = ev.clientX, w0 = _mailColLista;
+            h.classList.add('arrastrando');
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+            function mv(e) {
+                _mailColLista = Math.max(260, Math.min(640, w0 + (e.clientX - x0)));
+                _mailAplicarCols();
+            }
+            function up() {
+                document.removeEventListener('mousemove', mv);
+                document.removeEventListener('mouseup', up);
+                h.classList.remove('arrastrando');
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+                try { localStorage.setItem('mailColLista', String(_mailColLista)); } catch (e) { }
+            }
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup', up);
+        });
+
         /* ── Recipient autocomplete state ──────────────────
          * Cada wrap (Para/CC) tiene un array de chips {nombre, email}.
          * Las sugerencias salen de:
@@ -77,6 +124,14 @@
         window.mailAbrir = function () {
             var w = document.getElementById('widgetMail');
             if (!w) return;
+            // Modo página (sección ?tab=correo): ya está abierto, sin scroll-lock
+            if (w.classList.contains('is-page-mode')) {
+                _mailWidgetInitOnce();
+                _mailPendingBadge = 0;
+                _mailUpdateNavBadge();
+                _mailInitState();
+                return;
+            }
             _mailWidgetInitOnce();
             w.classList.add('active');
             w.classList.remove('closing');
@@ -94,6 +149,7 @@
         window.mailCerrar = function () {
             var w = document.getElementById('widgetMail');
             if (!w) return;
+            if (w.classList.contains('is-page-mode')) return; // sección: no se cierra
             w.classList.add('closing');
             setTimeout(function () {
                 w.classList.remove('active', 'closing');
@@ -119,6 +175,7 @@
 
         /* ── Load connection state on open ─────────── */
         function _mailInitState() {
+            _mailAplicarLayoutPrefs();
             fetch('/app/api/mail/conexion/', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -181,7 +238,7 @@
         }
 
         /* ── Carpeta switch ─────────────────────────── */
-        var _folderLabels = { INBOX: 'Bandeja de entrada', SENT: 'Enviados', STARRED: 'Destacados', ARCHIVE: 'Archivo', TRASH: 'Papelera' };
+        var _folderLabels = { INBOX: 'Bandeja de entrada', SENT: 'Enviados', STARRED: 'Destacados', DRAFTS: 'Borradores', ARCHIVE: 'Archivo', TRASH: 'Papelera' };
 
         window.mailCambiarCarpeta = function (carpeta, btn) {
             _mailCarpeta = carpeta;
@@ -196,12 +253,19 @@
         /* ── Load list ──────────────────────────────── */
         window.mailCargarLista = function (carpeta) {
             carpeta = carpeta || _mailCarpeta;
+            // Cambio de carpeta / recarga: resetear búsqueda activa
+            clearTimeout(window._mailSearchTO);
+            window._mailBusqueda = '';
+            var searchEl = document.getElementById('mailListSearch');
+            if (searchEl && searchEl.value) searchEl.value = '';
             var listEl = document.getElementById('mailList');
             if (listEl) listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#9CA3AF;font-size:0.83rem;">Cargando...</div>';
             var loadMore = document.getElementById('mailLoadMore');
             if (loadMore) loadMore.style.display = 'none';
 
+            if (carpeta === 'DRAFTS') { _mailCargarBorradores(); return; }
             var url = '/app/api/mail/lista/?carpeta=' + carpeta + '&pagina=1';
+            if (carpeta === 'INBOX') url += '&hilos=1'; // vista de conversaciones
             if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
             fetch(url)
                 .then(function (r) { return r.json(); })
@@ -242,66 +306,968 @@
                 var unreadCls = c.leido ? '' : ' unread';
                 var adjIcon = c.tiene_adjuntos ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>' : '';
                 var starIcon = c.destacado ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : '';
-                var oppBadge = c.oportunidad_nombre ? '<span style="display:inline-block;margin-top:3px;background:rgba(0,82,212,0.1);color:#0052D4;border-radius:4px;font-size:0.65rem;font-weight:600;padding:1px 6px;">' + _esc(c.oportunidad_nombre) + '</span>' : '';
-                var dot = !c.leido ? '<span style="width:7px;height:7px;border-radius:50%;background:#007AFF;flex-shrink:0;margin-top:5px;"></span>' : '<span style="width:7px;height:7px;flex-shrink:0;"></span>';
+                var dot = !c.leido ? '<span style="width:8px;height:8px;border-radius:50%;background:#007AFF;flex-shrink:0;margin-top:6px;"></span>' : '<span style="width:8px;height:8px;flex-shrink:0;"></span>';
                 var fecha = c.fecha_envio ? _formatFecha(c.fecha_envio) : '';
 
-                h += '<div class="mail-card-wb' + unreadCls + '" onclick="mailVerCorreo(' + c.id + ')" id="mailCard_' + c.id + '">';
+                h += '<div class="mail-card-wb' + unreadCls + '" onclick="mailVerCorreo(' + c.id + ')" ondblclick="mailAbrirVentana(' + c.id + ')" id="mailCard_' + c.id + '">';
                 h += dot;
                 h += '<div style="flex:1;min-width:0;">';
-                h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">';
-                h += '<span class="mw-from" style="font-size:0.82rem;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">' + _esc(c.remitente_nombre || c.remitente_email) + '</span>';
-                h += '<span style="font-size:0.7rem;color:#9CA3AF;flex-shrink:0;">' + fecha + '</span>';
-                h += '</div>';
-                h += '<div style="display:flex;align-items:center;gap:4px;margin-top:1px;">';
-                h += '<span class="mw-subject" style="font-size:0.79rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">' + _esc(c.asunto || '(Sin asunto)') + '</span>';
+                h += '<div style="display:flex;align-items:center;gap:5px;min-width:0;">';
+                h += '<span class="mw-from" style="font-size:0.83rem;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(c.remitente_nombre || c.remitente_email) + '</span>';
+                if (c.hilo_count > 1) h += '<span class="mw-hilo-chip" style="flex-shrink:0;background:#EEF1F5;color:#6B7280;border-radius:999px;font-size:0.64rem;font-weight:700;padding:1px 6px;">' + c.hilo_count + '</span>';
                 h += starIcon;
                 h += adjIcon;
                 h += '</div>';
-                if (oppBadge) h += '<div>' + oppBadge + '</div>';
-                h += '</div></div>';
+                h += '<div class="mw-subject" style="font-size:0.79rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + _esc(c.asunto || '(Sin asunto)') + '</div>';
+                if (c.preview) h += '<div class="mw-preview">' + _esc(c.preview) + '</div>';
+                if (c.oportunidad_nombre) h += '<span class="mw-opp-chip">' + _esc(c.oportunidad_nombre) + '</span>';
+                h += '</div>';
+                h += '<div class="mw-right"><span class="mw-time">' + fecha + '</span></div>';
+                // Acciones rápidas al hover: archivar / eliminar / vincular (o abrir la opp)
+                h += '<div class="mw-quick">';
+                h += '<button type="button" class="mw-qbtn" title="Archivar" onclick="event.stopPropagation();mailQuickArchivar(' + c.id + ')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>';
+                h += '<button type="button" class="mw-qbtn" title="Eliminar" onclick="event.stopPropagation();mailQuickEliminar(' + c.id + ')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+                if (!c.oportunidad_id) {
+                    h += '<button type="button" class="mw-qbtn pri" title="Vincular a oportunidad" onclick="event.stopPropagation();mailVerCorreo(' + c.id + ');setTimeout(mailAbrirVincular,350)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>';
+                }
+                h += '</div>';
+                h += '</div>';
             });
             listEl.innerHTML = h;
             var loadMore = document.getElementById('mailLoadMore');
-            if (loadMore) loadMore.style.display = _mailHayMas ? 'block' : 'none';
+            if (loadMore) {
+                if (_mailHayMas) {
+                    loadMore.dataset.mode = 'mas';
+                    loadMore.textContent = 'Cargar más';
+                    loadMore.style.display = 'block';
+                } else if (_mailCarpeta === 'INBOX' && !window._mailBusqueda) {
+                    // Caché local agotada: ofrecer backfill del servidor IMAP
+                    loadMore.dataset.mode = 'antiguos';
+                    loadMore.textContent = 'Buscar más antiguos en el servidor';
+                    loadMore.style.display = 'block';
+                } else {
+                    loadMore.style.display = 'none';
+                }
+            }
         }
+
+        /* ── Backfill: bajar historial viejo del servidor ── */
+        window.mailCargarAntiguos = function () {
+            var lm = document.getElementById('mailLoadMore');
+            if (lm) lm.textContent = 'Buscando en el servidor...';
+            fetch('/app/api/mail/antiguos/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) {
+                        _showToastMail(d.error || 'Error al buscar antiguos', false);
+                        if (lm) lm.textContent = 'Buscar más antiguos en el servidor';
+                        return;
+                    }
+                    if (d.nuevos > 0) {
+                        _showToastMail(d.nuevos + ' correos antiguos agregados', true);
+                        if (lm) { lm.dataset.mode = 'mas'; lm.textContent = 'Cargar más'; }
+                        _mailHayMas = true;
+                        mailCargarMas();
+                    } else {
+                        _showToastMail('No hay correos más antiguos en el servidor', true);
+                        if (lm) lm.style.display = 'none';
+                    }
+                })
+                .catch(function () {
+                    if (lm) lm.textContent = 'Buscar más antiguos en el servidor';
+                });
+        };
 
         /* ── Load more ──────────────────────────────── */
         window.mailCargarMas = function () {
+            var lm = document.getElementById('mailLoadMore');
+            if (lm && lm.dataset.mode === 'antiguos') { mailCargarAntiguos(); return; }
             _mailPagina++;
             var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=' + _mailPagina;
+            if (_mailCarpeta === 'INBOX' && !window._mailBusqueda) url += '&hilos=1';
             if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            // Con búsqueda activa, paginar sobre los resultados del servidor
+            if (window._mailBusqueda) url += '&q=' + encodeURIComponent(window._mailBusqueda);
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var mas = data.correos || [];
-                    _mailTodos = _mailTodos.concat(mas);
-                    _mailFiltrado = _mailTodos;
+                    if (window._mailBusqueda) {
+                        _mailFiltrado = _mailFiltrado.concat(mas);
+                    } else {
+                        _mailTodos = _mailTodos.concat(mas);
+                        _mailFiltrado = _mailTodos;
+                    }
                     _mailHayMas = data.hay_mas || false;
                     _renderLista(_mailFiltrado);
                 });
         };
 
-        /* ── Filter ─────────────────────────────────── */
+        /* ── Filter ───────────────────────────────────
+           Doble vía: filtro local INSTANTÁNEO sobre lo ya cargado +
+           búsqueda REAL en servidor (historial completo de la carpeta,
+           incluye cuerpo del correo) con debounce de 350ms. */
         window.mailFiltrar = function (q) {
-            q = (q || '').toLowerCase().trim();
-            if (!q) {
+            q = (q || '').trim();
+            var ql = q.toLowerCase();
+            var clr = document.getElementById('mailSearchClear');
+            if (clr) clr.style.display = q ? 'flex' : 'none';
+            if (!ql) {
                 _mailFiltrado = _mailTodos;
             } else {
                 _mailFiltrado = _mailTodos.filter(function (c) {
-                    return (c.asunto || '').toLowerCase().includes(q) ||
-                        (c.remitente_nombre || '').toLowerCase().includes(q) ||
-                        (c.remitente_email || '').toLowerCase().includes(q);
+                    return (c.asunto || '').toLowerCase().includes(ql) ||
+                        (c.remitente_nombre || '').toLowerCase().includes(ql) ||
+                        (c.remitente_email || '').toLowerCase().includes(ql) ||
+                        (c.preview || '').toLowerCase().includes(ql);
                 });
             }
             _renderLista(_mailFiltrado);
+
+            clearTimeout(window._mailSearchTO);
+            window._mailBusqueda = q;
+            if (!q) return;
+            window._mailSearchTO = setTimeout(function () {
+                var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=1&q=' + encodeURIComponent(q);
+                if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+                fetch(url)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (window._mailBusqueda !== q) return; // respuesta tardía
+                        _mailFiltrado = data.correos || [];
+                        _renderLista(_mailFiltrado);
+                    })
+                    .catch(function () { });
+            }, 350);
         };
+
+        /* ── Ventana flotante de lectura (doble clic) ──
+           Abre el correo como ventana del gestor ww: se puede mover,
+           redimensionar, minimizar al dock y leer desde otras secciones. */
+        var _mvId = null, _mvDet = null, _mvModo = null, _mvTodos = false;
+        function _mvEsc(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        window.mailAbrirVentana = function (id) {
+            var ov = document.getElementById('widgetMailVentana');
+            if (!ov) return;
+            _mvId = id; _mvDet = null;
+            mailVentanaCompCerrar();
+            ov.classList.add('active');
+            ov.style.zIndex = '11200';   // por encima de la ventanita del asistente
+            try {
+                if (window.crmWidgetWindow && !ov.classList.contains('ww-windowed')) {
+                    var W = Math.min(760, window.innerWidth - 90);
+                    var H = Math.min(640, window.innerHeight - 120);
+                    window.crmWidgetWindow.windowize(ov, {
+                        x: window.innerWidth - W - 46, y: 84, w: W, h: H
+                    });
+                }
+            } catch (e) { /* sin gestor ww: queda como modal */ }
+            var asuntoEl = document.getElementById('mvAsunto');
+            var metaEl = document.getElementById('mvMeta');
+            if (asuntoEl) asuntoEl.textContent = 'Cargando...';
+            if (metaEl) metaEl.textContent = '';
+            _mailRenderAdjuntos('mvAdj', []); // no arrastrar chips del correo anterior
+            fetch('/app/api/mail/detalle/' + id + '/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    _mvDet = d;
+                    if (asuntoEl) asuntoEl.textContent = d.asunto || '(Sin asunto)';
+                    var fecha = d.fecha_envio ? new Date(d.fecha_envio).toLocaleString('es-MX') : '';
+                    if (metaEl) metaEl.textContent = 'De: ' + (d.remitente_nombre || d.remitente_email || '—') + (fecha ? '  ·  ' + fecha : '');
+                    var ifr = document.getElementById('mvIframe');
+                    var pl = document.getElementById('mvPlain');
+                    if (d.cuerpo_html) {
+                        var cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src * \'unsafe-inline\' \'unsafe-eval\' data: blob:;">';
+                        ifr.srcdoc = cspMeta + d.cuerpo_html;
+                        ifr.style.display = 'block';
+                        pl.style.display = 'none';
+                    } else {
+                        pl.textContent = d.cuerpo_texto ||
+                            (d.eliminado ? 'Este correo ya no está en el servidor: se eliminó o movió desde otro dispositivo.' : '(Sin contenido)');
+                        pl.style.display = 'block';
+                        ifr.style.display = 'none';
+                    }
+                    _mailRenderAdjuntos('mvAdj', d.adjuntos);
+                    var cardL = document.getElementById('mailCard_' + id);
+                    if (cardL) cardL.classList.remove('unread');
+                })
+                .catch(function () {
+                    if (asuntoEl) asuntoEl.textContent = 'Error al cargar el correo';
+                });
+        };
+
+        /* ── Acciones de la ventana: responder / responder a todos / reenviar ── */
+        function _mvMisCorreos() {
+            return (_mailConexiones || []).map(function (c) { return (c.correo_electronico || '').toLowerCase(); });
+        }
+        function _mvCcTodos() {
+            // Destinatarios del original menos yo y menos el remitente (que va en Para).
+            var mios = _mvMisCorreos();
+            var rem = ((_mvDet && _mvDet.remitente_email) || '').toLowerCase();
+            return ((_mvDet && _mvDet.destinatarios) || []).filter(function (dd) {
+                var low = String(dd || '').toLowerCase();
+                if (!low) return false;
+                if (low.indexOf(rem) !== -1 && rem) return false;
+                return !mios.some(function (m) { return m && low.indexOf(m) !== -1; });
+            });
+        }
+        window.mailVentanaResponder = function (todos) {
+            if (!_mvDet) return;
+            _mvModo = 'responder'; _mvTodos = !!todos;
+            var comp = document.getElementById('mvComposer');
+            var paraEl = document.getElementById('mvCompPara');
+            var paraIn = document.getElementById('mvCompParaIn');
+            if (paraIn) paraIn.style.display = 'none';
+            var cc = todos ? _mvCcTodos() : [];
+            if (paraEl) {
+                paraEl.textContent = 'Para: ' + (_mvDet.remitente_nombre || _mvDet.remitente_email || '') +
+                    (cc.length ? '  ·  CC: ' + cc.join(', ') : '');
+            }
+            if (comp) comp.style.display = 'flex';
+            var t = document.getElementById('mvCompTxt'); if (t) { try { t.focus(); } catch (e) {} }
+        };
+        window.mailVentanaReenviar = function () {
+            if (!_mvDet) return;
+            _mvModo = 'reenviar';
+            var comp = document.getElementById('mvComposer');
+            var paraEl = document.getElementById('mvCompPara');
+            var paraIn = document.getElementById('mvCompParaIn');
+            if (paraEl) paraEl.textContent = 'Reenviar «' + (_mvDet.asunto || '') + '» a:';
+            if (paraIn) { paraIn.style.display = ''; paraIn.value = ''; }
+            if (comp) comp.style.display = 'flex';
+            if (paraIn) { try { paraIn.focus(); } catch (e) {} }
+        };
+        window.mailVentanaCompCerrar = function () {
+            var comp = document.getElementById('mvComposer');
+            if (comp) comp.style.display = 'none';
+            var t = document.getElementById('mvCompTxt'); if (t) t.value = '';
+            var st = document.getElementById('mvCompStatus'); if (st) st.textContent = '';
+            _mvModo = null; _mvTodos = false;
+        };
+        window.mailVentanaEnviar = function () {
+            if (!_mvId || !_mvModo) return;
+            var t = document.getElementById('mvCompTxt');
+            var txt = (t && t.value || '').trim();
+            var st = document.getElementById('mvCompStatus');
+            var btn = document.getElementById('mvCompEnviar');
+            if (!txt) { if (st) st.textContent = 'Escribe el mensaje primero.'; return; }
+            var html = '<pre style="font-family:inherit;white-space:pre-wrap;margin:0;">' + _mvEsc(txt) + '</pre>' + _mailFirmaHtml();
+            var url, body;
+            if (_mvModo === 'reenviar') {
+                var paraIn = document.getElementById('mvCompParaIn');
+                var para = (paraIn && paraIn.value || '').trim();
+                if (!para) { if (st) st.textContent = 'Falta el destinatario.'; return; }
+                url = '/app/api/mail/reenviar/' + _mvId + '/';
+                body = { para: para, cuerpo_texto: txt, cuerpo_html: html };
+            } else {
+                url = '/app/api/mail/responder/' + _mvId + '/';
+                body = { cuerpo_texto: txt, cuerpo_html: html };
+                if (_mvTodos) {
+                    var cc = _mvCcTodos();
+                    if (cc.length) body.cc = cc.join(', ');
+                }
+            }
+            if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify(body)
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+                    if (!(d && d.ok)) { if (st) st.textContent = (d && d.error) || 'No se pudo enviar.'; return; }
+                    if (st) st.textContent = '✓ Enviado';
+                    // El asistente reacciona a tu respuesta al instante (¿actualizo? / ¿agendo?).
+                    if (typeof window.pendFeedRefresh === 'function') { try { window.pendFeedRefresh(); } catch (e) {} }
+                    setTimeout(mailVentanaCompCerrar, 1200);
+                })
+                .catch(function () {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+                    if (st) st.textContent = 'Error de conexión.';
+                });
+        };
+        window.mailVentanaAbrirCompleto = function () {
+            var id = _mvId;
+            mailVentanaCerrar();
+            if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+            if (id && typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
+        };
+
+        window.mailVentanaCerrar = function () {
+            var ov = document.getElementById('widgetMailVentana');
+            if (!ov) return;
+            try {
+                if (window.crmWidgetWindow) window.crmWidgetWindow.unwindowize(ov);
+            } catch (e) { }
+            ov.classList.remove('active');
+        };
+
+        /* ── Firma (Fase 4): se inserta al abrir redactar/responder/reenviar ── */
+        function _mailFirmaHtml() {
+            var cx = (_mailConexiones || []).find(function (c) { return c.id == _mailConexionId; }) || (_mailConexiones || [])[0];
+            return (cx && cx.firma_html) ? cx.firma_html : '';
+        }
+        function _mailInsertarFirma(editorId) {
+            var f = _mailFirmaHtml();
+            if (!f) return;
+            var ed = document.getElementById(editorId);
+            if (ed && !ed.innerHTML.trim()) {
+                ed.innerHTML = '<br><br><div style="color:#6B7280;">--</div>' + f;
+            }
+        }
+        window.mailGuardarFirma = function () {
+            var ed = document.getElementById('mailCfgFirma');
+            if (!ed) return;
+            fetch('/app/api/mail/firma/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ conexion_id: _mailConexionId, firma_html: ed.innerHTML })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al guardar la firma', false); return; }
+                    _showToastMail('Firma guardada', true);
+                    // refrescar cache local de conexiones
+                    var cx = (_mailConexiones || []).find(function (c) { return c.id == _mailConexionId; });
+                    if (cx) cx.firma_html = ed.innerHTML;
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+
+        /* ── Plantillas (Fase 4) ── */
+        window.mailTogglePlantillas = function () {
+            var pnl = document.getElementById('mailPlantillasPanel');
+            if (!pnl) return;
+            var abierto = pnl.style.display === 'block';
+            pnl.style.display = abierto ? 'none' : 'block';
+            if (!abierto) _mailCargarPlantillas();
+        };
+        function _mailCargarPlantillas() {
+            var lista = document.getElementById('mailPlantillasLista');
+            if (!lista) return;
+            lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#9CA3AF;">Cargando...</div>';
+            fetch('/app/api/mail/plantillas/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    window._mailPlantillas = d.plantillas || [];
+                    if (!window._mailPlantillas.length) {
+                        lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#9CA3AF;">Sin plantillas todavía.</div>';
+                        return;
+                    }
+                    lista.innerHTML = window._mailPlantillas.map(function (t) {
+                        return '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid #F6F7F9;">' +
+                            '<span onclick="mailAplicarPlantilla(' + t.id + ')" style="flex:1;font-size:0.8rem;font-weight:600;color:#1A1A2E;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(t.nombre) + '</span>' +
+                            '<button onclick="mailEliminarPlantilla(' + t.id + ')" title="Eliminar" style="border:none;background:none;color:#D1D5DB;cursor:pointer;font-size:0.85rem;padding:2px;">&times;</button>' +
+                            '</div>';
+                    }).join('');
+                })
+                .catch(function () { lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#DC2626;">Error al cargar.</div>'; });
+        }
+        window.mailAplicarPlantilla = function (id) {
+            var t = (window._mailPlantillas || []).find(function (x) { return x.id === id; });
+            if (!t) return;
+            var asunto = document.getElementById('mailCompAsunto');
+            var editor = document.getElementById('mailCompEditor');
+            if (asunto && !asunto.value.trim() && t.asunto) asunto.value = t.asunto;
+            if (editor) {
+                var firma = _mailFirmaHtml();
+                editor.innerHTML = t.cuerpo_html + (firma ? '<br><br><div style="color:#6B7280;">--</div>' + firma : '');
+            }
+            mailTogglePlantillas();
+        };
+        window.mailGuardarPlantilla = function () {
+            var nombre = prompt('Nombre de la plantilla:');
+            if (!nombre || !nombre.trim()) return;
+            var asunto = document.getElementById('mailCompAsunto');
+            var editor = document.getElementById('mailCompEditor');
+            fetch('/app/api/mail/plantillas/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({
+                    nombre: nombre.trim(),
+                    asunto: asunto ? asunto.value : '',
+                    cuerpo_html: editor ? editor.innerHTML : ''
+                })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al guardar', false); return; }
+                    _showToastMail('Plantilla guardada', true);
+                    _mailCargarPlantillas();
+                });
+        };
+        window.mailEliminarPlantilla = function (id) {
+            if (!confirm('¿Eliminar esta plantilla?')) return;
+            fetch('/app/api/mail/plantillas/' + id + '/eliminar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function () { _mailCargarPlantillas(); });
+        };
+
+        /* ── Borradores (Fase 4): autosave + carpeta ── */
+        function _mailCargarBorradores() {
+            var listEl = document.getElementById('mailList');
+            var loadMore = document.getElementById('mailLoadMore');
+            if (loadMore) loadMore.style.display = 'none';
+            if (!listEl) return;
+            listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#9CA3AF;font-size:0.83rem;">Cargando...</div>';
+            fetch('/app/api/mail/borradores/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var h = '';
+                    var progs = d.programados || [];
+                    var drafts = d.borradores || [];
+                    if (progs.length) {
+                        h += '<div style="padding:9px 12px 5px;font-size:0.64rem;font-weight:800;color:#9CA3AF;letter-spacing:0.06em;">PROGRAMADOS</div>';
+                        progs.forEach(function (pr) {
+                            var f = pr.fecha_programada ? new Date(pr.fecha_programada).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                            h += '<div class="mail-card-wb" style="align-items:center;">' +
+                                '<span style="width:7px;height:7px;border-radius:50%;background:#F59E0B;flex-shrink:0;"></span>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                '<div style="font-size:0.8rem;font-weight:600;color:#1A1A2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(pr.asunto) + '</div>' +
+                                '<div style="font-size:0.7rem;color:#B45309;margin-top:1px;">Se enviar\u00e1: ' + _esc(f) + (pr.error ? ' \u00b7 reintentando' : '') + '</div>' +
+                                '</div>' +
+                                '<button onclick="mailCancelarProgramado(' + pr.id + ')" title="Cancelar env\u00edo" style="border:none;background:none;color:#D1D5DB;cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">&times;</button>' +
+                                '</div>';
+                        });
+                    }
+                    h += '<div style="padding:9px 12px 5px;font-size:0.64rem;font-weight:800;color:#9CA3AF;letter-spacing:0.06em;">BORRADORES</div>';
+                    if (!drafts.length) {
+                        h += '<div style="padding:16px 12px;font-size:0.78rem;color:#9CA3AF;">Sin borradores. Se guardan solos mientras escribes.</div>';
+                    }
+                    drafts.forEach(function (b) {
+                        var f = b.fecha ? _formatFecha(b.fecha) : '';
+                        h += '<div class="mail-card-wb" style="align-items:center;cursor:pointer;" onclick="mailAbrirBorrador(' + b.id + ')">' +
+                            '<span style="width:7px;height:7px;flex-shrink:0;"></span>' +
+                            '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.8rem;font-weight:600;color:#1A1A2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(b.asunto) + '</div>' +
+                            '<div style="font-size:0.7rem;color:#9CA3AF;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(b.para || 'Sin destinatario') + ' \u00b7 ' + f + '</div>' +
+                            '</div>' +
+                            '<button onclick="event.stopPropagation();mailEliminarBorrador(' + b.id + ')" title="Eliminar" style="border:none;background:none;color:#D1D5DB;cursor:pointer;font-size:0.9rem;padding:2px 4px;flex-shrink:0;">&times;</button>' +
+                            '</div>';
+                    });
+                    listEl.innerHTML = h;
+                })
+                .catch(function () {
+                    listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#DC2626;font-size:0.83rem;">Error al cargar borradores.</div>';
+                });
+        }
+        function _mailGuardarBorrador() {
+            var panel = document.getElementById('mailComposePanel');
+            if (!panel || panel.style.display === 'none') return;
+            var para = document.getElementById('mailCompPara');
+            var cc = document.getElementById('mailCompCc');
+            var asunto = document.getElementById('mailCompAsunto');
+            var editor = document.getElementById('mailCompEditor');
+            var paraTxt = _formatRecipList(_mailRecips.para) || (para ? para.value : '');
+            var asuntoTxt = asunto ? asunto.value.trim() : '';
+            var cuerpo = editor ? editor.innerHTML : '';
+            var textoPlano = editor ? (editor.innerText || '').trim() : '';
+            // No guardar borradores vacíos (solo la firma no cuenta)
+            if (!asuntoTxt && !paraTxt && (!textoPlano || textoPlano === '--')) return;
+            fetch('/app/api/mail/borradores/guardar/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({
+                    id: window._mailBorradorId || null,
+                    para: paraTxt,
+                    cc: _formatRecipList(_mailRecips.cc) || (cc ? cc.value : ''),
+                    asunto: asuntoTxt,
+                    cuerpo_html: cuerpo
+                })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.ok) window._mailBorradorId = d.id; })
+                .catch(function () { });
+        }
+        window._mailAutosaveBorrador = function () {
+            clearTimeout(window._mailBorradorTO);
+            window._mailBorradorTO = setTimeout(_mailGuardarBorrador, 2500);
+        };
+        window.mailAbrirBorrador = function (id) {
+            fetch('/app/api/mail/borradores/' + id + '/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error', false); return; }
+                    mailRedactar();
+                    window._mailBorradorId = d.id;
+                    var para = document.getElementById('mailCompPara');
+                    var cc = document.getElementById('mailCompCc');
+                    var asunto = document.getElementById('mailCompAsunto');
+                    var editor = document.getElementById('mailCompEditor');
+                    if (para) para.value = d.para || '';
+                    if (cc && d.cc) { cc.value = d.cc; }
+                    if (asunto) asunto.value = d.asunto || '';
+                    if (editor) editor.innerHTML = d.cuerpo_html || '';
+                });
+        };
+        window.mailEliminarBorrador = function (id) {
+            if (!confirm('\u00bfEliminar este borrador?')) return;
+            fetch('/app/api/mail/borradores/' + id + '/eliminar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }
+            }).then(function () { _mailCargarBorradores(); });
+        };
+        function _mailDescartarBorradorActual() {
+            if (!window._mailBorradorId) return;
+            fetch('/app/api/mail/borradores/' + window._mailBorradorId + '/eliminar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }
+            }).catch(function () { });
+            window._mailBorradorId = null;
+        }
+
+        /* ── Envío programado (Fase 4) ── */
+        window.mailToggleProgramar = function () {
+            var pnl = document.getElementById('mailProgramarPanel');
+            if (!pnl) return;
+            var abierto = pnl.style.display === 'block';
+            pnl.style.display = abierto ? 'none' : 'block';
+            if (!abierto) {
+                var inp = document.getElementById('mailProgramarFecha');
+                if (inp && !inp.value) {
+                    // Default: mañana 9:00 am
+                    var d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    d.setHours(9, 0, 0, 0);
+                    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+                    inp.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                }
+            }
+        };
+        window.mailProgramarEnvio = function () {
+            var fechaInp = document.getElementById('mailProgramarFecha');
+            var fecha = fechaInp ? fechaInp.value : '';
+            if (!fecha) { _showToastMail('Elige fecha y hora', false); return; }
+            _commitRecipInput('para');
+            _commitRecipInput('cc');
+            var paraInput = document.getElementById('mailCompPara');
+            var paraRecips = _mailRecips.para.slice();
+            if (!paraRecips.length && paraInput && paraInput.value.trim()) paraRecips = _splitRecips(paraInput.value);
+            var para = _formatRecipList(paraRecips);
+            var asunto = document.getElementById('mailCompAsunto').value.trim();
+            var editor = document.getElementById('mailCompEditor');
+            if (!para) { _showToastMail('Falta el destinatario', false); return; }
+            if (!asunto) { _showToastMail('Falta el asunto', false); return; }
+            var fd = new FormData();
+            fd.append('para', para);
+            var ccTxt = _formatRecipList(_mailRecips.cc);
+            if (ccTxt) fd.append('cc', ccTxt);
+            fd.append('asunto', asunto);
+            fd.append('cuerpo_html', editor ? editor.innerHTML.trim() : '');
+            fd.append('cuerpo_texto', editor ? (editor.innerText || '').trim() : '');
+            fd.append('fecha_programada', fecha);
+            _mailComposeAttachments.forEach(function (f) { fd.append('adjuntos', f); });
+            fetch('/app/api/mail/programar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al programar', false); return; }
+                    _showToastMail('Programado: se enviar\u00e1 el ' + d.fecha_programada, true);
+                    mailToggleProgramar();
+                    _mailDescartarBorradorActual();
+                    mailCerrarCompose();
+                })
+                .catch(function () { _showToastMail('Error de conexi\u00f3n', false); });
+        };
+        window.mailCancelarProgramado = function (id) {
+            if (!confirm('\u00bfCancelar este env\u00edo programado?')) return;
+            fetch('/app/api/mail/programados/' + id + '/cancelar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }
+            }).then(function () { _mailCargarBorradores(); });
+        };
+
+        /* ── Modal de vincular (barra de búsqueda centrada) ── */
+        window.mailAbrirVincular = function () {
+            var m = document.getElementById('mailVincularModal');
+            if (!m) return;
+            m.style.display = 'flex';
+            var inp = document.getElementById('mailVincularSearch');
+            var res = document.getElementById('mailOppResults');
+            var hint = document.getElementById('mailVincularHint');
+            if (inp) { inp.value = ''; setTimeout(function () { inp.focus(); }, 60); }
+            if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+            if (hint) hint.style.display = 'block';
+        };
+        window.mailCerrarVincular = function () {
+            var m = document.getElementById('mailVincularModal');
+            if (m) m.style.display = 'none';
+        };
+
+        /* ── Desvincular (clic en el chip Vinculado del panel) ── */
+        window.mailDesvincular = function () {
+            if (!_mailCorreoActual) return;
+            if (!confirm('¿Desvincular este correo de la oportunidad?')) return;
+            fetch('/app/api/mail/vincular/' + _mailCorreoActual.id + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ desvincular: true })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al desvincular', false); return; }
+                    _showToastMail('Correo desvinculado', true);
+                    var bar = document.getElementById('mailDetailOppBar');
+                    if (bar) bar.style.display = 'none';
+                    if (_mailCorreoActual) {
+                        _mailCorreoActual.oportunidad_nombre = null;
+                        _mailRenderContexto(_mailCorreoActual.id);
+                    }
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+
+        /* ── Panel de contexto CRM (Fase 3, paso 1) ──
+           Dos estados: vinculado (ficha + oportunidad + acciones rápidas +
+           tareas + actividad) o sin vincular (Vincular / Crear oportunidad,
+           reusando las funciones existentes de la isla). */
+        function _mailCtxSet(id, txt) {
+            var e = document.getElementById(id);
+            if (e) e.textContent = txt || '';
+        }
+        function _mailCtxSetRow(rowId, spanId, txt) {
+            var row = document.getElementById(rowId);
+            var span = document.getElementById(spanId);
+            if (!row || !span) return;
+            if (txt) { span.textContent = txt; row.style.display = 'flex'; }
+            else { row.style.display = 'none'; }
+        }
+        var _MAIL_CTX_ICONOS = {
+            email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+            llamada: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+            reunion: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            tarea: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+            cotizacion: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+            comentario: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+        };
+        function _mailCtxIcono(tipo) {
+            return _MAIL_CTX_ICONOS[tipo] || '<circle cx="12" cy="12" r="3"/>';
+        }
+        function _mailCtxOcultar() {
+            var p = document.getElementById('mailCtxPanel');
+            if (p) p.style.display = 'none';
+            window._mailCtxAbierto = false;
+            _mailAplicarCols();
+            window._mailCtxOppId = null;
+        }
+        /* ── Franja de vínculo (arriba del correo): dos estados.
+           Ligado: nombre (clic → ventana de la opp) + etapa + monto + Abrir/Cambiar/✕.
+           Sin vincular: aviso gris + Vincular / Crear oportunidad. */
+        function _mailFranjaBtn(label, onclick, primario) {
+            return '<button type="button" onclick="' + onclick + '" style="' +
+                (primario
+                    ? 'background:#007AFF;color:#fff;border:none;'
+                    : 'background:#fff;color:#0052D4;border:1px solid #D0E1FF;') +
+                'border-radius:8px;padding:3px 10px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">' +
+                label + '</button>';
+        }
+        function _mailFranja(d) {
+            var bar = document.getElementById('mailDetailOppBar');
+            if (!bar) return;
+            if (!d || !d.ok) { bar.style.display = 'none'; return; }
+            if (!d.vinculado) {
+                bar.style.background = '#FAFBFC';
+                bar.style.borderBottom = '1px solid #EEF1F5';
+                bar.style.color = '#6B7280';
+                bar.innerHTML =
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+                    '<span style="font-weight:600;">Sin vincular a una oportunidad</span>' +
+                    '<span style="flex:1;"></span>' +
+                    _mailFranjaBtn('Vincular', 'mailAbrirVincular()', true) +
+                    _mailFranjaBtn('Crear oportunidad', 'mailAbrirFormNuevaOpp()', false);
+                bar.style.display = 'flex';
+                return;
+            }
+            var o = d.oportunidad || {};
+            var etapaColor = o.etapa_color || '#0052D4';
+            bar.style.background = '#EEF3FF';
+            bar.style.borderBottom = '1px solid #D0E1FF';
+            bar.style.color = '#0052D4';
+            var h = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
+                '<span onclick="mailCtxAbrirOportunidad()" title="Abrir oportunidad" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'" style="cursor:pointer;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38%;">' +
+                _esc(o.nombre || '') + '</span>';
+            if (o.etapa) {
+                h += '<span style="background:#fff;border:1px solid ' + etapaColor + '33;color:' + etapaColor + ';border-radius:99px;padding:1px 9px;font-size:0.68rem;font-weight:700;white-space:nowrap;flex-shrink:0;">' + _esc(o.etapa) + '</span>';
+            }
+            if (o.monto !== undefined && o.monto !== null) {
+                h += '<span style="font-weight:800;color:#1A1A2E;font-size:0.75rem;flex-shrink:0;">$' +
+                    Number(o.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + '</span>';
+            }
+            h += '<span style="flex:1;"></span>' +
+                _mailFranjaBtn('Abrir', 'mailCtxAbrirOportunidad()', false) +
+                _mailFranjaBtn('Cambiar', 'mailAbrirVincular()', false) +
+                '<button type="button" onclick="mailDesvincular()" title="Desvincular" style="background:none;border:none;color:#9CA3AF;cursor:pointer;font-size:0.85rem;padding:0 2px;line-height:1;flex-shrink:0;">✕</button>';
+            bar.innerHTML = h;
+            bar.style.display = 'flex';
+        }
+        function _mailRenderContexto(correoId) {
+            var p = document.getElementById('mailCtxPanel');
+            var g = document.getElementById('mailBodyGrid');
+            if (!p || !g) return;
+            fetch('/app/api/mail/contexto/' + correoId + '/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    _mailFranja(d);
+                    if (!d.ok) { _mailCtxOcultar(); return; }
+                    var vin = document.getElementById('mailCtxVinculado');
+                    var suelto = document.getElementById('mailCtxSuelto');
+                    // Respeta "Ocultar CRM" (botón de la barra de acciones): el panel se
+                    // llena igual, pero queda oculto hasta que le den "Mostrar CRM".
+                    var crmOculto = p.dataset.crmOculto === '1';
+                    if (!crmOculto) {
+                        p.style.display = 'flex';
+                        window._mailCtxAbierto = true;
+                        _mailAplicarCols();
+                    }
+                    window._mailCtxRestaurar = function () {
+                        p.style.display = 'flex';
+                        window._mailCtxAbierto = true;
+                        _mailAplicarCols();
+                    };
+                    if (!d.vinculado) {
+                        if (vin) vin.style.display = 'none';
+                        if (suelto) suelto.style.display = 'flex';
+                        window._mailCtxOppId = null;
+                        return;
+                    }
+                    if (suelto) suelto.style.display = 'none';
+                    if (vin) vin.style.display = 'flex';
+                    window._mailCtxOppId = d.oportunidad.id;
+                    // Identidad: contacto protagonista + avatar de iniciales
+                    var contacto = d.cliente.contacto || d.cliente.empresa || d.oportunidad.nombre;
+                    _mailCtxSet('mailCtxContacto', contacto);
+                    var av = document.getElementById('mailCtxAvatar');
+                    if (av) {
+                        av.textContent = (contacto || '?').split(/\s+/).slice(0, 2)
+                            .map(function (p) { return (p[0] || '').toUpperCase(); }).join('');
+                    }
+                    _mailCtxSetRow('mailCtxEmpresaRow', 'mailCtxEmpresa', d.cliente.empresa);
+                    _mailCtxSetRow('mailCtxTelRow', 'mailCtxTel', d.cliente.telefono);
+                    _mailCtxSetRow('mailCtxEmailRow', 'mailCtxEmail', d.cliente.email);
+                    // Tarjeta de oportunidad
+                    _mailCtxSet('mailCtxOppNombre', d.oportunidad.nombre);
+                    _mailCtxSet('mailCtxOppMonto', '$' + Number(d.oportunidad.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }));
+                    var segs = document.getElementById('mailCtxOppSegs');
+                    if (segs) {
+                        // Barra de ETAPA: segmentos si el pipeline es corto,
+                        // barra continua si tiene muchas etapas.
+                        var total = d.oportunidad.etapa_total || 0;
+                        var idx = d.oportunidad.etapa_idx;
+                        var llenos, color = d.oportunidad.etapa_color || '#007AFF';
+                        if (total > 0 && idx !== null && idx !== undefined) {
+                            llenos = idx + 1;
+                        } else if (total > 0) {
+                            llenos = 0;
+                        } else {
+                            total = 5;
+                            llenos = Math.max(0, Math.min(5, Math.round((d.oportunidad.probabilidad || 0) / 20)));
+                        }
+                        if (total > 10) {
+                            var pct = Math.round((llenos / total) * 100);
+                            segs.innerHTML = '<span style="flex:1;height:6px;border-radius:99px;background:#EEF1F5;overflow:hidden;display:block;">' +
+                                '<span style="display:block;height:100%;width:' + pct + '%;background:' + color + ';border-radius:99px;transition:width 0.4s;"></span></span>';
+                        } else {
+                            var hs = '';
+                            for (var si = 0; si < total; si++) {
+                                hs += '<span style="flex:1;height:6px;border-radius:99px;background:' +
+                                    (si < llenos ? color : '#EEF1F5') + ';"></span>';
+                            }
+                            segs.innerHTML = hs;
+                        }
+                        var posEl = document.getElementById('mailCtxOppEtapaPos');
+                        if (posEl) posEl.textContent = (llenos > 0 && d.oportunidad.etapa_total > 0) ? ('Etapa ' + llenos + ' de ' + total) : '';
+                    }
+                    // Próxima actividad de calendario (clic -> ventana de la actividad)
+                    var apw = document.getElementById('mailCtxActProxWrap');
+                    if (apw) {
+                        if (d.proxima_actividad) {
+                            apw.style.display = 'block';
+                            window._mailCtxProxActId = d.proxima_actividad.id || null;
+                            _mailCtxSet('mailCtxActProxTitulo', d.proxima_actividad.titulo);
+                            _mailCtxSet('mailCtxActProxFecha', d.proxima_actividad.fecha ? _formatFecha(d.proxima_actividad.fecha) : '');
+                        } else {
+                            apw.style.display = 'none';
+                            window._mailCtxProxActId = null;
+                        }
+                    }
+                    var etapaEl = document.getElementById('mailCtxOppEtapa');
+                    if (etapaEl) {
+                        etapaEl.textContent = d.oportunidad.etapa || 'Sin etapa';
+                        etapaEl.style.color = d.oportunidad.etapa ? (d.oportunidad.etapa_color || '#0052D4') : '#9CA3AF';
+                    }
+                    _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Responsable: ' + d.oportunidad.responsable : '');
+                    var cieEl = document.getElementById('mailCtxOppCierre');
+                    if (cieEl) {
+                        if (d.oportunidad.cierre) { cieEl.textContent = 'Cierre estimado: ' + d.oportunidad.cierre; cieEl.style.display = 'block'; }
+                        else cieEl.style.display = 'none';
+                    }
+                    // Tareas pendientes (con círculo tipo checkbox)
+                    var tw = document.getElementById('mailCtxTareasWrap');
+                    var tl = document.getElementById('mailCtxTareas');
+                    if (tw && tl && d.tareas && d.tareas.length) {
+                        tw.style.display = 'block';
+                        tl.innerHTML = d.tareas.map(function (t) {
+                            var f = t.fecha_limite ? _formatFecha(t.fecha_limite) : '';
+                            return '<div onclick="mailCtxAbrirTarea(' + t.id + ')" ' +
+                                'style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #EEF1F5;border-radius:10px;padding:8px 11px;cursor:pointer;transition:border-color 0.12s;" ' +
+                                'onmouseenter="this.style.borderColor=&quot;#BFDBFE&quot;" onmouseleave="this.style.borderColor=&quot;#EEF1F5&quot;">' +
+                                '<span style="width:15px;height:15px;border:1.5px solid #C9CFD8;border-radius:50%;flex-shrink:0;"></span>' +
+                                '<span style="flex:1;font-size:0.76rem;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + _esc(t.titulo) + '</span>' +
+                                (f ? '<span style="font-size:0.64rem;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 8px;flex-shrink:0;font-weight:700;">' + f + '</span>' : '') +
+                                '</div>';
+                        }).join('');
+                    } else if (tw) { tw.style.display = 'none'; }
+                    // Actividad reciente (icono por tipo + línea conectora)
+                    var aw = document.getElementById('mailCtxActsWrap');
+                    var al = document.getElementById('mailCtxActs');
+                    if (aw && al && d.actividades && d.actividades.length) {
+                        aw.style.display = 'block';
+                        al.innerHTML = d.actividades.map(function (a, ai) {
+                            var f = a.fecha ? _formatFecha(a.fecha) : '';
+                            var ultimo = ai === d.actividades.length - 1;
+                            return '<div style="display:flex;gap:9px;">' +
+                                '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">' +
+                                    '<span style="width:24px;height:24px;border-radius:50%;background:#EFF6FF;color:#0052D4;display:flex;align-items:center;justify-content:center;">' +
+                                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + _mailCtxIcono(a.tipo) + '</svg></span>' +
+                                    (ultimo ? '' : '<span style="width:1.5px;flex:1;background:#E5E9F0;margin-top:2px;min-height:8px;"></span>') +
+                                '</div>' +
+                                '<div style="min-width:0;padding-bottom:' + (ultimo ? '0' : '8px') + ';">' +
+                                '<span style="display:block;font-size:0.75rem;font-weight:600;color:#374151;line-height:1.3;">' + _esc(a.titulo) + '</span>' +
+                                '<span style="display:block;font-size:0.65rem;color:#9CA3AF;margin-top:1px;">' + f + '</span></div></div>';
+                        }).join('');
+                    } else if (aw) { aw.style.display = 'none'; }
+                    var cc = document.getElementById('mailCtxCorreosCount');
+                    if (cc) cc.textContent = d.correos_count > 1 ? d.correos_count + ' correos en esta oportunidad' : '';
+                })
+                .catch(function () { _mailCtxOcultar(); });
+        }
+
+        window.mailCtxCrearTarea = function () {
+            if (window._mailCtxOppId && typeof window.crmTaskAbrirCrear === 'function') {
+                window.crmTaskAbrirCrear(window._mailCtxOppId);
+            } else {
+                _showToastMail('La creación de tareas no está disponible aquí', false);
+            }
+        };
+        window.mailCtxAgendar = function () {
+            if (typeof window.calGlobalAbrirCrearActividad === 'function') {
+                window.calGlobalAbrirCrearActividad();
+            } else {
+                _showToastMail('El calendario no está disponible aquí', false);
+            }
+        };
+        window.mailCtxToggleNota = function () {
+            var f = document.getElementById('mailCtxNotaForm');
+            if (!f) return;
+            var abierto = f.style.display === 'flex';
+            f.style.display = abierto ? 'none' : 'flex';
+            if (!abierto) {
+                var t = document.getElementById('mailCtxNotaTexto');
+                if (t) { t.value = ''; t.focus(); }
+            }
+        };
+        window.mailCtxGuardarNota = function () {
+            var t = document.getElementById('mailCtxNotaTexto');
+            var texto = t ? t.value.trim() : '';
+            if (!texto || !window._mailCtxOppId) return;
+            var fd = new FormData();
+            fd.append('texto', texto);
+            fetch('/app/api/oportunidad/' + window._mailCtxOppId + '/chat/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.success) {
+                        _showToastMail('Nota agregada a la conversación', true);
+                        mailCtxToggleNota();
+                        if (_mailCorreoActual) _mailRenderContexto(_mailCorreoActual.id);
+                    } else {
+                        _showToastMail((d && d.error) || 'Error al guardar la nota', false);
+                    }
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailCtxAbrirTarea = function (tareaId) {
+            // Abrir la VENTANA de la tarea aquí mismo (sin navegar a Tareas).
+            if (typeof window.woVerActividad === 'function') { window.woVerActividad(tareaId); return; }
+            // Respaldo si el visor no cargó: deep-link a la sección Tareas.
+            try { sessionStorage.setItem('tcpAbrirTarea', String(tareaId)); } catch (e) { }
+            try { localStorage.setItem('crmView', 'tareas'); } catch (e) { }
+            window.location.href = '/app/home/?tab=tareas';
+        };
+        window.mailCtxAbrirActividad = function () {
+            // Abrir la VENTANA de la actividad (no la oportunidad completa).
+            if (window._mailCtxProxActId && typeof window.calAbrirActividadPorId === 'function') {
+                window.calAbrirActividadPorId(window._mailCtxProxActId);
+                return;
+            }
+            // Respaldo: la oportunidad con su actividad reciente.
+            if (!window._mailCtxOppId || typeof window.openDetalle !== 'function') return;
+            window.openDetalle(window._mailCtxOppId);
+            setTimeout(function () {
+                if (typeof window.woAbrirActividadReciente === 'function') window.woAbrirActividadReciente();
+            }, 400);
+        };
+        window.mailCtxAbrirOportunidad = function () {
+            if (window._mailCtxOppId && typeof window.openDetalle === 'function') {
+                window.openDetalle(window._mailCtxOppId);
+            }
+        };
+
+        /* ── Tira de conversación (hilos) ───────────── */
+        function _mailRenderHiloStrip(key, activeId) {
+            var strip = document.getElementById('mailHiloStrip');
+            if (!strip) return;
+            window._mailHiloKey = key;
+            fetch('/app/api/mail/hilo/?key=' + encodeURIComponent(key))
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok || !d.correos || d.correos.length < 2) {
+                        strip.style.display = 'none';
+                        return;
+                    }
+                    var h = '<span style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;">Conversaci&oacute;n (' + d.correos.length + ')</span>';
+                    d.correos.forEach(function (m) {
+                        var activo = m.id === activeId;
+                        var nombre = m.carpeta === 'SENT' ? 'Tú' : ((m.remitente_nombre || m.remitente_email || '').split(' ')[0].split('@')[0]);
+                        var fecha = m.fecha_envio ? _formatFecha(m.fecha_envio) : '';
+                        h += '<button onclick="mailVerCorreo(' + m.id + ')" style="flex-shrink:0;border:1px solid ' +
+                            (activo ? '#007AFF;background:rgba(0,122,255,0.10);color:#0052D4;' : '#E5E7EB;background:#fff;color:#374151;') +
+                            'border-radius:999px;padding:3px 10px;font-size:0.72rem;font-weight:' + (m.leido ? '500' : '700') +
+                            ';cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;">' +
+                            _esc(nombre) + ' <span style="opacity:0.55;font-size:0.66rem;">' + fecha + '</span></button>';
+                    });
+                    strip.innerHTML = h;
+                    strip.style.display = 'flex';
+                })
+                .catch(function () { strip.style.display = 'none'; });
+        }
 
         /* ── View email ─────────────────────────────── */
         window.mailVerCorreo = function (id) {
             document.querySelectorAll('.mail-card-wb').forEach(function (el) { el.classList.remove('selected'); });
             var card = document.getElementById('mailCard_' + id);
             if (card) card.classList.add('selected');
+
+            // Hilos: si el correo viene de la lista y es parte de una
+            // conversación, pintar la tira; si se clicó DESDE la tira,
+            // conservarla re-marcando el activo.
+            var hiloStrip = document.getElementById('mailHiloStrip');
+            var itemLista = (_mailFiltrado || []).concat(_mailTodos || []).find(function (c) { return c.id === id; });
+            if (itemLista) {
+                if (itemLista.hilo_count > 1 && itemLista.hilo_key) {
+                    _mailRenderHiloStrip(itemLista.hilo_key, id);
+                } else {
+                    window._mailHiloKey = null;
+                    if (hiloStrip) hiloStrip.style.display = 'none';
+                }
+            } else if (window._mailHiloKey) {
+                _mailRenderHiloStrip(window._mailHiloKey, id);
+            } else if (hiloStrip) {
+                hiloStrip.style.display = 'none';
+            }
 
             var panelVincular = document.getElementById('mailPanelVincular');
             if (panelVincular) panelVincular.style.display = 'none';
@@ -314,9 +1280,12 @@
             var detailContent = document.getElementById('mailDetailContent');
             if (detailEmpty) detailEmpty.style.display = 'none';
             if (detailContent) detailContent.style.display = 'flex';
-            var island = document.getElementById('mailHeaderIsland');
-            if (island) island.style.display = 'inline-flex';
+            // La isla de iconos del header quedó RETIRADA: las acciones viven en
+            // la barra del panel de lectura (una sola botonera, sin duplicados).
 
+
+            // Panel de contexto CRM (independiente del detalle)
+            _mailRenderContexto(id);
 
             fetch('/app/api/mail/detalle/' + id + '/')
                 .then(function (r) { return r.json(); })
@@ -331,6 +1300,21 @@
                     document.getElementById('mailDetailSubject').textContent = d.asunto || '(Sin asunto)';
                     document.getElementById('mailDetailFrom').textContent = d.remitente_nombre ? d.remitente_nombre + ' <' + d.remitente_email + '>' : d.remitente_email;
                     document.getElementById('mailDetailTo').textContent = (d.destinatarios || []).map(function (x) { return x.nombre ? x.nombre + ' <' + x.email + '>' : x.email; }).join(', ') || '—';
+                    // Encabezado estilo mockup: avatar + nombre + "· para mí" (o "· para N")
+                    var nomR = d.remitente_nombre || d.remitente_email || '—';
+                    var avaEl = document.getElementById('mailDetailAvatar');
+                    if (avaEl) avaEl.textContent = nomR.split(/\s+/).slice(0, 2).map(function (p) { return (p[0] || '').toUpperCase(); }).join('');
+                    var fnEl = document.getElementById('mailDetailFromNom'); if (fnEl) fnEl.textContent = nomR;
+                    var fmEl = document.getElementById('mailDetailFromMail'); if (fmEl) fmEl.textContent = d.remitente_email || '';
+                    var pmEl = document.getElementById('mailDetailParaMi');
+                    if (pmEl) {
+                        var dest = d.destinatarios || [];
+                        var mios = (_mailConexiones || []).map(function (cx) { return (cx.correo_electronico || '').toLowerCase(); });
+                        var paraMi = dest.some(function (x) { return mios.indexOf(String(x.email || '').toLowerCase()) !== -1; });
+                        pmEl.textContent = dest.length === 0 ? ''
+                            : (paraMi && dest.length === 1 ? ' · para mí'
+                                : (paraMi ? ' · para mí y ' + (dest.length - 1) + ' más' : ' · para ' + dest.length + ' destinatarios'));
+                    }
                     document.getElementById('mailDetailDate').textContent = d.fecha_envio ? new Date(d.fecha_envio).toLocaleString('es-MX') : '';
 
                     // Star state
@@ -351,12 +1335,14 @@
                     mailCerrarReply();
                     mailCerrarForward();
 
+                    // Franja provisional (solo nombre) mientras llega el contexto CRM;
+                    // _mailRenderContexto la repinta con etapa/monto o estado sin-vincular.
                     var oppBar = document.getElementById('mailDetailOppBar');
                     var oppName = document.getElementById('mailDetailOppName');
+                    if (oppName) oppName.textContent = d.oportunidad_nombre || '';
                     if (d.oportunidad_nombre) {
-                        oppName.textContent = d.oportunidad_nombre;
-                        oppBar.style.display = 'flex';
-                    } else {
+                        _mailFranja({ ok: true, vinculado: true, oportunidad: { nombre: d.oportunidad_nombre } });
+                    } else if (oppBar) {
                         oppBar.style.display = 'none';
                     }
 
@@ -368,14 +1354,54 @@
                         iframe.style.display = 'block';
                         plain.style.display = 'none';
                     } else {
-                        plain.textContent = d.cuerpo_texto || '(Sin contenido)';
+                        plain.textContent = d.cuerpo_texto ||
+                            (d.eliminado ? 'Este correo ya no está en el servidor: se eliminó o movió desde otro dispositivo.' : '(Sin contenido)');
                         plain.style.display = 'block';
                         iframe.style.display = 'none';
                     }
 
+                    _mailRenderAdjuntos('mailDetailAdj', d.adjuntos);
+
                     if (card) card.classList.remove('unread');
                 });
         };
+
+        /* ── Adjuntos recibidos: chips descargables (los usa la vista
+           principal en #mailDetailAdj y la ventana individual en #mvAdj) ── */
+        function _mailFmtBytes(n) {
+            if (!n && n !== 0) return '';
+            if (n < 1024) return n + ' B';
+            if (n < 1048576) return Math.round(n / 1024) + ' KB';
+            return (n / 1048576).toFixed(1) + ' MB';
+        }
+        function _mailRenderAdjuntos(containerId, adjuntos) {
+            var box = document.getElementById(containerId);
+            if (!box) return;
+            adjuntos = adjuntos || [];
+            if (!adjuntos.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+            var h = '';
+            adjuntos.forEach(function (a) {
+                var ct = a.content_type || '';
+                var icono;
+                if (ct.indexOf('image/') === 0) {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                } else if (ct === 'application/pdf' || /\.pdf$/i.test(a.nombre || '')) {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                } else {
+                    icono = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+                }
+                h += '<a href="/app/api/mail/adjunto/' + a.id + '/" target="_blank" rel="noopener" title="Descargar ' + _esc(a.nombre || 'adjunto') + '"'
+                    + ' style="display:inline-flex;align-items:center;gap:6px;background:#F5F7FA;border:1px solid #E5E8EE;border-radius:9px;padding:6px 10px;font-size:0.76rem;color:#374151;text-decoration:none;max-width:230px;"'
+                    + ' onmouseenter="this.style.background=\'#EEF3FF\';this.style.borderColor=\'#C7DBFF\'"'
+                    + ' onmouseleave="this.style.background=\'#F5F7FA\';this.style.borderColor=\'#E5E8EE\'">'
+                    + icono
+                    + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">' + _esc(a.nombre || 'adjunto') + '</span>'
+                    + (a.tamanio ? '<span style="color:#9CA3AF;flex-shrink:0;">' + _mailFmtBytes(a.tamanio) + '</span>' : '')
+                    + '</a>';
+            });
+            box.innerHTML = h;
+            box.style.display = 'flex';
+        }
 
         /* ── Actions ────────────────────────────────── */
         window.mailSincronizar = function () {
@@ -437,6 +1463,8 @@
             if (titleEl) titleEl.textContent = 'Agregar cuenta de correo';
             m.style.display = 'flex';
             mailSetConfigTpl('iamet', true);
+            var cfgFirma = document.getElementById('mailCfgFirma');
+            if (cfgFirma) cfgFirma.innerHTML = _mailFirmaHtml();
             if (cfgEmail) cfgEmail.focus();
         };
 
@@ -544,11 +1572,13 @@
             if (editor) editor.innerHTML = '';
             if (para) para.value = '';
             if (cc) cc.value = '';
+            _mailInsertarFirma('mailCompEditor');
             if (asunto) asunto.value = '';
             _mailRecips.para = [];
             _mailRecips.cc = [];
             _renderRecipChips('para');
             _renderRecipChips('cc');
+            window._mailBorradorId = null;
         };
 
         window.mailCerrarCompose = function () {
@@ -668,6 +1698,8 @@
                     // Limpiar el contexto de marketing si lo había para que
                     // un siguiente correo (sin contexto) no herede el brand.
                     if (window._marketingShareCtx) window._marketingShareCtx = null;
+                    // Enviado: el borrador autoguardado ya no hace falta
+                    _mailDescartarBorradorActual();
                     // Guardar en historial los destinatarios usados
                     _mailSaveRecentRecips(paraRecips.concat(ccRecips));
 
@@ -741,6 +1773,7 @@
             var remit = _mailCorreoActual.remitente_nombre || _mailCorreoActual.remitente_email;
             if (paraLabel) paraLabel.textContent = 'Re: ' + (_mailCorreoActual.asunto || '');
             if (editor) editor.innerHTML = '';
+            _mailInsertarFirma('mailRespEditor');
             if (ccRow) ccRow.style.display = 'none';
             if (bccRow) bccRow.style.display = 'none';
             if (ccIn) ccIn.value = '';
@@ -874,6 +1907,12 @@
                         _mailReplyAttachments = [];
                         mailCerrarReply();
                         _showToastMail('Respuesta enviada', true);
+                        // El asistente reacciona AL INSTANTE a tu respuesta (casos
+                        // "¿actualizo?" / "¿agendo seguimiento?") sin esperar su
+                        // ciclo de 60s.
+                        if (typeof window.pendFeedRefresh === 'function') {
+                            try { window.pendFeedRefresh(); } catch (e) {}
+                        }
                     } else {
                         _showToastMail(data.error || 'Error al enviar', false);
                     }
@@ -888,6 +1927,8 @@
         window.mailBuscarOpps = function (q) {
             clearTimeout(_mailBusqTimeout);
             var resultsEl = document.getElementById('mailOppResults');
+            var hintEl = document.getElementById('mailVincularHint');
+            if (hintEl) hintEl.style.display = (!q || q.trim().length < 2) ? 'block' : 'none';
             if (!q || q.trim().length < 2) {
                 if (resultsEl) resultsEl.style.display = 'none';
                 return;
@@ -932,14 +1973,16 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.ok) {
-                        var bar = document.getElementById('mailDetailOppBar');
                         var name = document.getElementById('mailDetailOppName');
                         var panel = document.getElementById('mailPanelVincular');
                         if (name) name.textContent = oppNombre;
-                        if (bar) bar.style.display = 'flex';
+                        _mailFranja({ ok: true, vinculado: true, oportunidad: { nombre: oppNombre } });
                         if (panel) panel.style.display = 'none';
+                        mailCerrarVincular();
                         if (_mailCorreoActual) _mailCorreoActual.oportunidad_nombre = oppNombre;
                         _showToastMail('Vinculado a ' + oppNombre, true);
+                        // Refrescar el panel de contexto con la nueva vinculación
+                        if (_mailCorreoActual) _mailRenderContexto(_mailCorreoActual.id);
                     } else {
                         _showToastMail(data.error || 'Error al vincular', false);
                     }
@@ -1000,6 +2043,55 @@
                 });
         };
 
+        /* ── Acciones rápidas desde la fila (hover), sin abrir el correo ── */
+        window.mailQuickArchivar = function (id) {
+            fetch('/app/api/mail/archivar/' + id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'No se pudo archivar', false); return; }
+                    var card = document.getElementById('mailCard_' + id);
+                    if (card) card.remove();
+                    _showToastMail('Archivado', true);
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailQuickEliminar = function (id) {
+            fetch('/app/api/mail/eliminar/' + id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'No se pudo eliminar', false); return; }
+                    var card = document.getElementById('mailCard_' + id);
+                    if (card) card.remove();
+                    _showToastMail('Movido a papelera', true);
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+
+        window.mailArchivar = function () {
+            if (!_mailCorreoActual) return;
+            fetch('/app/api/mail/archivar/' + _mailCorreoActual.id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) return;
+                    // El correo cambió de carpeta (INBOX ⇄ ARCHIVE): fuera de la lista actual
+                    var card = document.getElementById('mailCard_' + _mailCorreoActual.id);
+                    if (card) card.remove();
+                    document.getElementById('mailDetailContent').style.display = 'none';
+                    document.getElementById('mailDetailEmpty').style.display = 'flex';
+                    _mailCorreoActual = null;
+                    var island = document.getElementById('mailHeaderIsland');
+                    if (island) island.style.display = 'none';
+                    _mailCtxOcultar();
+                    _showToastMail(d.archivado ? 'Correo archivado' : 'Devuelto a Bandeja de entrada', true);
+                });
+        };
+
         window.mailEliminar = function () {
             if (!_mailCorreoActual) return;
             if (!confirm('¿Mover este correo a la Papelera?')) return;
@@ -1017,6 +2109,7 @@
                     _mailCorreoActual = null;
                     var island = document.getElementById('mailHeaderIsland');
                     if (island) island.style.display = 'none';
+                    _mailCtxOcultar();
                     _showToastMail('Movido a Papelera', true);
                 });
         };
@@ -1030,6 +2123,7 @@
             if (!p) return;
             if (para) para.value = '';
             if (ed) ed.innerHTML = '';
+            _mailInsertarFirma('mailFwdEditor');
             p.style.display = 'flex';
             var backBtn = document.getElementById('mailBodyBackBtn');
             if (backBtn) backBtn.style.display = 'flex';
@@ -1209,53 +2303,70 @@
         // Forward attach handler
         window.mailHandleFwdAttach = function (files) { _handleAttachFiles(files, 'fwd'); };
 
-        function _setupDropZone(editorId, panelId, context, overlayId) {
-            var editor = document.getElementById(editorId);
-            if (!editor) return;
-            var overlay = overlayId ? document.getElementById(overlayId) : null;
-            var dragCounter = 0;
-            function show() { if (overlay) overlay.classList.add('show'); }
-            function hide() { if (overlay) overlay.classList.remove('show'); }
+        /* ── Drag & drop de archivos al cuerpo del correo ──
+         * Delegación a NIVEL DOCUMENTO (como el divisor de columnas): los
+         * listeners por elemento morían cuando Turbo reemplazaba el DOM al
+         * navegar entre pestañas y el arrastre dejaba de funcionar. Aquí los
+         * handlers viven en document y buscan el panel bajo el cursor en el
+         * momento del evento, así sobreviven cualquier re-render. */
+        var _MAIL_DROP_ZONAS = [
+            { panel: 'mailComposePanel', overlay: 'mailCompDropOverlay', context: 'compose' },
+            { panel: 'mailReplyPanel', overlay: 'mailRespDropOverlay', context: 'reply' },
+            { panel: 'mailForwardPanel', overlay: null, context: 'fwd' }
+        ];
+        var _mailDropHideTO = null;
 
-            editor.addEventListener('dragover', function (e) {
-                e.preventDefault();
-                if (!overlay) editor.style.background = '#F0F9FF';
-            });
-            editor.addEventListener('dragleave', function () {
-                if (!overlay) editor.style.background = '';
-            });
-            editor.addEventListener('drop', function (e) {
-                e.preventDefault();
-                if (!overlay) editor.style.background = '';
-                var files = e.dataTransfer.files;
-                if (files && files.length) {
-                    _handleAttachFiles(files, context);
-                    e.stopPropagation();
-                }
-            });
-            if (panelId) {
-                var panel = document.getElementById(panelId);
-                if (panel) {
-                    panel.addEventListener('dragenter', function (e) {
-                        if (e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
-                            dragCounter++;
-                            show();
-                        }
-                    });
-                    panel.addEventListener('dragleave', function () {
-                        dragCounter = Math.max(0, dragCounter - 1);
-                        if (dragCounter === 0) hide();
-                    });
-                    panel.addEventListener('dragover', function (e) { e.preventDefault(); });
-                    panel.addEventListener('drop', function (e) {
-                        e.preventDefault();
-                        dragCounter = 0;
-                        hide();
-                        var files = e.dataTransfer.files;
-                        if (files && files.length) _handleAttachFiles(files, context);
-                    });
-                }
+        function _mailZonaDropDe(target) {
+            if (!target || !target.nodeType) return null;
+            for (var i = 0; i < _MAIL_DROP_ZONAS.length; i++) {
+                var p = document.getElementById(_MAIL_DROP_ZONAS[i].panel);
+                // offsetParent null = panel oculto (solo uno está visible a la vez)
+                if (p && p.offsetParent !== null && p.contains(target)) return _MAIL_DROP_ZONAS[i];
             }
+            return null;
+        }
+
+        function _mailDropOcultarTodo() {
+            document.querySelectorAll('.mail-drop-overlay.show').forEach(function (o) { o.classList.remove('show'); });
+            var fwd = document.getElementById('mailForwardPanel');
+            if (fwd) fwd.style.background = '';
+        }
+
+        function _setupDropZonesGlobal() {
+            if (window._mailDropWired) return;
+            window._mailDropWired = true;
+
+            document.addEventListener('dragover', function (e) {
+                if (!e.dataTransfer || !e.dataTransfer.types) return;
+                if (Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') === -1) return;
+                var z = _mailZonaDropDe(e.target);
+                if (!z) { _mailDropOcultarTodo(); return; }
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                if (z.overlay) {
+                    var ov = document.getElementById(z.overlay);
+                    if (ov) ov.classList.add('show');
+                } else {
+                    var p = document.getElementById(z.panel);
+                    if (p) p.style.background = '#F0F9FF';
+                }
+                // Sin dragover reciente (salió de la zona o soltó fuera): apagar señal
+                clearTimeout(_mailDropHideTO);
+                _mailDropHideTO = setTimeout(_mailDropOcultarTodo, 250);
+            });
+
+            document.addEventListener('drop', function (e) {
+                clearTimeout(_mailDropHideTO);
+                _mailDropOcultarTodo();
+                var z = _mailZonaDropDe(e.target);
+                if (!z) return;
+                e.preventDefault();
+                var files = e.dataTransfer && e.dataTransfer.files;
+                if (files && files.length) {
+                    _handleAttachFiles(files, z.context);
+                    _showToastMail(files.length + (files.length > 1 ? ' archivos adjuntados' : ' archivo adjuntado'), true);
+                }
+            });
         }
 
         /* ── Paste handler: capture pasted images as attachments ──
@@ -1263,10 +2374,15 @@
          * insertar un <img src="data:..."> que infla el body y a veces
          * lo descartan los receptores. Aquí lo convertimos en adjunto real.
          */
-        function _setupPasteToAttach(editorId, context) {
-            var editor = document.getElementById(editorId);
-            if (!editor) return;
-            editor.addEventListener('paste', function (e) {
+        var _MAIL_PASTE_EDITORES = { mailCompEditor: 'compose', mailRespEditor: 'reply', mailFwdEditor: 'fwd' };
+
+        function _setupPasteToAttachGlobal() {
+            if (window._mailPasteWired) return;
+            window._mailPasteWired = true;
+            document.addEventListener('paste', function (e) {
+                var editor = e.target && e.target.closest ? e.target.closest('#mailCompEditor, #mailRespEditor, #mailFwdEditor') : null;
+                var context = editor ? _MAIL_PASTE_EDITORES[editor.id] : null;
+                if (!context) return;
                 if (!e.clipboardData) return;
                 var items = e.clipboardData.items || [];
                 var imageFiles = [];
@@ -1307,12 +2423,8 @@
         }
 
         function _setupReplyDropZone() {
-            _setupDropZone('mailRespEditor', 'mailReplyPanel', 'reply', 'mailRespDropOverlay');
-            _setupDropZone('mailCompEditor', 'mailComposePanel', 'compose', 'mailCompDropOverlay');
-            _setupDropZone('mailFwdEditor', 'mailForwardPanel', 'fwd');
-            _setupPasteToAttach('mailCompEditor', 'compose');
-            _setupPasteToAttach('mailRespEditor', 'reply');
-            _setupPasteToAttach('mailFwdEditor', 'fwd');
+            _setupDropZonesGlobal();
+            _setupPasteToAttachGlobal();
         }
 
         /* ══════ Recipient autocomplete (compose Para/CC) ══════ */
@@ -1643,6 +2755,8 @@
         };
 
         window.mailToggleAccountMenu = function () {
+            // El riel se expande solo con el cursor encima (CSS :hover), así
+            // que al hacer clic aquí el menú ya está expandido: abrir directo.
             var menu = document.getElementById('mailAccountMenu');
             if (!menu) return;
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
@@ -1654,42 +2768,89 @@
             if (menu && btn && !btn.contains(e.target)) menu.style.display = 'none';
         });
 
-        /* ── Polling & Badges ──────────────────────── */
+        /* ── Polling & Badges (Fase B — fluidez) ─────
+           El navegador ya NO abre sesiones IMAP: pregunta cada 12s al
+           endpoint /estado/ (solo BD, milisegundos) si algo cambió. El
+           worker del servidor es quien sincroniza con Gmail/Outlook; aquí
+           solo se refleja. Cuando el sello cambia, la lista se refresca
+           en silencio (sin parpadeo, conservando scroll y selección). */
+        var _mailUltimoSello = null, _mailUltimoIdVisto = 0, _mailPrevNoLeidos = 0;
+
         function _mailStartPolling() {
             if (_mailPollInterval) return;
-            _mailPollInterval = setInterval(_mailPollUnreadCount, 30000);
+            _mailPollInterval = setInterval(_mailPollUnreadCount, 12000);
         }
 
         function _mailPollUnreadCount() {
             // Sin polling con la pestaña oculta (perf: no saturar al server).
             if (document.hidden) return;
             var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-            var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 15000);
-            fetch('/app/api/mail/auto-sync/', { signal: _ac ? _ac.signal : undefined })
+            var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 8000);
+            fetch('/app/api/mail/estado/', { signal: _ac ? _ac.signal : undefined })
                 .then(function (r) { clearTimeout(_to); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(function (data) {
                     if (!data.ok) return;
 
-                    // Update badge
                     _mailPendingBadge = data.total_no_leidos || 0;
                     _mailUpdateNavBadge();
 
-                    // If new emails, auto-sync and show notification
-                    if (data.should_sync && data.nuevos > 0) {
-                        // Show Mac-style notification
-                        _showMailNotification(data.nuevos);
+                    if (_mailUltimoSello === null) {
+                        // Primera lectura de la sesión: solo memorizar el punto de partida
+                        _mailUltimoSello = data.sello;
+                        _mailUltimoIdVisto = data.ultimo_id || 0;
+                        _mailPrevNoLeidos = data.total_no_leidos || 0;
+                        return;
+                    }
+                    if (data.sello === _mailUltimoSello) return;
 
-                        // Auto-trigger sync
-                        fetch('/app/api/mail/sincronizar/', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': csrf() }
-                        }).then(function (r) { return r.json(); }).then(function (syncData) {
-                            // If mail widget is open, refresh the list
-                            var widget = document.getElementById('widgetMail');
-                            if (widget && widget.classList.contains('active')) {
-                                mailCargarLista(_mailCarpeta);
-                            }
-                        });
+                    var llegaronNuevos = (data.ultimo_id || 0) > _mailUltimoIdVisto;
+                    var deltaNoLeidos = (data.total_no_leidos || 0) - _mailPrevNoLeidos;
+                    _mailUltimoSello = data.sello;
+                    _mailUltimoIdVisto = data.ultimo_id || 0;
+                    _mailPrevNoLeidos = data.total_no_leidos || 0;
+
+                    if (llegaronNuevos && deltaNoLeidos > 0) _showMailNotification(deltaNoLeidos);
+                    _mailRefrescarSilencioso();
+                })
+                .catch(function () {});
+        }
+
+        function _mailRefrescarSilencioso() {
+            // Refresca la lista sin "Cargando...", conservando scroll y la
+            // tarjeta seleccionada. Solo cuando el correo está a la vista y
+            // no hay búsqueda activa ni historial paginado en pantalla.
+            var w = document.getElementById('widgetMail');
+            if (!w || !w.classList.contains('active')) return;
+            if (window._mailBusqueda) return;
+            if (_mailCarpeta === 'DRAFTS') return;
+            if (_mailPagina > 1) return; // el usuario está navegando historial: no yankearlo
+            var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=1';
+            if (_mailCarpeta === 'INBOX') url += '&hilos=1';
+            if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (window._mailBusqueda || _mailPagina > 1) return; // cambió mientras cargaba
+                    var listEl = document.getElementById('mailList');
+                    var scroll = listEl ? listEl.scrollTop : 0;
+                    _mailTodos = data.correos || [];
+                    _mailFiltrado = _mailTodos;
+                    _mailHayMas = data.hay_mas || false;
+                    _renderLista(_mailFiltrado);
+                    if (listEl) listEl.scrollTop = scroll;
+                    if (_mailCorreoActual) {
+                        var card = document.getElementById('mailCard_' + _mailCorreoActual.id);
+                        if (card) card.classList.add('selected');
+                    }
+                    var unread = _mailTodos.filter(function (c) { return !c.leido; }).length;
+                    var badge = document.getElementById('mailUnreadBadge');
+                    if (badge) {
+                        if (unread > 0 && _mailCarpeta === 'INBOX') {
+                            badge.textContent = unread;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
                     }
                 })
                 .catch(function () {});
@@ -1779,6 +2940,11 @@
             });
             _setupReplyDropZone();
             _setupRecipAutocomplete();
+            // Autoguardado de borradores mientras se escribe (Fase 4)
+            ['mailCompEditor', 'mailCompAsunto', 'mailCompPara', 'mailCompCc'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('input', window._mailAutosaveBorrador);
+            });
         }
 
         // Migrado a crmReady (Turbo-friendly).
@@ -1788,6 +2954,21 @@
         // _mailStartPolling adentro maneja su propio interval (guard interno
         // también). Aquí solo necesitamos invocar UNA VEZ por sesión.
         window.crmReady(function () {
+            // Modo página: al entrar a ?tab=correo el widget ya viene abierto
+            // del servidor — inicializar la lista de inmediato. Corre en CADA
+            // crmReady (Turbo navega entre tabs sin recargar).
+            var w = document.getElementById('widgetMail');
+            var _tabActual = null;
+            try { _tabActual = new URL(window.location.href).searchParams.get('tab'); } catch (e) { }
+            if (w && w.classList.contains('is-page-mode') && _tabActual !== 'correo') {
+                // Residuo del snapshot de Turbo al navegar a otra sección:
+                // el correo quedaba montado EN FLUJO arriba de la nueva página.
+                w.classList.remove('is-page-mode', 'active');
+            }
+            if (w && w.classList.contains('is-page-mode')) {
+                _mailWidgetInitOnce();
+                _mailInitState();
+            }
             if (window._mailInitDone) return;
             window._mailInitDone = true;
             _mailWidgetInitOnce();

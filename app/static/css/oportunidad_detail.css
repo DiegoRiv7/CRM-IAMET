@@ -121,3 +121,815 @@ body {
     border-radius: 0.5rem;
     transition: width 0.5s ease-in-out;
 }
+
+/* Pin de mensajes fijados — lo usa el feed del v4 */
+.wo-conv-pinbtn {
+    border: none; background: none; color: #C7C7CC; cursor: pointer;
+    padding: 3px; border-radius: 6px; opacity: 0;
+    transition: opacity .12s, color .12s; flex-shrink: 0;
+}
+.wo-conv-pinbtn:hover { color: #B45309; }
+.wo-conv-pinbtn.is-pinned { opacity: 1; color: #B45309; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   OPORTUNIDAD v4 — rediseño 2026-07-31
+   Prefijo wo4-* a propósito: los cinco temas pintan .wo-header y .wo-card
+   con degradados y !important. Este diseño no tiene header de color, así
+   que con nombres propios queda neutro sin pelearle a ningún tema.
+   ═══════════════════════════════════════════════════════════════════ */
+.opp-v4 {
+    --w4-azul: #2563EB;
+    --w4-azul-dark: #1D4ED8;
+    --w4-tinta: #111827;
+    --w4-texto: #374151;
+    --w4-gris: #6B7280;
+    --w4-tenue: #9CA3AF;
+    --w4-linea: #E8EAED;
+    --w4-track: #E5E7EB;
+    --w4-panel: #F9FAFB;
+    --w4-lienzo: #F4F5F7;
+}
+.opp-v4 .widget-card {
+    background: #fff;
+    color: var(--w4-tinta);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+/* La ventana NO scrollea como un todo: el encabezado y la barra de etapa
+   quedan siempre fijos, y solo scrollea la región que lo necesite (el feed
+   de la conversación o el lateral). Sin el min-height:0 el contenido empuja
+   al contenedor flex y reaparece la barra de la ventana entera. */
+.opp-v4 [data-wo="content"] { min-height: 0; overflow: hidden; }
+
+/* ── Encabezado ── */
+/* El encabezado conserva la franja de cada tema (lleva también .wo-header,
+   que es lo que los cinco temas pintan). Solo el CUERPO es neutro. */
+/* La franja ahora trabaja: logo | título y tipo | cliente y ojo. Antes eran
+   dos renglones para muy poco dato y el cliente vivía abajo en el lateral. */
+/* El margen lateral es el mismo que el de las etapas y el cuerpo (26px): con
+   20px la franja arrancaba y terminaba corrida respecto a todo lo de abajo. */
+.opp-v4 .wo4-head {
+    padding: 12px 26px !important; flex-shrink: 0;
+    display: flex; align-items: center; gap: 16px;
+    position: relative;
+}
+/* Velo sobre la greca del tema: el patrón competía con el logo y los chips y
+   nada se leía bien. Baja el contraste del fondo sin apagar el tema. */
+.opp-v4 .wo4-head::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(15, 23, 42, .34);
+    /* Hereda el redondeo que cada tema le da a la franja; si no, cuadra las
+       esquinas de arriba. */
+    border-radius: inherit;
+    pointer-events: none;
+}
+/* El contenido va encima del velo. */
+.opp-v4 .wo4-head > * { position: relative; z-index: 1; }
+.opp-v4 .wo4-head-mid { flex: 1; min-width: 0; }
+/* Cliente, ojo y controles de ventana: mismo alto y separación pareja, para
+   que se lean como un grupo y no como tres bloques sueltos. */
+.opp-v4 .wo4-head-right {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto;
+}
+
+
+/* ── El ojo: quién ha visto la oportunidad ── */
+.opp-v4 .wo4-ojo {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 32px; padding: 0 13px; border-radius: 999px; border: none;
+    background: #fff; color: var(--w4-texto);
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .22);
+    transition: background .12s;
+}
+.opp-v4 .wo4-ojo:hover { background: #EEF1F6; }
+.opp-v4 .wo4-ojo-avs { display: inline-flex; }
+.opp-v4 .wo4-ojo-av {
+    width: 21px; height: 21px; border-radius: 50%; margin-left: -6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; color: #fff; overflow: hidden;
+    border: 1.5px solid #fff; background: #6B7280;
+}
+.opp-v4 .wo4-ojo-av:first-child { margin-left: 0; }
+.opp-v4 .wo4-ojo-av img { width: 100%; height: 100%; object-fit: cover; }
+.opp-v4 .wo4-ojo-n { color: var(--w4-gris); font-variant-numeric: tabular-nums; }
+/* Sin avatares (una sola persona) el hueco del contenedor sobra. */
+.opp-v4 .wo4-ojo-avs:empty { display: none; }
+/* Imprimir: mismo molde que el ojo, solo el icono. */
+/* Descarga del expediente: flecha hacia abajo, no impresora — lo que hace es
+   abrir el PDF, y de ahi se guarda o se imprime. */
+.opp-v4 .wo4-imprimir { width: 32px; padding: 0; justify-content: center; color: var(--w4-gris); }
+
+/* Enlace "Cambiar cliente" al pie de la tarjeta de personas. */
+
+/* Los temas claros no pintan franja: ahí el velo sobraría y los chips blancos
+   quedarían sobre blanco. Se apaga el velo y los chips toman borde. */
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-head::after {
+    display: none;
+}
+body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="duna"]):not([data-theme="espacial"]):not([data-theme="mundial"]) .opp-v4 .wo4-ojo {
+    background: #F4F5F7; box-shadow: inset 0 0 0 1px #E4E7EC;
+}
+
+.opp-v4 .wo4-title { color: inherit; }
+.opp-v4 .wo4-crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; color: var(--w4-gris); margin-bottom: 8px; min-height: 30px;
+}
+.opp-v4 .wo4-crumb-proy { display: inline-flex; align-items: center; min-width: 0; }
+.opp-v4 .wo4-crumb-link {
+    display: inline-flex; align-items: center; gap: 7px; max-width: 520px;
+    border: none; background: none; padding: 0; cursor: pointer;
+    font: inherit; color: var(--w4-gris);
+}
+.opp-v4 .wo4-crumb-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-v4 .wo4-crumb-link:hover { color: var(--w4-azul); }
+.opp-v4 .wo4-win { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.opp-v4 .wo4-ic {
+    width: 30px; height: 30px; border: none; background: none; border-radius: 8px;
+    color: var(--w4-gris); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    text-decoration: none;
+}
+.opp-v4 .wo4-ic:hover { background: #F3F4F6; color: var(--w4-tinta); }
+
+.opp-v4 .wo4-title-row { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; }
+.opp-v4 .wo4-title {
+    font-size: 1.72rem; font-weight: 700; letter-spacing: -.02em;
+    color: var(--w4-tinta); margin: 0; min-width: 0;
+}
+/* La etiqueta del pipeline en azul sólido: en gris tenue se perdía contra la
+   franja del tema, y es el dato que dice de qué tipo de venta se trata. */
+.opp-v4 .wo4-tipo {
+    background: var(--w4-azul); color: #fff; border: none; border-radius: 7px;
+    padding: 5px 13px; font: inherit; font-size: .76rem; font-weight: 600;
+    letter-spacing: .01em; cursor: pointer; flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, .3);
+}
+.opp-v4 .wo4-tipo:hover { background: var(--w4-azul-dark); }
+.opp-v4 .wo4-tipo.is-fijo { cursor: default; }
+.opp-v4 .wo4-tipo.is-fijo:hover { background: var(--w4-azul); }
+
+/* Tipo de venta dentro del cuadro del trato, con su etiqueta. */
+.opp-v4 .wo4-tipo-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding-bottom: 12px; margin-bottom: 12px;
+    border-bottom: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-tipo-row .wo4-lbl { margin-bottom: 0; }
+
+/* ── Barra de etapa ──
+   El pipeline usa las clases de siempre (.wo-pipeline-container, .wo-stage-btn…)
+   de crm.css: la versión con nombres en rectángulos envolvía a dos renglones
+   con 18 etapas y se leía peor. Aquí solo la línea de contexto encima y el
+   aire alrededor. */
+/* Pegado a la franja del encabezado: sin línea de contexto encima y con el
+   aire justo, el pipeline queda contra la barra de arriba. */
+.opp-v4 .wo4-etapa {
+    padding: 8px 26px 10px; border-bottom: 1px solid var(--w4-linea); flex-shrink: 0;
+}
+
+/* ── Cuerpo ── */
+/* Un solo scroll a la vez: el cuerpo NO scrollea (si lo hacía, se sumaba al
+   del feed de la conversación y salían dos barras). Cada columna se encarga
+   de lo suyo y solo aparece la que hace falta. */
+.opp-v4 .wo4-body {
+    flex: 1; min-height: 0; overflow: hidden; background: var(--w4-lienzo);
+    display: grid; grid-template-columns: 1fr 372px; gap: 14px; padding: 12px 26px 16px;
+    align-items: stretch;
+}
+.opp-v4 .wo4-main, .opp-v4 .wo4-side {
+    display: flex; flex-direction: column; gap: 14px; min-width: 0;
+    min-height: 0; height: 100%;
+}
+/* El lateral scrollea COMO COLUMNA cuando hace falta. Antes repartía su alto
+   entre las tarjetas para no sacar barra, pero con muchas cotizaciones o varias
+   personas la última tarjeta se encogía y se cortaba por abajo sin manera de
+   llegar a lo que quedaba fuera. Ahora cada tarjeta toma su alto natural
+   (flex 0 0 auto) y la barra sale sola, solo si sobra contenido. */
+.opp-v4 .wo4-side { overflow-y: auto; overflow-x: hidden; }
+.opp-v4 .wo4-side > .wo4-card {
+    flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column;
+}
+/* Las barras no ocupan sitio ni se ven hasta que el cursor entra en la
+   región: el lateral y el feed pueden desbordar en oportunidades con muchas
+   cotizaciones o correos, pero la ventana se ve limpia. */
+.opp-v4 .wo4-feed, .opp-v4 .wo4-side, .opp-v4 [data-wo="quoteList"], .opp-v4 .wo4-drive { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.opp-v4 .wo4-feed:hover, .opp-v4 .wo4-side:hover, .opp-v4 [data-wo="quoteList"]:hover, .opp-v4 .wo4-drive:hover { scrollbar-color: #D1D5DB transparent; }
+.opp-v4 .wo4-feed::-webkit-scrollbar, .opp-v4 .wo4-side::-webkit-scrollbar, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar, .opp-v4 .wo4-drive::-webkit-scrollbar { width: 6px; }
+.opp-v4 .wo4-feed::-webkit-scrollbar-track, .opp-v4 .wo4-side::-webkit-scrollbar-track, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-track, .opp-v4 .wo4-drive::-webkit-scrollbar-track { background: transparent; }
+.opp-v4 .wo4-feed::-webkit-scrollbar-thumb, .opp-v4 .wo4-side::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive::-webkit-scrollbar-thumb { background: transparent; border-radius: 20px; }
+.opp-v4 .wo4-feed:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-side:hover::-webkit-scrollbar-thumb, .opp-v4 [data-wo="quoteList"]:hover::-webkit-scrollbar-thumb, .opp-v4 .wo4-drive:hover::-webkit-scrollbar-thumb { background: #D1D5DB; }
+.opp-v4 .wo4-duo { flex-shrink: 0; }
+.opp-v4 .wo4-card { background: #fff; border: 1px solid var(--w4-linea); border-radius: 13px; }
+.opp-v4 .wo4-pad { padding: 15px 17px; }
+.opp-v4 .wo4-chead {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 11px;
+}
+.opp-v4 .wo4-chead h3 { font-size: .88rem; font-weight: 700; margin: 0; color: var(--w4-tinta); }
+.opp-v4 .wo4-link {
+    border: none; background: none; color: var(--w4-azul); font: inherit;
+    font-size: .8rem; font-weight: 600; cursor: pointer; padding: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+}
+.opp-v4 .wo4-link:hover { text-decoration: underline; }
+.opp-v4 .wo4-vacio { font-size: .84rem; color: var(--w4-tenue); padding: 6px 0; }
+.opp-v4 .wo4-vacio-box {
+    border: 1.5px dashed var(--w4-track); border-radius: 10px; padding: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    color: var(--w4-tenue); font-size: .84rem;
+}
+
+/* Tareas | Actividades */
+/* El min-width:0 es lo que hace que 1fr 1fr sea de verdad mitad y mitad: sin
+   el, el ancho minimo de cada tarjeta lo dicta su contenido y un titulo de
+   tarea largo —"Cliente / Etapa / Nombre del trabajo"— ensanchaba Tareas y
+   dejaba Actividades apretada. */
+.opp-v4 .wo4-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.opp-v4 .wo4-duo > * { min-width: 0; }
+.opp-v4 .wo4-lista { display: flex; flex-direction: column; }
+.opp-v4 .wo4-fila {
+    display: flex; align-items: center; gap: 9px; padding: 5px 0;
+    font-size: .85rem; cursor: pointer;
+}
+.opp-v4 .wo4-fila:hover .wo4-fila-t { color: var(--w4-azul); }
+.opp-v4 .wo4-punto {
+    width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; flex-shrink: 0;
+}
+.opp-v4 .wo4-fila.done .wo4-punto { background: #16A34A; }
+.opp-v4 .wo4-fila.venc .wo4-punto { background: #EF4444; }
+/* El titulo se recorta con puntos suspensivos y no envuelve: la lista es un
+   vistazo, no el lugar para leer el nombre completo. Completo se ve al pasar
+   el cursor y al abrir la tarea. */
+.opp-v4 .wo4-fila-t {
+    flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-fila.done .wo4-fila-t { color: var(--w4-tenue); text-decoration: line-through; }
+.opp-v4 .wo4-fila.venc .wo4-fila-t { color: #EF4444; }
+.opp-v4 .wo4-fila-d { font-size: .78rem; color: var(--w4-tenue); flex-shrink: 0; }
+.opp-v4 .wo4-resumen { font-size: .78rem; color: var(--w4-tenue); margin-top: 7px; }
+
+/* Conversación */
+/* Es el cuadro protagonista de la ventana, así que se despega del lienzo: un
+   punto más oscuro que el resto de las tarjetas, borde más marcado y sombra.
+   Sobre un lienzo gris claro, blanco sobre blanco no se leía como cuadro. */
+.opp-v4 .wo4-conv {
+    position: relative;  /* ancla del menú de los 3 puntos */
+    flex: 1; display: flex; flex-direction: column; min-height: 260px;
+    background: #F7F8FA; border-color: #D3D7DE;
+    box-shadow: 0 8px 24px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .09);
+}
+.opp-v4 .wo4-conv-head {
+    display: flex; align-items: center; gap: 12px; padding: 15px 17px;
+    border-bottom: 1px solid var(--w4-linea); flex-wrap: wrap; flex-shrink: 0;
+    background: #EDEFF3; border-bottom-color: #DDE1E7; border-radius: 13px 13px 0 0;
+}
+.opp-v4 .wo4-conv-t { display: flex; align-items: center; gap: 8px; color: var(--w4-tinta); }
+.opp-v4 .wo4-conv-t h3 { font-size: .88rem; font-weight: 700; margin: 0; }
+.opp-v4 .wo4-conv-n { font-size: .8rem; color: var(--w4-tenue); }
+.opp-v4 .wo4-buscar {
+    margin-left: auto; display: flex; align-items: center; gap: 7px;
+    background: var(--w4-panel); border-radius: 8px; padding: 7px 11px;
+    min-width: 170px; color: var(--w4-gris);
+}
+.opp-v4 .wo4-buscar input {
+    border: none; background: none; outline: none; font: inherit;
+    font-size: .8rem; width: 100%; min-width: 0; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-segmented { display: flex; background: var(--w4-panel); border-radius: 9px; padding: 3px; }
+.opp-v4 .wo4-sg {
+    border: none; background: none; border-radius: 7px; padding: 5px 12px;
+    font: inherit; font-size: .79rem; font-weight: 500; color: var(--w4-gris); cursor: pointer;
+}
+.opp-v4 .wo4-sg.is-active {
+    background: #fff; color: var(--w4-tinta); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, .1);
+}
+/* Como cualquier chat: los mensajes se anclan ABAJO, pegados al campo de
+   escribir. El espacio libre queda arriba y se lee como "aquí empieza la
+   conversación" en vez de como un hueco. El wrapper con margin-top:auto es
+   la forma segura de hacerlo — justify-content:flex-end sobre un contenedor
+   con scroll deja el principio inalcanzable cuando el contenido desborda. */
+.opp-v4 .wo4-feed {
+    flex: 1; overflow-y: auto; padding: 16px 17px; min-height: 0;
+    display: flex; flex-direction: column;
+}
+.opp-v4 .wo4-feed-in { margin-top: auto; width: 100%; }
+.opp-v4 .wo4-dia { display: flex; align-items: center; gap: 13px; margin: 16px 0 13px; }
+.opp-v4 .wo4-dia:first-child { margin-top: 0; }
+.opp-v4 .wo4-dia::before, .opp-v4 .wo4-dia::after {
+    content: ''; flex: 1; height: 1px; background: var(--w4-linea);
+}
+.opp-v4 .wo4-dia span { font-size: .78rem; color: var(--w4-tenue); }
+.opp-v4 .wo4-msg { display: flex; gap: 11px; margin-bottom: 14px; cursor: pointer; }
+.opp-v4 .wo4-msg-sys { cursor: default; }
+.opp-v4 .wo4-msg-ic {
+    width: 31px; height: 31px; border-radius: 8px; background: var(--w4-panel);
+    color: var(--w4-gris); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-msg-ic.entra { background: rgba(22, 163, 74, .1); color: #16A34A; }
+.opp-v4 .wo4-msg-ic.sale { background: rgba(37, 99, 235, .1); color: var(--w4-azul); }
+.opp-v4 .wo4-msg-b { flex: 1; min-width: 0; }
+.opp-v4 .wo4-msg-h {
+    font-size: .84rem; font-weight: 700; display: flex; gap: 8px;
+    align-items: baseline; flex-wrap: wrap; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-msg-h time { font-size: .78rem; font-weight: 400; color: var(--w4-tenue); }
+.opp-v4 .wo4-msg-x { font-size: .85rem; color: var(--w4-texto); overflow-wrap: anywhere; }
+.opp-v4 .wo4-msg-x a { color: var(--w4-azul); text-decoration: none; }
+.opp-v4 .wo4-msg:hover .wo4-msg-x a { text-decoration: underline; }
+.opp-v4 .wo4-nota { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 14px; }
+.opp-v4 .wo4-nota.mia { align-items: flex-end; }
+.opp-v4 .wo4-burbuja {
+    position: relative; background: var(--w4-panel); color: var(--w4-tinta);
+    border-radius: 14px 14px 14px 4px; padding: 9px 15px; font-size: .86rem;
+    max-width: 72%; overflow-wrap: anywhere;
+}
+.opp-v4 .wo4-nota.mia .wo4-burbuja {
+    background: var(--w4-azul); color: #fff; border-radius: 14px 14px 4px 14px;
+}
+.opp-v4 .wo4-burbuja .wo-conv-pinbtn { margin-left: 7px; vertical-align: middle; }
+.opp-v4 .wo4-nota:hover .wo-conv-pinbtn { opacity: 1; }
+.opp-v4 .wo4-nota-meta { font-size: .76rem; color: var(--w4-tenue); margin-top: 5px; }
+
+/* ── Acciones del mensaje ──
+   Los 3 puntos viven al lado de la burbuja y solo aparecen al pasar el cursor:
+   siempre visibles llenaban el feed de ruido. */
+.opp-v4 .wo4-nota-row { display: flex; align-items: center; gap: 4px; max-width: 100%; }
+.opp-v4 .wo4-nota.mia .wo4-nota-row { flex-direction: row-reverse; }
+.opp-v4 .wo4-msg-mas {
+    width: 24px; height: 24px; border: none; background: none; border-radius: 6px;
+    color: var(--w4-tenue); cursor: pointer; flex-shrink: 0; opacity: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .12s, background .12s, color .12s;
+}
+.opp-v4 .wo4-nota:hover .wo4-msg-mas { opacity: 1; }
+.opp-v4 .wo4-msg-mas:hover { background: #EEF0F3; color: var(--w4-tinta); }
+.opp-v4 .wo4-editado { font-size: .72rem; opacity: .65; margin-left: 6px; }
+
+.opp-v4 .wo4-msgmenu {
+    position: absolute; z-index: 60; min-width: 156px; padding: 5px;
+    background: #fff; border: 1px solid #E4E7EC; border-radius: 11px;
+    box-shadow: 0 12px 30px -8px rgba(16, 24, 40, .2), 0 2px 6px -2px rgba(16, 24, 40, .08);
+}
+.opp-v4 .wo4-msgmenu-it {
+    display: block; width: 100%; text-align: left; border: none; background: none;
+    padding: 8px 11px; border-radius: 7px; font: inherit; font-size: .84rem;
+    font-weight: 500; color: var(--w4-texto); cursor: pointer;
+}
+.opp-v4 .wo4-msgmenu-it:hover { background: #F2F4F7; color: var(--w4-tinta); }
+.opp-v4 .wo4-msgmenu-it.peligro { color: #BE123C; }
+.opp-v4 .wo4-msgmenu-it.peligro:hover { background: #FFF1F2; }
+
+/* La cita de a qué mensaje se responde, dentro de la burbuja. */
+.opp-v4 .wo4-cita {
+    border-left: 3px solid rgba(37, 99, 235, .45); padding: 3px 0 3px 9px;
+    margin-bottom: 6px; font-size: .8rem; opacity: .85; overflow-wrap: anywhere;
+}
+.opp-v4 .wo4-nota.mia .wo4-cita { border-left-color: rgba(255, 255, 255, .6); }
+.opp-v4 .wo4-cita-n { display: block; font-weight: 700; font-size: .76rem; }
+
+/* ═══ Panel del ojo: quién ha visto la oportunidad ═══
+   Se monta como overlay propio, fuera del widget, para que no lo recorte el
+   overflow del encabezado. */
+/* Buscador de cliente/contacto: mismo cuadro que el panel del ojo, con una
+   caja de texto arriba y los resultados abajo. Antes se escribia dentro de la
+   celda de la tarjeta de personas, de unos pocos centimetros de ancho: el
+   texto se cortaba y los resultados no cabian. */
+.wo4-buscar-card { max-width: 460px; }
+.wo4-buscar-inp-wrap { padding: 12px 18px 0; }
+.wo4-buscar-inp {
+    width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px;
+    border: 1px solid #D7DBE2; border-radius: 9px;
+    font: inherit; font-size: .92rem; outline: none;
+}
+.wo4-buscar-inp:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, .13); }
+.wo4-buscar-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 9px 10px; border: none; background: none; border-radius: 9px;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.wo4-buscar-item:hover { background: #F1F5F9; }
+.wo4-buscar-av {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #059669; color: #fff; font-size: .7rem; font-weight: 700;
+}
+.wo4-buscar-txt { display: flex; flex-direction: column; min-width: 0; }
+.wo4-buscar-n {
+    font-size: .9rem; font-weight: 600; color: #0F172A;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wo4-buscar-sub {
+    font-size: .76rem; color: #64748B;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.wo4-vistas-ov {
+    position: fixed; inset: 0; z-index: 10600;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(15, 23, 42, .42); backdrop-filter: blur(2px);
+}
+.wo4-vistas-card {
+    width: 560px; max-width: 94vw; max-height: 84vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: #F7F8FA; border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .3);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.wo4-vistas-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 15px 18px; background: #fff; border-bottom: 1px solid #E9EBEF; flex-shrink: 0;
+}
+.wo4-vistas-head h3 {
+    margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; flex: 1;
+}
+.wo4-vistas-head svg { color: #64748B; flex-shrink: 0; }
+.wo4-vistas-x {
+    width: 28px; height: 28px; border: none; background: none; border-radius: 8px;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.wo4-vistas-x:hover { background: #F1F3F7; color: #0F172A; }
+.wo4-vistas-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 16px; }
+.wo4-vista {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px; margin-bottom: 7px;
+    background: #fff; border: 1px solid #E9EBEF; border-radius: 12px;
+}
+.wo4-vista.is-bloqueado { background: #FFF8F8; border-color: #FECDD3; }
+.wo4-vista-av {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #2563EB; color: #fff; font-size: 12px; font-weight: 800;
+}
+.wo4-vista-av img { width: 100%; height: 100%; object-fit: cover; }
+.wo4-vista-b { flex: 1; min-width: 0; }
+.wo4-vista-n {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13.5px; font-weight: 700; color: #0F172A;
+}
+.wo4-vista-tag {
+    padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800;
+    letter-spacing: .03em; background: #EFF4FF; color: #1D4ED8;
+}
+.wo4-vista-tag.bloq { background: #FFF1F2; color: #BE123C; }
+.wo4-vista-m { font-size: 11.5px; color: #64748B; margin-top: 2px; line-height: 1.45; }
+.wo4-vista-acc { font-size: 11.5px; color: #475569; margin-top: 1px; }
+.wo4-vista-btn {
+    flex-shrink: 0; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid #E4E7EC; background: #fff;
+    font: inherit; font-size: 12px; font-weight: 600; color: #BE123C; cursor: pointer;
+    transition: border-color .12s, background .12s;
+}
+.wo4-vista-btn:hover { border-color: #FDA4AF; background: #FFF1F2; }
+.wo4-vista-btn.des { color: #047857; }
+.wo4-vista-btn.des:hover { border-color: #A7F3D0; background: #ECFDF5; }
+.wo4-vistas-vacio {
+    padding: 26px 10px; text-align: center; color: #94A3B8; font-size: 13px;
+}
+.wo4-vistas-pie {
+    padding: 11px 18px; background: #fff; border-top: 1px solid #E9EBEF;
+    font-size: 11.5px; color: #94A3B8; flex-shrink: 0;
+}
+
+/* Barra de "respondiendo a", entre el feed y el compositor. */
+.opp-v4 .wo4-replybar {
+    display: flex; align-items: center; gap: 9px; padding: 9px 17px;
+    border-top: 1px solid var(--w4-linea); background: #EEF3FE;
+    color: #1D4ED8; font-size: .8rem; flex-shrink: 0;
+}
+.opp-v4 .wo4-reply-t {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-reply-x {
+    border: none; background: none; color: inherit; cursor: pointer;
+    padding: 3px; border-radius: 6px; display: flex; flex-shrink: 0;
+}
+.opp-v4 .wo4-reply-x:hover { background: rgba(29, 78, 216, .12); }
+/* Cabecera y compositor en gris y el feed en blanco: el cuadro se lee como
+   una ventana con marco propio, no como una hoja más sobre el lienzo. */
+.opp-v4 .wo4-conv .wo4-feed { background: #fff; }
+.opp-v4 .wo4-composer {
+    display: flex; align-items: center; gap: 9px; padding: 13px 17px;
+    border-top: 1px solid var(--w4-linea); flex-shrink: 0;
+}
+.opp-v4 .wo4-conv .wo4-composer { background: #EDEFF3; border-top-color: #DDE1E7; border-radius: 0 0 13px 13px; }
+.opp-v4 .wo4-conv .wo4-cinp { background: #fff; }
+.opp-v4 .wo4-cic {
+    width: 33px; height: 33px; border-radius: 8px; border: none; background: none;
+    color: var(--w4-gris); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-cic:hover { background: var(--w4-panel); color: var(--w4-tinta); }
+.opp-v4 .wo4-cinp {
+    flex: 1; min-width: 0; border: 1px solid var(--w4-linea); border-radius: 999px;
+    padding: 10px 16px; font: inherit; font-size: .86rem; outline: none;
+    background: #fff; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-cinp:focus { border-color: var(--w4-azul); }
+.opp-v4 .wo4-send {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--w4-azul); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── Lateral ── */
+/* Monto | % utilidad | Cierre: las tres cifras de cabecera, en una fila.
+   La utilidad estaba escondida en "Ver más detalles" y es de las que más se
+   miran, así que sube a la primera línea. */
+.opp-v4 .wo4-monto-row {
+    display: flex; align-items: flex-start;
+    gap: 12px; margin-bottom: 14px;
+}
+.opp-v4 .wo4-monto-i { min-width: 0; }
+/* Cuando el monto viene de una PO del cliente, la etiqueta lo dice y se marca:
+   es un dato firme, no una estimación de cotización. */
+.opp-v4 .wo4-lbl-po { color: #047857; font-weight: 700; }
+.opp-v4 .wo4-util {
+    padding-left: 12px; border-left: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-util-v {
+    font-size: 1.28rem; font-weight: 700; letter-spacing: -.02em; color: #047857;
+}
+/* La moneda y el importe de la utilidad, en chico bajo su cifra: el monto se
+   guarda siempre en pesos y conviene que se lea, porque las POs llegan en
+   dolares y se convierten al entrar. */
+/* Se deja envolver a dos renglones en vez de cortarse: en la mitad de la
+   utilidad no cabe "$-2,770 pesos mexicanos" en una linea, y con puntos
+   suspensivos la moneda —que es justo el dato— era lo que desaparecia. */
+.opp-v4 .wo4-moneda {
+    display: block; margin-top: 2px;
+    font-size: .72rem; color: var(--w4-gris); font-weight: 500;
+    white-space: normal; line-height: 1.3;
+}
+/* Utilidad negativa: las OC a proveedores se comieron el monto de las POs.
+   Se marca en rojo porque es un dato que hay que ver, no leer de pasada. */
+.opp-v4 .wo4-util-neg .wo4-util-v { color: #B91C1C; }
+.opp-v4 .wo4-lbl { font-size: .78rem; color: var(--w4-gris); display: block; margin-bottom: 3px; }
+.opp-v4 .wo4-monto { font-size: 1.42rem; font-weight: 700; letter-spacing: -.02em; }
+.opp-v4 .wo4-util { margin-left: auto; }
+.opp-v4 .wo4-docs { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.opp-v4 .wo4-doc { background: var(--w4-panel); border-radius: 9px; padding: 8px 12px; }
+.opp-v4 .wo4-doc:hover { background: #F3F4F6; }
+.opp-v4 .wo4-doc-inp {
+    width: 100%; border: none; background: none; outline: none; font: inherit;
+    font-size: .95rem; font-weight: 600; color: var(--w4-tinta); padding: 0; cursor: pointer;
+}
+.opp-v4 .wo4-doc-inp:focus { cursor: text; }
+.opp-v4 .wo4-vermas { margin-top: 12px; }
+.opp-v4 .wo4-chev { width: 12px; height: 12px; transition: transform .15s; }
+.opp-v4 .wo4-card.is-open .wo4-chev { transform: rotate(180deg); }
+.opp-v4 .wo4-extra { display: none; }
+.opp-v4 .wo4-card.is-open .wo4-extra {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 13px;
+    margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-extra-full { grid-column: 1 / -1; }
+.opp-v4 .wo4-extra-v { font-weight: 600; font-size: .92rem; }
+.opp-v4 .wo4-prob { font-size: 1.02rem; font-weight: 700; margin: 0; }
+.opp-v4 .wo4-barra { height: 6px; background: var(--w4-track); border-radius: 99px; overflow: hidden; }
+.opp-v4 .wo4-persona { display: flex; align-items: center; gap: 11px; margin-top: 13px; }
+/* En su propia tarjeta, la primera persona no necesita el margen de arriba. */
+.opp-v4 .wo4-personas .wo4-persona:first-child { margin-top: 0; }
+/* Vendedor y contacto en UNA línea, mitad y mitad: el rol se cae porque el
+   avatar de color ya distingue quién es quién y el título lo aclara al pasar
+   el cursor. Esa tarjeta ocupaba tres renglones para dos nombres. */
+/* La regla del lateral (.opp-v4 .wo4-side > .wo4-card) impone flex-direction
+   column con MÁS especificidad, así que aquí hay que igualarla o los dos
+   quedan uno debajo del otro en vez de lado a lado. */
+.opp-v4 .wo4-side > .wo4-card.wo4-personas {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;
+}
+.opp-v4 .wo4-personas .wo4-persona { margin-top: 0; gap: 9px; min-width: 0; }
+.opp-v4 .wo4-personas .wo4-persona:last-of-type {
+    padding-left: 10px; border-left: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-personas .wo4-av { width: 28px; height: 28px; font-size: .68rem; }
+.opp-v4 .wo4-personas .wo4-persona-n { font-size: .84rem; min-width: 0; }
+/* Cliente y contacto comparten celda: la empresa arriba y su contacto colgando
+   debajo en chico. Asi la tarjeta se mantiene en UNA linea aunque el nombre de
+   la empresa sea largo — puestos como tres columnas se envolvian. */
+.opp-v4 .wo4-persona-dos {
+    display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.25;
+}
+.opp-v4 .wo4-persona-sub {
+    font-size: .74rem; color: var(--w4-gris); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-av {
+    width: 35px; height: 35px; border-radius: 50%; color: #fff;
+    font-size: .76rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opp-v4 .wo4-av.blue { background: #2563EB; }
+.opp-v4 .wo4-av.purple { background: #7C3AED; }
+/* Verde para el cliente: distingue a la empresa de la persona que la lleva. */
+.opp-v4 .wo4-av.green { background: #059669; }
+.opp-v4 .wo4-persona-n {
+    font-size: .9rem; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-persona-r {
+    font-size: .78rem; color: var(--w4-gris);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Cotizaciones */
+.opp-v4 .wo4-cot {
+    border: 1px solid var(--w4-linea); border-radius: 10px; padding: 10px 9px 10px 12px;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 9px;
+}
+.opp-v4 .wo4-cot:last-child { margin-bottom: 0; }
+.opp-v4 .wo4-cot-b { flex: 1; min-width: 0; cursor: pointer; }
+.opp-v4 .wo4-cot-t { font-size: .86rem; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.opp-v4 .wo4-v10 {
+    background: #EFF6FF; color: var(--w4-azul); border-radius: 5px;
+    padding: 1px 6px; font-size: .68rem; font-weight: 700;
+}
+.opp-v4 .wo4-cot-m { font-size: .79rem; color: var(--w4-gris); }
+.opp-v4 .wo4-cot-a { display: flex; gap: 1px; flex-shrink: 0; }
+/* Los iconos de la cotización se salían del lateral: van más chicos y la
+   tarjeta cede padding, que es lo que sobraba. */
+/* Se veían fantasma: ahora llevan fondo propio, y la lista reserva el ancho
+   de su barra para que no los tape. */
+.opp-v4 [data-wo="quoteList"] { padding-right: 2px; }
+.opp-v4 .wo4-cot-t { min-width: 0; }
+.opp-v4 .wo4-cot-t, .opp-v4 .wo4-cot-m { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Drive */
+.opp-v4 .wo4-arch {
+    display: flex; align-items: center; gap: 10px; padding: 7px 0;
+    font-size: .86rem; text-decoration: none; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-arch-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp-v4 .wo4-arch:hover .wo4-arch-n { color: var(--w4-azul); }
+.opp-v4 .wo4-arch-c {
+    font-size: .68rem; color: var(--w4-tenue); background: var(--w4-panel);
+    border-radius: 5px; padding: 2px 6px; flex-shrink: 0; max-width: 38%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-arch-e { font-size: .7rem; font-weight: 700; color: var(--w4-tenue); flex-shrink: 0; }
+.opp-v4 .wo4-drive.is-drop { outline: 2px dashed var(--w4-azul); outline-offset: 4px; border-radius: 8px; }
+
+
+/* Sobre la franja de color, el texto secundario del encabezado tiene que
+   aclararse. Se listan los cinco temas que pintan .wo-header; los claros
+   (perla, pink, coffee, white) no la pintan y se quedan como están. */
+body[data-theme="temporada"] .opp-v4 .wo4-crumb,
+body[data-theme="sakura"] .opp-v4 .wo4-crumb,
+body[data-theme="duna"] .opp-v4 .wo4-crumb,
+body[data-theme="espacial"] .opp-v4 .wo4-crumb,
+body[data-theme="mundial"] .opp-v4 .wo4-crumb,
+body[data-theme="temporada"] .opp-v4 .wo4-crumb-link,
+body[data-theme="sakura"] .opp-v4 .wo4-crumb-link,
+body[data-theme="duna"] .opp-v4 .wo4-crumb-link,
+body[data-theme="espacial"] .opp-v4 .wo4-crumb-link,
+body[data-theme="mundial"] .opp-v4 .wo4-crumb-link { color: rgba(255,255,255,.82); }
+
+body[data-theme="temporada"] .opp-v4 .wo4-crumb-link:hover,
+body[data-theme="sakura"] .opp-v4 .wo4-crumb-link:hover,
+body[data-theme="duna"] .opp-v4 .wo4-crumb-link:hover,
+body[data-theme="espacial"] .opp-v4 .wo4-crumb-link:hover,
+body[data-theme="mundial"] .opp-v4 .wo4-crumb-link:hover { color: #fff; }
+
+body[data-theme="temporada"] .opp-v4 .wo4-tipo,
+body[data-theme="sakura"] .opp-v4 .wo4-tipo,
+body[data-theme="duna"] .opp-v4 .wo4-tipo,
+body[data-theme="espacial"] .opp-v4 .wo4-tipo,
+body[data-theme="mundial"] .opp-v4 .wo4-tipo {
+    background: var(--w4-azul); color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+}
+body[data-theme="temporada"] .opp-v4 .wo4-ic,
+body[data-theme="sakura"] .opp-v4 .wo4-ic,
+body[data-theme="duna"] .opp-v4 .wo4-ic,
+body[data-theme="espacial"] .opp-v4 .wo4-ic,
+body[data-theme="mundial"] .opp-v4 .wo4-ic { color: rgba(255,255,255,.85); }
+body[data-theme="temporada"] .opp-v4 .wo4-head .wo4-ic:hover,
+body[data-theme="sakura"] .opp-v4 .wo4-head .wo4-ic:hover,
+body[data-theme="duna"] .opp-v4 .wo4-head .wo4-ic:hover,
+body[data-theme="espacial"] .opp-v4 .wo4-head .wo4-ic:hover,
+body[data-theme="mundial"] .opp-v4 .wo4-head .wo4-ic:hover {
+    background: rgba(255,255,255,.16); color: #fff;
+}
+
+/* ═══ Responsive de VENTANA, no de pantalla ═══
+   El widget vive en ventanas que el usuario redimensiona: con @media el
+   layout miraba el ancho de la PANTALLA, así que una ventana angosta sobre
+   un monitor grande seguía en dos columnas y se encimaba todo. Con
+   @container el layout responde al ancho real del widget. */
+.opp-v4 [data-wo="content"] { container-type: inline-size; container-name: oppv4; }
+
+@container oppv4 (max-width: 1040px) {
+    /* Apilado: el cuerpo vuelve a ser un solo scroll y las columnas dejan de
+       repartirse el alto (si no, cada una se encoge a nada). */
+    .opp-v4 .wo4-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+        align-items: start;
+    }
+    .opp-v4 .wo4-main, .opp-v4 .wo4-side { height: auto; overflow: visible; }
+    .opp-v4 .wo4-side > .wo4-card { flex: 0 0 auto; }
+    .opp-v4 [data-wo="quoteList"], .opp-v4 .wo4-drive { overflow: visible; min-height: 0; }
+    .opp-v4 .wo4-conv { min-height: 340px; }
+}
+
+@container oppv4 (max-width: 760px) {
+    /* Ventana angosta: tareas y actividades dejan de compartir fila, y la
+       cabecera de la conversación se acomoda en dos renglones. */
+    .opp-v4 .wo4-duo { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-buscar { margin-left: 0; order: 3; width: 100%; }
+    .opp-v4 .wo4-segmented { order: 2; }
+    .opp-v4 .wo4-body { padding: 10px 14px 14px; gap: 10px; }
+    .opp-v4 .wo4-head { padding: 12px 14px 10px !important; }
+    .opp-v4 .wo4-etapa { padding: 6px 14px 8px; }
+    .opp-v4 .wo4-title { font-size: 1.35rem; }
+    .opp-v4 .wo4-monto { font-size: 1.35rem; }
+}
+
+@container oppv4 (max-width: 520px) {
+    /* Mínimo útil: el monto y el cierre se apilan, y las personas también. */
+    .opp-v4 .wo4-monto-row { flex-direction: column; gap: 8px; }
+    .opp-v4 .wo4-cierre { text-align: left; }
+    .opp-v4 .wo4-docs { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-card.is-open .wo4-extra { grid-template-columns: 1fr; }
+    .opp-v4 .wo4-conv-head { gap: 8px; }
+    .opp-v4 .wo4-composer { flex-wrap: wrap; }
+    .opp-v4 .wo4-cinp { order: 4; width: 100%; flex-basis: 100%; }
+}
+
+/* ═══ Título de tarjeta que abre su ventana ═══ */
+.opp-v4 .wo4-htitle {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: none; background: none; padding: 0; cursor: pointer;
+    font: inherit; color: var(--w4-tinta);
+}
+.opp-v4 .wo4-htitle:hover h3 { color: var(--w4-azul); }
+.opp-v4 .wo4-htitle .wo4-chev { color: var(--w4-tenue); width: 12px; height: 12px; transform: rotate(-90deg); }
+.opp-v4 .wo4-htitle:hover .wo4-chev { color: var(--w4-azul); }
+
+/* ═══ Botones de la cotización ═══
+   Antes eran gris sobre blanco y solo se distinguían al pasar el cursor.
+   Ahora van azul sólido: se ven de entrada. */
+.opp-v4 .wo4-cot-btn {
+    width: 27px; height: 27px; border: none; border-radius: 7px;
+    background: var(--w4-azul); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; text-decoration: none; padding: 0;
+}
+.opp-v4 .wo4-cot-btn:hover { background: var(--w4-azul-dark); }
+
+/* ═══ Ventana "ver todas las cotizaciones" ═══
+   Mismo molde que el gestor de Drive: 1400px, franja de encabezado con
+   .wo-header (que es lo que pintan los cinco temas), acción principal,
+   buscador y la lista completa con sus botones. */
+.wo4-cotwin { z-index: var(--z-widget-sub, 10800); display: flex; align-items: center; justify-content: center; }
+/* La medida va inline en el JS (crm.css fija .widget-card en 520px y una
+   clase propia no le gana por orden de carga). Aquí solo lo tipográfico. */
+.wo4-cotwin-card {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.wo4-cotwin-head { border-bottom: 1px solid #E5E5EA; background: #fff; flex-shrink: 0; }
+.wo4-cotwin-ico {
+    background: rgba(37, 99, 235, .1); color: #2563EB;
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.wo4-cotwin-t { margin: 0; font-size: 1.1rem; font-weight: 600; color: #1D1D1F; }
+/* Acciones dentro de la franja de color; la búsqueda va aparte, debajo,
+   en su barra blanca — igual que el gestor de Drive. */
+.wo4-cotwin-acts {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding-top: 1rem; flex-wrap: wrap;
+}
+.wo4-cotwin-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 22px; background: #fff;
+    border-bottom: 1px solid #E5E5EA; flex-shrink: 0;
+}
+.wo4-cotwin-nueva {
+    display: inline-flex; align-items: center; gap: 7px; border: none;
+    background: #2563EB; color: #fff; border-radius: 9px; padding: 9px 16px;
+    font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+.wo4-cotwin-nueva:hover { background: #1D4ED8; }
+.wo4-cotwin-buscar { flex: 1; min-width: 0; margin: 0; padding: 10px 14px; }
+.wo4-cotwin-n { font-size: .82rem; color: #86868B; flex-shrink: 0; }
+.wo4-cotwin-body { flex: 1; overflow-y: auto; padding: 18px 22px; min-height: 0; }
+.wo4-cotwin-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px;
+}
+.wo4-cotwin-grid .wo4-cot { margin-bottom: 0; background: #fff; padding: 13px 12px 13px 15px; }
+
+/* Sobre la franja de color de cada tema, título e icono se aclaran. */
+body[data-theme="temporada"] .wo4-cotwin-t,
+body[data-theme="sakura"] .wo4-cotwin-t,
+body[data-theme="duna"] .wo4-cotwin-t,
+body[data-theme="espacial"] .wo4-cotwin-t,
+body[data-theme="mundial"] .wo4-cotwin-t { color: #fff; }
+
+body[data-theme="temporada"] .wo4-cotwin-ico,
+body[data-theme="sakura"] .wo4-cotwin-ico,
+body[data-theme="duna"] .wo4-cotwin-ico,
+body[data-theme="espacial"] .wo4-cotwin-ico,
+body[data-theme="mundial"] .wo4-cotwin-ico { background: rgba(255,255,255,.18); color: #fff; }

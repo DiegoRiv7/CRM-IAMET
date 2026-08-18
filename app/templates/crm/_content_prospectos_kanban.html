@@ -35,7 +35,7 @@
             <div class="crm-kanban-col-body">
                 {% for p in col.items %}
                 <div class="crm-data-row crm-postit crm-postit--prospecto crm-kanban-card{% if p.tiene_actividad_vencida %} card-vencida heat-{% if p.dias_vencida >= 30 %}max{% elif p.dias_vencida >= 14 %}5{% elif p.dias_vencida >= 7 %}4{% elif p.dias_vencida >= 3 %}3{% elif p.dias_vencida >= 1 %}2{% else %}1{% endif %}{% elif p.minutos_hasta_proxima is not None and p.minutos_hasta_proxima <= 20160 %} warm-{% if p.minutos_hasta_proxima <= 60 %}5{% elif p.minutos_hasta_proxima <= 720 %}4{% elif p.minutos_hasta_proxima <= 2880 %}3{% elif p.minutos_hasta_proxima <= 10080 %}2{% else %}1{% endif %}{% endif %}"
-                     data-prospecto-id="{{ p.id }}"
+                     data-prospecto-id="{{ p.id|unlocalize }}"
                      data-cliente="{{ p.cliente.nombre_empresa|default:'- Sin Cliente -' }}"
                      data-producto="{{ p.producto|default:'' }}"
                      data-tipo="{{ p.tipo_pipeline }}"
@@ -46,7 +46,7 @@
                      data-dias-vencida="{{ p.dias_vencida|default:0 }}"
                      data-dias-hasta-proxima="{% if p.dias_hasta_proxima is not None %}{{ p.dias_hasta_proxima }}{% else %}-1{% endif %}"
                      data-fecha="{{ p.fecha_actualizacion|date:'U' }}"
-                     onclick="if(typeof abrirWidgetProspecto==='function')abrirWidgetProspecto({{ p.id }})">
+                     onclick="if(typeof abrirWidgetProspecto==='function')abrirWidgetProspecto({{ p.id|unlocalize }})">
                     <!-- Franja superior de color -->
                     <div class="crm-postit-strip"></div>
                     <div class="absolute inset-0 pointer-events-none rounded-2xl" style="box-shadow:inset 0 1px 1px rgba(255,255,255,0.8);"></div>

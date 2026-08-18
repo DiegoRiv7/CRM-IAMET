@@ -349,6 +349,12 @@
             border-radius: 14px !important;
         }
 
+        /* El rediseño del CRM puso un KANBAN (#proyKanbanBoard) arriba de la
+           lista. En la app no se usa (proyectos_v2.js ni se carga), pero su
+           div vacío mide 100vh por el height inline/!important del widget y
+           empujaba la lista una pantalla completa hacia abajo. Fuera. */
+        .lev-app-content #proyKanbanBoard { display: none !important; }
+
         /* Lista de proyectos: cards verticales */
         .lev-app-content #proyListView .crm-list-head { display: none !important; }
         .lev-app-content #proyListView .crm-list-row {
@@ -527,7 +533,7 @@
     cuando no hay red.
     {% endcomment %}
     <script src="{% static 'js/lev_offline.js' %}"></script>
-    <script src="{% static 'js/crm_proyectos.js' %}?v=20260805-permisos-ing"></script>
+    <script src="{% static 'js/crm_proyectos.js' %}?v=20260817-compras-f1"></script>
     <script src="{% static 'js/crm_volumetria.js' %}?v=20260506-ipados6"></script>
     <script src="{% static 'js/crm_levantamiento.js' %}?v=20260626-p2-search"></script>
 

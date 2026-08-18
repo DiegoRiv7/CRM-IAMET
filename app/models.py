@@ -265,6 +265,15 @@ class Cliente(models.Model):
 
     # Cuándo (si fue el caso) este Cliente se promovió desde un ClientePotencial.
     # Se usa para los KPIs del dashboard de prospectos ("convertidos este mes").
+    # Cliente o prospecto: es una MARCA, no un cambio de tabla. Bajar un cliente
+    # a prospecto no le quita nada —conserva sus oportunidades, cotizaciones e
+    # historial—; lo unico que cambia es donde se le puede elegir:
+    #   · prospecto -> NO aparece al crear una oportunidad, si en prospeccion.
+    #   · cliente   -> aparece en las dos.
+    # Se resolvio asi a proposito: moverlo a la tabla de clientes potenciales
+    # habria borrado en cascada sus oportunidades, cotizaciones y volumetrias.
+    es_prospecto = models.BooleanField(
+        default=False, db_index=True, verbose_name="Es prospecto (cliente potencial)")
     convertido_de_potencial_at = models.DateTimeField(null=True, blank=True, verbose_name="Convertido desde Prospecto")
 
     # ── Carátula del cliente (tab "Información" del widget) ────────────────
@@ -2732,6 +2741,17 @@ class Actividad(models.Model):
         verbose_name="Idea Relacionada"
     )
 
+    # Enlace opcional a un correo — seguimientos agendados desde el asistente:
+    # desde la actividad se puede abrir el correo original y contestarlo.
+    correo = models.ForeignKey(
+        'MailCorreo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actividades_seguimiento',
+        verbose_name="Correo Relacionado"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Resultado de la actividad: texto libre + estatus, capturados al completar
@@ -3062,7 +3082,7 @@ class ArchivoOportunidad(models.Model):
     # Tracking de procesamiento financiero automático
     procesado_financiero = models.BooleanField(default=False, verbose_name="Procesado por el módulo financiero")
     tipo_financiero = models.CharField(max_length=20, blank=True, default='', verbose_name="Tipo financiero detectado",
-        help_text="'oc' si es OCC, 'factura' si es Factura de ingreso, '' si no aplica")
+        help_text="'po_cliente' si es una orden de compra DEL cliente (suma al monto de la oportunidad), 'oc' si es una OCC nuestra a proveedor (gasto), 'factura' si es Factura de ingreso, '' si no aplica")
     monto_extraido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
         verbose_name="Monto extraído del PDF")
 
@@ -3152,6 +3172,8 @@ class MensajeOportunidad(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     texto = models.TextField(blank=True)
     imagen = models.FileField(upload_to=chat_imagen_upload_path, null=True, blank=True)
+    # Mensaje fijado en la conversación (visible para todo el equipo)
+    fijado = models.BooleanField(default=False, db_index=True)
     reply_to = models.ForeignKey(
         'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas'
     )
@@ -3680,6 +3702,8 @@ class MailConexion(models.Model):
     smtp_puerto = models.IntegerField(default=465)
     smtp_usar_ssl = models.BooleanField(default=True)
     password_encriptado = models.TextField(blank=True)  # Fernet-encrypted at rest
+    # Firma HTML que se inserta al redactar/responder/reenviar (Fase 4)
+    firma_html = models.TextField(blank=True, default='')
     activo = models.BooleanField(default=True)
     ultima_sincronizacion = models.DateTimeField(null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -3691,6 +3715,15 @@ class MailConexion(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} — {self.correo_electronico}"
+
+
+def mail_hilo_key(asunto):
+    """Clave de conversación estilo Gmail: asunto normalizado (sin prefijos
+    Re:/RV:/Fwd: encadenados, minúsculas, espacios colapsados)."""
+    import re as _re
+    s = (asunto or '').strip()
+    s = _re.sub(r'^\s*((re|rv|fw|fwd|rte|res)\s*(\[\d+\])?\s*:\s*)+', '', s, flags=_re.IGNORECASE)
+    return ' '.join(s.split()).lower()[:180]
 
 
 class MailCorreo(models.Model):
@@ -3720,6 +3753,12 @@ class MailCorreo(models.Model):
     cuerpo_cargado = models.BooleanField(default=False)  # True once RFC822 was fetched
     destacado = models.BooleanField(default=False)
     eliminado = models.BooleanField(default=False)
+    # Carpeta virtual local (Fase 1): saca el correo del INBOX sin tocar el
+    # servidor IMAP. El movimiento real en el servidor llega con la Fase 2.
+    archivado = models.BooleanField(default=False)
+    # Clave de conversación (asunto normalizado). Se siembra sola en save()
+    # para TODOS los puntos de creación (sync, enviar, responder, reenviar).
+    hilo_key = models.CharField(max_length=200, blank=True, default='', db_index=True)
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'
@@ -3740,8 +3779,117 @@ class MailCorreo(models.Model):
         verbose_name = "Correo"
         verbose_name_plural = "Correos"
 
+    def save(self, *args, **kwargs):
+        if not self.hilo_key:
+            key = mail_hilo_key(self.asunto)
+            # Sin asunto: clave propia para que no se agrupe con otros vacíos
+            self.hilo_key = key or f'solo-{self.uid_imap}-{self.carpeta_imap}'[:180]
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"[{self.carpeta_display}] {self.asunto[:60]} — {self.remitente_email}"
+
+
+class MailAccionPendiente(models.Model):
+    """Cola de acciones CRM→IMAP (Fase 2, sync de dos vías).
+
+    Cada acción local (destacar, eliminar, archivar, leer) se encola aquí y
+    un worker la ejecuta contra el servidor IMAP real — primero un intento
+    inmediato en hilo daemon y, si falla (servidor caído, timeout), la
+    recoge el comando sincronizar_correo en su siguiente pasada. La UI
+    nunca espera al IMAP."""
+    ACCION_CHOICES = [
+        ('leido', 'Marcar leído'),
+        ('destacar', 'Destacar'),
+        ('no_destacar', 'Quitar destacado'),
+        ('eliminar', 'Mover a papelera'),
+        ('archivar', 'Archivar'),
+    ]
+    conexion = models.ForeignKey(
+        MailConexion, on_delete=models.CASCADE, related_name='acciones_pendientes'
+    )
+    correo = models.ForeignKey(
+        MailCorreo, on_delete=models.CASCADE, related_name='acciones_pendientes'
+    )
+    accion = models.CharField(max_length=20, choices=ACCION_CHOICES)
+    resuelta = models.BooleanField(default=False, db_index=True)
+    intentos = models.IntegerField(default=0)
+    ultimo_error = models.TextField(blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_resuelta = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['fecha_creacion']
+        verbose_name = "Acción de Correo Pendiente"
+        verbose_name_plural = "Acciones de Correo Pendientes"
+
+    def __str__(self):
+        return f"{self.accion} correo={self.correo_id} ({'ok' if self.resuelta else 'pendiente'})"
+
+
+class MailPlantilla(models.Model):
+    """Plantilla de correo reutilizable (Fase 4): asunto + cuerpo HTML."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_plantillas')
+    nombre = models.CharField(max_length=120)
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = "Plantilla de Correo"
+        verbose_name_plural = "Plantillas de Correo"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.nombre}"
+
+
+class MailBorrador(models.Model):
+    """Borrador de correo con autoguardado (Fase 4)."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_borradores')
+    conexion = models.ForeignKey(MailConexion, on_delete=models.SET_NULL, null=True, blank=True)
+    para = models.TextField(blank=True, default='')
+    cc = models.TextField(blank=True, default='')
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+        verbose_name = "Borrador de Correo"
+        verbose_name_plural = "Borradores de Correo"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.asunto or '(sin asunto)'}"
+
+
+class MailProgramado(models.Model):
+    """Envío programado (Fase 4): el worker sincronizar_correo lo despacha
+    por SMTP cuando llega su hora."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_programados')
+    conexion = models.ForeignKey(MailConexion, on_delete=models.SET_NULL, null=True, blank=True)
+    para = models.TextField()
+    cc = models.TextField(blank=True, default='')
+    bcc = models.TextField(blank=True, default='')
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    cuerpo_texto = models.TextField(blank=True, default='')
+    adjuntos_json = models.TextField(blank=True, default='[]')  # [{nombre, content_type, b64}]
+    fecha_programada = models.DateTimeField(db_index=True)
+    enviado = models.BooleanField(default=False, db_index=True)
+    fecha_enviado = models.DateTimeField(null=True, blank=True)
+    intentos = models.IntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_programada']
+        verbose_name = "Correo Programado"
+        verbose_name_plural = "Correos Programados"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.asunto or '(sin asunto)'} @ {self.fecha_programada}"
 
 
 class MailAdjunto(models.Model):
@@ -6546,6 +6694,61 @@ class CrmCambio(models.Model):
         return f'{self.entidad}#{self.objeto_id} {self.accion}'
 
 
+class OportunidadVista(models.Model):
+    """Quién ha abierto una oportunidad, cuándo y qué fue lo último que hizo ahí.
+
+    Una fila por (oportunidad, usuario): al abrirla de nuevo se actualiza
+    `ultima_vez` y sube el contador, no se acumulan filas.
+
+    `ultima_accion` se guarda AQUÍ y no se deduce de CrmCambio porque ese log
+    se purga a las 48 horas; esto tiene que sobrevivir.
+    """
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='vistas',
+    )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    primera_vez = models.DateTimeField(auto_now_add=True)
+    ultima_vez = models.DateTimeField(auto_now=True)
+    veces = models.PositiveIntegerField(default=1)
+    ultima_accion = models.CharField(max_length=200, blank=True, default='')
+    ultima_accion_fecha = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Vista de oportunidad'
+        verbose_name_plural = 'Vistas de oportunidad'
+        unique_together = [('oportunidad', 'usuario')]
+        indexes = [models.Index(fields=['oportunidad', '-ultima_vez'])]
+
+    def __str__(self):
+        return f'{self.usuario} vio #{self.oportunidad_id}'
+
+
+class OportunidadAccesoBloqueado(models.Model):
+    """Veto de un usuario sobre UNA oportunidad concreta.
+
+    Lo ponen administradores, superusuarios y supervisores desde el panel del
+    ojo. No es lo mismo que los permisos por rol: esto es puntual, para cuando
+    alguien no debe ver un trato en particular.
+    """
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='accesos_bloqueados',
+    )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    bloqueado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    motivo = models.CharField(max_length=200, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Acceso bloqueado a oportunidad'
+        verbose_name_plural = 'Accesos bloqueados a oportunidad'
+        unique_together = [('oportunidad', 'usuario')]
+
+    def __str__(self):
+        return f'{self.usuario} bloqueado en #{self.oportunidad_id}'
+
+
 class PerfEvent(models.Model):
     """Telemetría del Modo Ligero (ver perf_mode.js / perf_lite.css).
 
@@ -6634,6 +6837,126 @@ class PendienteCompletada(models.Model):
 
     def __str__(self):
         return f'{self.usuario_id} · opp {self.oportunidad_id} · {self.fecha}'
+
+
+class CorreoAtendido(models.Model):
+    """Marca manual de "este correo ya está listo" desde el asistente (sección Correo).
+
+    Para correos meramente informativos que NO requieren respuesta: el usuario los
+    marca como listos y dejan de aparecer como pendientes (cuentan como completados
+    del día). Complementa la detección automática de "respondido" (SENT en el hilo).
+    Es por usuario y por correo.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='correos_atendidos')
+    mail = models.ForeignKey(MailCorreo, on_delete=models.CASCADE, related_name='+')
+    fecha = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'mail')]
+        indexes = [models.Index(fields=['usuario', 'fecha'])]
+        verbose_name = 'Correo marcado listo'
+        verbose_name_plural = 'Correos marcados listos'
+
+    def __str__(self):
+        return f'{self.usuario_id} · mail {self.mail_id} · {self.fecha}'
+
+
+class AvisoPospuesto(models.Model):
+    """"Mañana" en el toast del asistente: pospone un aviso (correo u oportunidad)
+    hasta una fecha. A diferencia de CorreoAtendido (descarte definitivo), esto es
+    un snooze honesto: el aviso vuelve a aparecer cuando llega `hasta`."""
+    TIPO_CHOICES = [('correo', 'Correo'), ('oportunidad', 'Oportunidad')]
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='avisos_pospuestos')
+    tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
+    ref_id = models.IntegerField()          # MailCorreo.id o TodoItem.id según tipo
+    hasta = models.DateField()              # vuelve a aparecer cuando localdate >= hasta
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'tipo', 'ref_id')]
+        indexes = [models.Index(fields=['usuario', 'hasta'])]
+        verbose_name = 'Aviso pospuesto'
+        verbose_name_plural = 'Avisos pospuestos'
+
+    def __str__(self):
+        return f'{self.usuario_id} · {self.tipo} {self.ref_id} → {self.hasta}'
+
+
+class CorreoAnalisis(models.Model):
+    """Veredicto del asistente sobre un correo recibido — se calcula UNA sola vez
+    y se persiste (nunca se re-analiza en cada refresh del feed).
+
+    fuente 'reglas' = filtros deterministas gratis (spam/promo/auto-respuesta o
+    fallback si la IA está apagada); 'ia' = clasificado por el LLM leyendo
+    remitente + asunto + cuerpo. El feed del asistente consume `categoria` para
+    decidir qué tarjeta mostrar y `resumen` como línea de contexto."""
+    CATEGORIA_CHOICES = [
+        ('venta', 'Posible venta nueva'),
+        ('hito', 'Factura / orden / pago'),
+        ('respuesta', 'Requiere respuesta'),
+        ('info', 'Informativo'),
+        ('ruido', 'Ruido'),
+    ]
+    correo = models.OneToOneField(MailCorreo, on_delete=models.CASCADE, related_name='analisis')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='correos_analizados')
+    categoria = models.CharField(max_length=12, choices=CATEGORIA_CHOICES)
+    resumen = models.CharField(max_length=200, blank=True, default='')
+    requiere_respuesta = models.BooleanField(default=False)
+    confianza = models.FloatField(default=0.0)
+    fuente = models.CharField(max_length=8, default='reglas')   # 'reglas' | 'ia'
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['usuario', 'categoria'])]
+        verbose_name = 'Análisis de correo'
+        verbose_name_plural = 'Análisis de correos'
+
+    def __str__(self):
+        return f'mail {self.correo_id} → {self.categoria} ({self.fuente})'
+
+
+class AsistenteAccion(models.Model):
+    """Bitácora de lo que el usuario atendió desde el asistente.
+
+    Alimenta la pestaña "Atendido" del panel: qué se hizo con cada aviso
+    (respondió, agendó, creó/actualizó oportunidad, lo dio por revisado).
+    La pestaña muestra solo la ventana del día en curso (desde las 8am);
+    las filas se conservan como historial."""
+    ACCION_CHOICES = [
+        ('respondido', 'Respondido'),
+        ('agendado', 'Seguimiento agendado'),
+        ('oportunidad', 'Oportunidad creada'),
+        ('actualizada', 'Oportunidad actualizada'),
+        ('revisado', 'Revisado'),
+    ]
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='acciones_asistente')
+    accion = models.CharField(max_length=14, choices=ACCION_CHOICES)
+    titulo = models.CharField(max_length=200)
+    detalle = models.CharField(max_length=300, blank=True, default='')
+    mail = models.ForeignKey(MailCorreo, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['usuario', 'created_at'])]
+        verbose_name = 'Acción del asistente'
+        verbose_name_plural = 'Acciones del asistente'
+
+    def __str__(self):
+        return f'{self.usuario_id}: {self.accion} — {self.titulo[:40]}'
+
+
+class AsistenteEstado(models.Model):
+    """Estado del asistente por usuario. `activado_en` = la primera vez que su
+    feed corrió (se crea solo). Arranque limpio: los correos respondidos ANTES
+    de esa fecha no generan la oferta de "¿agendo seguimiento?" (caso 3-C) —
+    al lanzar, el asistente solo propone agendar sobre lo que pase después."""
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='asistente_estado')
+    activado_en = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.usuario_id}: activado {self.activado_en:%Y-%m-%d}'
 
 
 class ReplayMensual(models.Model):

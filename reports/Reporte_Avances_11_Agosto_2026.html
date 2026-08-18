@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 11 de Agosto 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ TEASER ═══════ */
+        .card-teaser {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            border: none;
+            color: white;
+        }
+        .card-teaser h3 { color: white; }
+        .card-teaser p { color: rgba(255,255,255,0.75); }
+        .card-teaser .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0F172A;
+            background: #F59E0B;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* ═══════ PROGRESO (barra Fase 1) ═══════ */
+        .progress-wrap { grid-column: 1 / -1; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-track { height: 10px; background: var(--border); border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--primary-accent), var(--success)); border-radius: 20px; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+        .footer-note { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 300px; }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-teaser { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    
+        /* ═══════ REJILLA DE EMPRESAS ═══════ */
+        .empresas {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .emp {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+        .emp:nth-child(2n) { border-right: none; }
+        .emp:nth-last-child(-n+2) { border-bottom: none; }
+        .emp-num {
+            font-size: 11px; font-weight: 800; color: var(--primary-accent);
+            min-width: 18px;
+        }
+        .emp-nom { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .emp-sis { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+        .nota {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--accent-bg);
+            border-left: 3px solid var(--warning);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin-top: -26px;
+        }
+        @media print { .empresas { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Entrenamiento del Lector de Órdenes de Compra</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">11 AGOSTO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">10</span>
+            <span class="summary-lbl">Empresas Reconocidas</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">100%</span>
+            <span class="summary-lbl">Aciertos en Prueba</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Escaneadas</span>
+            <span class="summary-lbl">Ahora También se Leen</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">2.6 s</span>
+            <span class="summary-lbl">Por Documento</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Toda la jornada se dedicó a <strong>entrenar al sistema con órdenes de compra reales de los clientes</strong>. Se pasó de reconocer 4 formatos a <strong>10</strong>, uno por uno, verificando cada monto contra el documento original. El monto de la oportunidad ya se alimenta solo desde las POs que entran al Drive.
+        </div>
+
+        <div class="section-title">Sesión de Entrenamiento · Seis Formatos Nuevos</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🎓</div>
+                <div>
+                    <h3>Cada PO real enseñó algo que el sistema no sabía</h3>
+                    <p>Se cargaron las órdenes de compra <strong>tal como las mandan los clientes</strong>, con su nombre de archivo original. Ninguna se leyó igual que la anterior: cada una obligó a corregir algo distinto. Al terminar, las diez se leen correctamente y quedaron <strong>guardadas como prueba permanente</strong>, para que ningún ajuste futuro rompa un formato ya resuelto.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🧾 Regla del IVA Resuelta</h3>
+                <p>Aparecieron las primeras POs que <strong>desglosan el impuesto</strong>. Se definió que el monto de la oportunidad siempre va <strong>sin IVA</strong>: si la PO separa el impuesto se toma el subtotal, si no, el total. Así todas las oportunidades son comparables entre sí.</p>
+            </div>
+
+            <div class="card">
+                <h3>💱 Moneda y Tipo de Cambio</h3>
+                <p>El sistema <strong>identifica en cada PO si es pesos o dólares</strong>, y respeta el <strong>tipo de cambio que el cliente pacta en el documento</strong> cuando viene impreso. Equivocarse aquí multiplicaba el monto por diecisiete.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔍 Nombres de Archivo Ampliados</h3>
+                <p>Se sumaron formas nuevas de nombrar una PO. Dos de los documentos <strong>no traían ninguna pista en el nombre</strong> y hoy se reconocen por su contenido.</p>
+            </div>
+
+            <div class="card">
+                <h3>🎯 Precisión sobre Cobertura</h3>
+                <p>Se reforzó que un documento <strong>solo cuente como PO cuando hay certeza</strong>. Inflar el monto de una oportunidad es peor que dejar una orden sin detectar.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Empresas cuyas Órdenes de Compra ya se Reconocen</div>
+
+        <div class="feature-grid">
+            <div class="empresas">
+                <div class="emp"><span class="emp-num">01</span><span class="emp-nom">Schlage / Allegion</span><span class="emp-sis">Oracle</span></div>
+                <div class="emp"><span class="emp-num">02</span><span class="emp-nom">Eaton</span><span class="emp-sis">Oracle</span></div>
+                <div class="emp"><span class="emp-num">03</span><span class="emp-nom">Baxter / Welch Allyn</span><span class="emp-sis">SAP</span></div>
+                <div class="emp"><span class="emp-num">04</span><span class="emp-nom">Becton Dickinson (BD)</span><span class="emp-sis">BuySmart</span></div>
+                <div class="emp"><span class="emp-num">05</span><span class="emp-nom">Telnor</span><span class="emp-sis">Sistema propio</span></div>
+                <div class="emp"><span class="emp-num">06</span><span class="emp-nom">Essilor / EssilorLuxottica</span><span class="emp-sis">SAP</span></div>
+                <div class="emp"><span class="emp-num">07</span><span class="emp-nom">CDA Industrial</span><span class="emp-sis">Procore</span></div>
+                <div class="emp"><span class="emp-num">08</span><span class="emp-nom">Carl Zeiss</span><span class="emp-sis">Jaggaer</span></div>
+                <div class="emp"><span class="emp-num">09</span><span class="emp-nom">Lateral Fulfillment</span><span class="emp-sis">PandaDoc</span></div>
+                <div class="emp"><span class="emp-num">10</span><span class="emp-nom">Fisher &amp; Paykel Healthcare</span><span class="emp-sis">Escaneada</span></div>
+            </div>
+            <div class="nota">
+                Cada empresa usa un sistema de compras distinto y ninguno imprime la orden igual. El entrenamiento continúa mañana con más formatos.
+            </div>
+        </div>
+
+        <div class="section-title">POs Escaneadas · El Salto del Día</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">📷</div>
+                <div>
+                    <h3>Las órdenes escaneadas ya no quedan fuera</h3>
+                    <p>Apareció una PO que <strong>es solo una foto de la hoja</strong>: para el sistema estaba en blanco. Se incorporó <strong>reconocimiento de texto en imagen</strong>, que corre dentro del servidor —los documentos de los clientes no salen a ningún tercero— y lee la orden en <strong>2.6 segundos</strong>. Es un caso muy común: basta con que el cliente escanee y mande la PO por correo.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>⚡ Sin Afectar lo Demás</h3>
+                <p>Solo se activa <strong>cuando el documento viene sin texto</strong>. El resto de las POs se procesan igual de rápido que antes.</p>
+            </div>
+
+            <div class="card">
+                <h3>🛡️ Con Freno de Seguridad</h3>
+                <p>Se atiende <strong>una orden a la vez</strong> y se detiene apenas encuentra el importe, para que varias subidas simultáneas no saturen el servidor.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Fallas Encontradas y Corregidas</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🐛</div>
+                <div>
+                    <h3>Tres POs daban el número correcto por casualidad</h3>
+                    <p>Varios documentos <strong>arrojaban el monto bueno mientras la lógica interna estaba equivocada</strong>: una frase le ganaba a la tabla, un RFC se leía como si fuera un impuesto, una leyenda de "incluye IVA" se confundía con un impuesto desglosado. Se corrigió la causa en cada caso en lugar de darlos por buenos, porque ese tipo de acierto <strong>no aguanta el siguiente formato</strong>.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>👻 Una PO que se Ignoraba en Silencio</h3>
+                <p>Un documento <strong>no se reconocía como orden de compra</strong> y quedaba fuera del monto sin avisar. Ya se detecta.</p>
+            </div>
+
+            <div class="card">
+                <h3>💸 Un Monto que Habría Salido 17 Veces Menor</h3>
+                <p>Una PO en dólares se leía como pesos por una frase del documento. Corregido, junto con el <strong>tipo de cambio pactado</strong> que también se ignoraba.</p>
+            </div>
+        </div>
+
+        <div class="section-title">Asistente · Presencia Discreta</div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <h3>📌 Siempre a la Mano</h3>
+                <p>El asistente <strong>se queda fijo en la esquina</strong> mientras haya pendientes por atender, en lugar de desaparecer.</p>
+            </div>
+
+            <div class="card">
+                <h3>✨ Discreto hasta que se Necesita</h3>
+                <p>Se rediseñó como una <strong>píldora translúcida</strong> que solo se hace notoria al pasar el cursor, sin estorbar la vista.</p>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label"><span>Monto Automático desde POs</span><span>Primera fase concluida</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:92%"></div></div>
+            </div>
+        </div>
+
+        <div class="section-title">Lo que Sigue</div>
+
+        <div class="feature-grid">
+            <div class="card card-teaser">
+                <div style="font-size: 32px;">📊</div>
+                <div>
+                    <span class="badge">Siguiente Fase</span>
+                    <h3>De monto a utilidad</h3>
+                    <p>Con las POs del cliente ya resueltas, sigue la <strong>segunda mitad del cálculo</strong>: leer las órdenes de compra que nosotros emitimos a proveedores y restarlas, para que <strong>la utilidad de cada oportunidad se calcule sola</strong>. Mañana continúa el entrenamiento con más formatos de PO.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+        <div class="footer-note">
+            Los avances de hoy quedan en el entorno de pruebas. Producción conserva la entrega parcial del 7 de Agosto.
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>

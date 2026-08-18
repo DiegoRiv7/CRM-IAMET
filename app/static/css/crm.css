@@ -12392,6 +12392,151 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     width: auto;
 }
 
+/* ── Arrastrar la tarjeta para cambiar de etapa ──
+   La tarjeta se agarra y se suelta en otra columna. Las tres señales: la
+   tarjeta se ve levantada mientras viaja, las columnas se insinúan como
+   destino posible, y la de abajo del cursor se marca claramente. */
+.pk-board .crm-kanban-card[draggable="true"]:active { cursor: grabbing; }
+.pk-board .crm-kanban-card.pk-dragging {
+    opacity: .45;
+    transform: rotate(-1.2deg) scale(.985);
+    box-shadow: 0 14px 30px -10px rgba(15, 23, 42, .35);
+}
+.pk-board .crm-kanban-col--prospecto.pk-drop-listo .crm-kanban-col-body {
+    outline: 1px dashed rgba(255, 255, 255, .35);
+    outline-offset: -4px; border-radius: 14px;
+}
+.pk-board .crm-kanban-col--prospecto.pk-drop-encima .crm-kanban-col-body {
+    outline: 2px dashed rgba(255, 255, 255, .85);
+    background: rgba(255, 255, 255, .10);
+}
+
+/* Cuadro para lo que el arrastre no puede adivinar: el tipo de reunión —que el
+   servidor exige— y la confirmación de cerrar como ganado, que crea la
+   oportunidad. */
+.pk-dlg-ov {
+    position: fixed; inset: 0; z-index: 10500;
+    background: rgba(15, 23, 42, .42);
+    display: flex; align-items: center; justify-content: center;
+}
+.pk-dlg {
+    background: #fff; border-radius: 16px; padding: 22px;
+    width: 90%; max-width: 330px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+.pk-dlg h3 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #0F172A; }
+.pk-dlg p { margin: 0 0 16px; font-size: 12.5px; color: #64748B; line-height: 1.45; }
+.pk-dlg-btns { display: flex; gap: 10px; }
+.pk-dlg-b {
+    flex: 1; padding: 12px; border-radius: 10px; cursor: pointer;
+    border: 2px solid #92400E; background: rgba(146, 64, 14, .13); color: #92400E;
+    font: inherit; font-weight: 700; font-size: 13px;
+}
+.pk-dlg-b:hover { background: rgba(146, 64, 14, .22); }
+.pk-dlg-b--ok { border-color: #059669; background: rgba(5, 150, 105, .13); color: #047857; }
+.pk-dlg-b--ok:hover { background: rgba(5, 150, 105, .22); }
+/* Cliente / prospecto, junto al nombre en la cabecera del widget. La marca no
+   mueve datos: solo decide si la empresa se puede elegir al abrir una
+   oportunidad nueva. Para quien puede cambiarla la etiqueta ES el boton; para
+   el resto es un rotulo y por eso nace deshabilitada. */
+.wci-tipo {
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    padding: 3px 10px; border: none; border-radius: 999px;
+    font: inherit; font-size: 11px; font-weight: 800;
+    letter-spacing: .04em; text-transform: uppercase;
+    background: #DBEAFE; color: #1D4ED8;
+    cursor: default;
+}
+.wci-tipo.is-prospecto { background: #FEF3C7; color: #92400E; }
+.wci-tipo.is-editable { cursor: pointer; }
+.wci-tipo.is-editable:hover { filter: brightness(.94); }
+.wci-tipo[disabled] { opacity: 1; }
+
+/* ── Vendedor responsable, bajo el RFC ── */
+.wci-resp {
+    display: flex; align-items: center; gap: 9px;
+    margin-top: 12px; padding: 9px 11px;
+    background: #F8FAFC; border: 1px solid #E9EDF3; border-radius: 11px;
+    text-align: left;
+}
+.wci-resp-av {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #2563EB; color: #fff; font-size: 11px; font-weight: 800;
+}
+.wci-resp-av.is-vacio { background: #E2E8F0; color: #94A3B8; }
+.wci-resp-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.wci-resp-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: #94A3B8;
+}
+.wci-resp-n {
+    font-size: 13px; font-weight: 600; color: #0F172A;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wci-resp-n.is-vacio { color: #94A3B8; font-weight: 500; }
+.wci-resp-btn {
+    border: none; background: none; padding: 0; cursor: pointer; flex-shrink: 0;
+    font: inherit; font-size: 11.5px; font-weight: 700; color: #2563EB;
+}
+.wci-resp-btn:hover { text-decoration: underline; }
+
+/* ── Cuadro propio, en lugar del confirm() del navegador ── */
+/* Monto de la factura: lo extrae el modulo financiero al subirla; queda en
+   guion cuando el PDF no dejo leerlo. */
+.wco-fact-monto { font-weight: 700; color: #0F172A; white-space: nowrap; }
+
+.wci-dlg-ov {
+    position: fixed; inset: 0; z-index: 10600;
+    background: rgba(15, 23, 42, .45);
+    display: flex; align-items: center; justify-content: center;
+}
+.wci-dlg {
+    background: #fff; border-radius: 16px; padding: 22px;
+    width: 90%; max-width: 380px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, .3);
+    display: flex; flex-direction: column; max-height: 78vh;
+}
+.wci-dlg h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 700; color: #0F172A; }
+.wci-dlg p { margin: 0 0 14px; font-size: 12.8px; color: #64748B; line-height: 1.5; }
+.wci-dlg-buscar { margin-bottom: 10px; }
+.wci-dlg-buscar input {
+    width: 100%; box-sizing: border-box; height: 36px; padding: 0 11px;
+    border: 1px solid #D7DBE2; border-radius: 9px; font: inherit; font-size: 13px; outline: none;
+}
+.wci-dlg-buscar input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, .13); }
+.wci-dlg-lista { overflow-y: auto; min-height: 0; margin: 0 -6px; padding: 0 6px; }
+.wci-dlg-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 8px 9px; border: none; background: none; border-radius: 9px;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.wci-dlg-item:hover { background: #F1F5F9; }
+.wci-dlg-av {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #2563EB; color: #fff; font-size: 10.5px; font-weight: 800;
+}
+.wci-dlg-n { font-size: 13px; font-weight: 600; color: #0F172A;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wci-dlg-sub { font-size: 11.5px; color: #94A3B8; margin-left: auto; flex-shrink: 0; }
+.wci-dlg-vacio { padding: 18px 0; text-align: center; font-size: 12.5px; color: #94A3B8; }
+.wci-dlg-pie { display: flex; gap: 10px; margin-top: 16px; }
+.wci-dlg-x, .wci-dlg-ok {
+    flex: 1; padding: 10px; border-radius: 10px; border: none;
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.wci-dlg-x { background: #F1F5F9; color: #64748B; }
+.wci-dlg-x:hover { background: #E2E8F0; }
+.wci-dlg-ok { background: #2563EB; color: #fff; }
+.wci-dlg-ok:hover { background: #1D4ED8; }
+
+.pk-dlg-x {
+    margin-top: 12px; width: 100%; padding: 8px; border: none;
+    background: #F2F2F7; border-radius: 8px; color: #86868B;
+    font: inherit; font-size: 12px; cursor: pointer;
+}
+
 /* Popover wrapper (para filtro/ordenar dentro del crm-bar-left) */
 .pk-pop-wrap {
     position: relative;

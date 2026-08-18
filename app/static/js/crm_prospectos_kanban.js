@@ -365,11 +365,29 @@
     // SPA está disponible (trae el board fresco del server y lo trasplanta
     // sin recargar la página); fallback al reload clásico.
     window.recargarProspectosKanban = function() {
-        try {
-            if (window.crmApplyPeriod &&
-                window.crmApplyPeriod(new URLSearchParams(window.location.search))) return;
-        } catch (e) { }
-        window.location.reload();
+        // Refresh DIRECTO del board (fetch de la página actual + trasplante
+        // de #pkKanbanBoard + rehidratar filtros/binds). Antes se delegaba a
+        // crmApplyPeriod, que tiene precondiciones (busy, _crmSetPeriodo,
+        // config del tab) y podía devolver true SIN refrescar — la tarjeta
+        // recién creada no aparecía hasta recargar la página a mano.
+        var board = document.getElementById('pkKanbanBoard');
+        if (!board) return;  // no estamos en la vista de prospección
+        var url = window.location.pathname + window.location.search;
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'pk-refresh' } })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                var nue = doc.getElementById('pkKanbanBoard');
+                if (!nue) throw new Error('fragmento sin board');
+                board.innerHTML = nue.innerHTML;
+                if (typeof window.pkKanbanRehydrate === 'function') {
+                    try { window.pkKanbanRehydrate(); } catch (e) { }
+                }
+            })
+            .catch(function () { window.location.reload(); });
     };
 
     // ── Live update: mover card sin reload ────────────────────────────
@@ -424,6 +442,210 @@
         _pkUpdateColCounters(newCol);
         return true;
     };
+
+    // ── Arrastrar la tarjeta para cambiar de etapa ──
+    // Es el unico camino: la tarjeta se agarra y se suelta en otra columna. Un
+    // clic sigue abriendo el prospecto, asi que hay que distinguir el gesto —
+    // por eso se marca la tarjeta con .pk-dragging y se anula el clic que el
+    // navegador dispara al terminar un arrastre corto.
+    var arrastrando = null;
+
+    function marcarZonas(activo) {
+        Array.prototype.forEach.call(
+            document.querySelectorAll('.crm-kanban-col--prospecto'),
+            function (col) { col.classList.toggle('pk-drop-listo', activo); });
+    }
+
+    function wireArrastre() {
+        var board = document.getElementById('pkKanbanBoard');
+        if (!board || board._pkDnDWired) return;
+        board._pkDnDWired = true;
+
+        board.addEventListener('dragstart', function (ev) {
+            var card = ev.target.closest && ev.target.closest('.crm-kanban-card');
+            if (!card) return;
+            arrastrando = card;
+            card.classList.add('pk-dragging');
+            marcarZonas(true);
+            try {
+                // Sin datos en el dataTransfer, Firefox cancela el arrastre.
+                ev.dataTransfer.setData('text/plain', card.dataset.prospectoId || '');
+                ev.dataTransfer.effectAllowed = 'move';
+            } catch (e) { }
+        });
+
+        board.addEventListener('dragend', function () {
+            if (arrastrando) arrastrando.classList.remove('pk-dragging');
+            marcarZonas(false);
+            Array.prototype.forEach.call(
+                document.querySelectorAll('.pk-drop-encima'),
+                function (c) { c.classList.remove('pk-drop-encima'); });
+            // El clic sintetico llega despues del dragend: se ignora una vez
+            // para que soltar la tarjeta no abra el prospecto.
+            var recien = arrastrando;
+            arrastrando = null;
+            if (recien) {
+                recien._pkIgnorarClic = true;
+                setTimeout(function () { recien._pkIgnorarClic = false; }, 250);
+            }
+        });
+
+        board.addEventListener('dragover', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (!col || !arrastrando) return;
+            ev.preventDefault();   // sin esto el navegador no permite soltar
+            ev.dataTransfer.dropEffect = 'move';
+            if (col.dataset.stage !== arrastrando.dataset.etapa) {
+                col.classList.add('pk-drop-encima');
+            }
+        });
+
+        board.addEventListener('dragleave', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (col && !col.contains(ev.relatedTarget)) col.classList.remove('pk-drop-encima');
+        });
+
+        board.addEventListener('drop', function (ev) {
+            var col = ev.target.closest && ev.target.closest('.crm-kanban-col--prospecto');
+            if (!col || !arrastrando) return;
+            ev.preventDefault();
+            col.classList.remove('pk-drop-encima');
+            var card = arrastrando;
+            var nueva = col.dataset.stage;
+            var previa = card.dataset.etapa;
+            if (!nueva || nueva === previa) return;
+
+            // Dos etapas piden algo antes de poder guardarse; se pregunta ANTES
+            // de mover la tarjeta, para que cancelar no la deje dando saltos.
+            if (nueva === 'reunion') {
+                // El servidor rechaza 'reunion' sin tipo: devolvia 400 y la
+                // tarjeta regresaba sin que se supiera por que.
+                pedirTipoReunion(function (tipo) {
+                    if (tipo) aplicarEtapa(card, previa, nueva, { reunion_tipo: tipo });
+                });
+                return;
+            }
+            if (nueva === 'cerrado_ganado') {
+                // Cerrar como ganado CREA una oportunidad: no es un movimiento
+                // cualquiera y conviene confirmarlo.
+                pkConfirmar('Cerrar como ganado', 'Se creara la oportunidad de este prospecto.',
+                    function (ok) { if (ok) aplicarEtapa(card, previa, nueva, {}); });
+                return;
+            }
+            aplicarEtapa(card, previa, nueva, {});
+        });
+
+        // Un arrastre termina en un clic sintetico sobre la tarjeta: se atrapa
+        // en captura para que no llegue al onclick que abre el prospecto.
+        board.addEventListener('click', function (ev) {
+            var card = ev.target.closest && ev.target.closest('.crm-kanban-card');
+            if (card && card._pkIgnorarClic) {
+                ev.stopPropagation();
+                ev.preventDefault();
+            }
+        }, true);
+    }
+
+    // Mueve la tarjeta y guarda. Se mueve antes de la respuesta para que el
+    // gesto se sienta; si el servidor la rechaza, regresa a su columna.
+    function aplicarEtapa(card, previa, nueva, extra) {
+        var id = card.dataset.prospectoId;
+        var body = { etapa: nueva };
+        for (var k in extra) body[k] = extra[k];
+        if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, nueva);
+
+        fetch('/app/api/prospecto/' + id + '/etapa/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': pkCsrf() },
+            body: JSON.stringify(body),
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data && data.success) {
+                if (nueva === 'cerrado_ganado' && data.oportunidad_id) {
+                    pkAviso('Prospecto ganado. Oportunidad #' + data.oportunidad_id + ' creada.');
+                }
+                return;
+            }
+            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+            pkAviso((data && data.error) || 'No se pudo cambiar la etapa');
+        }).catch(function () {
+            if (typeof window.pkMoveCardToStage === 'function') window.pkMoveCardToStage(id, previa);
+            pkAviso('No se pudo cambiar la etapa');
+        });
+    }
+
+    // Cuadro chico reutilizable: titulo, texto y los botones que se le pasen.
+    function pkDialogo(titulo, texto, botones, alCerrar) {
+        var ov = document.createElement('div');
+        ov.className = 'pk-dlg-ov';
+        var html = '<div class="pk-dlg"><h3>' + escapeHtml(titulo) + '</h3>';
+        if (texto) html += '<p>' + escapeHtml(texto) + '</p>';
+        html += '<div class="pk-dlg-btns">';
+        botones.forEach(function (b, i) {
+            html += '<button type="button" data-i="' + i + '" class="pk-dlg-b' +
+                (b.tono ? ' pk-dlg-b--' + b.tono : '') + '">' + escapeHtml(b.texto) + '</button>';
+        });
+        html += '</div><button type="button" class="pk-dlg-x" data-cancel>Cancelar</button></div>';
+        ov.innerHTML = html;
+        document.body.appendChild(ov);
+
+        var cerrar = function (valor) {
+            ov.remove();
+            document.removeEventListener('keydown', esc);
+            alCerrar(valor);
+        };
+        var esc = function (e) { if (e.key === 'Escape') cerrar(null); };
+        document.addEventListener('keydown', esc);
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov || e.target.closest('[data-cancel]')) { cerrar(null); return; }
+            var b = e.target.closest('[data-i]');
+            if (b) cerrar(botones[parseInt(b.getAttribute('data-i'), 10)].valor);
+        });
+    }
+
+    function pedirTipoReunion(cb) {
+        pkDialogo('Tipo de reunión', 'La etapa Reunión necesita saber de qué tipo es.',
+            [{ texto: 'Virtual', valor: 'virtual' }, { texto: 'Presencial', valor: 'presencial' }], cb);
+    }
+
+    function pkConfirmar(titulo, texto, cb) {
+        pkDialogo(titulo, texto, [{ texto: 'Sí, continuar', valor: true, tono: 'ok' }],
+            function (v) { cb(!!v); });
+    }
+
+    function pkCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function pkAviso(msg) {
+        var toast = document.getElementById('widgetToast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 3000);
+    }
+
+    // Las tarjetas nacen en la plantilla y tambien al recargar el kanban, asi
+    // que el atributo se pone aqui en lugar de repetirlo en el HTML.
+    function marcarArrastrables() {
+        Array.prototype.forEach.call(
+            document.querySelectorAll('.crm-kanban-card[data-prospecto-id]'),
+            function (c) {
+                c.setAttribute('draggable', 'true');
+                c.style.cursor = 'grab';
+            });
+    }
+
+    var _pkRehidratar = window.pkKanbanRehydrate;
+    window.pkKanbanRehydrate = function () {
+        if (typeof _pkRehidratar === 'function') _pkRehidratar();
+        wireArrastre();
+        marcarArrastrables();
+    };
+
+    wireArrastre();
+    marcarArrastrables();
 
     setupToolbar();
     applyFilters();   // aplicar filtros guardados al cargar

@@ -36,31 +36,41 @@ y helpers compartidos.
             border-radius: 0 !important;
             box-shadow: none !important;
         }
-        #crmTaskDetailModal .crm-tw-icon-btn[onclick*="CerrarModal"] { display: none !important; }
-        /* El marco de la ventana ya aporta la barra greca con el título y los
-           controles [— □ ×]. El header del widget se DE-GRECA → tira de
-           acciones CLARA (breadcrumb / link / 3-puntos / historial), sin
-           duplicar la greca (la 'segunda barra' del screenshot). */
-        #crmTaskDetailModal .crm-tw-header {
+        /* La X de cerrar vive en la barra de la ventana padre; adentro sobra. */
+        #crmTaskDetailModal .crm-tw-icon-btn[onclick*="CerrarModal"],
+        #crmTaskDetailModal .tw4-ic[onclick*="CerrarModal"],
+        #crmTaskDetailModal .tw4-head .tw4-sep { display: none !important; }
+        /* El marco de la ventana ya trae la greca con el título y los controles
+           [— □ ×]; el encabezado del widget queda como tira de acciones clara.
+           Al de-grecarlo hay que devolver los chips y los iconos a oscuro: el
+           tema los había pasado a blanco para leerse sobre la franja. */
+        #crmTaskDetailModal .tw4-head {
             background: #ffffff !important;
             background-image: none !important;
             border-bottom: 1px solid rgba(15,23,42,0.08) !important;
             border-radius: 0 !important;
         }
-        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn,
-        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn svg,
-        #crmTaskDetailModal .crm-tw-header .crm-tw-crumb-pill,
-        #crmTaskDetailModal .crm-tw-header .crm-tw-cliente-crumb,
-        #crmTaskDetailModal .crm-tw-header .crm-tw-chev {
+        #crmTaskDetailModal .tw4-head .tw4-chip {
+            background: #F1F3F7 !important;
+            border-color: #E4E7EC !important;
             color: #475569 !important;
         }
-        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover {
-            background: #F1F5F9 !important;
+        #crmTaskDetailModal .tw4-head button.tw4-chip:hover {
+            background: #E9EDF3 !important;
+            border-color: #C7D7F5 !important;
+            color: #0052D4 !important;
         }
-        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover svg {
-            color: #1E293B !important;
+        #crmTaskDetailModal .tw4-head .tw4-num { color: #94A3B8 !important; }
+        #crmTaskDetailModal .tw4-head .tw4-chev-sep { color: #C7CBD1 !important; }
+        #crmTaskDetailModal .tw4-head .tw4-ic,
+        #crmTaskDetailModal .tw4-head .tw4-ic svg { color: #475569 !important; }
+        #crmTaskDetailModal .tw4-head .tw4-ic:hover { background: #F1F5F9 !important; }
+        #crmTaskDetailModal .tw4-head .tw4-ic:hover svg { color: #1E293B !important; }
+        /* La tarjeta ocupa la ventana completa: sin alto fijo ni fondo propio. */
+        #crmTaskDetailModal .crm-task-modal {
+            height: 100vh !important;
+            max-height: none !important;
         }
-        #crmTaskDetailModal .crm-tw-header-divider { background: rgba(15,23,42,0.1) !important; }
     </style>
     <script>
         /* Shims de los globals del CRM home. _CRM_CONFIG mínimo ANTES de
@@ -101,7 +111,7 @@ y helpers compartidos.
     {% include "crm/_widget_tarea_detalle.html" %}
     {% include "crm/_widget_oportunidad.html" %}
     <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
-    <script src="{% static 'js/crm_main.js' %}?v=20260618-table-okguard"></script>
+    <script src="{% static 'js/crm_main.js' %}?v=20260804-tarea-v4"></script>
     <script>
         (function () {
             // Drive desde esta tarea: el iframe no puede poner ventanas en el

@@ -406,10 +406,11 @@
         if (gaugeRealLbl) gaugeRealLbl.textContent = avp + '%';
         if (gaugeTimeLbl) gaugeTimeLbl.textContent = tpp + '%';
         if (gaugeDelta) {
+            gaugeDelta.classList.remove('is-danger', 'is-warn', 'is-good');
             if (!ov) gaugeDelta.textContent = '—';
-            else if (delta > 0) gaugeDelta.textContent = '+' + delta + '% sobre el plan';
+            else if (delta > 0) { gaugeDelta.textContent = '+' + delta + '% sobre el plan'; gaugeDelta.classList.add('is-good'); }
             else if (delta === 0) gaugeDelta.textContent = 'En plan';
-            else gaugeDelta.textContent = delta + '% vs plan';
+            else { gaugeDelta.textContent = delta + '% vs plan'; gaugeDelta.classList.add(delta <= -15 ? 'is-danger' : 'is-warn'); }
         }
 
         // ── Equipo grid ──
@@ -454,6 +455,7 @@
             var palette = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
 
             if (breakdown.length && totalBreak > 0) {
+                stackBar.style.display = '';
                 stackBar.innerHTML = breakdown.map(function (b, i) {
                     var pct = (Number(b.monto || 0) / totalBreak) * 100;
                     var color = palette[i % palette.length];
@@ -469,7 +471,10 @@
                     '</div>';
                 }).join('');
             } else {
-                stackBar.innerHTML = '<div class="proy-v3-stack-segment" style="width:100%;background:#e2e8f0;"></div>';
+                // Vacío COMPACTO: sin la barra gris de relleno — solo la línea
+                // que dice qué hacer. La card deja de ocupar una franja entera.
+                stackBar.style.display = 'none';
+                stackBar.innerHTML = '';
                 stackLegend.innerHTML = '<div class="proy-v3-empty-tiny">Aún no hay partidas con monto. Captura el levantamiento para ver el desglose.</div>';
             }
             if (stackSummary) {
@@ -482,12 +487,17 @@
         var dr = (ov && typeof ov.dias_restantes === 'number') ? ov.dias_restantes : null;
 
         var sDias = el('proyDashStatDias');
+        var sDiasLbl = el('proyDashStatDiasLabel');
         if (sDias) {
             sDias.classList.remove('is-danger', 'is-warn');
+            // Vencido: "−101 días restantes" confunde — la etiqueta cambia a
+            // "Días de retraso" y el número va en positivo.
+            var diasLblTxt = 'Días restantes';
             if (dr === null)      sDias.textContent = '—';
-            else if (dr < 0)    { sDias.textContent = '−' + Math.abs(dr); sDias.classList.add('is-danger'); }
+            else if (dr < 0)    { sDias.textContent = Math.abs(dr); diasLblTxt = 'Días de retraso'; sDias.classList.add('is-danger'); }
             else if (dr <= 3)   { sDias.textContent = dr;                 sDias.classList.add('is-warn'); }
             else                  sDias.textContent = dr;
+            if (sDiasLbl) sDiasLbl.textContent = diasLblTxt;
         }
         var sLev = el('proyDashStatLevantamientos');
         if (sLev) sLev.textContent = (counts.levantamientos != null) ? counts.levantamientos : '—';
@@ -529,10 +539,24 @@
                 if (rag === 'rojo')      estVal.classList.add('is-danger');
                 else if (rag === 'ambar') estVal.classList.add('is-warn');
                 else if (rag === 'verde') estVal.classList.add('is-good');
-                // Sub: primera razón si hay; si no, frase neutra por rag.
+                // Sub: el PORQUÉ, no un eco. El backend usa razones[0] como
+                // label, así que repetirla no dice nada — buscamos la primera
+                // razón DISTINTA; si no hay, explicamos con avance vs tiempo.
                 var razones = ov.salud.razones || [];
-                if (razones.length) {
-                    estSub.textContent = razones[0];
+                var labelTxt = ov.salud.label || '';
+                var extra = null;
+                for (var ri = 0; ri < razones.length; ri++) {
+                    if (razones[ri] && razones[ri] !== labelTxt) { extra = razones[ri]; break; }
+                }
+                if (!extra && rag !== 'verde'
+                    && typeof ov.avance_pct === 'number'
+                    && typeof ov.tiempo_transcurrido_pct === 'number') {
+                    extra = 'La obra va al ' + Math.round(ov.avance_pct) +
+                            '% con el ' + Math.round(ov.tiempo_transcurrido_pct) +
+                            '% del tiempo consumido';
+                }
+                if (extra) {
+                    estSub.textContent = extra;
                     if (rag === 'rojo')       estSub.classList.add('is-danger');
                     else if (rag === 'ambar') estSub.classList.add('is-warn');
                 } else {
@@ -566,12 +590,12 @@
                     avSub.textContent = 'Obra completada';
                 } else if (avp === 0) {
                     avSub.textContent = 'Fase inicial no completada';
-                } else if (d <= -15) {
-                    avSub.textContent = 'Atrasado ' + Math.abs(d) + '% vs cronograma';
-                    avSub.classList.add('is-danger');
                 } else if (d < 0) {
-                    avSub.textContent = Math.abs(d) + '% por debajo del plan';
-                    avSub.classList.add('is-warn');
+                    // "Atrasado X%" ya vive en Estado Global y el header — aquí
+                    // decimos qué esperaba el plan (delta = avance − tiempo).
+                    var esperado = Math.max(0, Math.min(100, Math.round(avp - d)));
+                    avSub.textContent = 'El plan esperaba ' + esperado + '% a hoy';
+                    avSub.classList.add(d <= -15 ? 'is-danger' : 'is-warn');
                 } else if (d > 0) {
                     avSub.textContent = '+' + d + '% sobre el plan';
                 } else {
@@ -589,7 +613,23 @@
         var fMeta = el('proyKpiFinMeta');
         if (fAmt && fMeta) {
             fMeta.classList.remove('is-danger', 'is-warn');
-            if (ov && ov.financiero) {
+            var cmp = ov && ov.compras;
+            if (cmp && cmp.presupuesto > 0) {
+                // Con volumetría sincronizada, el presupuesto REAL de gasto es el
+                // de la volumetría (costos), no el monto de venta: comprado /
+                // presupuesto + pendiente por comprar + eficiencia del motor.
+                fAmt.innerHTML =
+                    '<span class="proy-v3-kpi-value">' + _esc(_fmtMoneyShort(cmp.comprado)) + '</span>' +
+                    '<span class="proy-v3-kpi-value-small">/ ' + _esc(_fmtMoneyShort(cmp.presupuesto)) + '</span>';
+                var piezas = [];
+                if (cmp.pendiente > 0) piezas.push('Por comprar ' + _fmtMoneyShort(cmp.pendiente));
+                if (cmp.eficiencia_pct != null) {
+                    piezas.push('Eficiencia ' + Math.round(cmp.eficiencia_pct) + '%');
+                    if (cmp.eficiencia_pct < 85)      fMeta.classList.add('is-danger');
+                    else if (cmp.eficiencia_pct < 97) fMeta.classList.add('is-warn');
+                }
+                fMeta.textContent = piezas.length ? piezas.join(' · ') : 'Sin compras registradas aún';
+            } else if (ov && ov.financiero) {
                 var f = ov.financiero;
                 var gastado = Number(f.gastado || 0);
                 var presupuesto = Number(f.contratado || 0);

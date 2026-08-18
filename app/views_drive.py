@@ -8,6 +8,8 @@ import requests
 import mimetypes
 import os
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
@@ -527,6 +529,59 @@ def api_drive_oportunidad(request, opp_id):
     opp = get_object_or_404(TodoItem, id=opp_id)
 
     if request.method == 'GET':
+        # Vista "recientes": la usa el bloque de Drive embebido en el widget de
+        # la oportunidad, que es una vista previa, no un navegador. Devuelve los
+        # últimos archivos vengan de la carpeta que vengan — listar solo la raíz
+        # dejaba el bloque en "Sin archivos" cuando todo estaba en carpetas.
+        recientes = request.GET.get('recientes')
+        if recientes:
+            try:
+                tope = max(1, min(int(recientes), 20))
+            except (TypeError, ValueError):
+                tope = 3
+
+            def _fila(a, url, carpeta):
+                return {
+                    'id': a.id,
+                    'nombre': a.nombre_original,
+                    'extension': a.extension,
+                    'tipo_archivo': a.tipo_archivo,
+                    'carpeta': carpeta,
+                    'url': url,
+                    'fecha_subida': a.fecha_subida.isoformat(),
+                }
+
+            propios = ArchivoOportunidad.objects.filter(
+                oportunidad=opp
+            ).select_related('carpeta').order_by('-fecha_subida')[:tope]
+            items = [
+                _fila(a, f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
+                      a.carpeta.nombre if a.carpeta else '')
+                for a in propios
+            ]
+            total = ArchivoOportunidad.objects.filter(oportunidad=opp).count()
+
+            # Los archivos del proyecto vinculado son parte del mismo expediente
+            # para quien lo consulta, así que entran en la misma lista.
+            opp_proyecto = OportunidadProyecto.objects.filter(oportunidad=opp).first()
+            if opp_proyecto:
+                try:
+                    pv = Proyecto.objects.get(bitrix_group_id=int(opp_proyecto.bitrix_project_id))
+                    del_proyecto = ArchivoProyecto.objects.filter(
+                        proyecto=pv
+                    ).select_related('carpeta').order_by('-fecha_subida')[:tope]
+                    items += [
+                        _fila(a, f'/app/api/proyecto/{pv.id}/archivo/{a.id}/stream/',
+                              a.carpeta.nombre if a.carpeta else '')
+                        for a in del_proyecto
+                    ]
+                    total += ArchivoProyecto.objects.filter(proyecto=pv).count()
+                except (Proyecto.DoesNotExist, ValueError):
+                    pass
+
+            items.sort(key=lambda x: x['fecha_subida'], reverse=True)
+            return JsonResponse({'success': True, 'recientes': items[:tope], 'total': total})
+
         parent_id = request.GET.get('parent')
         carpetas = CarpetaOportunidad.objects.filter(
             oportunidad=opp,
@@ -704,14 +759,32 @@ def api_drive_oportunidad_archivo(request, opp_id):
             traceback.print_exc()
             return JsonResponse({'error': f'Error al guardar archivo: {str(e)}'}, status=500)
 
-        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        # ── PO del cliente: si lo es, el monto de la oportunidad pasa a ser
+        #    la suma de sus POs. Va ANTES del análisis financiero porque ese
+        #    marca procesado_financiero y ya no volvería a mirar el archivo. ──
+        po_info = None
         try:
-            from .services_financiero import analizar_archivo_drive
-            resultado_fin = analizar_archivo_drive(a)
-        except Exception as e_fin:
-            resultado_fin = {'procesado': False, 'error': str(e_fin)}
-            import traceback
-            traceback.print_exc()
+            from .services_financiero import (analizar_po_cliente,
+                                              recalcular_monto_por_po)
+            monto_po = analizar_po_cliente(a)
+            if monto_po is not None:
+                total = recalcular_monto_por_po(opp)
+                po_info = {'monto': float(monto_po),
+                           'total_oportunidad': float(total) if total is not None else None}
+        except Exception as e_po:
+            po_info = {'error': str(e_po)}
+            logger.warning('PO del cliente: %s', e_po)
+
+        # ── Auto-import financiero: analizar si es OCC o Factura ──
+        resultado_fin = {'procesado': False, 'motivo': 'es PO de cliente'}
+        if not po_info or 'monto' not in po_info:
+            try:
+                from .services_financiero import analizar_archivo_drive
+                resultado_fin = analizar_archivo_drive(a)
+            except Exception as e_fin:
+                resultado_fin = {'procesado': False, 'error': str(e_fin)}
+                import traceback
+                traceback.print_exc()
 
         return JsonResponse({'success': True, 'archivo': {
             'id': a.id, 'nombre': a.nombre_original,
@@ -719,6 +792,7 @@ def api_drive_oportunidad_archivo(request, opp_id):
             'tamaño': a.tamaño, 'url': f'/app/api/oportunidad/{opp.id}/drive/archivo/{a.id}/stream/',
             'fecha_subida': a.fecha_subida.isoformat(), 'tipo': 'archivo',
             'financiero': resultado_fin,
+            'po_cliente': po_info,
         }})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)

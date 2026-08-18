@@ -52,7 +52,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
 <!-- ═══ WIDGET: DRIVE GESTOR DE ARCHIVOS ═══ -->
 <div class="widget-overlay" id="widgetOppDrive" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="widget-card widget-card-md"
-        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;"
+        style="width:1400px;max-width:95vw;height:84vh;display:flex;flex-direction:column;background:#F9FAFB;"
         ondragenter="woDriveDragEnter(event)" ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
         <div class="wo-header" style="border-bottom:1px solid #E5E5EA;background:#fff;">
             <div class="wo-header-top">
@@ -191,7 +191,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
 <!-- ═══ WIDGET: CONVERSACION ═══ -->
 <div class="widget-overlay" id="widgetOppConversacion" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="widget-card widget-card-md"
-        style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;position:relative;">
+        style="width:1100px;max-width:95vw;height:84vh;display:flex;flex-direction:column;background:#F9FAFB;position:relative;">
         <!-- Drop overlay -->
         <div id="woConvDropZone" style="display:none;position:absolute;inset:0;background:rgba(0,82,212,0.06);border:3px dashed #0052D4;border-radius:12px;z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
             <svg width="52" height="52" fill="none" stroke="#0052D4" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
@@ -223,6 +223,27 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     style="flex-shrink:0;">&times;</button>
             </div>
         </div>
+
+        <!-- Barra: búsqueda + filtros por tipo + mensaje fijado (paridad con
+             la conversación embebida del widget de oportunidad). -->
+        <div style="padding:0.75rem 1.5rem 0;background:#fff;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:180px;display:flex;align-items:center;gap:7px;background:#F2F2F7;border-radius:10px;padding:7px 11px;">
+                    <svg width="13" height="13" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="woConvBuscarInput" placeholder="Buscar en el expediente"
+                        oninput="woConvBuscar(this.value)"
+                        style="flex:1;min-width:0;border:none;background:none;outline:none;font-size:0.82rem;font-family:inherit;color:#1D1D1F;">
+                </div>
+                <div id="woConvChips" style="display:flex;gap:4px;">
+                    <button type="button" class="wo-conv-chip is-active" data-conv-filtro="todo" onclick="woConvSetFiltro('todo', this)">Todo</button>
+                    <button type="button" class="wo-conv-chip" data-conv-filtro="nota" onclick="woConvSetFiltro('nota', this)">Notas</button>
+                    <button type="button" class="wo-conv-chip" data-conv-filtro="correo" onclick="woConvSetFiltro('correo', this)">Correos</button>
+                    <button type="button" class="wo-conv-chip" data-conv-filtro="historial" onclick="woConvSetFiltro('historial', this)">Historial</button>
+                </div>
+            </div>
+            <div id="woConvFijado" style="display:none;align-items:flex-start;gap:9px;background:#FFF8E6;border:1px solid #F5DFA6;border-radius:10px;padding:9px 12px;margin-top:0.6rem;"></div>
+        </div>
+
 
         <div id="woConvMensajesGrid"
             style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;">
@@ -291,7 +312,7 @@ matarían los bindings posteriores del mismo try-block. El markup original
 <div class="widget-overlay" id="widgetTodasTareas" style="z-index:var(--z-widget);display:none;" onclick="if(event.target===this)woCerrarTodasTareas()"><!-- Nivel 1: lista global de tareas -->
     <div id="widgetTodasTareasCard" style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.18);width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;transform:scale(0.92) translateY(40px);opacity:0;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),opacity 0.22s ease;">
         <div style="padding:1.2rem 1.5rem;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-            <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Tareas de la oportunidad</div>
+            <div id="widgetTodasTareasTitulo" style="font-weight:700;font-size:1rem;color:#1D1D1F;">Tareas de la oportunidad</div>
             <button onclick="woCerrarTodasTareas()" style="background:none;border:none;font-size:1.4rem;color:#86868B;cursor:pointer;line-height:1;padding:0;">&times;</button>
         </div>
         <div id="widgetTodasTareasBody" style="overflow-y:auto;padding:0.75rem 1rem;display:flex;flex-direction:column;gap:4px;flex:1;">
@@ -560,8 +581,8 @@ matarían los bindings posteriores del mismo try-block. El markup original
             </div>
 
             <div>
-                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Resultado</label>
-                <textarea id="woActResTexto" rows="4" placeholder="Describe el resultado de la actividad (opcional)…"
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Resultado <span style="color:#FF3B30;">*</span></label>
+                <textarea id="woActResTexto" rows="4" placeholder="Describe qué pasó en la actividad…"
                     style="width:100%;padding:0.6rem 0.75rem;border:1px solid #E5E5EA;border-radius:8px;font-size:0.9rem;color:#1D1D1F;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
             </div>
 
@@ -576,6 +597,8 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 <input type="file" id="woActResFileInput" multiple style="display:none;" onchange="woActResHandleFiles(this.files)">
                 <div id="woActResLista" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.6rem;"></div>
             </div>
+
+            <div id="woActResAviso" style="display:none;background:#FFF1F0;border:1px solid #FFCCC7;color:#B91C1C;border-radius:9px;padding:0.6rem 0.75rem;font-size:0.83rem;line-height:1.4;"></div>
 
             <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;border-top:1px dashed #E5E5EA;">
                 <button type="button" onclick="woActResCerrar()"
@@ -1756,6 +1779,20 @@ matarían los bindings posteriores del mismo try-block. El markup original
         window.woCargarNotas = function (oppId) {
             return woCargarNotas(oppId);
         };
+        /* Conversación expandida: mismo formato que la conversación embebida del
+           widget v3 — búsqueda, filtros por tipo y mensaje fijado. Los mensajes
+           se cachean para poder filtrar sin volver a pedirlos al servidor. */
+        var _woConvMsgs = [];
+        var _woConvFiltro = 'todo';
+        var _woConvQuery = '';
+
+        function woConvClasificar(m) {
+            if (m.tipo === 'correo') return 'correo';
+            var t = m.texto || '';
+            if (m.es_bitrix || m.bitrix_tipo) return 'historial';
+            return 'nota';
+        }
+
         function woCargarNotas(oppId) {
             var feed = document.getElementById('woConvMensajesGrid');
             if (!feed) return;
@@ -1764,223 +1801,295 @@ matarían los bindings posteriores del mismo try-block. El markup original
             fetch('/app/api/oportunidad/' + oppId + '/chat/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    var msgs = data.mensajes || [];
-                    if (!msgs.length) {
-                        feed.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:#86868B;">' +
-                            '<svg width="48" height="48" fill="none" stroke="#D1D1D6" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 1rem;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
-                            '<div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">Chat Vacío</div>' +
-                            '<div style="font-size:0.9rem;">Empieza la conversación enviando un mensaje.</div></div>';
-                        return;
-                    }
-
-                    var html = '';
-                    msgs.forEach(function (m) {
-                        // ── Correos (enviados/recibidos) — tarjeta especial ──
-                        if (m.tipo === 'correo') {
-                            var esEnviado = (m.direccion || '').toUpperCase() === 'SENT';
-                            var accent = esEnviado ? '#0052D4' : '#059669';
-                            var accentBg = esEnviado ? 'rgba(0,82,212,0.06)' : 'rgba(16,185,129,0.07)';
-                            var accentBorder = esEnviado ? 'rgba(0,82,212,0.18)' : 'rgba(16,185,129,0.22)';
-                            var labelTxt = esEnviado ? 'Correo enviado' : 'Correo recibido';
-                            var alignCard = esEnviado ? 'flex-end' : 'flex-start';
-                            var subInfo = esEnviado ? '' : (m.remitente_nombre || m.remitente_email || '');
-                            var subHtml = subInfo ? '<div style="font-size:0.74rem;color:#86868B;margin-top:2px;">de ' + woEscape(subInfo) + '</div>' : '';
-                            html += '<div style="display:flex;justify-content:' + alignCard + ';margin:6px 0;">' +
-                                '<div onclick="woCorreoVerDetalle(' + m.id + ')" style="cursor:pointer;max-width:78%;background:' + accentBg + ';border:1px solid ' + accentBorder + ';border-radius:14px;padding:11px 14px;display:flex;gap:11px;align-items:flex-start;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 6px 16px -6px rgba(0,0,0,0.18)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">' +
-                                  '<div style="width:34px;height:34px;border-radius:10px;background:' + accent + '22;color:' + accent + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>' +
-                                  '</div>' +
-                                  '<div style="flex:1;min-width:0;">' +
-                                    '<div style="font-size:0.62rem;font-weight:800;color:' + accent + ';text-transform:uppercase;letter-spacing:0.07em;">' + labelTxt + '</div>' +
-                                    '<div style="font-weight:700;color:#1D1D1F;font-size:0.92rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(m.asunto || '(sin asunto)') + '</div>' +
-                                    subHtml +
-                                    '<div style="font-size:0.72rem;color:#AEAEB2;margin-top:3px;">' + woEscape(m.fecha || '') + '</div>' +
-                                  '</div>' +
-                                '</div>' +
-                              '</div>';
-                            return;
-                        }
-
-                        var isMine = m.es_mio;
-                        var align = isMine ? 'flex-end' : 'flex-start';
-                        var bg = isMine ? '#0052D4' : '#E5E5EA';
-                        var color = isMine ? '#fff' : '#1D1D1F';
-                        var radius = isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px';
-
-                        var replyHtml = '';
-                        if (m.reply_to) {
-                            replyHtml = '<div style="background:rgba(0,0,0,0.1);padding:0.4rem 0.6rem;border-radius:8px;font-size:0.75rem;margin-bottom:0.4rem;border-left:3px solid ' + (isMine ? 'rgba(255,255,255,0.5)' : '#86868B') + ';">' +
-                                '<div style="font-weight:600;margin-bottom:0.2rem;">' + woEscape(m.reply_to.nombre) + '</div>' +
-                                '<div style="opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (m.reply_to.texto ? woEscape(m.reply_to.texto) : '📷 Imagen') + '</div></div>';
-                        }
-
-                        var imgHtml = '';
-                        if (m.imagen_url) {
-                            var ext = (m.imagen_nombre || '').split('.').pop().toLowerCase();
-                            var esImagen = ['jpg','jpeg','png','gif','webp','bmp','svg'].indexOf(ext) !== -1;
-                            if (esImagen) {
-                                imgHtml = '<img src="' + woEscape(m.imagen_url) + '" data-filename="' + woEscape(m.imagen_nombre || 'Imagen') + '" data-url="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" onerror="woImgFallback(this)" />';
-                            } else {
-                                var _fname = m.imagen_nombre || 'Archivo';
-                                var _fext = _fname.split('.').pop().toLowerCase();
-                                var _typeLabel, _typeColor, _typeBg;
-                                if (_fext === 'pdf') { _typeLabel = 'PDF'; _typeColor = '#EF4444'; _typeBg = '#FEF2F2'; }
-                                else if (_fext === 'doc' || _fext === 'docx') { _typeLabel = 'DOC'; _typeColor = '#2563EB'; _typeBg = '#EFF6FF'; }
-                                else if (_fext === 'xls' || _fext === 'xlsx') { _typeLabel = 'XLS'; _typeColor = '#16A34A'; _typeBg = '#F0FDF4'; }
-                                else if (_fext === 'ppt' || _fext === 'pptx') { _typeLabel = 'PPT'; _typeColor = '#EA580C'; _typeBg = '#FFF7ED'; }
-                                else if (_fext === 'zip' || _fext === 'rar' || _fext === '7z') { _typeLabel = 'ZIP'; _typeColor = '#9333EA'; _typeBg = '#FAF5FF'; }
-                                else if (_fext === 'mp4' || _fext === 'mov' || _fext === 'avi' || _fext === 'mkv') { _typeLabel = 'VID'; _typeColor = '#0891B2'; _typeBg = '#ECFEFF'; }
-                                else if (_fext === 'dwg' || _fext === 'dxf') { _typeLabel = 'CAD'; _typeColor = '#B45309'; _typeBg = '#FFFBEB'; }
-                                else { _typeLabel = (_fext.length <= 4 ? _fext.toUpperCase() : 'FILE'); _typeColor = '#6B7280'; _typeBg = '#F3F4F6'; }
-                                var _cardBg = isMine ? 'rgba(255,255,255,0.14)' : '#fff';
-                                var _cardBorder = isMine ? 'rgba(255,255,255,0.25)' : '#E5E7EB';
-                                var _nameColor = isMine ? '#fff' : '#1D1D1F';
-                                var _subColor = isMine ? 'rgba(255,255,255,0.65)' : '#9CA3AF';
-                                var _arrowColor = isMine ? 'rgba(255,255,255,0.7)' : '#9CA3AF';
-                                imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:12px;background:' + _cardBg + ';border:1px solid ' + _cardBorder + ';border-radius:14px;padding:10px 14px;text-decoration:none;margin-bottom:4px;max-width:280px;transition:opacity .15s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">' +
-                                    '<div style="width:42px;height:42px;border-radius:10px;background:' + _typeBg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                    '<span style="font-size:0.58rem;font-weight:800;color:' + _typeColor + ';letter-spacing:0.04em;">' + _typeLabel + '</span>' +
-                                    '</div>' +
-                                    '<div style="min-width:0;flex:1;">' +
-                                    '<div style="font-size:0.83rem;font-weight:600;color:' + _nameColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">' + woEscape(_fname) + '</div>' +
-                                    '<div style="font-size:0.72rem;color:' + _subColor + ';margin-top:2px;">Toca para abrir</div>' +
-                                    '</div>' +
-                                    '<svg width="15" height="15" fill="none" stroke="' + _arrowColor + '" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
-                                    '</a>';
-                            }
-                        }
-
-                        html += '<div style="display:flex;flex-direction:column;align-items:' + align + ';margin-bottom:0.2rem;">';
-                        if (!isMine) {
-                            html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-left:0.5rem;">' + woEscape(m.nombre) + ' &bull; ' + m.fecha + '</span>';
-                        } else {
-                            html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-right:0.5rem;">' + m.fecha + '</span>';
-                        }
-
-                        html += '<div style="display:flex;align-items:center;gap:0.5rem;max-width:80%;flex-direction:' + (isMine ? 'row-reverse' : 'row') + ';">';
-
-                        var textoPlano = m.texto || '';
-
-                        // Las actividades agendadas se muestran SOLO en el banner superior,
-                        // no se duplican como burbuja en el chat.
-                        if (textoPlano.startsWith('[ACT_AGENDADA:') || textoPlano.indexOf('woVerActividad(') !== -1) {
-                            return; // saltar este mensaje del feed
-                        }
-
-                        var innerBubbleStyle = 'background:' + bg + ';color:' + color + ';padding:0.75rem 1rem;border-radius:' + radius + ';font-size:0.95rem;line-height:1.4;position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
-                        var parsedContent = woEscape(textoPlano);
-
-                        // Actividades importadas de Bitrix: tarjeta naranja (solo actividades, no comentarios)
-                        if (m.es_bitrix && m.bitrix_tipo === 'actividad') {
-                            isSystemMsg = true;
-                            var bLineas = textoPlano.split('\n');
-                            var bTitulo = bLineas[0];
-                            var bResto = bLineas.slice(1).join('<br>');
-                            parsedContent = '<div style="display:flex;gap:10px;align-items:flex-start;">' +
-                                '<div style="width:26px;height:26px;border-radius:6px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' +
-                                '<svg width="13" height="13" fill="none" stroke="#FF6B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
-                                '</div>' +
-                                '<div style="min-width:0;">' +
-                                '<div style="font-size:0.7rem;font-weight:700;color:#FF6B00;letter-spacing:0.03em;text-transform:uppercase;margin-bottom:2px;">Bitrix24 · ' + woEscape(m.nombre) + '</div>' +
-                                '<div style="font-weight:600;font-size:0.85rem;color:#1D1D1F;">' + woEscape(bTitulo) + '</div>' +
-                                (bResto ? '<div style="font-size:0.8rem;color:#6B7280;margin-top:3px;line-height:1.4;">' + bResto + '</div>' : '') +
-                                '</div></div>';
-                            innerBubbleStyle = 'background:rgba(255,107,0,0.04);color:#1D1D1F;padding:10px 14px;border-radius:12px;position:relative;border:1px solid rgba(255,107,0,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.04);width:100%;max-width:95%;';
-                            align = 'flex-start';
-                        }
-                        // Comentarios de Bitrix: se renderizan como mensajes normales (sin tarjeta especial)
-
-                        // Actividades completadas se muestran como tarjeta de historial
-                        if (textoPlano.startsWith('[ACT_COMPLETADA:')) {
-                            var cParts = textoPlano.split(']');
-                            if (cParts.length >= 2) {
-                                var cId = cParts[0].substring(16);
-                                var cTit = cParts.slice(1).join(']');
-                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + cId + ')">' +
-                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(52,199,89,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                    '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' +
-                                    '</div>' +
-                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
-                                    '<span style="font-weight:600;font-size:0.85rem;text-decoration:underline;text-decoration-color:rgba(0,0,0,0.15);cursor:pointer;">' + woEscape(cTit) + '</span>' +
-                                    '<span style="font-size:0.7rem;opacity:0.7;">✓ Completada</span>' +
-                                    '</div>' +
-                                    '</div>';
-                                innerBubbleStyle = 'background:' + (isMine ? 'rgba(0,82,212,0.08)' : '#fff') + ';color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid #E5E5EA;box-shadow:0 2px 8px rgba(0,0,0,0.04);';
-                            }
-                        }
-
-                        // Actividades reprogramadas se muestran como notificación del sistema
-                        var isSystemMsg = false;
-                        if (textoPlano.startsWith('[ACT_REPROGRAMADA:')) {
-                            isSystemMsg = true;
-                            var rParts = textoPlano.split(']');
-                            if (rParts.length >= 2) {
-                                var rId = rParts[0].substring(18);
-                                var rRest = rParts.slice(1).join(']');
-                                var rFields = rRest.split('|');
-                                var rTit = rFields[0] || '';
-                                var rOld = rFields[1] || '';
-                                var rNew = rFields[2] || '';
-                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + rId + ')">' +
-                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                    '<svg width="14" height="14" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
-                                    '</div>' +
-                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
-                                    '<span style="font-weight:600;font-size:0.85rem;">' + woEscape(rTit) + '</span>' +
-                                    '<span style="font-size:0.7rem;color:#FF9500;">Reprogramada: <s style="opacity:0.6;">' + woEscape(rOld) + '</s> → ' + woEscape(rNew) + '</span>' +
-                                    '</div>' +
-                                    '</div>';
-                                innerBubbleStyle = 'background:rgba(255,149,0,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(255,149,0,0.2);box-shadow:0 2px 8px rgba(0,0,0,0.04);';
-                            }
-                        }
-                        if (textoPlano.startsWith('[ACT_COMPLETADA:')) isSystemMsg = true;
-
-                        // Actividades agendadas: tarjeta azul clickeable [ACT:ID]titulo|fecha|ini|fin|desc
-                        if (textoPlano.startsWith('[ACT:')) {
-                            isSystemMsg = true;
-                            var aParts = textoPlano.split(']');
-                            if (aParts.length >= 2) {
-                                var aId = aParts[0].substring(5);
-                                var aBody = aParts.slice(1).join(']');
-                                var aFields = aBody.split('|');
-                                var aTit = aFields[0] || '';
-                                var aFecha = aFields[1] || '';
-                                var aIni = aFields[2] || '';
-                                var aFin = aFields[3] || '';
-                                var aDesc = aFields[4] || '';
-                                var aSubLine = '';
-                                if (aFecha) aSubLine += aFecha;
-                                if (aIni && aFin) aSubLine += (aSubLine ? '  ' : '') + aIni + ' – ' + aFin;
-                                parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + aId + ')">' +
-                                    '<div style="width:28px;height:28px;border-radius:50%;background:rgba(0,82,212,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                    '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
-                                    '</div>' +
-                                    '<div style="display:flex;flex-direction:column;min-width:0;">' +
-                                    '<span style="font-weight:600;font-size:0.85rem;color:#0052D4;">' + woEscape(aTit) + '</span>' +
-                                    (aSubLine ? '<span style="font-size:0.7rem;opacity:0.7;">' + woEscape(aSubLine) + '</span>' : '') +
-                                    (aDesc ? '<span style="font-size:0.72rem;color:#86868B;margin-top:2px;">' + woEscape(aDesc.substring(0, 60)) + (aDesc.length > 60 ? '...' : '') + '</span>' : '') +
-                                    '</div></div>';
-                                innerBubbleStyle = 'background:rgba(0,82,212,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(0,82,212,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:pointer;';
-                            }
-                        }
-
-                        html += '<div style="' + innerBubbleStyle + '">' +
-                            replyHtml + imgHtml + parsedContent +
-                            '</div>';
-
-                        // Options button (no mostrar para mensajes de sistema)
-                        if (!isSystemMsg) {
-                            html += '<button onclick="woConvMsgOptions(' + m.id + ', \'' + woEscape(m.texto) + '\', ' + isMine + ', \'' + woEscape(m.nombre) + '\')" style="background:none;border:none;color:#C7C7CC;cursor:pointer;padding:0.2rem;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'none\'">' +
-                                '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></button>';
-                        }
-
-                        html += '</div></div>';
-                    });
-
-                    feed.innerHTML = html;
-                    setTimeout(function () { feed.scrollTop = feed.scrollHeight; }, 100);
+                    _woConvMsgs = data.mensajes || [];
+                    woConvPintar(true);
                 })
                 .catch(function (e) { console.error(e); });
+        }
+
+        window.woConvSetFiltro = function (f, btn) {
+            _woConvFiltro = f;
+            var wrap = document.getElementById('woConvChips');
+            if (wrap) {
+                wrap.querySelectorAll('[data-conv-filtro]').forEach(function (c) {
+                    c.classList.toggle('is-active', c === btn);
+                });
+            }
+            woConvPintar(false);
+        };
+
+        window.woConvBuscar = function (v) {
+            clearTimeout(window._woConvBuscarTO);
+            window._woConvBuscarTO = setTimeout(function () {
+                _woConvQuery = (v || '').trim().toLowerCase();
+                woConvPintar(false);
+            }, 200);
+        };
+
+        window.woConvTogglePin = function (msgId) {
+            if (!_woCurrentOppId) return;
+            fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/mensaje/' + msgId + '/fijar/', {
+                method: 'POST', headers: { 'X-CSRFToken': getCsrf() },
+            }).then(function (r) { return r.json(); })
+                .then(function (d) { if (d && d.success) woCargarNotas(_woCurrentOppId); });
+        };
+
+        function woConvPintar(irAlFondo) {
+            var feed = document.getElementById('woConvMensajesGrid');
+            if (!feed) return;
+
+            // Barra de fijado: se muestra pase lo que pase con el filtro.
+            var pinBar = document.getElementById('woConvFijado');
+            var fijado = _woConvMsgs.filter(function (m) { return m.fijado; })[0];
+            if (pinBar) {
+                if (fijado) {
+                    pinBar.style.display = 'flex';
+                    pinBar.innerHTML =
+                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="#B45309" stroke="#B45309" stroke-width="1" style="flex-shrink:0;margin-top:2px;"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
+                        '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:0.66rem;font-weight:800;color:#B45309;letter-spacing:0.04em;">FIJADO' + (fijado.nombre ? ' \u00b7 ' + woEscape(fijado.nombre) : '') + '</div>' +
+                        '<div style="font-size:0.82rem;color:#1D1D1F;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + woEscape(fijado.texto || '') + '</div>' +
+                        '</div>' +
+                        '<button onclick="woConvTogglePin(' + fijado.id + ')" title="Desfijar" style="border:none;background:none;color:#B45309;cursor:pointer;font-size:1rem;padding:2px;flex-shrink:0;">&times;</button>';
+                } else {
+                    pinBar.style.display = 'none';
+                }
+            }
+
+            var msgs = _woConvMsgs.filter(function (m) {
+                if (_woConvFiltro !== 'todo' && woConvClasificar(m) !== _woConvFiltro) return false;
+                if (_woConvQuery) {
+                    var blob = ((m.texto || '') + ' ' + (m.nombre || '') + ' ' +
+                        (m.asunto || '') + ' ' + (m.remitente_nombre || '')).toLowerCase();
+                    if (blob.indexOf(_woConvQuery) === -1) return false;
+                }
+                return true;
+            });
+
+            if (!msgs.length) {
+                var filtrando = (_woConvQuery || _woConvFiltro !== 'todo');
+                feed.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:#86868B;">' +
+                    '<svg width="48" height="48" fill="none" stroke="#D1D1D6" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 1rem;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+                    '<div style="font-size:1.1rem;font-weight:600;color:#1D1D1F;margin-bottom:0.5rem;">' +
+                    (filtrando ? 'Sin resultados' : 'Chat Vacío') + '</div>' +
+                    '<div style="font-size:0.9rem;">' +
+                    (filtrando ? 'Ningún mensaje coincide con este filtro.' : 'Empieza la conversación enviando un mensaje.') +
+                    '</div></div>';
+                return;
+            }
+
+            var html = '';
+            msgs.forEach(function (m) {
+                // ── Correos (enviados/recibidos) — tarjeta especial ──
+                if (m.tipo === 'correo') {
+                    var esEnviado = (m.direccion || '').toUpperCase() === 'SENT';
+                    var accent = esEnviado ? '#0052D4' : '#059669';
+                    var accentBg = esEnviado ? 'rgba(0,82,212,0.06)' : 'rgba(16,185,129,0.07)';
+                    var accentBorder = esEnviado ? 'rgba(0,82,212,0.18)' : 'rgba(16,185,129,0.22)';
+                    var labelTxt = esEnviado ? 'Correo enviado' : 'Correo recibido';
+                    var alignCard = esEnviado ? 'flex-end' : 'flex-start';
+                    var subInfo = esEnviado ? '' : (m.remitente_nombre || m.remitente_email || '');
+                    var subHtml = subInfo ? '<div style="font-size:0.74rem;color:#86868B;margin-top:2px;">de ' + woEscape(subInfo) + '</div>' : '';
+                    html += '<div style="display:flex;justify-content:' + alignCard + ';margin:6px 0;">' +
+                        '<div onclick="woCorreoVerDetalle(' + m.id + ')" style="cursor:pointer;max-width:78%;background:' + accentBg + ';border:1px solid ' + accentBorder + ';border-radius:14px;padding:11px 14px;display:flex;gap:11px;align-items:flex-start;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 6px 16px -6px rgba(0,0,0,0.18)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">' +
+                          '<div style="width:34px;height:34px;border-radius:10px;background:' + accent + '22;color:' + accent + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>' +
+                          '</div>' +
+                          '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:0.62rem;font-weight:800;color:' + accent + ';text-transform:uppercase;letter-spacing:0.07em;">' + labelTxt + '</div>' +
+                            '<div style="font-weight:700;color:#1D1D1F;font-size:0.92rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + woEscape(m.asunto || '(sin asunto)') + '</div>' +
+                            subHtml +
+                            '<div style="font-size:0.72rem;color:#AEAEB2;margin-top:3px;">' + woEscape(m.fecha || '') + '</div>' +
+                          '</div>' +
+                        '</div>' +
+                      '</div>';
+                    return;
+                }
+
+                var isMine = m.es_mio;
+                var align = isMine ? 'flex-end' : 'flex-start';
+                var bg = isMine ? '#0052D4' : '#E5E5EA';
+                var color = isMine ? '#fff' : '#1D1D1F';
+                var radius = isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px';
+
+                var replyHtml = '';
+                if (m.reply_to) {
+                    replyHtml = '<div style="background:rgba(0,0,0,0.1);padding:0.4rem 0.6rem;border-radius:8px;font-size:0.75rem;margin-bottom:0.4rem;border-left:3px solid ' + (isMine ? 'rgba(255,255,255,0.5)' : '#86868B') + ';">' +
+                        '<div style="font-weight:600;margin-bottom:0.2rem;">' + woEscape(m.reply_to.nombre) + '</div>' +
+                        '<div style="opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (m.reply_to.texto ? woEscape(m.reply_to.texto) : '📷 Imagen') + '</div></div>';
+                }
+
+                var imgHtml = '';
+                if (m.imagen_url) {
+                    var ext = (m.imagen_nombre || '').split('.').pop().toLowerCase();
+                    var esImagen = ['jpg','jpeg','png','gif','webp','bmp','svg'].indexOf(ext) !== -1;
+                    if (esImagen) {
+                        imgHtml = '<img src="' + woEscape(m.imagen_url) + '" data-filename="' + woEscape(m.imagen_nombre || 'Imagen') + '" data-url="' + woEscape(m.imagen_url) + '" style="max-width:100%;border-radius:12px;margin-bottom:0.4rem;cursor:pointer;" onclick="window.open(this.src, \'_blank\')" onerror="woImgFallback(this)" />';
+                    } else {
+                        var _fname = m.imagen_nombre || 'Archivo';
+                        var _fext = _fname.split('.').pop().toLowerCase();
+                        var _typeLabel, _typeColor, _typeBg;
+                        if (_fext === 'pdf') { _typeLabel = 'PDF'; _typeColor = '#EF4444'; _typeBg = '#FEF2F2'; }
+                        else if (_fext === 'doc' || _fext === 'docx') { _typeLabel = 'DOC'; _typeColor = '#2563EB'; _typeBg = '#EFF6FF'; }
+                        else if (_fext === 'xls' || _fext === 'xlsx') { _typeLabel = 'XLS'; _typeColor = '#16A34A'; _typeBg = '#F0FDF4'; }
+                        else if (_fext === 'ppt' || _fext === 'pptx') { _typeLabel = 'PPT'; _typeColor = '#EA580C'; _typeBg = '#FFF7ED'; }
+                        else if (_fext === 'zip' || _fext === 'rar' || _fext === '7z') { _typeLabel = 'ZIP'; _typeColor = '#9333EA'; _typeBg = '#FAF5FF'; }
+                        else if (_fext === 'mp4' || _fext === 'mov' || _fext === 'avi' || _fext === 'mkv') { _typeLabel = 'VID'; _typeColor = '#0891B2'; _typeBg = '#ECFEFF'; }
+                        else if (_fext === 'dwg' || _fext === 'dxf') { _typeLabel = 'CAD'; _typeColor = '#B45309'; _typeBg = '#FFFBEB'; }
+                        else { _typeLabel = (_fext.length <= 4 ? _fext.toUpperCase() : 'FILE'); _typeColor = '#6B7280'; _typeBg = '#F3F4F6'; }
+                        var _cardBg = isMine ? 'rgba(255,255,255,0.14)' : '#fff';
+                        var _cardBorder = isMine ? 'rgba(255,255,255,0.25)' : '#E5E7EB';
+                        var _nameColor = isMine ? '#fff' : '#1D1D1F';
+                        var _subColor = isMine ? 'rgba(255,255,255,0.65)' : '#9CA3AF';
+                        var _arrowColor = isMine ? 'rgba(255,255,255,0.7)' : '#9CA3AF';
+                        imgHtml = '<a href="' + woEscape(m.imagen_url) + '" target="_blank" style="display:flex;align-items:center;gap:12px;background:' + _cardBg + ';border:1px solid ' + _cardBorder + ';border-radius:14px;padding:10px 14px;text-decoration:none;margin-bottom:4px;max-width:280px;transition:opacity .15s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">' +
+                            '<div style="width:42px;height:42px;border-radius:10px;background:' + _typeBg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<span style="font-size:0.58rem;font-weight:800;color:' + _typeColor + ';letter-spacing:0.04em;">' + _typeLabel + '</span>' +
+                            '</div>' +
+                            '<div style="min-width:0;flex:1;">' +
+                            '<div style="font-size:0.83rem;font-weight:600;color:' + _nameColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">' + woEscape(_fname) + '</div>' +
+                            '<div style="font-size:0.72rem;color:' + _subColor + ';margin-top:2px;">Toca para abrir</div>' +
+                            '</div>' +
+                            '<svg width="15" height="15" fill="none" stroke="' + _arrowColor + '" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+                            '</a>';
+                    }
+                }
+
+                html += '<div style="display:flex;flex-direction:column;align-items:' + align + ';margin-bottom:0.2rem;">';
+                if (!isMine) {
+                    html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-left:0.5rem;">' + woEscape(m.nombre) + ' &bull; ' + m.fecha + '</span>';
+                } else {
+                    html += '<span style="font-size:0.75rem;color:#86868B;margin-bottom:0.2rem;margin-right:0.5rem;">' + m.fecha + '</span>';
+                }
+
+                html += '<div style="display:flex;align-items:center;gap:0.5rem;max-width:80%;flex-direction:' + (isMine ? 'row-reverse' : 'row') + ';">';
+
+                var textoPlano = m.texto || '';
+
+                // Las actividades agendadas se muestran SOLO en el banner superior,
+                // no se duplican como burbuja en el chat.
+                if (textoPlano.startsWith('[ACT_AGENDADA:') || textoPlano.indexOf('woVerActividad(') !== -1) {
+                    return; // saltar este mensaje del feed
+                }
+
+                var innerBubbleStyle = 'background:' + bg + ';color:' + color + ';padding:0.75rem 1rem;border-radius:' + radius + ';font-size:0.95rem;line-height:1.4;position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+                var parsedContent = woEscape(textoPlano);
+
+                // Actividades importadas de Bitrix: tarjeta naranja (solo actividades, no comentarios)
+                if (m.es_bitrix && m.bitrix_tipo === 'actividad') {
+                    isSystemMsg = true;
+                    var bLineas = textoPlano.split('\n');
+                    var bTitulo = bLineas[0];
+                    var bResto = bLineas.slice(1).join('<br>');
+                    parsedContent = '<div style="display:flex;gap:10px;align-items:flex-start;">' +
+                        '<div style="width:26px;height:26px;border-radius:6px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' +
+                        '<svg width="13" height="13" fill="none" stroke="#FF6B00" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>' +
+                        '</div>' +
+                        '<div style="min-width:0;">' +
+                        '<div style="font-size:0.7rem;font-weight:700;color:#FF6B00;letter-spacing:0.03em;text-transform:uppercase;margin-bottom:2px;">Bitrix24 · ' + woEscape(m.nombre) + '</div>' +
+                        '<div style="font-weight:600;font-size:0.85rem;color:#1D1D1F;">' + woEscape(bTitulo) + '</div>' +
+                        (bResto ? '<div style="font-size:0.8rem;color:#6B7280;margin-top:3px;line-height:1.4;">' + bResto + '</div>' : '') +
+                        '</div></div>';
+                    innerBubbleStyle = 'background:rgba(255,107,0,0.04);color:#1D1D1F;padding:10px 14px;border-radius:12px;position:relative;border:1px solid rgba(255,107,0,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.04);width:100%;max-width:95%;';
+                    align = 'flex-start';
+                }
+                // Comentarios de Bitrix: se renderizan como mensajes normales (sin tarjeta especial)
+
+                // Actividades completadas se muestran como tarjeta de historial
+                if (textoPlano.startsWith('[ACT_COMPLETADA:')) {
+                    var cParts = textoPlano.split(']');
+                    if (cParts.length >= 2) {
+                        var cId = cParts[0].substring(16);
+                        var cTit = cParts.slice(1).join(']');
+                        parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + cId + ')">' +
+                            '<div style="width:28px;height:28px;border-radius:50%;background:rgba(52,199,89,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' +
+                            '</div>' +
+                            '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                            '<span style="font-weight:600;font-size:0.85rem;text-decoration:underline;text-decoration-color:rgba(0,0,0,0.15);cursor:pointer;">' + woEscape(cTit) + '</span>' +
+                            '<span style="font-size:0.7rem;opacity:0.7;">✓ Completada</span>' +
+                            '</div>' +
+                            '</div>';
+                        innerBubbleStyle = 'background:' + (isMine ? 'rgba(0,82,212,0.08)' : '#fff') + ';color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid #E5E5EA;box-shadow:0 2px 8px rgba(0,0,0,0.04);';
+                    }
+                }
+
+                // Actividades reprogramadas se muestran como notificación del sistema
+                var isSystemMsg = false;
+                if (textoPlano.startsWith('[ACT_REPROGRAMADA:')) {
+                    isSystemMsg = true;
+                    var rParts = textoPlano.split(']');
+                    if (rParts.length >= 2) {
+                        var rId = rParts[0].substring(18);
+                        var rRest = rParts.slice(1).join(']');
+                        var rFields = rRest.split('|');
+                        var rTit = rFields[0] || '';
+                        var rOld = rFields[1] || '';
+                        var rNew = rFields[2] || '';
+                        parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + rId + ')">' +
+                            '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,149,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<svg width="14" height="14" fill="none" stroke="#FF9500" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+                            '</div>' +
+                            '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                            '<span style="font-weight:600;font-size:0.85rem;">' + woEscape(rTit) + '</span>' +
+                            '<span style="font-size:0.7rem;color:#FF9500;">Reprogramada: <s style="opacity:0.6;">' + woEscape(rOld) + '</s> → ' + woEscape(rNew) + '</span>' +
+                            '</div>' +
+                            '</div>';
+                        innerBubbleStyle = 'background:rgba(255,149,0,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(255,149,0,0.2);box-shadow:0 2px 8px rgba(0,0,0,0.04);';
+                    }
+                }
+                if (textoPlano.startsWith('[ACT_COMPLETADA:')) isSystemMsg = true;
+
+                // Actividades agendadas: tarjeta azul clickeable [ACT:ID]titulo|fecha|ini|fin|desc
+                if (textoPlano.startsWith('[ACT:')) {
+                    isSystemMsg = true;
+                    var aParts = textoPlano.split(']');
+                    if (aParts.length >= 2) {
+                        var aId = aParts[0].substring(5);
+                        var aBody = aParts.slice(1).join(']');
+                        var aFields = aBody.split('|');
+                        var aTit = aFields[0] || '';
+                        var aFecha = aFields[1] || '';
+                        var aIni = aFields[2] || '';
+                        var aFin = aFields[3] || '';
+                        var aDesc = aFields[4] || '';
+                        var aSubLine = '';
+                        if (aFecha) aSubLine += aFecha;
+                        if (aIni && aFin) aSubLine += (aSubLine ? '  ' : '') + aIni + ' – ' + aFin;
+                        parsedContent = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="woVerActividad(' + aId + ')">' +
+                            '<div style="width:28px;height:28px;border-radius:50%;background:rgba(0,82,212,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' +
+                            '</div>' +
+                            '<div style="display:flex;flex-direction:column;min-width:0;">' +
+                            '<span style="font-weight:600;font-size:0.85rem;color:#0052D4;">' + woEscape(aTit) + '</span>' +
+                            (aSubLine ? '<span style="font-size:0.7rem;opacity:0.7;">' + woEscape(aSubLine) + '</span>' : '') +
+                            (aDesc ? '<span style="font-size:0.72rem;color:#86868B;margin-top:2px;">' + woEscape(aDesc.substring(0, 60)) + (aDesc.length > 60 ? '...' : '') + '</span>' : '') +
+                            '</div></div>';
+                        innerBubbleStyle = 'background:rgba(0,82,212,0.06);color:#1D1D1F;padding:12px 14px;border-radius:14px;position:relative;border:1px solid rgba(0,82,212,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:pointer;';
+                    }
+                }
+
+                html += '<div style="' + innerBubbleStyle + '">' +
+                    replyHtml + imgHtml + parsedContent +
+                    '</div>';
+
+                // Fijar / desfijar (uno por oportunidad, visible al equipo)
+                if (!isSystemMsg) {
+                    html += '<button onclick="woConvTogglePin(' + m.id + ')" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '" style="background:none;border:none;color:' + (m.fijado ? '#B45309' : '#C7C7CC') + ';cursor:pointer;padding:0.2rem;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'none\'">' +
+                        '<svg width="15" height="15" viewBox="0 0 24 24" fill="' + (m.fijado ? '#B45309' : 'none') + '" stroke="currentColor" stroke-width="1.7"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg></button>';
+                }
+
+                // Options button (no mostrar para mensajes de sistema)
+                if (!isSystemMsg) {
+                    html += '<button onclick="woConvMsgOptions(' + m.id + ', \'' + woEscape(m.texto) + '\', ' + isMine + ', \'' + woEscape(m.nombre) + '\')" style="background:none;border:none;color:#C7C7CC;cursor:pointer;padding:0.2rem;display:flex;align-items:center;justify-content:center;border-radius:50%;" onmouseenter="this.style.background=\'#F2F2F7\'" onmouseleave="this.style.background=\'none\'">' +
+                        '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></button>';
+                }
+
+                html += '</div></div>';
+            });
+
+            feed.innerHTML = html;
+            if (irAlFondo) setTimeout(function () { feed.scrollTop = feed.scrollHeight; }, 100);
         }
 
         window.woConvMsgOptions = function (msgId, texto, isMine, nombre) {
@@ -2283,11 +2392,16 @@ matarían los bindings posteriores del mismo try-block. El markup original
         window.woCargarActividadReciente = woCargarActividadReciente;
 
         // ── Widget: todas las tareas ──
-        window.woAbrirTodasTareas = function(oppId) {
+        // modo: 'tareas' (por defecto) o 'actividades'. Mismo overlay para las
+        // dos listas — cambian el título, el endpoint y qué se abre al clic.
+        window.woAbrirTodasTareas = function(oppId, modo) {
+            var esAct = modo === 'actividades';
             var overlay = document.getElementById('widgetTodasTareas');
             var card = document.getElementById('widgetTodasTareasCard');
             var body = document.getElementById('widgetTodasTareasBody');
+            var titulo = document.getElementById('widgetTodasTareasTitulo');
             if (!overlay) return;
+            if (titulo) titulo.textContent = esAct ? 'Actividades de la oportunidad' : 'Tareas de la oportunidad';
             body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>';
             // Si la opp se abrió elevada (caso: tarea → opp), también
             // elevamos este sub-widget. Sin esto, queda por detrás del
@@ -2305,12 +2419,14 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     card.style.opacity = '1';
                 });
             });
-            fetch('/app/api/tareas/?oportunidad_id=' + oppId)
+            fetch(esAct ? ('/app/api/oportunidad/' + oppId + '/tareas/')
+                        : ('/app/api/tareas/?oportunidad_id=' + oppId))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     var tareas = data.tareas || data.results || [];
                     if (!tareas.length) {
-                        body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">Sin tareas</div>';
+                        body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">' +
+                            (esAct ? 'Sin actividades' : 'Sin tareas') + '</div>';
                         return;
                     }
                     var now = new Date();
@@ -2331,7 +2447,10 @@ matarían los bindings posteriores del mismo try-block. El markup original
                         var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
                         var rowBg = done ? 'rgba(52,199,89,0.06)' : (venc ? 'rgba(255,59,48,0.07)' : 'transparent');
                         var fechaStr = t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', {day:'numeric',month:'short'}) : '';
-                        return '<div onclick="woCerrarTodasTareas();if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:' + rowBg + ';cursor:pointer;">' +
+                        var abrir = esAct
+                            ? 'woCerrarTodasTareas();if(typeof woVerActividad===\'function\')woVerActividad(' + t.id + ')'
+                            : 'woCerrarTodasTareas();if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ')';
+                        return '<div onclick="' + abrir + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:' + rowBg + ';cursor:pointer;">' +
                             '<span style="width:8px;height:8px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
                             '<span style="flex:1;font-size:0.83rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (t.titulo || 'Sin título') + '</span>' +
                             '<span style="font-size:0.72rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' + fechaStr + '</span>' +
@@ -2801,21 +2920,12 @@ matarían los bindings posteriores del mismo try-block. El markup original
                     document.body.appendChild(toast);
                     setTimeout(function () { toast.remove(); }, 3200);
 
-                    // Publicar mensaje en la conversación como tarjeta clickeable [ACT:ID]
-                    var fechaFmt = f_date ? (function(d){ var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; })(f_date) : '';
-                    var tareaId = res.tarea ? res.tarea.id : '';
-                    var chatMsg = '[ACT:' + tareaId + ']' + titulo + '|' + fechaFmt + '|' + t_ini + '|' + t_fin + '|' + desc;
-                    var fd = new FormData();
-                    fd.append('texto', chatMsg);
-                    fetch('/app/api/oportunidad/' + _woCurrentOppId + '/chat/', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrf },
-                        body: fd
-                    }).then(function () {
-                        woCargarNotas(_woCurrentOppId);
-                    }).catch(function () {
-                        woCargarNotas(_woCurrentOppId);
-                    });
+                    // Las actividades viven en SU cuadro (incluidas las completadas),
+                    // ya no se publican como mensaje en la conversación. Se avisa al
+                    // bus para que los widgets abiertos refresquen su lista.
+                    if (window.crmDataBus) {
+                        window.crmDataBus.emit('tarea-opp', 'created', res.tarea ? res.tarea.id : null);
+                    }
 
                     if (typeof woCargarTareasInline === 'function') {
                         woCargarTareasInline(_woCurrentOppId);
@@ -3162,12 +3272,21 @@ matarían los bindings posteriores del mismo try-block. El markup original
             return el ? el.value : '';
         }
 
-        window.woActResAbrir = function (actId) {
+        // prospectoId llega solo desde el calendario, al cerrar una actividad
+        // de prospección: al guardar se abre ese prospecto para agendar la
+        // siguiente. Va como argumento y no como variable suelta, para que
+        // abrir el diálogo por otra vía no arrastre el prospecto anterior.
+        window.woActResAbrir = function (actId, prospectoId) {
             window._woActResActId = actId;
+            window._woActResProspectoId = prospectoId || null;
             window._woActResArchivos = [];
             window._woActResUploading = 0;
+            // El aviso de la vez pasada no debe recibir a la siguiente actividad.
+            var _av = document.getElementById('woActResAviso');
+            if (_av) _av.style.display = 'none';
             var sel = document.getElementById('woActResEstatus');
             var txt = document.getElementById('woActResTexto');
+            if (txt) txt.style.borderColor = '#E5E5EA';
             var lista = document.getElementById('woActResLista');
             if (sel) sel.value = '';
             if (txt) txt.value = '';
@@ -3257,9 +3376,28 @@ matarían los bindings posteriores del mismo try-block. El markup original
             if (!window._woActResActId) return;
             var actId = window._woActResActId;
             var btn = document.getElementById('woActResGuardarBtn');
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
             var estatus = document.getElementById('woActResEstatus');
             var texto = document.getElementById('woActResTexto');
+            var aviso = document.getElementById('woActResAviso');
+
+            // Completar exige constancia: el resultado escrito o un archivo.
+            // Una actividad cerrada sin nada no deja rastro de que paso, y el
+            // calendario se llena de completadas que no dicen nada.
+            var hayTexto = !!(texto && texto.value.trim());
+            var hayArchivo = !!(window._woActResArchivos && window._woActResArchivos.length);
+            if (!hayTexto && !hayArchivo) {
+                if (aviso) {
+                    aviso.textContent = 'Para completarla hay que dejar constancia: escribe el ' +
+                        'resultado o adjunta un archivo.';
+                    aviso.style.display = '';
+                }
+                if (texto) { texto.style.borderColor = '#FF3B30'; texto.focus(); }
+                return;
+            }
+            if (aviso) aviso.style.display = 'none';
+            if (texto) texto.style.borderColor = '#E5E5EA';
+
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
             var payload = {
                 completada: true,
                 resultado: texto ? texto.value : '',
@@ -3271,7 +3409,13 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 body: JSON.stringify(payload)
             }).then(function (r) { return r.json(); }).then(function (res) {
                 if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
-                if (res && res.error) { console.error(res.error); return; }
+                if (res && res.error) {
+                    // El servidor tambien exige la constancia: si rechaza, se
+                    // dice aqui en vez de fallar en silencio.
+                    if (aviso) { aviso.textContent = res.error; aviso.style.display = ''; }
+                    console.error(res.error);
+                    return;
+                }
                 // Actualizar badge y ocultar botón Completar en el visor.
                 var badge = document.getElementById('woVerActEstadoBadge');
                 if (badge) {
@@ -3286,10 +3430,17 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 if (ov) ov.style.display = 'none';
                 var visor = document.getElementById('widgetOppVerActividad');
                 if (visor) visor.style.display = 'none';
-                // Si hay oportunidad ligada, abrirla para agendar la próxima actividad.
-                if (window._calCurrentOppId && typeof window.openDetalle === 'function') {
+                // Si venía de una actividad de prospección, se abre el prospecto
+                // para agendar la siguiente — es el cierre de ese ciclo y por eso
+                // manda sobre la oportunidad.
+                if (window._woActResProspectoId && typeof abrirWidgetProspecto === 'function') {
+                    var _pid = window._woActResProspectoId;
+                    setTimeout(function () { abrirWidgetProspecto(_pid); }, 300);
+                } else if (window._calCurrentOppId && typeof window.openDetalle === 'function') {
+                    // Si hay oportunidad ligada, abrirla para agendar la próxima actividad.
                     window.openDetalle(window._calCurrentOppId);
                 }
+                window._woActResProspectoId = null;
                 window._woActResActId = null;
             }).catch(function (err) {
                 if (btn) { btn.disabled = false; btn.style.opacity = '1'; }

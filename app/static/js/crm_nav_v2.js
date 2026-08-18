@@ -561,6 +561,9 @@
 
         if (t.id === 'btnCalendario') {
             if (PAGE_TAB === 'calendario') return;  // página nativa → default
+            // Correo es una página exclusiva (page-mode): abrir el calendario
+            // INLINE lo apilaba debajo del correo. Navegación Turbo normal.
+            if (PAGE_TAB === 'correo') return;
             if (!document.getElementById('widgetCalendarioMaster')) return;  // sin widget → Turbo normal
             ev.preventDefault();
             ev.stopPropagation();

@@ -104,6 +104,15 @@
 .pp-reset:hover { background:#F8FAFC; }
 .pp-apply { flex:1.5; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.82rem; font-weight:700; cursor:pointer; }
 .pp-apply:hover { opacity:.9; }
+/* ── Dashboard v3: pulido del Resumen ──
+   El chip del gauge ("−55% vs plan") toma color por severidad: ese contraste
+   avance/tiempo es EL dato del proyecto y estaba en gris neutro. */
+.proy-v3-dash-card-sub.is-danger { color:#dc2626; font-weight:800; }
+.proy-v3-dash-card-sub.is-warn { color:#b45309; font-weight:800; }
+.proy-v3-dash-card-sub.is-good { color:#059669; font-weight:700; }
+/* Las cards de la fila doble no se estiran a la altura de la más alta:
+   "Equipo" con 1 miembro dejaba media card en blanco junto al gauge. */
+.proy-v3-dash-row--2col { align-items: start; }
 </style>
 <div class="proyectos-section" id="proyectosSection">
 
@@ -502,7 +511,7 @@
               </div>
               <div class="proy-v3-mini-stat-text">
                 <div class="proy-v3-mini-stat-value" id="proyDashStatDias">—</div>
-                <div class="proy-v3-mini-stat-label">Días restantes</div>
+                <div class="proy-v3-mini-stat-label" id="proyDashStatDiasLabel">Días restantes</div>
               </div>
             </div>
             <div class="proy-v3-mini-stat">

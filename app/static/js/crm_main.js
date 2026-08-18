@@ -293,7 +293,11 @@
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 e.preventDefault();
-                var oppId = parseInt(qbtn.getAttribute('data-opp-id') || '0', 10);
+                // Los digitos se limpian antes de parsear: si el id llega
+                // localizado ("1,443"), parseInt se detiene en la coma y
+                // devuelve 1 — abria la cotizacion de OTRA oportunidad.
+                var crudo = String(qbtn.getAttribute('data-opp-id') || '').replace(/[^\d]/g, '');
+                var oppId = parseInt(crudo || '0', 10);
                 if (oppId && typeof window.openCotizador === 'function') window.openCotizador(oppId);
                 return false;
             }
@@ -4820,7 +4824,18 @@
                 var listWrap = document.getElementById('clienteOppListWrap');
                 var filtersBar = document.querySelector('#widgetClienteOportunidades .wco-filters');
                 if (listWrap) listWrap.style.display = (isInfo || isFact) ? 'none' : '';
-                if (filtersBar) filtersBar.style.display = (isInfo || isFact) ? 'none' : '';
+                // Facturacion SI usa la barra: busca por nombre de factura,
+                // oportunidad o quien la subio, y filtra por periodo. Solo
+                // Informacion, que es una ficha, se queda sin ella.
+                if (filtersBar) filtersBar.style.display = isInfo ? 'none' : '';
+                if (clienteOppSearch) {
+                    clienteOppSearch.placeholder = isFact
+                        ? 'Buscar factura, oportunidad o quién la subió…'
+                        : 'Buscar oportunidad...';
+                }
+                // Los selectores de area y producto son de oportunidades.
+                if (clienteOppFilterArea) clienteOppFilterArea.style.display = isFact ? 'none' : '';
+                if (clienteOppFilterProducto) clienteOppFilterProducto.style.display = isFact ? 'none' : '';
                 if (infoPanel) infoPanel.style.display = isInfo ? 'block' : 'none';
                 if (factPanel) factPanel.style.display = isFact ? 'block' : 'none';
                 // Marcar tab activo
@@ -4894,29 +4909,72 @@
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;');
             }
+            // Las facturas se traen UNA vez y se filtran en el navegador, igual
+            // que las oportunidades: buscar o cambiar de mes no vuelve a pedir
+            // nada al servidor.
+            var _factRows = [];
+
             function _cargarClienteFacturas(){
+                var tbody = document.getElementById('clienteOppFactTbody');
+                var count = document.getElementById('clienteOppFactCount');
+                if (!tbody) return;
+                if (count) count.textContent = '…';
+                tbody.innerHTML = '<tr><td colspan="7" class="wco-empty">Cargando…</td></tr>';
+                fetch('/app/api/cliente-facturas/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        _factRows = (data && data.rows) || [];
+                        _renderFacturas();
+                    }).catch(function(){
+                        _factRows = [];
+                        if (count) count.textContent = '0';
+                        tbody.innerHTML = '<tr><td colspan="7" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
+                    });
+            }
+
+            function _renderFacturas(){
                 var tbody = document.getElementById('clienteOppFactTbody');
                 var empty = document.getElementById('clienteOppFactEmpty');
                 var table = document.getElementById('clienteOppFactTable');
                 var count = document.getElementById('clienteOppFactCount');
                 if (!tbody) return;
-                if (count) count.textContent = '…';
-                if (empty) empty.style.display = 'none';
+
+                var q = (clienteOppSearch && clienteOppSearch.value || '').trim().toLowerCase();
+                var rows = _factRows.filter(function(r){
+                    if (q) {
+                        var heno = ((r.nombre || '') + ' ' + (r.oportunidad_titulo || '') + ' ' +
+                                    (r.subido_por || '')).toLowerCase();
+                        if (heno.indexOf(q) === -1) return false;
+                    }
+                    // El periodo se mide sobre la fecha en que entro la factura.
+                    if ((_clienteOppMes || _clienteOppAnio) && r.fecha_subida_iso) {
+                        var iso = r.fecha_subida_iso;
+                        if (_clienteOppAnio && iso.slice(0, 4) !== String(_clienteOppAnio)) return false;
+                        if (_clienteOppMes && iso.slice(5, 7) !== String(_clienteOppMes)) return false;
+                    }
+                    return true;
+                });
+
+                if (count) count.textContent = String(rows.length);
+                if (!rows.length) {
+                    tbody.innerHTML = '';
+                    if (table) table.style.display = 'none';
+                    if (empty) {
+                        empty.style.display = 'flex';
+                        var t = empty.querySelector('.wco-fact-empty-t');
+                        var s = empty.querySelector('.wco-fact-empty-s');
+                        var hayFiltro = q || _clienteOppMes || _clienteOppAnio;
+                        if (t) t.textContent = hayFiltro
+                            ? 'Ninguna factura coincide con el filtro'
+                            : 'Sin facturas para este cliente todavía';
+                        if (s) s.textContent = hayFiltro
+                            ? 'Prueba con otro texto o quita el periodo.'
+                            : 'Las facturas que entren al Drive de cualquier oportunidad de este cliente aparecerán aquí.';
+                    }
+                    return;
+                }
                 if (table) table.style.display = '';
-                tbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
-                fetch('/app/api/cliente-facturas/' + currentClienteId + '/')
-                    .then(function(r){ return r.json(); })
-                    .then(function(data){
-                        var rows = (data && data.rows) || [];
-                        if (count) count.textContent = String(rows.length);
-                        if (!rows.length) {
-                            tbody.innerHTML = '';
-                            if (table) table.style.display = 'none';
-                            if (empty) empty.style.display = 'flex';
-                            return;
-                        }
-                        if (table) table.style.display = '';
-                        if (empty) empty.style.display = 'none';
+                if (empty) empty.style.display = 'none';
                         var html = '';
                         for (var i = 0; i < rows.length; i++) {
                             var r = rows[i];
@@ -4931,11 +4989,15 @@
                             var subido = _escapeFactHtml(r.subido_por || '—');
                             var dl = _escapeFactHtml(r.download_url || '#');
                             var pv = _escapeFactHtml(r.preview_url || '#');
+                            var monto = (r.monto === null || r.monto === undefined)
+                                ? '—'
+                                : '$' + Number(r.monto).toLocaleString('es-MX', { maximumFractionDigits: 0 });
                             html += '<tr class="wco-fact-row">' +
                                 '<td class="wco-fact-name"><span class="wco-fact-ic">' +
                                     '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
                                 '</span><span class="wco-fact-name-t" title="' + nombre + '">' + nombre + '</span></td>' +
                                 '<td class="wco-fact-opp">' + oppHtml + '</td>' +
+                                '<td class="wco-fact-monto">' + monto + '</td>' +
                                 '<td class="wco-fact-fecha">' + fecha + '</td>' +
                                 '<td class="wco-fact-size">' + tamano + '</td>' +
                                 '<td class="wco-fact-by">' + subido + '</td>' +
@@ -4949,11 +5011,7 @@
                                 '</td>' +
                             '</tr>';
                         }
-                        tbody.innerHTML = html;
-                    }).catch(function(){
-                        if (count) count.textContent = '0';
-                        tbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
-                    });
+                tbody.innerHTML = html;
             }
 
             // ── Modal: Subir factura manualmente ──
@@ -5365,6 +5423,171 @@
                 field.classList.add('is-editing');
             }
 
+            // ── Cuadro propio para confirmar y para elegir ──
+            // El confirm() del navegador saca el dominio y no se puede vestir;
+            // aqui el aviso se lee como parte del sistema. El mismo cuadro
+            // sirve de lista cuando hay que escoger a alguien.
+            function _wciDialogo(opts){
+                var previo = document.getElementById('wciDlgOv');
+                if (previo) previo.remove();
+                var ov = document.createElement('div');
+                ov.id = 'wciDlgOv';
+                ov.className = 'wci-dlg-ov';
+                ov.innerHTML =
+                    '<div class="wci-dlg">' +
+                    '<h3>' + _wciEsc(opts.titulo) + '</h3>' +
+                    (opts.texto ? '<p>' + _wciEsc(opts.texto) + '</p>' : '') +
+                    (opts.lista ? '<div class="wci-dlg-buscar"><input type="text" data-q placeholder="Buscar…"></div>' +
+                                  '<div class="wci-dlg-lista" data-lista></div>' : '') +
+                    '<div class="wci-dlg-pie">' +
+                    '<button type="button" class="wci-dlg-x" data-cancel>Cancelar</button>' +
+                    (opts.ok ? '<button type="button" class="wci-dlg-ok" data-ok>' + _wciEsc(opts.ok) + '</button>' : '') +
+                    '</div></div>';
+                document.body.appendChild(ov);
+
+                var cerrar = function(){ ov.remove(); document.removeEventListener('keydown', esc); };
+                var esc = function(e){ if (e.key === 'Escape') cerrar(); };
+                document.addEventListener('keydown', esc);
+                ov.addEventListener('click', function(e){
+                    if (e.target === ov || e.target.closest('[data-cancel]')) { cerrar(); return; }
+                    if (e.target.closest('[data-ok]')) { cerrar(); if (opts.alAceptar) opts.alAceptar(); return; }
+                    var fila = e.target.closest('[data-val]');
+                    if (fila) { cerrar(); if (opts.alElegir) opts.alElegir(fila.getAttribute('data-val'), fila.getAttribute('data-nom')); }
+                });
+                if (!opts.lista) return;
+
+                var inp = ov.querySelector('[data-q]');
+                var lista = ov.querySelector('[data-lista]');
+                inp.focus();
+                var pintar = function(items){
+                    if (!items.length) { lista.innerHTML = '<div class="wci-dlg-vacio">Sin resultados.</div>'; return; }
+                    lista.innerHTML = items.map(function(it){
+                        return '<button type="button" class="wci-dlg-item" data-val="' + _wciEsc(String(it.val)) +
+                            '" data-nom="' + _wciEsc(it.nombre) + '">' +
+                            '<span class="wci-dlg-av">' + _wciEsc(it.iniciales || '?') + '</span>' +
+                            '<span class="wci-dlg-n">' + _wciEsc(it.nombre) + '</span>' +
+                            (it.sub ? '<span class="wci-dlg-sub">' + _wciEsc(it.sub) + '</span>' : '') +
+                            '</button>';
+                    }).join('');
+                };
+                var timer = null;
+                var buscar = function(){
+                    opts.lista(inp.value.trim(), pintar);
+                };
+                inp.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(buscar, 220); });
+                buscar();
+            }
+
+            function _wciEsc(s){
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+                    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+                });
+            }
+
+            // ── Vendedor responsable ──
+            function _wciPintarResp(c){
+                var av = document.getElementById('wciRespAv');
+                var nom = document.getElementById('wciRespNombre');
+                var btn = document.getElementById('wciRespBtn');
+                if (!nom) return;
+                var a = c.asignado;
+                nom.textContent = a ? a.nombre : 'Sin asignar';
+                nom.classList.toggle('is-vacio', !a);
+                if (av) {
+                    av.textContent = a ? (a.iniciales || '?') : '—';
+                    av.classList.toggle('is-vacio', !a);
+                }
+                if (!btn) return;
+                if (!c.puede_cambiar_tipo) { btn.style.display = 'none'; return; }
+                btn.style.display = '';
+                btn.textContent = a ? 'Cambiar' : 'Asignar';
+                btn.onclick = function(){
+                    _wciDialogo({
+                        titulo: 'Vendedor responsable',
+                        texto: 'Quién lleva a este cliente.',
+                        lista: function(q, pintar){
+                            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                                .then(function(r){ return r.json(); })
+                                .then(function(d){
+                                    var us = (d && (d.usuarios || d.results)) || [];
+                                    var items = us.map(function(u){
+                                        var n = u.nombre_completo || u.nombre || u.username || '';
+                                        return { val: u.id, nombre: n, iniciales: u.iniciales || '', sub: u.rol || u.cargo || '' };
+                                    });
+                                    items.unshift({ val: '', nombre: 'Sin asignar', iniciales: '—', sub: '' });
+                                    pintar(items);
+                                })
+                                .catch(function(){ pintar([]); });
+                        },
+                        alElegir: function(val){ _wciGuardarCampo('asignado_a', val, _wciPintarResp); },
+                    });
+                };
+            }
+
+            // POST de un solo campo de la caratula, repintando con lo que
+            // devuelve el servidor y no con lo que se supone que quedo.
+            function _wciGuardarCampo(campo, valor, alTerminar){
+                var fd = new FormData();
+                fd.append(campo, valor);
+                fetch('/app/api/cliente-info/' + currentClienteId + '/', {
+                    method: 'POST', body: fd,
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': window.getCsrf ? window.getCsrf() : '' },
+                }).then(function(r){ return r.json(); }).then(function(d){
+                    if (d && d.ok) { if (alTerminar) alTerminar(d.cliente || {}); return; }
+                    _wciDialogo({ titulo: 'No se pudo guardar', texto: (d && d.error) || 'Intenta de nuevo.' });
+                }).catch(function(){
+                    _wciDialogo({ titulo: 'No se pudo guardar', texto: 'Problema de red.' });
+                });
+            }
+
+            // Cliente / prospecto: etiqueta y, para quien puede, el boton de
+            // cambiarla. Es una marca — no mueve ni borra nada; solo decide si
+            // la empresa se puede elegir al abrir una oportunidad nueva.
+            function _wciPintarTipo(c){
+                var badge = document.getElementById('wciTipoBadge');
+                if (!badge) return;
+                var esPros = !!c.es_prospecto;
+                var puede = !!c.puede_cambiar_tipo;
+                badge.style.display = '';
+                badge.textContent = esPros ? 'Prospecto' : 'Cliente';
+                badge.classList.toggle('is-prospecto', esPros);
+                badge.classList.toggle('is-editable', puede);
+                badge.disabled = !puede;
+                var queHace = esPros
+                    ? 'Prospecto: no aparece al crear una oportunidad; si aparece en prospeccion.'
+                    : 'Cliente: aparece al crear oportunidades y en prospeccion.';
+                badge.title = puede
+                    ? queHace + '\nClic para ' + (esPros ? 'pasarlo a cliente.' : 'bajarlo a prospecto.')
+                    : queHace;
+                if (!puede) { badge.onclick = null; return; }
+                badge.onclick = function(){
+                    _wciDialogo({
+                        titulo: esPros ? 'Pasar a cliente' : 'Bajar a prospecto',
+                        texto: esPros
+                            ? 'Volverá a aparecer al crear oportunidades.'
+                            : 'Dejará de aparecer al crear oportunidades y aparecerá en ' +
+                              'prospección. Conserva sus oportunidades, cotizaciones e historial.',
+                        ok: esPros ? 'Pasar a cliente' : 'Bajar a prospecto',
+                        alAceptar: function(){
+                            _wciGuardarCampo('es_prospecto', esPros ? '0' : '1', _wciPintarTipo);
+                        },
+                    });
+                };
+            }
+
+            // La etiqueta vive en la cabecera, asi que se carga al abrir el
+            // widget y no solo cuando se entra a la pestaña Informacion.
+            function _wciCargarTipo(){
+                var badge = document.getElementById('wciTipoBadge');
+                if (badge) badge.style.display = 'none';
+                if (!currentClienteId) return;
+                fetch('/app/api/cliente-info/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){ if (d && d.ok) { _wciPintarTipo(d.cliente || {}); _wciPintarResp(d.cliente || {}); } })
+                    .catch(function(){});
+            }
+
             function _cargarClienteInfo(){
                 var saved = document.getElementById('wciSavedHint');
                 if (saved) saved.textContent = 'Cargando…';
@@ -5377,6 +5600,8 @@
                         var c = data.cliente || {};
                         _wciSetText('wciNombre', c.nombre || '—');
                         _wciSetText('wciRfc', c.rfc || '', true);
+                        _wciPintarTipo(c);
+                        _wciPintarResp(c);
                         _wciRenderLogo(c.logo_url);
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);
@@ -5648,6 +5873,7 @@
                 var mode = modeMap[tab] || 'oportunidades';
                 var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones', facturacion: 'Facturación' };
                 clienteOppTitle.textContent = labelMap[mode] + ' — ' + clienteNombre;
+                _wciCargarTipo();
                 widgetClienteOpp.style.display = 'flex';
 
                 if (clienteOppSearch) clienteOppSearch.value = '';
@@ -5773,7 +5999,13 @@
                 });
             }
 
-            if (clienteOppSearch) clienteOppSearch.addEventListener('input', renderClienteData);
+            // Un solo punto de repintado: cada pestaña sabe como pintarse.
+            function _repintarTabActivo(){
+                if (currentMode === 'facturacion') { _renderFacturas(); return; }
+                if (currentMode === 'info') return;
+                renderClienteData();
+            }
+            if (clienteOppSearch) clienteOppSearch.addEventListener('input', _repintarTabActivo);
             if (clienteOppFilterArea) clienteOppFilterArea.addEventListener('change', renderClienteData);
             if (clienteOppFilterProducto) clienteOppFilterProducto.addEventListener('change', renderClienteData);
 
@@ -6932,7 +7164,21 @@
                       || _path === '/app';
         if (!_isCrmHome) {
             // No-op: no restaurar nada del CRM en páginas externas.
-        } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
+        }
+        // Vista objetivo: un tab EXPLÍCITO de tareas/proyectos en la URL manda
+        // (deep-links del perfil y del panel del Correo); los tabs neutros
+        // (crm/todos/sin tab) restauran el crmView guardado; cualquier OTRO tab
+        // (correo, calendario, clientes...) no restaura nada — su página la
+        // pinta el server y antes Tareas se encimaba (bug del Correo).
+        var _vistaObjetivo = null;
+        if (_urlTab === 'tareas' || _urlTab === 'proyectos') {
+            _vistaObjetivo = _urlTab;
+        } else if (!_urlTab || _urlTab === 'crm' || _urlTab === 'todos') {
+            _vistaObjetivo = _savedView;
+        }
+        if (!_isCrmHome) {
+            // (ya manejado arriba)
+        } else if (_vistaObjetivo === 'tareas') {
             window._crmTareasMode = true;
             // ACTIVAR la sección igual que el clic en el botón Tareas
             // (switchCrmView oculta el CRM y marca tareasSection .active). Antes
@@ -6947,7 +7193,7 @@
             // resultado del fetch ya completado → fetch extra. El guard
             // _crmTareasFetching de cargarTareasCRM evita los duplicados.
             cargarTareasCRM();
-        } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
+        } else if (_vistaObjetivo === 'proyectos') {
             if (typeof switchCrmView === 'function') switchCrmView('proyectos');
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
@@ -7261,6 +7507,18 @@
             renderTareasCalendar(tareas, now);
             // Render cockpit si visible
             if (typeof renderTareasCockpit === 'function') renderTareasCockpit(tareas, now);
+
+            // Deep-link desde el panel de contexto del Correo: seleccionar la
+            // tarea pedida en cuanto la lista queda renderizada.
+            try {
+                var _pendTarea = sessionStorage.getItem('tcpAbrirTarea');
+                if (_pendTarea) {
+                    sessionStorage.removeItem('tcpAbrirTarea');
+                    if (typeof window.tcpSelectTask === 'function') {
+                        setTimeout(function () { window.tcpSelectTask(parseInt(_pendTarea, 10)); }, 150);
+                    }
+                }
+            } catch (e) { }
 
             // Clear button visibility
             var clrBtn = document.getElementById('btnTareasFacetClear');
@@ -8730,7 +8988,7 @@
             if (titleEl && titleEl.tagName !== 'H1') {
                 var h1 = document.createElement('h1');
                 h1.id = 'crm-task-titulo';
-                h1.className = 'crm-tw-title';
+                h1.className = 'tw4-titulo';
                 titleEl.replaceWith(h1);
             }
             var descEl = document.getElementById('crm-task-descripcion');
@@ -8895,7 +9153,7 @@
 
             // Info sidebar — fecha límite inteligente (relativa + color auto)
             var fechaLimiteEl = document.getElementById('crm-task-fecha-limite');
-            var fechaBtn = fechaLimiteEl ? fechaLimiteEl.closest('.crm-tw-sb-btn') : null;
+            var fechaBtn = fechaLimiteEl ? fechaLimiteEl.closest('.tw4-fecha, .crm-tw-sb-btn') : null;
             if (fechaBtn) fechaBtn.classList.remove('fecha-vencida', 'fecha-urgente');
             if (fechaLimiteEl) {
                 fechaLimiteEl.style.color = '';
@@ -8915,6 +9173,53 @@
             }
             crmTaskSetText('crm-task-creado-por', tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por);
             crmTaskSetText('crm-task-fecha-creacion', tarea.fecha_creacion ? formatearFechaCRM(tarea.fecha_creacion) : '--');
+
+            // ── Barra de acción (rediseño v4) ──
+            // A la izquierda cuándo vence, a la derecha Reprogramar y la acción
+            // principal. Las acciones van siempre; lo que cambia con la urgencia
+            // es el color de la píldora.
+            var dueBar = document.getElementById('crmTaskDueBar');
+            if (dueBar) {
+                var _completada = tarea.estado === 'completada';
+                var _smart = tarea.fecha_limite
+                    ? crmTaskFechaInteligente(tarea.fecha_limite, tarea.estado)
+                    : null;
+                var _tone = _smart ? _smart.tone : 'normal';
+                if (_completada) _tone = 'completada';
+
+                var _pill = document.getElementById('crmTaskDuePill');
+                var _txt = document.getElementById('crmTaskDueTxt');
+
+                if (_pill) _pill.className = 'tw4-due ' + _tone;
+                if (_txt) {
+                    if (!_smart) _txt.textContent = 'Sin fecha límite';
+                    else if (_completada) _txt.textContent = _smart.main;
+                    else _txt.textContent = _smart.meta + ' · ' + _smart.main;
+                }
+                dueBar.style.display = 'flex';
+            }
+
+            // Número de tarea en el encabezado (junto a la migaja)
+            var _numEl = document.getElementById('crm-task-numero');
+            if (_numEl) _numEl.textContent = '#' + (tarea.id || '—');
+
+            // ── Subtareas plegadas ──
+            // El contenido lo pinta este mismo render más abajo; el listener va
+            // en el contenedor, que NO se reemplaza, así sobrevive al innerHTML.
+            var _subSec = document.getElementById('crmTaskSubtareasSection');
+            if (_subSec) {
+                _subSec.classList.remove('is-open');   // cada tarea abre plegada
+                if (!_subSec._plegadoWired) {
+                    _subSec._plegadoWired = true;
+                    _subSec.addEventListener('click', function (ev) {
+                        var h = ev.target.closest('.crm-tw-section-title');
+                        if (!h || !_subSec.contains(h)) return;
+                        // La tarjeta de "tarea principal" no tiene lista que plegar.
+                        if (_subSec.querySelector('.crm-tw-parent-card')) return;
+                        _subSec.classList.toggle('is-open');
+                    });
+                }
+            }
 
             // Cliente: solo en el header breadcrumb; el row del sidebar queda oculto
             // (pero guardamos el nombre en el span por compat con editores legacy)
@@ -9179,7 +9484,7 @@
 
             // Input del comentario y archivos
             var commInp = document.getElementById('crm-task-comment-input');
-            if (commInp) commInp.value = '';
+            if (commInp) { commInp.value = ''; commInp.style.height = ''; }
             setHtml('crm-task-files-preview', '');
 
             _crmTaskLastData = null;
@@ -9399,6 +9704,32 @@
                 if (e.key === 'Escape') crmTaskCancelarEdicion();
                 if (e.key === 'Enter') { inp.blur(); crmTaskGuardar(); }
             });
+        }
+
+        /* Reagendar de un clic desde la barra de vencimiento. Conserva la hora
+           original de la tarea (si no tenía, 17:00) y guarda de inmediato —
+           el chiste es que sea un clic. Pasa por crmTaskGuardar, así que la
+           regla de "pedir razón si el responsable mueve la fecha" sigue
+           aplicando igual que al editarla a mano. */
+        function crmTaskReagendar(cuando) {
+            if (cuando === 'otra') {
+                crmTaskEditarFechaLimite(_crmTaskOriginal.fecha_limite);
+                return;
+            }
+            var base = _crmTaskOriginal.fecha_limite ? new Date(_crmTaskOriginal.fecha_limite) : null;
+            var valida = base && !isNaN(base.getTime());
+            var d = new Date();
+            d.setHours(valida ? base.getHours() : 17, valida ? base.getMinutes() : 0, 0, 0);
+
+            if (cuando === 'manana') {
+                d.setDate(d.getDate() + 1);
+            } else {
+                // Próximo lunes; si hoy ya es lunes, el de la semana entrante.
+                d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+            }
+            _crmTaskEdits.fecha_limite = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            crmTaskGuardar();
         }
 
         function crmTaskEditarResponsable() {
@@ -10239,7 +10570,10 @@
                         };
                         document.addEventListener('click', feed._menuClose);
                     } else {
-                        feed.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.85rem;">No hay comentarios aún.</div>';
+                        feed.innerHTML = '<div class="crm-tw-feed-empty">' +
+                            '<span>No hay actividad todavía.</span>' +
+                            '<span class="crm-tw-feed-empty-sub">Los comentarios y cambios aparecerán aquí.</span>' +
+                            '</div>';
                     }
                 })
                 .catch(function (err) {
@@ -10418,13 +10752,20 @@
         var commentInput = document.getElementById('crm-task-comment-input');
         var commentForm = document.getElementById('crm-task-comment-form');
         var _dragCounter = 0;
+        // El borde del compositor vive en la caja (.tw4-tray-box), no en el
+        // form: el resalte al arrastrar se pinta ahí si existe.
+        function _dropTarget() {
+            return (commentForm && commentForm.querySelector('.tw4-tray-box')) || commentForm;
+        }
         function _showDropHint() {
             if (dropZone && !_crmCommentFiles.length) dropZone.style.display = 'block';
-            if (commentForm) { commentForm.style.borderColor = '#4f6ef7'; commentForm.style.background = '#F8FAFF'; }
+            var t = _dropTarget();
+            if (t) { t.classList.add('is-drop'); t.style.borderColor = '#4f6ef7'; t.style.background = '#F8FAFF'; }
         }
         function _hideDropHint() {
             if (dropZone) dropZone.style.display = 'none';
-            if (commentForm) { commentForm.style.borderColor = ''; commentForm.style.background = ''; }
+            var t = _dropTarget();
+            if (t) { t.classList.remove('is-drop'); t.style.borderColor = ''; t.style.background = ''; }
         }
         if (commentForm) {
             commentForm.addEventListener('dragenter', function (e) { e.preventDefault(); _dragCounter++; _showDropHint(); });
@@ -10458,6 +10799,13 @@
                     if (e.key === 'Enter' || e.key === 'Tab') { var sel = focused || items[0]; if (sel) { e.preventDefault(); sel.click(); } return; }
                     if (e.key === 'Escape') { _crmMentionClose(); return; }
                 }
+            });
+
+            // La caja crece con el texto: sin esto un comentario largo scrollea
+            // dentro de una franja de dos renglones.
+            commentInput.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 180) + 'px';
             });
 
             commentInput.addEventListener('input', function () {
@@ -10559,7 +10907,7 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.success) {
-                            if (input) input.value = '';
+                            if (input) { input.value = ''; input.style.height = ''; }
                             _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
                             _crmFilesRender();
                             crmTaskCargarComentarios(_crmCurrentTaskId);
@@ -11425,6 +11773,7 @@
         window.crmTaskAgregarInvolucrado = crmTaskAgregarInvolucrado;
         window.crmTaskEditarTitulo = crmTaskEditarTitulo;
         window.crmTaskEditarFechaLimite = crmTaskEditarFechaLimite;
+        window.crmTaskReagendar = crmTaskReagendar;
         window.crmTaskEditarResponsable = crmTaskEditarResponsable;
         window.crmTaskEditarCliente = crmTaskEditarCliente;
         window.crmTaskEditarDescripcion = crmTaskEditarDescripcion;

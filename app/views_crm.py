@@ -17,6 +17,7 @@
 
 import json
 import logging
+import re
 import requests
 import mimetypes
 import os
@@ -2744,77 +2745,120 @@ def api_subir_facturacion(request):
         anio_int = now.year
 
     try:
-        import xlrd
-        from xlrd import xldate_as_datetime
         content = archivo.read()
-        wb = xlrd.open_workbook(file_contents=content)
-        sheet = wb.sheet_by_index(0)
+        nombre_arch = (getattr(archivo, 'name', '') or '').lower()
 
-        # Agrupar por mes de emisión: {(mes, anio): {cliente: monto}}
-        datos_por_mes = {}  # { 'MM': { 'YYYY': { cliente_name: monto_str } } }
+        # Agrupar por mes de emisión: {(mes, anio): {entry_key: {nombre, rfc, monto}}}
+        datos_por_mes = {}
         totales_por_mes = {}  # { (mes, anio): Decimal }
 
-        for row_idx in range(1, sheet.nrows):
-            try:
-                estatus = str(sheet.cell_value(row_idx, 40)).strip().lower()
-                if estatus == 'cancelada':
-                    continue
+        def _acumular(row_mes, row_anio, nombre, rfc, monto):
+            if monto <= 0:
+                return
+            key = (row_mes, row_anio)
+            if key not in datos_por_mes:
+                datos_por_mes[key] = {}
+                totales_por_mes[key] = Decimal('0')
+            clientes_mes = datos_por_mes[key]
+            # RFC como key para match preciso; sin RFC, el nombre
+            entry_key = rfc if rfc else nombre
+            if entry_key in clientes_mes:
+                existing = clientes_mes[entry_key]
+                existing['monto'] = str(Decimal(existing['monto']) + monto)
+            else:
+                clientes_mes[entry_key] = {
+                    'nombre': nombre,
+                    'rfc': rfc,
+                    'monto': str(monto),
+                }
+            totales_por_mes[key] += monto
 
-                cliente_name = str(sheet.cell_value(row_idx, 5)).strip()
-                nombre_comercial = str(sheet.cell_value(row_idx, 6)).strip()
+        if nombre_arch.endswith('.csv'):
+            # CSV "Ventas" del ERP — columnas por NOMBRE (el orden puede variar):
+            # Numero, Documento, Fecha, Cliente, ..., Subtotal, ..., Estatus.
+            # Subtotal ya viene en MXN sin IVA (Total = TotalOriginal × TC), así
+            # que equivale al "Subtotal - Descuento" del XLS viejo. Este reporte
+            # no trae RFC: el match con clientes del CRM cae al nombre.
+            import csv as _csv
+            import io as _io
+            try:
+                texto = content.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                texto = content.decode('latin-1')  # el ERP exporta latin-1
+            for fila in _csv.DictReader(_io.StringIO(texto)):
+                def _v(k):
+                    return (fila.get(k) or '').strip()
+                # "Cancelada" y "Cancelada (CFDI Activo)" no cuentan como facturado
+                if _v('Estatus').lower().startswith('cancelada'):
+                    continue
+                cliente_name = _v('Cliente')
                 if not cliente_name:
                     continue
-
-                # Extraer mes/año de la fecha de emisión (col D, idx 3)
+                partes = _v('Fecha').split('/')  # DD/MM/YY o DD/MM/YYYY
+                if len(partes) != 3:
+                    continue
                 try:
-                    date_val = sheet.cell_value(row_idx, 3)
-                    fecha = xldate_as_datetime(date_val, wb.datemode)
-                    row_mes = str(fecha.month).zfill(2)
-                    row_anio = fecha.year
-                except Exception:
-                    continue  # Sin fecha válida, saltar
-
-                # Facturado = Col L Subtotal (idx 11) - Col O Descuento (idx 14)
-                # Los importes ya vienen en pesos, no se multiplica por T.C.
-                subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
-                descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
+                    if not (1 <= int(partes[1]) <= 12):
+                        continue
+                    row_mes = partes[1].zfill(2)
+                    row_anio = int(partes[2])
+                    if row_anio < 100:
+                        row_anio += 2000
+                except ValueError:
+                    continue
                 try:
-                    subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
+                    monto = Decimal(_v('Subtotal').replace(',', '') or '0')
                 except Exception:
-                    subtotal = Decimal('0')
+                    continue
+                _acumular(row_mes, row_anio, cliente_name, '', monto)
+        else:
+            import xlrd
+            from xlrd import xldate_as_datetime
+            wb = xlrd.open_workbook(file_contents=content)
+            sheet = wb.sheet_by_index(0)
+
+            for row_idx in range(1, sheet.nrows):
                 try:
-                    descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
-                except Exception:
-                    descuento = Decimal('0')
-                monto = subtotal - descuento
+                    estatus = str(sheet.cell_value(row_idx, 40)).strip().lower()
+                    if estatus == 'cancelada':
+                        continue
 
-                # RFC del cliente (col G, idx 7)
-                rfc_raw = str(sheet.cell_value(row_idx, 7)).strip()
-                rfc = rfc_raw if rfc_raw and rfc_raw != '0.0' else ''
+                    cliente_name = str(sheet.cell_value(row_idx, 5)).strip()
+                    nombre_comercial = str(sheet.cell_value(row_idx, 6)).strip()
+                    if not cliente_name:
+                        continue
 
-                if monto > 0:
-                    key = (row_mes, row_anio)
-                    if key not in datos_por_mes:
-                        datos_por_mes[key] = {}
-                        totales_por_mes[key] = Decimal('0')
+                    # Extraer mes/año de la fecha de emisión (col D, idx 3)
+                    try:
+                        date_val = sheet.cell_value(row_idx, 3)
+                        fecha = xldate_as_datetime(date_val, wb.datemode)
+                        row_mes = str(fecha.month).zfill(2)
+                        row_anio = fecha.year
+                    except Exception:
+                        continue  # Sin fecha válida, saltar
 
-                    clientes_mes = datos_por_mes[key]
-                    # Usar RFC como key si existe, sino nombre
+                    # Facturado = Col L Subtotal (idx 11) - Col O Descuento (idx 14)
+                    # Los importes ya vienen en pesos, no se multiplica por T.C.
+                    subtotal_str = str(sheet.cell_value(row_idx, 11)).replace(',', '').strip()
+                    descuento_str = str(sheet.cell_value(row_idx, 14)).replace(',', '').strip()
+                    try:
+                        subtotal = Decimal(subtotal_str) if subtotal_str else Decimal('0')
+                    except Exception:
+                        subtotal = Decimal('0')
+                    try:
+                        descuento = Decimal(descuento_str) if descuento_str else Decimal('0')
+                    except Exception:
+                        descuento = Decimal('0')
+                    monto = subtotal - descuento
+
+                    # RFC del cliente (col G, idx 7)
+                    rfc_raw = str(sheet.cell_value(row_idx, 7)).strip()
+                    rfc = rfc_raw if rfc_raw and rfc_raw != '0.0' else ''
+
                     nombre_final = nombre_comercial if nombre_comercial else cliente_name
-                    # Guardar con RFC para match preciso
-                    entry_key = rfc if rfc else nombre_final
-                    if entry_key in clientes_mes:
-                        existing = clientes_mes[entry_key]
-                        existing['monto'] = str(Decimal(existing['monto']) + monto)
-                    else:
-                        clientes_mes[entry_key] = {
-                            'nombre': nombre_final,
-                            'rfc': rfc,
-                            'monto': str(monto),
-                        }
-                    totales_por_mes[key] += monto
-            except (IndexError, ValueError):
-                continue
+                    _acumular(row_mes, row_anio, nombre_final, rfc, monto)
+                except (IndexError, ValueError):
+                    continue
 
         # Guardar un ArchivoFacturacion por cada mes encontrado
         archivo.seek(0)
@@ -3311,6 +3355,33 @@ def api_cliente_info(request, cliente_id):
     ]
 
     if request.method == 'POST':
+        # Cliente <-> prospecto. Solo administradores, superusuarios y
+        # supervisores: decide si la empresa se puede elegir al abrir una
+        # oportunidad. No toca ni un dato mas — la ficha y todo el historial
+        # se quedan igual.
+        if 'es_prospecto' in request.POST:
+            if not puede_bloquear_oportunidad(request.user):
+                return JsonResponse(
+                    {'ok': False, 'error': 'Solo un supervisor o administrador puede cambiarlo'},
+                    status=403)
+            cliente.es_prospecto = request.POST.get('es_prospecto') in ('1', 'true', 'on')
+        # Vendedor responsable. Se ve siempre; cambiarlo es del mismo grupo que
+        # la marca de cliente/prospecto. Es la misma asignacion del panel de
+        # administracion, a la mano en la caratula.
+        if 'asignado_a' in request.POST:
+            if not puede_bloquear_oportunidad(request.user):
+                return JsonResponse(
+                    {'ok': False, 'error': 'Solo un supervisor o administrador puede cambiarlo'},
+                    status=403)
+            uid = (request.POST.get('asignado_a') or '').strip()
+            if not uid:
+                cliente.asignado_a = None
+            else:
+                from django.contrib.auth.models import User as _U
+                try:
+                    cliente.asignado_a = _U.objects.get(id=int(uid))
+                except (_U.DoesNotExist, ValueError):
+                    return JsonResponse({'ok': False, 'error': 'Usuario no encontrado'}, status=400)
         for f in CAMPOS:
             if f in request.POST:
                 setattr(cliente, f, request.POST.get(f, '') or '')
@@ -3328,6 +3399,15 @@ def api_cliente_info(request, cliente_id):
     data['rfc'] = cliente.rfc or ''
     data['categoria'] = cliente.get_categoria_display() if cliente.categoria else ''
     data['logo_url'] = cliente.logo.url if cliente.logo else ''
+    data['es_prospecto'] = bool(cliente.es_prospecto)
+    data['puede_cambiar_tipo'] = puede_bloquear_oportunidad(request.user)
+    u = cliente.asignado_a
+    if u:
+        nom = (u.get_full_name() or '').strip() or u.username
+        data['asignado'] = {'id': u.id, 'nombre': nom,
+                            'iniciales': ''.join([p[0] for p in nom.split()[:2]]).upper()}
+    else:
+        data['asignado'] = None
     return JsonResponse({'ok': True, 'cliente': data})
 
 
@@ -4345,6 +4425,8 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.etapa_corta = nueva_etapa
             oportunidad.etapa_completa = nueva_etapa
             updated_values['etapa_corta'] = nueva_etapa
+            registrar_vista_oportunidad(request.user, oportunidad.id,
+                                        f'Movió la etapa a {nueva_etapa}')
 
             # Automatización: Vendido s/PO o c/PO → probabilidad 100% + mes cierre 2 meses después
             if nueva_etapa in ('Vendido s/PO', 'Vendido c/PO'):
@@ -5131,6 +5213,286 @@ def api_crear_oportunidad(request):
         return JsonResponse({'ok': False, 'error': str(e)})
 
 
+def puede_ver_oportunidad(user, oportunidad_id):
+    """False si a este usuario le bloquearon ESTA oportunidad en concreto.
+
+    Es un veto puntual que ponen administradores, superusuarios y supervisores
+    desde el panel del ojo; no sustituye a los permisos por rol. Quien puede
+    bloquear no puede quedar bloqueado: si no, un supervisor podria encerrarse
+    a si mismo o a otro que deberia poder desbloquearlo.
+    """
+    from .models import OportunidadAccesoBloqueado
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if puede_bloquear_oportunidad(user):
+        return True
+    return not OportunidadAccesoBloqueado.objects.filter(
+        oportunidad_id=oportunidad_id, usuario=user,
+    ).exists()
+
+
+def puede_bloquear_oportunidad(user):
+    """Administradores, superusuarios y supervisores."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    return bool(user.is_superuser or is_supervisor(user) or is_administrador(user))
+
+
+def registrar_vista_oportunidad(user, oportunidad_id, accion=''):
+    """Deja constancia de que este usuario abrio la oportunidad.
+
+    Una fila por (oportunidad, usuario): se actualiza en vez de acumular. Nunca
+    revienta la vista que la llama — si el registro falla, la oportunidad se
+    abre igual.
+    """
+    from .models import OportunidadVista
+    if not user or not getattr(user, 'is_authenticated', False):
+        return
+    try:
+        vista, creada = OportunidadVista.objects.get_or_create(
+            oportunidad_id=oportunidad_id, usuario=user,
+        )
+        campos = ['ultima_vez']
+        if not creada:
+            vista.veces = (vista.veces or 0) + 1
+            campos.append('veces')
+        if accion:
+            vista.ultima_accion = accion[:200]
+            vista.ultima_accion_fecha = timezone.now()
+            campos += ['ultima_accion', 'ultima_accion_fecha']
+        vista.save(update_fields=campos)
+    except Exception:
+        pass
+
+
+@login_required
+def oportunidad_pdf(request, oportunidad_id):
+    """Imprime la oportunidad como expediente en PDF, con formato de factura.
+
+    Lleva lo que se necesita para revisarla fuera del CRM: los metadatos (que
+    son lo importante), PO y factura, cliente y contacto, las tareas y
+    actividades, y un resumen de la conversación.
+
+    La fecha de cierre NO va: en una hoja impresa lo que importa es cuándo se
+    sacó, así que arriba va la fecha de emisión.
+    """
+    from .models import (Cotizacion, TareaOportunidad, Actividad,
+                         MensajeOportunidad)
+    from django.template.loader import render_to_string
+    import base64 as _b64
+    import os as _os
+
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_ver_oportunidad(request.user, opp.id):
+        return HttpResponse('No tienes acceso a esta oportunidad.', status=403)
+
+    # Al ingeniero sin acceso de supervisor se le ocultan los metadatos en
+    # pantalla; imprimirlos seria la puerta de atras.
+    if es_ingeniero_restringido(request.user):
+        return HttpResponse('No tienes permiso para imprimir esta oportunidad.', status=403)
+
+    registrar_vista_oportunidad(request.user, opp.id, 'Imprimió el expediente')
+
+    # TareaOportunidad usa `estado` y `responsable` — NO `completada` ni
+    # `asignado_a`, que son los del modelo Tarea (el de proyectos).
+    tareas = list(TareaOportunidad.objects.filter(oportunidad=opp)
+                  .select_related('responsable').order_by('estado', 'fecha_limite')[:40])
+    actividades = list(Actividad.objects.filter(oportunidad=opp)
+                       .order_by('-fecha_inicio')[:40])
+    cotizaciones = list(Cotizacion.objects.filter(oportunidad=opp)
+                        .order_by('-fecha_creacion')[:20])
+
+    # Resumen de la conversación: las notas y correos, sin la bitácora de
+    # Bitrix ni los marcadores internos, que en papel solo estorban.
+    mensajes = list(
+        MensajeOportunidad.objects.filter(oportunidad=opp)
+        .exclude(texto__startswith='[mail:')
+        .exclude(texto__startswith='[ACT')
+        .exclude(texto__startswith='[BITRIX_')
+        .select_related('usuario')
+        .order_by('-fecha')[:25]
+    )
+    mensajes.reverse()
+
+    logo_b64 = ''
+    try:
+        ruta = _os.path.join(settings.BASE_DIR, 'app', 'static', 'images', 'iamet_logo_tight.png')
+        with open(ruta, 'rb') as fh:
+            logo_b64 = _b64.b64encode(fh.read()).decode('ascii')
+    except Exception:
+        pass
+
+    contacto = ''
+    if opp.contacto:
+        if hasattr(opp.contacto, 'nombre'):
+            contacto = f"{opp.contacto.nombre} {opp.contacto.apellido or ''}".strip()
+        else:
+            contacto = str(opp.contacto)
+
+    ctx = {
+        'opp': opp,
+        'cliente': opp.cliente.nombre_empresa if opp.cliente else 'Sin cliente',
+        'contacto': contacto or 'Sin contacto',
+        'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario else '',
+        'emitido_por': request.user.get_full_name() or request.user.username,
+        # La fecha de la hoja es la de emisión, no la de cierre.
+        'fecha_emision': timezone.localtime(timezone.now()),
+        'tareas': tareas,
+        'actividades': actividades,
+        'cotizaciones': cotizaciones,
+        'mensajes': mensajes,
+        'logo_b64': logo_b64,
+    }
+
+    html = render_to_string('crm/oportunidad_pdf.html', ctx)
+    try:
+        from weasyprint import HTML as _HTML
+        pdf = _HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    except Exception as e:
+        logger.error('Oportunidad PDF: %s', e)
+        return HttpResponse('No se pudo generar el PDF: %s' % e, status=500)
+
+    nombre = 'Oportunidad-%s-%s.pdf' % (
+        opp.id, timezone.localtime(timezone.now()).strftime('%Y%m%d'))
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = 'inline; filename="%s"' % nombre
+    return resp
+
+
+@login_required
+def api_oportunidad_vistas(request, oportunidad_id):
+    """GET: quién ha abierto esta oportunidad, cuándo y qué hizo.
+
+    Alimenta el panel del ojo del encabezado. Devuelve además la lista de
+    bloqueados y si el que pregunta puede bloquear, para que el front sepa qué
+    pintar sin adivinar por rol.
+    """
+    from .models import OportunidadVista, OportunidadAccesoBloqueado
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_ver_oportunidad(request.user, opp.id):
+        return JsonResponse({'error': 'No tienes acceso a esta oportunidad'}, status=403)
+
+    def _persona(u):
+        perfil = getattr(u, 'userprofile', None)
+        avatar = ''
+        if perfil:
+            try:
+                avatar = perfil.get_avatar_url() or ''
+            except Exception:
+                avatar = ''
+        nombre = (u.get_full_name() or u.username).strip()
+        iniciales = ''.join([p[0].upper() for p in nombre.split()[:2]]) or '?'
+        return {'id': u.id, 'nombre': nombre, 'iniciales': iniciales, 'avatar': avatar}
+
+    bloqueados = {
+        b.usuario_id: {
+            'por': (b.bloqueado_por.get_full_name() or b.bloqueado_por.username)
+                   if b.bloqueado_por else '',
+            'fecha': timezone.localtime(b.fecha).strftime('%d/%m/%Y %H:%M') if b.fecha else '',
+        }
+        for b in OportunidadAccesoBloqueado.objects.filter(oportunidad=opp)
+                                           .select_related('usuario', 'bloqueado_por')
+    }
+
+    vistas = []
+    qs = (OportunidadVista.objects.filter(oportunidad=opp)
+          .select_related('usuario', 'usuario__userprofile')
+          .order_by('-ultima_vez'))
+    for v in qs:
+        d = _persona(v.usuario)
+        d.update({
+            'ultima_vez': timezone.localtime(v.ultima_vez).strftime('%d/%m/%Y %H:%M') if v.ultima_vez else '',
+            'ultima_vez_iso': v.ultima_vez.isoformat() if v.ultima_vez else '',
+            'veces': v.veces or 1,
+            'ultima_accion': v.ultima_accion or '',
+            'ultima_accion_fecha': (timezone.localtime(v.ultima_accion_fecha).strftime('%d/%m/%Y %H:%M')
+                                    if v.ultima_accion_fecha else ''),
+            'bloqueado': v.usuario_id in bloqueados,
+            'bloqueo': bloqueados.get(v.usuario_id) or None,
+            'es_dueno': v.usuario_id == opp.usuario_id,
+        })
+        vistas.append(d)
+
+    # Bloqueados que nunca la abrieron: también deben salir en la lista.
+    ids_vistos = {v['id'] for v in vistas}
+    for uid, info in bloqueados.items():
+        if uid in ids_vistos:
+            continue
+        try:
+            u = User.objects.get(pk=uid)
+        except User.DoesNotExist:
+            continue
+        d = _persona(u)
+        d.update({
+            'ultima_vez': '', 'ultima_vez_iso': '', 'veces': 0,
+            'ultima_accion': '', 'ultima_accion_fecha': '',
+            'bloqueado': True, 'bloqueo': info, 'es_dueno': uid == opp.usuario_id,
+        })
+        vistas.append(d)
+
+    return JsonResponse({
+        'success': True,
+        'vistas': vistas,
+        'total': len(vistas),
+        'puede_bloquear': puede_bloquear_oportunidad(request.user),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_oportunidad_bloquear_acceso(request, oportunidad_id):
+    """POST: bloquea o desbloquea a un usuario en ESTA oportunidad.
+
+    Body: {usuario_id, bloquear: true|false, motivo?}
+    Solo administradores, superusuarios y supervisores.
+    """
+    from .models import OportunidadAccesoBloqueado
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not puede_bloquear_oportunidad(request.user):
+        return JsonResponse(
+            {'success': False, 'error': 'Solo supervisores y administradores pueden restringir el acceso'},
+            status=403,
+        )
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    try:
+        uid = int(data.get('usuario_id'))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'usuario_id requerido'}, status=400)
+
+    if uid == request.user.id:
+        return JsonResponse({'success': False, 'error': 'No puedes bloquearte a ti mismo'}, status=400)
+    if uid == opp.usuario_id:
+        return JsonResponse(
+            {'success': False, 'error': 'No puedes bloquear al dueño de la oportunidad'}, status=400)
+
+    try:
+        objetivo = User.objects.get(pk=uid)
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=404)
+
+    # Quien puede bloquear no puede ser bloqueado: si no, dos supervisores
+    # podrian encerrarse mutuamente y nadie podria deshacerlo.
+    if puede_bloquear_oportunidad(objetivo):
+        return JsonResponse(
+            {'success': False, 'error': 'No puedes bloquear a un supervisor o administrador'}, status=400)
+
+    bloquear = bool(data.get('bloquear', True))
+    if bloquear:
+        OportunidadAccesoBloqueado.objects.get_or_create(
+            oportunidad=opp, usuario=objetivo,
+            defaults={'bloqueado_por': request.user,
+                      'motivo': (data.get('motivo') or '')[:200]},
+        )
+    else:
+        OportunidadAccesoBloqueado.objects.filter(oportunidad=opp, usuario=objetivo).delete()
+
+    return JsonResponse({'success': True, 'bloqueado': bloquear, 'usuario_id': uid})
+
+
 @login_required
 def api_oportunidad_detalle_crm(request, oportunidad_id):
     """
@@ -5138,6 +5500,15 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
     """
     try:
         todo = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+        # Veto puntual: a este usuario le cerraron ESTA oportunidad.
+        if not puede_ver_oportunidad(request.user, todo.id):
+            return JsonResponse(
+                {'error': 'No tienes acceso a esta oportunidad'}, status=403,
+            )
+
+        # Queda constancia de quién la abrió y cuándo (panel del ojo).
+        registrar_vista_oportunidad(request.user, todo.id, 'Abrió la oportunidad')
 
         # Obtener cotizaciones de esta oportunidad
         cotizaciones = Cotizacion.objects.filter(oportunidad=todo).order_by('-fecha_creacion')
@@ -5175,6 +5546,8 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             'usuario_id': todo.usuario_id,
             'comentarios': todo.comentarios or '',
             'fecha_creacion': todo.fecha_creacion.strftime('%d/%m/%Y') if todo.fecha_creacion else '',
+            # La barra de etapa reporta cuánto lleva sin moverse la oportunidad.
+            'fecha_actualizacion': todo.fecha_actualizacion.isoformat() if todo.fecha_actualizacion else '',
             'cotizaciones': cots_list,
             'productos_adicionales': [
                 {'id': p.id, 'producto': p.producto, 'notas': p.notas}
@@ -5189,6 +5562,40 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
             else:
                 data['contacto'] = str(todo.contacto)
 
+        # De dónde sale el monto: en cuanto entra una PO al Drive, manda la suma
+        # de las POs; mientras no haya, manda el subtotal de la cotización. El
+        # front cambia la etiqueta con esto.
+        try:
+            from .services_financiero import (TIPO_PO_CLIENTE, TIPO_OC_PROVEEDOR,
+                                              utilidad_de_oportunidad)
+            from django.db.models import Sum as _Sum
+            from .models import ArchivoOportunidad as _AO
+            pos = (_AO.objects.filter(oportunidad=todo, tipo_financiero=TIPO_PO_CLIENTE)
+                   .exclude(monto_extraido__isnull=True))
+            n_po = pos.count()
+            data['monto_origen'] = 'po' if n_po else 'cotizacion'
+            data['po_count'] = n_po
+            data['po_total'] = float(pos.aggregate(t=_Sum('monto_extraido'))['t'] or 0)
+
+            # Utilidad: lo que dejan las POs una vez restadas las OC que le
+            # emitimos a proveedores. Se calcula al vuelo desde los archivos del
+            # Drive —no hay campo guardado— para que no pueda quedar desfasada.
+            _po, oc_total, utilidad, pct = utilidad_de_oportunidad(todo.id)
+            data['oc_count'] = (_AO.objects
+                                .filter(oportunidad=todo, tipo_financiero=TIPO_OC_PROVEEDOR)
+                                .exclude(monto_extraido__isnull=True).count())
+            data['oc_total'] = float(oc_total)
+            data['utilidad_monto'] = float(utilidad) if utilidad is not None else None
+            data['utilidad_pct'] = float(pct) if pct is not None else None
+        except Exception:
+            data['monto_origen'] = 'cotizacion'
+            data['po_count'] = 0
+            data['po_total'] = 0
+            data['oc_count'] = 0
+            data['oc_total'] = 0
+            data['utilidad_monto'] = None
+            data['utilidad_pct'] = None
+
         # Ingeniero sin acceso de supervisor: entra a consultar. Ve de qué va la
         # oportunidad, sus cotizaciones y su conversación, pero los metadatos
         # comerciales no salen del servidor — ocultarlos solo en el front dejaba
@@ -5199,6 +5606,8 @@ def api_oportunidad_detalle_crm(request, oportunidad_id):
                 data[campo] = 0
             for campo in ('po_number', 'factura_numero', 'mes_cierre', 'producto', 'area'):
                 data[campo] = ''
+            data['po_total'] = 0
+            data['po_count'] = 0
 
         return JsonResponse(data)
     except Exception as e:
@@ -5253,8 +5662,17 @@ def api_buscar_clientes(request):
     from .views_grupos import get_clientes_visibles_q
     clientes = Cliente.objects.filter(
         Q(nombre_empresa__icontains=query) & get_clientes_visibles_q(request.user)
-    ).order_by('nombre_empresa')[:10]
-    
+    ).order_by('nombre_empresa')
+
+    # Un cliente marcado como PROSPECTO no se puede elegir para una oportunidad
+    # nueva: todavia no es cliente. En prospeccion (?potenciales=1) si aparece,
+    # que es justo donde toca trabajarlo. Conserva todo su historial: la marca
+    # solo decide donde se le puede elegir.
+    modo_prospeccion = request.GET.get('potenciales') == '1'
+    if not modo_prospeccion:
+        clientes = clientes.filter(es_prospecto=False)
+    clientes = clientes[:10]
+
     clientes_data = []
     for cliente in clientes:
         clientes_data.append({
@@ -5263,13 +5681,13 @@ def api_buscar_clientes(request):
             'contacto_principal': cliente.contacto_principal or '',
             'email': cliente.email or '',
             'telefono': cliente.telefono or '',
-            'tipo': 'cliente',
+            'tipo': 'prospecto' if cliente.es_prospecto else 'cliente',
         })
 
     # ?potenciales=1 (modo prospecto del composer de prospección): incluir
     # también los ClientePotencial visibles — los creados desde el panel
     # admin o el mini-form, que antes NUNCA aparecían en la búsqueda.
-    if request.GET.get('potenciales') == '1':
+    if modo_prospeccion:
         from .models import ClientePotencial
         from .views_grupos import get_usuarios_visibles_ids
         pot_qs = ClientePotencial.objects.filter(nombre__icontains=query)
@@ -6757,6 +7175,210 @@ def _pend_recap_msg(nombre, completadas, total):
     return f'{nombre}, trabajaste {completadas} de {total} hoy. Un empujón mañana y las sacas. 💪'
 
 
+def _pend_recap_msg_tarea(nombre, completadas, total):
+    """Mensaje de cierre del día para roles sin oportunidades (por tareas)."""
+    if total <= 0:
+        return f'{nombre}, hoy no tenías tareas asignadas. ¡A descansar! 🎉'
+    if completadas <= 0:
+        return f'{nombre}, hoy no cerraste tareas. Mañana es una nueva oportunidad — arranca temprano. 💪'
+    if completadas >= total:
+        return f'¡Día redondo, {nombre}! Completaste tus {total} tarea{"s" if total != 1 else ""}. 🔥'
+    if (completadas / total) >= 0.6:
+        return f'Buen día, {nombre}: cerraste {completadas} de {total} tareas. Vas con buen ritmo. 👏'
+    return f'{nombre}, completaste {completadas} de {total} tareas hoy. Un empujón mañana. 💪'
+
+
+def _pend_tareas_actividades(user, today):
+    """Items de trabajo (Tareas asignadas + Actividades propias) para 'Mi día' y el
+    cierre del día de roles SIN oportunidades. Devuelve (pendientes, completadas_hoy),
+    con una forma común, ordenados por urgencia (atrasado → hoy → después).
+    """
+    from datetime import timedelta
+    from django.db.models import Q
+    from .models import Tarea, Actividad
+
+    prio_lbl = {'urgente': 'Urgente', 'alta': 'Alta', 'media': 'Media', 'baja': 'Baja'}
+    prio_riesgo = {'urgente': 'alto', 'alta': 'alto', 'media': 'medio', 'baja': 'bajo'}
+    piso = today - timedelta(days=30)   # no arrastrar actividades muy viejas sin cerrar
+
+    def _urg(fd):
+        if fd is None:
+            return 2, 'Sin fecha'
+        if fd < today:
+            return 0, 'Atrasada'
+        if fd == today:
+            return 1, 'Vence hoy'
+        return 2, 'Programada'
+
+    def _msg(kind, titulo, ctx, urg):
+        c = f' para {ctx}' if ctx else ''
+        if urg == 0:
+            return (f'«{titulo}»{c} quedó atrasada. Retómala hoy para no acumular. 💪',
+                    'Está atrasada — ciérrala hoy.')
+        if urg == 1:
+            verbo = 'toca' if kind == 'tarea' else 'tienes agendada'
+            return (f'Hoy {verbo} «{titulo}»{c}. Buen momento para sacarla.',
+                    'Es para hoy — dale prioridad.')
+        base = 'Tienes pendiente' if kind == 'tarea' else 'Tienes agendada'
+        return (f'{base} «{titulo}»{c}.', 'Avánzala hoy si te queda tiempo.')
+
+    def _tctx(t):
+        if t.oportunidad_id and t.oportunidad:
+            return getattr(t.oportunidad, 'oportunidad', '') or ''
+        if t.proyecto_id and t.proyecto:
+            return getattr(t.proyecto, 'nombre', '') or getattr(t.proyecto, 'titulo', '') or ''
+        if t.cliente_id and t.cliente:
+            return getattr(t.cliente, 'nombre_empresa', '') or ''
+        return ''
+
+    def _adisplay(a):
+        try:
+            return a.get_tipo_actividad_display() or 'Actividad'
+        except Exception:
+            return 'Actividad'
+
+    def _actx(a):
+        if a.oportunidad_id and a.oportunidad:
+            return getattr(a.oportunidad, 'oportunidad', '') or ''
+        return ''
+
+    pend, done = [], []
+
+    # ── TAREAS asignadas ──
+    tbase = (Tarea.objects.filter(asignado_a=user).exclude(estado='cancelada')
+             .select_related('proyecto', 'cliente', 'oportunidad'))
+    for t in tbase.exclude(estado='completada').order_by('fecha_limite', '-fecha_creacion')[:60]:
+        fd = timezone.localtime(t.fecha_limite).date() if t.fecha_limite else None
+        urg, estado_lbl = _urg(fd)
+        pr = t.prioridad or 'media'
+        mensaje, accion = _msg('tarea', t.titulo or 'Tarea', _tctx(t), urg)
+        pend.append({
+            'tipo': 'tarea', 'ref_id': t.id, 'url': '/app/?tarea=%d' % t.id, 'opp_id': None,
+            'proyecto': t.titulo or '(sin título)', 'cliente': _tctx(t), 'valor_fmt': '',
+            'prioridad_lbl': prio_lbl.get(pr, 'Media'), 'riesgo': prio_riesgo.get(pr, 'medio'),
+            'vence': (timezone.localtime(t.fecha_limite).strftime('%d/%m %H:%M') if t.fecha_limite else ''),
+            'estado_lbl': estado_lbl, 'mensaje': mensaje, 'accion': accion, '_ord': urg,
+        })
+    for t in tbase.filter(estado='completada', fecha_completada__date=today).order_by('-fecha_completada')[:60]:
+        done.append({
+            'tipo': 'tarea', 'ref_id': t.id, 'url': '/app/?tarea=%d' % t.id, 'opp_id': None,
+            'proyecto': t.titulo or '(sin título)', 'cliente': _tctx(t), 'valor_fmt': '',
+            'prioridad_lbl': '', 'riesgo': 'bajo', 'vence': '', 'estado_lbl': 'Completada',
+            'mensaje': '', 'accion': '',
+        })
+
+    # ── ACTIVIDADES propias o donde participo ──
+    abase = (Actividad.objects.filter(Q(creado_por=user) | Q(participantes=user))
+             .distinct().select_related('oportunidad'))
+    for a in abase.filter(completada=False, fecha_inicio__date__lte=today,
+                          fecha_inicio__date__gte=piso).order_by('fecha_inicio')[:40]:
+        fd = timezone.localtime(a.fecha_inicio).date()
+        urg, estado_lbl = _urg(fd)
+        mensaje, accion = _msg('actividad', a.titulo or 'Actividad', _actx(a), urg)
+        pend.append({
+            'tipo': 'actividad', 'ref_id': a.id, 'url': '/app/?tab=calendario', 'opp_id': None,
+            'proyecto': a.titulo or '(sin título)', 'cliente': _actx(a), 'valor_fmt': '',
+            'prioridad_lbl': _adisplay(a), 'riesgo': 'medio',
+            'vence': timezone.localtime(a.fecha_inicio).strftime('%d/%m %H:%M'),
+            'estado_lbl': estado_lbl, 'mensaje': mensaje, 'accion': accion, '_ord': urg,
+        })
+    for a in abase.filter(completada=True, fecha_inicio__date=today).order_by('-fecha_inicio')[:40]:
+        done.append({
+            'tipo': 'actividad', 'ref_id': a.id, 'url': '/app/?tab=calendario', 'opp_id': None,
+            'proyecto': a.titulo or '(sin título)', 'cliente': _actx(a), 'valor_fmt': '',
+            'prioridad_lbl': '', 'riesgo': 'bajo', 'vence': '', 'estado_lbl': 'Completada',
+            'mensaje': '', 'accion': '',
+        })
+
+    pend.sort(key=lambda x: x.get('_ord', 2))
+    for it in pend:
+        it.pop('_ord', None)
+    return pend, done
+
+
+def _pend_buckets_tareas(user, today):
+    """Buckets Pendientes/Hoy/Próximamente para roles SIN oportunidades, a partir de
+    TAREAS asignadas + ACTIVIDADES propias PENDIENTES. Misma clasificación por
+    urgencia que las oportunidades (atrasada/sin fecha → pendientes; hoy → hoy;
+    futuro → próximamente). Los items traen 'url' para abrir la tarea/calendario.
+    """
+    from datetime import timedelta
+    from django.db.models import Q
+    from .models import Tarea, Actividad
+
+    buckets = {'pendientes': [], 'hoy': [], 'proximamente': []}
+    piso = today - timedelta(days=30)
+
+    def _tctx(t):
+        if t.oportunidad_id and t.oportunidad:
+            return getattr(t.oportunidad, 'oportunidad', '') or ''
+        if t.proyecto_id and t.proyecto:
+            return getattr(t.proyecto, 'nombre', '') or getattr(t.proyecto, 'titulo', '') or ''
+        if t.cliente_id and t.cliente:
+            return getattr(t.cliente, 'nombre_empresa', '') or ''
+        return ''
+
+    def _actx(a):
+        if a.oportunidad_id and a.oportunidad:
+            return getattr(a.oportunidad, 'oportunidad', '') or ''
+        return ''
+
+    def _adisplay(a):
+        try:
+            return a.get_tipo_actividad_display() or 'Actividad'
+        except Exception:
+            return 'Actividad'
+
+    def _place(item, dt):
+        fd = dt.date() if dt else None
+        if fd is None:
+            item['motivo'] = 'Sin fecha'
+            item['fecha'] = None
+            buckets['pendientes'].append(item)
+        elif fd < today:
+            dias = (today - fd).days
+            item['motivo'] = ('Vencida hoy' if dias <= 0
+                              else 'Atrasada hace %d día%s' % (dias, 's' if dias != 1 else ''))
+            item['fecha'] = dt.isoformat()
+            buckets['pendientes'].append(item)
+        elif fd == today:
+            item['motivo'] = 'Para hoy ' + dt.strftime('%H:%M')
+            item['fecha'] = dt.isoformat()
+            buckets['hoy'].append(item)
+        else:
+            item['motivo'] = 'Programada ' + dt.strftime('%d/%m/%Y')
+            item['fecha'] = dt.isoformat()
+            buckets['proximamente'].append(item)
+
+    # ── TAREAS asignadas y no cerradas ──
+    tbase = (Tarea.objects.filter(asignado_a=user).exclude(estado__in=['cancelada', 'completada'])
+             .select_related('proyecto', 'cliente', 'oportunidad'))
+    for t in tbase[:120]:
+        dt = timezone.localtime(t.fecha_limite) if t.fecha_limite else None
+        _place({
+            'id': t.id, 'tipo': 'tarea', 'url': '/app/?tarea=%d' % t.id,
+            'nombre': t.titulo or '(sin título)', 'cliente': _tctx(t),
+            'pipeline': '', 'etapa': 'Tarea', 'vendedor': '',
+        }, dt)
+
+    # ── ACTIVIDADES propias o donde participo, no completadas (últimos 30 días en adelante) ──
+    abase = (Actividad.objects.filter(Q(creado_por=user) | Q(participantes=user))
+             .distinct().filter(completada=False, fecha_inicio__date__gte=piso)
+             .select_related('oportunidad'))
+    for a in abase[:120]:
+        dt = timezone.localtime(a.fecha_inicio)
+        _place({
+            'id': a.id, 'tipo': 'actividad', 'url': '/app/?tab=calendario',
+            'nombre': a.titulo or '(sin título)', 'cliente': _actx(a),
+            'pipeline': '', 'etapa': _adisplay(a), 'vendedor': '',
+        }, dt)
+
+    buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
+    buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
+    buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+    return buckets
+
+
 @login_required
 def api_pendientes(request):
     """
@@ -6874,6 +7496,14 @@ def api_pendientes(request):
     buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
     buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
 
+    # ── Fallback por rol: si esta vista PROPIA no tiene ninguna oportunidad, las
+    # pestañas Pendientes/Hoy/Próximamente muestran sus TAREAS + ACTIVIDADES. ──
+    _vista_propia = (not sel) or sel in ('mias', str(user.id))
+    buckets_tipo = 'oportunidad'
+    if _vista_propia and not (buckets['pendientes'] or buckets['hoy'] or buckets['proximamente']):
+        buckets = _pend_buckets_tareas(user, today)
+        buckets_tipo = 'tarea'
+
     # ── Resumen del día: briefing priorizado (pendientes + hoy) ──
     # Prioridad = urgencia + valor + probabilidad. Acción = de la tarea real.
     _res_ids = [o.id for (o, _t) in resumen_pool]
@@ -6959,41 +7589,62 @@ def api_pendientes(request):
         'total': len(resumen_items),
         'items': resumen_items,
     }
-    # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
-    # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
-    try:
-        _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
-    except Exception:
-        _ia = None
-    if _ia:
-        _items = _ia.get('items') or {}
-        for _it in resumen_items:
-            _e = _items.get(str(_it['opp_id']))
-            if isinstance(_e, dict):
-                if _e.get('mensaje'):
-                    _it['mensaje'] = _e['mensaje']
-                if _e.get('accion'):
-                    _it['accion'] = _e['accion']
-
-    # ── Marcar las trabajadas HOY → van al final como completadas ──
-    worked = _pend_trabajadas_hoy(_res_ids, today, user)
-    pend = [it for it in resumen_items if it['opp_id'] not in worked]
-    done = [it for it in resumen_items if it['opp_id'] in worked]
-    for i, it in enumerate(pend):
-        it['prioridad'] = i + 1
-        it['completada'] = False
-    for it in done:
-        it['completada'] = True
-    resumen_items = pend + done
-    resumen['items'] = resumen_items
-    resumen['pendientes'] = len(pend)         # lo que falta por trabajar (baja el contador)
-    resumen['completadas'] = len(done)
-    resumen['total'] = len(resumen_items)
+    if resumen_items:
+        # ── Rol con OPORTUNIDADES (vendedores) ──
+        resumen['tipo'] = 'oportunidad'
+        # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
+        # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
+        try:
+            _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
+        except Exception:
+            _ia = None
+        if _ia:
+            _items = _ia.get('items') or {}
+            for _it in resumen_items:
+                _e = _items.get(str(_it['opp_id']))
+                if isinstance(_e, dict):
+                    if _e.get('mensaje'):
+                        _it['mensaje'] = _e['mensaje']
+                    if _e.get('accion'):
+                        _it['accion'] = _e['accion']
+        # ── Marcar las trabajadas HOY → van al final como completadas ──
+        worked = _pend_trabajadas_hoy(_res_ids, today, user)
+        pend = [it for it in resumen_items if it['opp_id'] not in worked]
+        done = [it for it in resumen_items if it['opp_id'] in worked]
+        for i, it in enumerate(pend):
+            it['prioridad'] = i + 1
+            it['completada'] = False
+        for it in done:
+            it['completada'] = True
+        resumen_items = pend + done
+        resumen['items'] = resumen_items
+        resumen['pendientes'] = len(pend)     # lo que falta por trabajar (baja el contador)
+        resumen['completadas'] = len(done)
+        resumen['total'] = len(resumen_items)
+    else:
+        # ── Rol SIN oportunidades (ingenieros/administrativos): TAREAS + ACTIVIDADES ──
+        resumen['tipo'] = 'tarea'
+        pend_ta, done_ta = _pend_tareas_actividades(user, today)
+        for i, it in enumerate(pend_ta):
+            it['prioridad'] = i + 1
+            it['completada'] = False
+        for it in done_ta:
+            it['completada'] = True
+        resumen['items'] = pend_ta + done_ta
+        resumen['pendientes'] = len(pend_ta)
+        resumen['completadas'] = len(done_ta)
+        resumen['total'] = len(pend_ta) + len(done_ta)
 
     # ── Modo cierre del día (recap) a partir de las 18:00 ──
     if _hora >= 18:
         resumen['modo'] = 'recap'
-        resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+        resumen['recap_tipo'] = resumen['tipo']
+        if resumen['tipo'] == 'tarea':
+            resumen['recap_msg'] = _pend_recap_msg_tarea(
+                nombre_corto, resumen['completadas'], resumen['total'])
+        else:
+            resumen['recap_msg'] = _pend_recap_msg(
+                nombre_corto, resumen['completadas'], resumen['total'])
     else:
         resumen['modo'] = 'dia'
 
@@ -7021,12 +7672,3434 @@ def api_pendientes(request):
         'success': True,
         'resumen': resumen,
         'buckets': buckets,
+        'buckets_tipo': buckets_tipo,
         'counts': {k: len(v) for k, v in buckets.items()},
         'puede_seleccionar': puede_seleccionar,
         'vendedores': vendedores,
         'seleccion': sel or 'mias',
         'yo': {'id': user.id, 'nombre': user.get_full_name() or user.username},
     })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASISTENTE · CLIENTES — clientes "en pausa" (sin oportunidad nueva hace tiempo)
+# ─────────────────────────────────────────────────────────────────────────────
+_CLI_TERM = {'ganada', 'ganado', 'pagada', 'pagado', 'perdida', 'perdido', 'cerrada', 'cerrado'}
+
+
+def _cli_abierta(etapa, estado):
+    e = (etapa or '').strip().lower()
+    if e in _CLI_TERM:
+        return False
+    if (estado or '').strip().lower() == 'pagada':
+        return False
+    return True
+
+
+def _cli_msg(tier, nombre_emp, contacto, dias, dias_contacto, n_opp, n_abiertas):
+    quien = contacto or 'el cliente'
+    if tier == 3:
+        return (f'{nombre_emp} está por cumplir un mes sin una oportunidad nueva ({dias} días). Adelántate antes de que se enfríe.',
+                f'Agenda un contacto con {quien} esta semana para no perder el ritmo.')
+    if tier == 2:
+        return (f'Le has dado seguimiento a {nombre_emp} hace poco (tarea o actividad), pero lleva {dias} días sin una oportunidad nueva. El contacto está — falta concretarlo.',
+                f'Convierte ese contacto en una oportunidad concreta: propón una cotización a {quien}.')
+    # tier 1 (crítico): sin oportunidad Y sin contacto reciente
+    if n_opp == 0:
+        return (f'{nombre_emp} es cliente tuyo pero aún no le has creado ninguna oportunidad ni le has dado seguimiento. Vale la pena explorar qué necesita.',
+                f'Contacta a {quien} y detecta una oportunidad para crear.')
+    return (f'{nombre_emp} lleva {dias} días sin una oportunidad nueva y sin contacto reciente. Se está enfriando — reactívalo hoy.',
+            f'Llama a {quien} y propón una nueva cotización o proyecto.')
+
+
+def _asistente_clientes_items(user, sel, today, umbral=30, prox_min=23, contacto_dias=30, limite=40):
+    """Clientes 'en pausa' priorizados por niveles (cascada: se muestra el nivel más
+    urgente que tenga pendientes):
+      tier 1 (crítico): >= umbral días sin oportunidad nueva Y sin tarea/actividad reciente.
+      tier 2 (baja): >= umbral días sin oportunidad pero CON contacto reciente (tarea/actividad)
+                     — hubo contacto, falta concretar.
+      tier 3 (próximo): entre prox_min y umbral días sin oportunidad nueva (por vencer).
+    Crear una oportunidad hoy marca al cliente como trabajado (no lo saca). Devuelve
+    dict {modo, tier, items, pendientes, completadas}; modo='todobien' si no hay nada.
+    """
+    from django.db.models import Max, Count, Q
+    from .models import Cliente, TodoItem, Tarea, Actividad
+
+    visibles = get_usuarios_visibles_ids(user)   # None = ve todo
+    sel = (sel or '').strip().lower()
+    if not sel or sel == 'mias':
+        targets = [user.id]
+    elif sel == 'todos':
+        targets = None if visibles is None else list(visibles)
+    elif sel.isdigit():
+        tid = int(sel)
+        targets = [tid] if (visibles is None or tid in visibles) else [user.id]
+    else:
+        targets = [user.id]
+
+    qs = Cliente.objects.all()
+    if targets is not None:
+        qs = qs.filter(asignado_a_id__in=targets)
+    qs = qs.select_related('asignado_a').annotate(
+        _ultc_prev=Max('oportunidades__fecha_creacion', filter=Q(oportunidades__fecha_creacion__date__lt=today)),
+        _nopp=Count('oportunidades', distinct=True),
+        _hoy=Count('oportunidades', filter=Q(oportunidades__fecha_creacion__date=today), distinct=True),
+    )
+
+    cands = []   # (cliente, dias_sin_oportunidad, trabajado_hoy)
+    for c in qs:
+        ref = c._ultc_prev or c.fecha_creacion
+        dias = (today - timezone.localtime(ref).date()).days if ref else 9999
+        if dias < prox_min:
+            continue
+        cands.append((c, dias, c._hoy > 0))
+
+    if not cands:
+        return {'modo': 'todobien', 'tier': 0, 'items': [], 'pendientes': 0, 'completadas': 0}
+
+    cids = [c.id for c, _, _ in cands]
+
+    # Último contacto = tarea creada (Tarea.cliente) o actividad agendada (vía oportunidad).
+    contacto_map = {}
+    for r in Tarea.objects.filter(cliente_id__in=cids).values('cliente_id').annotate(m=Max('fecha_creacion')):
+        if r['m']:
+            contacto_map[r['cliente_id']] = r['m']
+    for r in Actividad.objects.filter(oportunidad__cliente_id__in=cids).values('oportunidad__cliente_id').annotate(m=Max('fecha_inicio')):
+        cid, mm = r['oportunidad__cliente_id'], r['m']
+        if mm and (cid not in contacto_map or mm > contacto_map[cid]):
+            contacto_map[cid] = mm
+
+    # Oportunidades abiertas + última etapa por cliente.
+    by_cli = {}
+    rows = (TodoItem.objects.filter(cliente_id__in=cids)
+            .values('cliente_id', 'etapa_corta', 'estado_crm')
+            .order_by('cliente_id', '-fecha_actualizacion'))
+    for r in rows:
+        d = by_cli.setdefault(r['cliente_id'], {'abiertas': 0, 'ult_etapa': ''})
+        if _cli_abierta(r['etapa_corta'], r['estado_crm']):
+            d['abiertas'] += 1
+        if not d['ult_etapa'] and r['etapa_corta']:
+            d['ult_etapa'] = r['etapa_corta']
+
+    def _build(c, dias, tier, completada, dias_contacto):
+        info = by_cli.get(c.id, {'abiertas': 0, 'ult_etapa': ''})
+        mensaje, accion = _cli_msg(tier, c.nombre_empresa, c.contacto_principal, dias, dias_contacto, c._nopp, info['abiertas'])
+        return {
+            'cliente_id': c.id, 'nombre': c.nombre_empresa or '(sin nombre)',
+            'contacto': c.contacto_principal or '', 'telefono': c.telefono or '', 'email': c.email or '',
+            'dias': dias, 'tier': tier, 'n_opp': c._nopp, 'n_abiertas': info['abiertas'],
+            'ult_etapa': info['ult_etapa'],
+            'vendedor': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '',
+            'mensaje': mensaje, 'accion': accion, 'completada': completada,
+            'dias_contacto': (9999 if dias_contacto >= 9999 else dias_contacto),
+        }
+
+    grupos = {1: [], 2: [], 3: []}
+    for c, dias, worked in cands:
+        ct = contacto_map.get(c.id)
+        dias_contacto = (today - timezone.localtime(ct).date()).days if ct else 9999
+        if dias >= umbral:
+            tier = 2 if dias_contacto < contacto_dias else 1
+        else:
+            tier = 3
+        grupos[tier].append(_build(c, dias, tier, worked, dias_contacto))
+
+    def _pend(lst):
+        return [x for x in lst if not x['completada']]
+
+    active = 0
+    for t in (1, 2, 3):
+        if _pend(grupos[t]):
+            active = t
+            break
+
+    if active == 0:
+        completadas_all = [x for t in (1, 2, 3) for x in grupos[t] if x['completada']]
+        if completadas_all:
+            completadas_all.sort(key=lambda x: -x['dias'])
+            completadas_all = completadas_all[:limite]
+            return {'modo': 'lista', 'tier': completadas_all[0]['tier'], 'items': completadas_all,
+                    'pendientes': 0, 'completadas': len(completadas_all)}
+        return {'modo': 'todobien', 'tier': 0, 'items': [], 'pendientes': 0, 'completadas': 0}
+
+    lst = grupos[active]
+    pend = [x for x in lst if not x['completada']]
+    done = [x for x in lst if x['completada']]
+    pend.sort(key=lambda x: -x['dias'])
+    done.sort(key=lambda x: -x['dias'])
+    items = (pend + done)[:limite]
+    return {'modo': 'lista', 'tier': active, 'items': items,
+            'pendientes': sum(1 for x in items if not x['completada']),
+            'completadas': sum(1 for x in items if x['completada'])}
+
+
+def _clientes_ia(nombre, items):
+    """Reescribe con la IA embebida (cálida y estratégica) mensaje + acción por cliente,
+    ANCLADO a los datos. Devuelve {'items': {str(cliente_id): {mensaje, accion}}} o None.
+    """
+    if not items:
+        return None
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return None
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+
+    import json as _json
+    facts = [{
+        'id': it['cliente_id'], 'cliente': it['nombre'], 'contacto': it['contacto'],
+        'dias_sin_oportunidad': it['dias'], 'oportunidades': it['n_opp'],
+        'abiertas': it['n_abiertas'], 'ultima_etapa': it['ult_etapa'],
+        'nivel': it.get('tier', 1), 'dias_sin_contacto': it.get('dias_contacto', 9999),
+    } for it in items[:20]]
+
+    sys = (
+        "Eres el asistente comercial del CRM: cálido, cercano y estratégico. Le hablas de tú a "
+        f"{nombre}. Con base EXCLUSIVAMENTE en los datos, para CADA cliente (clave = su id) escribe:\n"
+        "Cada cliente trae 'nivel': 1 = sin oportunidad NI contacto reciente (crítico, reactivar ya); "
+        "2 = sin oportunidad pero CON contacto reciente (tarea/actividad) — el contacto existe, falta "
+        "concretarlo en una oportunidad; 3 = por cumplir un mes sin oportunidad (adelántate). Adapta el tono al nivel.\n"
+        "- 'mensaje': 1-2 frases que expliquen por qué conviene actuar con ESTE cliente hoy, según su nivel "
+        "(menciona de forma natural los días sin oportunidad y si hubo o no contacto reciente).\n"
+        "- 'accion': el siguiente paso más útil y concreto (llamar, agendar visita, proponer "
+        "cotización, detectar necesidad), en 1 frase, natural y directo.\n"
+        "NO inventes datos que no aparezcan. Devuelve SOLO JSON válido: "
+        "{\"items\": {\"<id>\": {\"mensaje\": \"...\", \"accion\": \"...\"}}}"
+    )
+    usr = "Vendedor: " + nombre + "\nClientes (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
+    try:
+        res = chat([{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+                   model=modelo, temperature=0.6, max_tokens=1800)
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return None
+        parsed = _json.loads(txt[a:b + 1])
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+@login_required
+def api_asistente_clientes(request):
+    """GET /app/api/asistente/clientes/?vendedor=<id|todos|mias>
+    Clientes 'en pausa' (sin oportunidad nueva hace tiempo) para el panel del asistente.
+    """
+    from django.utils import timezone
+    user = request.user
+    today = timezone.localdate()
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+
+    data = _asistente_clientes_items(user, sel, today)
+    items = data['items']
+
+    # Enriquecer con IA (cacheado 1 vez al día por usuario + selección). Solo si hay lista.
+    if items:
+        try:
+            from .models import AsistenteResumenDiario
+            key = 'cli:' + (sel or 'mias')
+            row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key).first()
+            ia = row.data if (row and row.data) else None
+            if ia is None:
+                nombre = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
+                ia = _clientes_ia(nombre, items)
+                if ia:
+                    AsistenteResumenDiario.objects.update_or_create(
+                        usuario=user, fecha=today, seleccion=key, defaults={'data': ia})
+            if ia:
+                m = ia.get('items') or {}
+                for it in items:
+                    e = m.get(str(it['cliente_id']))
+                    if isinstance(e, dict):
+                        if e.get('mensaje'):
+                            it['mensaje'] = e['mensaje']
+                        if e.get('accion'):
+                            it['accion'] = e['accion']
+        except Exception:
+            pass
+
+    mensaje_ok = None
+    if data['modo'] == 'todobien':
+        mensaje_ok = ('¡Vas al día! No tienes clientes en pausa — mantienes tu cartera con buen '
+                      'seguimiento. Sigue así. 👏')
+
+    return JsonResponse({'success': True, 'modo': data['modo'], 'tier': data['tier'],
+                         'items': items, 'total': len(items),
+                         'pendientes': data['pendientes'], 'completadas': data['completadas'],
+                         'mensaje_ok': mensaje_ok})
+
+
+@login_required
+def api_asistente_clientes_estado(request):
+    """Ligero: dado ?ids=1,2,3 devuelve qué clientes se 'trabajaron' HOY (se les creó
+    una oportunidad nueva hoy). Para el sondeo del panel, igual que en Mi día."""
+    from django.utils import timezone
+    from .models import TodoItem
+    ids = [int(x) for x in (request.GET.get('ids', '') or '').split(',') if x.strip().isdigit()]
+    today = timezone.localdate()
+    worked = []
+    if ids:
+        worked = list(TodoItem.objects.filter(cliente_id__in=ids, fecha_creacion__date=today)
+                      .values_list('cliente_id', flat=True).distinct())
+    return JsonResponse({'success': True, 'worked_ids': worked})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASISTENTE · CORREO — correos importantes de las últimas 24h SIN responder.
+# Detección 100% por código (puntaje), sin IA en la lista → créditos ~0.
+# ─────────────────────────────────────────────────────────────────────────────
+def _cor_norm(s):
+    import unicodedata
+    s = (s or '').lower()
+    return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+
+_COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'solicitud', 'propuesta', 'orden de compra',
+           ' oc ', 'rfq', 'licitacion', 'presupuesto', 'factura', 'proyecto', 'reunion', 'visita',
+           'disponibilidad', 'tiempo de entrega', 'precio', 'seguimiento', 'urgente', 'pendiente',
+           'pedido', 'compra', 'instalacion', 'soporte', 'garantia', 'servicio']
+_COR_ESPERA = ['quedo a la espera', 'en espera de su respuesta', 'en espera de tu respuesta', 'favor de',
+               'me confirmas', 'quedo atento', 'quedamos atentos', 'esperamos su respuesta',
+               'agradezco su pronta', 'me puedes', 'nos pueden', 'podrias', 'me apoyas']
+# HITOS que cierran/avanzan una venta: si llega un correo LIGADO a una oportunidad con
+# esto, no hay que esperar a responder — conviene ofrecer actualizar la opp de una vez.
+_COR_HITO = ['factura', 'orden de compra', 'orden de compra firmada', 'oc firmada', 'orden firmada',
+             'purchase order', 'po firmada', 'contrato firmado', 'pedido confirmado', 'pedido en firme',
+             'anticipo', 'comprobante de pago', 'pago realizado', 'complemento de pago']
+
+
+def _cor_es_hito(asunto, cuerpo=''):
+    """True si el correo parece una factura / orden de compra firmada / pago (hito de cierre)."""
+    t = _cor_norm((asunto or '') + ' ' + (cuerpo or ''))
+    return any(k in t for k in _COR_HITO)
+
+
+def _cor_extracto(texto, limite=150):
+    """Extracto citable del cuerpo de un correo para el toast: quita líneas citadas
+    (>, 'El ... escribió:'), firmas y despedidas, y devuelve el primer tramo con
+    sustancia. '' si no hay nada útil."""
+    import re as _re
+    if not (texto or '').strip():
+        return ''
+    corte = ['saludos', 'atentamente', 'atte', 'gracias de antemano', 'enviado desde',
+             'sent from', 'quedo atento', 'quedamos atentos', 'cordialmente']
+    lineas = []
+    for ln in (texto or '').splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', s, _re.IGNORECASE):
+            break                      # empieza el hilo citado → lo de arriba es lo nuevo
+        if _re.match(r'^[-_]{2,}\s*$', s):
+            break                      # firma o separador de hilo citado (Outlook usa ____)
+        if _re.match(r'^(from|de|sent|enviado(?:\sel)?|to|para|cc)\s*:', s, _re.IGNORECASE):
+            break                      # encabezado del mensaje citado (From:/Sent:/To:)
+        low = _cor_norm(s)
+        if any(low.startswith(c) for c in corte):
+            break
+        lineas.append(s)
+        if sum(len(x) for x in lineas) >= limite * 2:
+            break
+    out = ' '.join(lineas).strip()
+    out = _re.sub(r'\s+', ' ', out)
+    if len(out) > limite:
+        out = out[:limite].rsplit(' ', 1)[0] + '…'
+    return out
+
+
+def _cor_extracto_parrafos(texto, limite=1400):
+    """Como _cor_extracto pero CONSERVANDO los saltos de línea — para el nivel 2
+    del toast, donde el cuerpo se muestra amplio y en bloque se lee horrible.
+    Quita citas del hilo y firmas, respeta párrafos, corta sin partir palabras."""
+    import re as _re
+    if not (texto or '').strip():
+        return ''
+    corte = ['saludos', 'atentamente', 'atte', 'gracias de antemano', 'enviado desde',
+             'sent from', 'quedo atento', 'quedamos atentos', 'cordialmente']
+    lineas, total = [], 0
+    for ln in (texto or '').splitlines():
+        s = ln.rstrip()
+        st = s.strip()
+        if st.startswith('>') or _re.match(r'^(el|on)\s.+(escribi[oó]|wrote)\s*:?\s*$', st, _re.IGNORECASE):
+            break                      # empieza el hilo citado → lo de arriba es lo nuevo
+        if _re.match(r'^[-_]{2,}\s*$', st):
+            break                      # firma o separador de hilo citado (Outlook usa ____)
+        if _re.match(r'^(from|de|sent|enviado(?:\sel)?|to|para|cc)\s*:', st, _re.IGNORECASE):
+            break                      # encabezado del mensaje citado (From:/Sent:/To:)
+        low = _cor_norm(st)
+        if any(low.startswith(c) for c in corte):
+            break
+        lineas.append(s)
+        total += len(s)
+        if total >= limite * 2:
+            break
+    out = '\n'.join(lineas)
+    out = _re.sub(r'\n{3,}', '\n\n', out).strip()
+    if len(out) > limite:
+        out = out[:limite].rsplit(' ', 1)[0] + '…'
+    return out
+# Ventana para "importantes sin responder": no solo 24h — así el asistente sigue
+# insistiendo con los que se te van pasando (hasta 7 días).
+_COR_VENTANA_HORAS = 168
+
+_COR_SPAM_SENDER = ['noreply', 'no-reply', 'no_reply', 'no.reply', 'notifica', 'notification', 'mailer',
+                    'newsletter', 'marketing@', 'automat', 'mailchimp', 'sendgrid', 'bounce', 'postmaster',
+                    'alert@', 'alerts@', '-alert', 'noreply-', 'donotreply', 'do-not-reply']
+_COR_SPAM_BODY = ['unsubscribe', 'darse de baja', 'cancelar suscripcion', 'cancelar tu suscripcion',
+                  'no deseas recibir', 'da clic para dejar de']
+_COR_PROMO = ['oferta', 'descuento', 'promocion', 'gratis', 'sorteo', 'black friday', 'cyber', '2x1', 'envio gratis',
+              'boletin', 'newsletter', 'webinar', 'novedades', 'catalogo', 'no te pierdas', 'aprovecha',
+              'suscribete', 'proximo evento', 'ultimas horas']
+_COR_AUTO = ['respuesta automatica', 'automatic reply', 'auto-reply', 'autoreply', 'out of office',
+             'fuera de la oficina', 'fuera de oficina', 'notificacion de ausencia', 'ausencia de oficina',
+             'delivery status', 'undeliverable', 'mailer-daemon', 'mailer daemon', 'correo no entregado',
+             'devolucion de correo', 'read receipt', 'confirmacion de lectura', 'acuse de recibo']
+_COR_PUBLIC_DOM = {'gmail.com', 'hotmail.com', 'hotmail.es', 'outlook.com', 'outlook.es', 'yahoo.com',
+                   'yahoo.com.mx', 'live.com', 'live.com.mx', 'icloud.com', 'me.com', 'aol.com'}
+
+
+def _cor_conocidos():
+    """Set de emails y dominios de clientes/contactos registrados (para 'remitente conocido')."""
+    from .models import Cliente, Contacto
+    emails, nombres = set(), []
+    for em, nom in Cliente.objects.values_list('email', 'nombre_empresa'):
+        if em:
+            emails.add(_cor_norm(em).strip())
+        if nom and len(nom.strip()) >= 5:
+            nombres.append(_cor_norm(nom).strip())
+    for em in Contacto.objects.exclude(email='').values_list('email', flat=True):
+        if em:
+            emails.add(_cor_norm(em).strip())
+    doms = set(e.split('@')[-1] for e in emails if '@' in e) - _COR_PUBLIC_DOM
+    return emails, doms, nombres
+
+
+def _cor_score(rem_email, asunto, cuerpo, known_emails, known_domains, cliente_nombres):
+    """Devuelve (score, motivos:set, kw:str). score<=0 => descartar."""
+    rem = _cor_norm(rem_email).strip()
+    for bad in _COR_SPAM_SENDER:
+        if bad in rem:
+            return 0, set(), ''
+    asu = _cor_norm(asunto)
+    for a in _COR_AUTO:               # auto-respuestas / fuera de oficina / rebotes → no son para responder
+        if a in asu:
+            return 0, set(), ''
+    cue = _cor_norm(cuerpo)[:4000]
+    for bad in _COR_SPAM_BODY:
+        if bad in cue:
+            return 0, set(), ''
+    score = 0
+    motivos = set()
+    dom = rem.split('@')[-1] if '@' in rem else ''
+    if rem and rem in known_emails:
+        score += 3; motivos.add('cliente')
+    elif dom and dom in known_domains:
+        score += 2; motivos.add('cliente')
+    for nom in cliente_nombres:
+        if nom and nom in asu:
+            score += 2; motivos.add('cliente'); break
+        if nom and cue and nom in cue:
+            score += 1; motivos.add('cliente'); break
+    kw_hits, kw_score = [], 0
+    for kw in _COR_KW:
+        if kw in asu:
+            kw_score += 2; kw_hits.append(kw.strip())
+        elif cue and kw in cue:
+            kw_score += 1; kw_hits.append(kw.strip())
+    if kw_hits:
+        score += min(kw_score, 4)
+        motivos.add('negocio')
+    if any(e in cue for e in _COR_ESPERA):
+        score += 2; motivos.add('espera')
+    if '?' in (asunto or '') or '?' in (cuerpo or '')[:1500]:
+        score += 1
+    if any(p in asu for p in _COR_PROMO):
+        score -= 2
+    kw = kw_hits[0] if kw_hits else ''
+    return score, motivos, kw
+
+
+def _cor_msg(remitente, motivos, kw):
+    if 'cliente' in motivos and ('negocio' in motivos):
+        return (f'Correo de {remitente} (cliente) sobre "{kw}". Podría ser una venta — no lo dejes esperando.',
+                'Responde hoy y, si aplica, crea la oportunidad.')
+    if 'cliente' in motivos:
+        return (f'Te escribió {remitente} (cliente) y sigue sin respuesta.',
+                'Responde antes de que se enfríe.')
+    if 'espera' in motivos:
+        return (f'{remitente} está esperando tu respuesta.', 'Contesta hoy, aunque sea para dar tiempos.')
+    if 'negocio' in motivos:
+        return (f'Correo con un tema de negocio ("{kw}") sin responder.', 'Revísalo y responde hoy.')
+    return ('Correo importante sin responder.', 'Revísalo y responde.')
+
+
+def _cor_hace(dt, now):
+    if not dt:
+        return ''
+    secs = (now - dt).total_seconds()
+    if secs < 3600:
+        m = max(1, int(secs // 60)); return 'hace %d min' % m
+    if secs < 86400:
+        h = int(secs // 3600); return 'hace %d h' % h
+    d = int(secs // 86400); return 'hace %d día%s' % (d, 's' if d != 1 else '')
+
+
+# Cuántos correos "casi importantes" (borderline) leemos el cuerpo por IMAP en
+# una misma carga. Tope para no encadenar decenas de FETCH y volver lenta la sección.
+_COR_BODY_FETCH_CAP = 12
+
+
+def _cor_fetch_cuerpos(user, correos):
+    """Baja el cuerpo (texto) de varios correos por IMAP en modo readonly + PEEK,
+    reusando UNA conexión por buzón (no marca \\Seen, no guarda nada en el modelo).
+    Devuelve {mail_id: texto}. Los que fallen simplemente no aparecen en el dict."""
+    import email as _email
+    from .models import MailConexion
+    out = {}
+    if not correos:
+        return out
+
+    # Agrupar por conexión para abrir un solo IMAP por buzón.
+    activa = MailConexion.objects.filter(usuario=user, activo=True).first()
+    grupos = {}
+    for m in correos:
+        cx = m.conexion or activa
+        if not cx:
+            continue
+        grupos.setdefault(cx, []).append(m)
+
+    for cx, ms in grupos.items():
+        imap = None
+        try:
+            from .views_mail import _get_imap
+            imap = _get_imap(cx)
+            carpeta_actual = None
+            for m in ms:
+                carpeta = m.carpeta_imap or 'INBOX'
+                if not m.uid_imap:
+                    continue
+                try:
+                    if carpeta != carpeta_actual:
+                        imap.select(carpeta, readonly=True)      # readonly ⇒ NO marca \Seen
+                        carpeta_actual = carpeta
+                    typ, data = imap.uid('FETCH', m.uid_imap.encode(), '(BODY.PEEK[])')
+                    raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+                    if not raw:
+                        continue
+                    msg = _email.message_from_bytes(raw)
+                    texto, html = '', ''
+                    for part in msg.walk():
+                        if part.get_filename():
+                            continue
+                        ct = part.get_content_type()
+                        if ct == 'text/plain' and not texto:
+                            cs = part.get_content_charset() or 'utf-8'
+                            texto = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')
+                        elif ct == 'text/html' and not html:
+                            cs = part.get_content_charset() or 'utf-8'
+                            html = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')[:120000]
+                    if not texto and html:
+                        import re as _re
+                        texto = _re.sub(r'<[^>]+>', ' ', html)
+                    if texto:
+                        out[m.id] = texto
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        finally:
+            if imap is not None:
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+    return out
+
+
+def _cor_limpiar_asunto(asunto):
+    """Asunto sin ruido: quita etiquetas tipo [EXTERNAL]/[EXTERNO]/[SPAM] y
+    prefijos Re:/RV:/Fw: aunque vengan encadenados ("[EXTERNAL]Re: RV: ...")."""
+    import re as _re
+    s = (asunto or '').strip()
+    prev = None
+    while s != prev:
+        prev = s
+        s = _re.sub(r'^\s*\[[^\]]{0,24}\]\s*', '', s)
+        s = _re.sub(r'^\s*((re|rv|fw|fwd)\s*:\s*)+', '', s, flags=_re.IGNORECASE)
+    return s.strip()
+
+
+# ── Análisis persistente de correos (precisión del asistente) ─────────────────
+# Pipeline de 3 etapas para que la IA NO queme créditos:
+#   0. Filtros deterministas gratis (spam / auto-respuesta / promo) → 'ruido'.
+#   1. Candidatos: se baja el cuerpo UNA vez (PEEK) y se guarda en cuerpo_texto.
+#   2. UN solo llamado de IA por LOTE clasifica los candidatos; el veredicto se
+#      persiste en CorreoAnalisis y ese correo no se vuelve a analizar jamás.
+# Si la IA está apagada (AsistenteConfig.activo) o falla, cae a las reglas por
+# keywords de siempre (fuente='reglas', confianza baja).
+
+_COR_ANA_MAX_IA = 8          # correos nuevos que clasifica la IA por ciclo del feed
+
+
+def _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres):
+    """Veredicto SOLO con reglas (fallback sin IA). Devuelve (categoria, requiere, conf)."""
+    score, motivos, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                     known_emails, known_domains, cliente_nombres)
+    if score <= 0:
+        return 'ruido', False, 0.6
+    if _cor_es_hito(m.asunto, m.cuerpo_texto):
+        return 'hito', True, 0.5
+    if score >= 3 and 'negocio' in motivos:
+        return 'venta', True, 0.4
+    if score >= 3:
+        return 'respuesta', True, 0.4
+    return 'info', False, 0.3
+
+
+def _cor_analisis_ia(lote, modelo=None):
+    """Clasifica un LOTE de correos en UNA sola llamada al LLM.
+    lote = [{'id', 'de', 'asunto', 'cuerpo'}]. Devuelve {id: verdict} o {} si falla."""
+    import json as _json
+    if not lote:
+        return {}
+    try:
+        from .asistente_provider import chat
+    except Exception:
+        return {}
+    sys = (
+        "Eres el clasificador de correos del asistente de un CRM. El usuario es un VENDEDOR "
+        "que atiende a SUS clientes. Para CADA correo (clave = su id) decide UNA categoría:\n"
+        "- 'venta': el remitente pide cotización, precios, disponibilidad o quiere comprarNOS "
+        "algo NUEVO — amerita crear una oportunidad de venta. OJO con la dirección: si el "
+        "remitente nos ENVÍA una cotización o propuesta (un PROVEEDOR cotizándonos algo que "
+        "NOSOTROS pedimos, 'adjunto la cotización solicitada', 'favor de validar la propuesta') "
+        "NO es venta — nosotros somos el comprador; eso es 'respuesta' (hay que validarla o "
+        "contestar).\n"
+        "- 'hito': un CLIENTE (persona real) nos manda factura, orden de compra (firmada o no), "
+        "confirmación o liberación de un pedido, pago, anticipo o comprobante de una venta "
+        "NUESTRA en curso. NO es venta nueva. Ej.: 'Confirmo la liberación de su pedido' es hito. "
+        "OJO dirección: la factura u orden ligada a algo que NOSOTROS compramos (un PROVEEDOR "
+        "nos factura, nos confirma nuestro pedido de compra, nos cobra) NO es hito — nosotros "
+        "somos el que paga; eso es 'respuesta' si espera acción nuestra, o 'info'. "
+        "OJO: las confirmaciones AUTOMÁTICAS de compras en línea, recibos de tiendas o "
+        "plataformas y correos de remitentes no-reply NO son hito — son 'ruido'.\n"
+        "- 'respuesta': correo legítimo de un cliente o socio que espera respuesta del vendedor, "
+        "pero no es venta nueva ni hito (dudas, coordinación, información solicitada, quejas). "
+        "AQUÍ va también el cliente que pide ESTATUS, avance o fecha de entrega/terminación de "
+        "un pedido u orden EXISTENTE (aunque cite números de orden) — esa venta ya se hizo, "
+        "NO es 'venta'.\n"
+        "- 'info': legítimo pero solo informa; no requiere acción del vendedor.\n"
+        "- 'ruido': promoción, newsletter, notificación automática, spam, y TAMBIÉN quien nos "
+        "quiere vender algo a NOSOTROS (prospección de terceros, cold outreach, invitaciones a "
+        "webinars/eventos/partnerships) — eso no es un cliente del vendedor.\n"
+        "Cada correo trae 'cliente_conocido': true = el remitente (o su dominio) está "
+        "registrado como CLIENTE nuestro en el CRM — señal fuerte de que nos compra a "
+        "nosotros; false = no está registrado — sospecha de proveedor, prospección de "
+        "terceros o automatismo. Úsalo para decidir la dirección del negocio.\n"
+        "Además escribe 'resumen': UNA frase corta en español (máx 140 caracteres), natural, "
+        "que diga qué pide o informa el remitente. Sin prefijos 'Re:' ni etiquetas "
+        "'[EXTERNAL]'. No inventes nada que no esté en el correo.\n"
+        "'confianza' es TU certeza real en la categoría, un número entre 0 y 1 (no copies el "
+        "del ejemplo).\n"
+        "Devuelve SOLO JSON válido: {\"items\": {\"<id>\": {\"categoria\": \"...\", "
+        "\"resumen\": \"...\", \"requiere_respuesta\": true, \"confianza\": 0.85}}}"
+    )
+    facts = [{'id': d['id'], 'de': d['de'], 'asunto': d['asunto'], 'cuerpo': d['cuerpo']}
+             for d in lote]
+    usr = 'Correos (JSON):\n' + _json.dumps(facts, ensure_ascii=False)
+    try:
+        resp = chat(messages=[{'role': 'system', 'content': sys},
+                              {'role': 'user', 'content': usr}],
+                    model=modelo, temperature=0.1, max_tokens=1500)
+        txt = (resp.get('text') or '').strip()
+        if txt.startswith('```'):
+            txt = txt.strip('`')
+            if txt.lower().startswith('json'):
+                txt = txt[4:]
+        data = _json.loads(txt)
+        items = data.get('items') or {}
+    except Exception:
+        return {}
+    validas = {'venta', 'hito', 'respuesta', 'info', 'ruido'}
+    out = {}
+    for k, v in items.items():
+        try:
+            mid = int(k)
+        except (TypeError, ValueError):
+            continue
+        cat = (v.get('categoria') or '').strip().lower()
+        if cat not in validas:
+            continue
+        try:
+            conf = max(0.0, min(1.0, float(v.get('confianza') or 0)))
+        except (TypeError, ValueError):
+            conf = 0.0
+        out[mid] = {'categoria': cat, 'resumen': (v.get('resumen') or '').strip()[:200],
+                    'requiere_respuesta': bool(v.get('requiere_respuesta')), 'confianza': conf}
+    return out
+
+
+def _cor_asegurar_analisis(user, correos, known, max_ia=_COR_ANA_MAX_IA):
+    """Garantiza que los correos dados tengan CorreoAnalisis y devuelve {mail_id: analisis}.
+
+    Solo trabaja sobre los que aún NO tienen análisis: filtros gratis primero, cuerpo
+    por IMAP (con tope) para los candidatos, y UNA llamada de IA por lote. Los que no
+    alcancen el cupo de IA en este ciclo quedan para el siguiente (el feed mientras
+    tanto usa las reglas de siempre)."""
+    from .models import CorreoAnalisis, AsistenteConfig
+    known_emails, known_domains, cliente_nombres = known
+    ids = [m.id for m in correos]
+    if not ids:
+        return {}
+    res = {a.correo_id: a for a in CorreoAnalisis.objects.filter(correo_id__in=ids)}
+    pendientes = [m for m in correos if m.id not in res]
+    if not pendientes:
+        return res
+
+    def _guardar(m, cat, resumen, req, conf, fuente):
+        try:
+            a, _ = CorreoAnalisis.objects.get_or_create(
+                correo=m, defaults={'usuario': user, 'categoria': cat, 'resumen': resumen,
+                                    'requiere_respuesta': req, 'confianza': conf, 'fuente': fuente})
+            res[m.id] = a
+        except Exception:
+            pass
+
+    # Etapa 0 — filtros deterministas gratis: ruido evidente NO gasta cuerpo ni IA.
+    candidatos = []
+    for m in pendientes:
+        rem = _cor_norm(m.remitente_email or '').strip()
+        # El NOMBRE del remitente también delata ("Zebra (Do Not Reply)"): se
+        # compacta sin espacios/guiones para cazar noreply/donotreply/no-reply.
+        nom = _cor_norm(m.remitente_nombre or '')
+        nom_c = nom.replace(' ', '').replace('-', '').replace('_', '').replace('.', '')
+        asu = _cor_norm(m.asunto or '')
+        if (any(bad in rem for bad in _COR_SPAM_SENDER)
+                or 'noreply' in nom_c or 'donotreply' in nom_c
+                or any(a in asu for a in _COR_AUTO)):
+            _guardar(m, 'ruido', '', False, 0.9, 'reglas')
+            continue
+        candidatos.append(m)
+
+    # Etapa 1 — cuerpo: bajar por IMAP (PEEK, con tope) los que no lo tengan y
+    # PERSISTIRLO en cuerpo_texto (sin marcar cuerpo_cargado: al abrir el correo
+    # se baja completo con HTML y adjuntos como siempre).
+    sin_cuerpo = [m for m in candidatos if not (m.cuerpo_texto or '').strip()]
+    con_intento = set(m.id for m in sin_cuerpo[:_COR_BODY_FETCH_CAP])
+    if sin_cuerpo:
+        cuerpos = _cor_fetch_cuerpos(user, sin_cuerpo[:_COR_BODY_FETCH_CAP])
+        for m in sin_cuerpo:
+            texto = cuerpos.get(m.id)
+            if texto:
+                m.cuerpo_texto = texto[:100000]
+                try:
+                    m.save(update_fields=['cuerpo_texto'])
+                except Exception:
+                    pass
+
+    # Etapa 2 — IA por lote (solo si está activa). Fallback: reglas.
+    ia_activa, modelo = False, None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        ia_activa = bool(cfg and cfg.activo)
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        ia_activa = False
+    if ia_activa:
+        lote_ms = candidatos[:max_ia]
+        lote = []
+        for m in lote_ms:
+            cuerpo = _cor_extracto(m.cuerpo_texto or '', limite=600) or (m.cuerpo_texto or '')[:600]
+            rem_e = _cor_norm(m.remitente_email or '').strip()
+            dom_e = rem_e.split('@')[-1] if '@' in rem_e else ''
+            conocido = bool(rem_e in known_emails or (dom_e and dom_e in known_domains))
+            lote.append({'id': m.id,
+                         'de': '%s <%s>' % (m.remitente_nombre or '', m.remitente_email or ''),
+                         'asunto': _cor_limpiar_asunto(m.asunto), 'cuerpo': cuerpo,
+                         'cliente_conocido': conocido})
+        verdicts = _cor_analisis_ia(lote, modelo)
+        for m in lote_ms:
+            v = verdicts.get(m.id)
+            if v:
+                _guardar(m, v['categoria'], v['resumen'], v['requiere_respuesta'],
+                         v['confianza'], 'ia')
+            else:
+                # La IA no contestó por este correo (o falló el lote) → reglas,
+                # para no reintentar cada 60s y no dejar el feed colgado.
+                cat, req, conf = _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres)
+                _guardar(m, cat, '', req, conf, 'reglas')
+        # Los candidatos que no cupieron en el lote quedan SIN análisis: el feed
+        # los muestra con reglas y la IA los alcanza en el siguiente ciclo.
+    else:
+        for m in candidatos:
+            # Sin cuerpo y sin haberlo intentado bajar aún → dejarlo para el
+            # siguiente ciclo (no fijar un veredicto a ciegas).
+            if not (m.cuerpo_texto or '').strip() and m.id not in con_intento:
+                continue
+            cat, req, conf = _cor_clasificar_reglas(m, known_emails, known_domains, cliente_nombres)
+            _guardar(m, cat, '', req, conf, 'reglas')
+    return res
+
+
+def analizar_correos_recientes(user, horas=_COR_VENTANA_HORAS, max_ia=_COR_ANA_MAX_IA):
+    """Analiza (si falta) los correos recientes del usuario y devuelve cuántos quedaron
+    con veredicto. La llama el worker de sync justo después de bajar correos nuevos,
+    para que cuando el feed del asistente pregunte el análisis YA esté hecho."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailCorreo
+    cutoff = timezone.now() - timedelta(hours=horas)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff, analisis__isnull=True).order_by('-fecha_envio')[:60])
+    if not inbox:
+        return 0
+    res = _cor_asegurar_analisis(user, inbox, _cor_conocidos(), max_ia=max_ia)
+    return sum(1 for m in inbox if m.id in res)
+
+
+def _cor_item(m, score, motivos, kw, cuerpo, now, respondido_hoy, atendidos):
+    """Construye el dict de un correo importante para el frontend.
+    respondido_hoy: ya lo respondiste HOY (hay un SENT de hoy posterior a este correo)."""
+    from django.utils import timezone
+    remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+    mensaje, accion = _cor_msg(remitente, motivos, kw)
+    respondido = bool(respondido_hoy)
+    listo = m.id in atendidos
+    completada = respondido or listo
+    dias = 0
+    if m.fecha_envio:
+        dias = (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days
+    urgente = (not completada) and dias >= 2
+    if urgente and not listo:
+        mensaje = 'Lleva %d días esperando tu respuesta. %s' % (dias, mensaje)
+    snippet = (cuerpo or m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
+    return {
+        'mail_id': m.id,
+        'remitente': remitente,
+        'remitente_email': m.remitente_email or '',
+        'asunto': m.asunto or '(sin asunto)',
+        'snippet': snippet,
+        'hace': _cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else '',
+        'adjuntos': bool(m.tiene_adjuntos),
+        'score': score,
+        'motivos': sorted(motivos),
+        'kw': kw,
+        'mensaje': mensaje,
+        'accion': accion,
+        'completada': completada,
+        'dias_espera': dias,
+        'urgente': urgente,
+        'motivo_done': ('respondido' if respondido else ('listo' if listo else '')),
+    }, completada
+
+
+@login_required
+def api_asistente_correos(request):
+    """GET /app/api/asistente/correos/ — correos importantes de las últimas 24h SIN responder."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailConexion, MailCorreo, CorreoAtendido
+
+    user = request.user
+    now = timezone.now()
+    today = timezone.localdate()
+
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return JsonResponse({'success': True, 'conectado': False, 'items': [], 'total': 0,
+                             'pendientes': 0, 'completadas': 0})
+
+    cutoff = now - timedelta(hours=_COR_VENTANA_HORAS)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:300])
+
+    # Última respuesta (SENT) por hilo: "sin responder" = NO hay un enviado posterior
+    # al último correo que te mandaron (aunque ya hubieras respondido antes en el hilo).
+    hks = set(m.hilo_key for m in inbox if m.hilo_key)
+    last_sent = {}
+    if hks:
+        for s in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT', hilo_key__in=hks).values('hilo_key', 'fecha_envio'):
+            f = s['fecha_envio']
+            if not f:
+                continue
+            hk = s['hilo_key']
+            if hk not in last_sent or f > last_sent[hk]:
+                last_sent[hk] = f
+
+    known_emails, known_domains, cliente_nombres = _cor_conocidos()
+
+    # Marcados manualmente como "listo" (informativos sin respuesta).
+    atendidos = set(CorreoAtendido.objects.filter(
+        usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
+
+    def _estado_hilo(m):
+        """(mostrar, respondido_hoy). inbox viene ordenado por -fecha_envio, así que el
+        primero de cada hilo es el más reciente; los siguientes del mismo hilo se ocultan."""
+        hk = m.hilo_key
+        ls = last_sent.get(hk) if hk else None
+        respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
+        if respondido and timezone.localtime(ls).date() != today:
+            return False, False   # ya resuelto en un día anterior → ocultar
+        return True, respondido
+
+    pend, done = [], []
+    considerar = []
+    seen_hk = set()
+    for m in inbox:
+        hk = m.hilo_key
+        if hk:
+            if hk in seen_hk:
+                continue   # ya consideramos el correo más reciente de este hilo
+            seen_hk.add(hk)
+        mostrar, respondido_hoy = _estado_hilo(m)
+        if not mostrar:
+            continue
+        considerar.append((m, respondido_hoy))
+
+    # Análisis persistente — el MISMO veredicto que usa el toast (1 vez por correo).
+    ana = _cor_asegurar_analisis(user, [m for m, _r in considerar],
+                                 (known_emails, known_domains, cliente_nombres))
+
+    for m, respondido_hoy in considerar:
+        a = ana.get(m.id)
+        if a is not None:
+            if a.categoria in ('ruido', 'info'):
+                continue
+            score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                            known_emails, known_domains, cliente_nombres)
+            item, completada = _cor_item(m, max(score, 3), motivos, kw, m.cuerpo_texto,
+                                         now, respondido_hoy, atendidos)
+            # La redacción del análisis (IA leyó el correo) manda sobre la de keywords.
+            if a.fuente == 'ia':
+                msg = a.resumen or item['mensaje']
+                if a.categoria == 'venta':
+                    msg = ((a.resumen + ' ') if a.resumen else '') + 'Podría ser una venta — no la dejes esperando.'
+                    item['accion'] = 'Responde hoy y, si aplica, crea la oportunidad.'
+                elif a.categoria == 'hito':
+                    msg = a.resumen or 'Llegó una factura u orden de compra.'
+                    item['accion'] = 'Confírmale de recibido y actualiza la venta.'
+                if item['urgente']:
+                    msg = 'Lleva %d días esperando tu respuesta. %s' % (item['dias_espera'], msg)
+                item['mensaje'] = msg
+            (done if completada else pend).append(item)
+            continue
+        # Sin análisis todavía (no alcanzó el cupo de IA en este ciclo): NO se
+        # muestra — aparece en el siguiente ciclo ya con veredicto. Confianza
+        # primero: una tarjeta provisional equivocada cuesta más que 1-2 min
+        # de espera (misma política que el toast).
+
+    # Orden por urgencia: mezcla importancia (score) + antigüedad (los que llevan
+    # días sin responder suben, para que el asistente insista con lo que se te pasa).
+    pend.sort(key=lambda x: -(x['score'] + min(x.get('dias_espera', 0), 7) * 0.6))
+    items = pend + done
+    return JsonResponse({'success': True, 'conectado': True, 'items': items, 'total': len(items),
+                         'pendientes': len(pend), 'completadas': len(done)})
+
+
+@login_required
+def api_asistente_correos_estado(request):
+    """Ligero: dado ?ids=1,2,3 (mail ids) devuelve cuáles ya están resueltos HOY:
+    respondidos (SENT en su hilo hoy) o marcados manualmente como "listo"."""
+    from django.utils import timezone
+    from .models import MailCorreo, CorreoAtendido
+    ids = [int(x) for x in (request.GET.get('ids', '') or '').split(',') if x.strip().isdigit()]
+    today = timezone.localdate()
+    worked = set()
+    if ids:
+        rows = MailCorreo.objects.filter(usuario=request.user, id__in=ids).values('id', 'hilo_key')
+        hk_by_id = {r['id']: r['hilo_key'] for r in rows}
+        hk_set = set(v for v in hk_by_id.values() if v)
+        sent_hks = set()
+        if hk_set:
+            for s in MailCorreo.objects.filter(usuario=request.user, carpeta_display='SENT', hilo_key__in=hk_set).values('hilo_key', 'fecha_envio'):
+                if s['fecha_envio'] and timezone.localtime(s['fecha_envio']).date() == today:
+                    sent_hks.add(s['hilo_key'])
+        for mid, hk in hk_by_id.items():
+            if hk and hk in sent_hks:
+                worked.add(mid)
+        for mid in CorreoAtendido.objects.filter(usuario=request.user, mail_id__in=ids).values_list('mail_id', flat=True):
+            worked.add(mid)
+    return JsonResponse({'success': True, 'worked_ids': sorted(worked)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_correo_listo(request, correo_id):
+    """Marca/desmarca un correo como "listo" (informativo, sin respuesta) desde el asistente."""
+    import json as _json
+    from django.utils import timezone
+    from .models import MailCorreo, CorreoAtendido
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+    try:
+        body = _json.loads(request.body or '{}')
+    except Exception:
+        body = {}
+    marcar = body.get('marcar', True)
+    if marcar:
+        at, creado = CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+        if not creado:
+            at.fecha = timezone.localdate()
+            at.created_at = timezone.now()
+            at.save(update_fields=['fecha', 'created_at'])
+        _asis_log_accion(request.user, 'revisado',
+                         _cor_limpiar_asunto(correo.asunto or '') or (correo.remitente_nombre or correo.remitente_email or 'Correo'),
+                         'De %s' % (correo.remitente_nombre or correo.remitente_email or ''), mail=correo)
+        return JsonResponse({'success': True, 'completada': True, 'motivo_done': 'listo'})
+    CorreoAtendido.objects.filter(usuario=request.user, mail=correo).delete()
+    return JsonResponse({'success': True, 'completada': False, 'motivo_done': ''})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_correo_respuesta(request, correo_id):
+    """Redacta con IA un borrador de respuesta para un correo importante.
+
+    Reusa el mismo proveedor de IA del asistente (asistente_provider.chat). Baja el
+    cuerpo del correo en readonly/PEEK (sin marcarlo leído) para dar contexto, y
+    devuelve SOLO el texto del borrador — el usuario lo revisa y lo abre en Correo.
+    """
+    import email as _email
+    from .models import MailCorreo, MailConexion, AsistenteConfig
+    from .asistente_provider import chat, AsistenteError
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+
+    cfg = AsistenteConfig.get_singleton()
+    if not cfg.activo:
+        return JsonResponse({'success': False, 'error': 'Asistente desactivado.'}, status=403)
+
+    # Cuerpo para contexto: caché si ya se abrió, si no PEEK readonly (no marca leído).
+    cuerpo = (correo.cuerpo_texto or '').strip()
+    if not cuerpo and not correo.cuerpo_cargado:
+        try:
+            from .views_mail import _get_imap
+            conexion = correo.conexion or MailConexion.objects.filter(usuario=request.user, activo=True).first()
+            if conexion:
+                imap = _get_imap(conexion)
+                imap.select(correo.carpeta_imap, readonly=True)
+                typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+                raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+                if raw:
+                    msg = _email.message_from_bytes(raw)
+                    for part in msg.walk():
+                        if part.get_filename():
+                            continue
+                        if part.get_content_type() == 'text/plain':
+                            cs = part.get_content_charset() or 'utf-8'
+                            cuerpo = (part.get_payload(decode=True) or b'').decode(cs, errors='replace').strip()
+                            break
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    cuerpo = cuerpo[:2500]
+
+    remitente = (correo.remitente_nombre or '').strip() or (correo.remitente_email or '').split('@')[0]
+    nombre_yo = (request.user.get_full_name() or request.user.username or '').strip()
+    sys_msg = {
+        'role': 'system',
+        'content': (
+            'Eres un asistente que redacta respuestas de correo profesionales en '
+            'español para un vendedor/ingeniero de IAMET (integrador de tecnología). '
+            'Escribe un borrador BREVE, claro y cordial, listo para enviar. Usa el '
+            'nombre del remitente en el saludo si lo conoces. NO inventes datos, '
+            'precios ni fechas que no estén en el correo original: si falta información '
+            'para responder algo concreto, pídela amablemente. Cierra con una despedida '
+            'y la firma del usuario. Devuelve SOLO el cuerpo del correo, sin asunto, '
+            'sin comillas y sin explicaciones.'
+        ),
+    }
+    user_msg = {
+        'role': 'user',
+        'content': (
+            f'Correo recibido de {remitente} <{correo.remitente_email or ""}>.\n'
+            f'Asunto: {correo.asunto or "(sin asunto)"}\n\n'
+            f'Cuerpo:\n{cuerpo or "(sin cuerpo disponible)"}\n\n'
+            f'Redacta la respuesta. Yo soy {nombre_yo or "el vendedor"}; '
+            f'firma con mi nombre.'
+        ),
+    }
+    try:
+        resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo,
+                    temperature=0.5, max_tokens=700)
+    except AsistenteError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=502)
+    except Exception as e:
+        logger.exception('Error redactando respuesta de correo: %s', e)
+        return JsonResponse({'success': False, 'error': 'Error inesperado al redactar.'}, status=500)
+
+    borrador = (resp.get('text') or '').strip()
+    if not borrador:
+        return JsonResponse({'success': False, 'error': 'La IA no devolvió texto.'}, status=502)
+    asunto = correo.asunto or ''
+    if asunto and not asunto.lower().startswith('re:'):
+        asunto = 'Re: ' + asunto
+    return JsonResponse({
+        'success': True,
+        'borrador': borrador,
+        'destinatario_email': correo.remitente_email or '',
+        'asunto': asunto,
+    })
+
+
+def _correo_texto(correo, user, limite=2500):
+    """Texto de un correo (caché si ya se abrió; si no, PEEK readonly sin marcar leído)."""
+    import email as _email
+    from .models import MailConexion
+    txt = (correo.cuerpo_texto or '').strip()
+    if txt or correo.cuerpo_cargado:
+        return txt[:limite]
+    try:
+        from .views_mail import _get_imap
+        conexion = correo.conexion or MailConexion.objects.filter(usuario=user, activo=True).first()
+        if not conexion or not correo.uid_imap:
+            return ''
+        imap = _get_imap(conexion)
+        imap.select(correo.carpeta_imap or 'INBOX', readonly=True)
+        typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+        raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+        if raw:
+            msg = _email.message_from_bytes(raw)
+            for part in msg.walk():
+                if part.get_filename():
+                    continue
+                if part.get_content_type() == 'text/plain':
+                    cs = part.get_content_charset() or 'utf-8'
+                    txt = (part.get_payload(decode=True) or b'').decode(cs, errors='replace').strip()
+                    break
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    except Exception:
+        return (correo.cuerpo_texto or '').strip()[:limite]
+    return txt[:limite]
+
+
+# Horario laboral GLOBAL del asistente: lunes–viernes, 8:00–18:00. Todo lo que el
+# asistente agenda o sugiere (seguimientos, actividades, huecos libres) vive aquí.
+_HORA_LAB_INI = 8
+_HORA_LAB_FIN = 18
+
+
+def _mas_dias_habiles(fecha, n=2):
+    """Suma n días HÁBILES (salta sábado y domingo). Jueves+2 → lunes; viernes+2 → martes."""
+    from datetime import timedelta
+    d, added = fecha, 0
+    while added < n:
+        d = d + timedelta(days=1)
+        if d.weekday() < 5:   # 0-4 = lunes a viernes
+            added += 1
+    return d
+
+
+def _en_horario_laboral(dt):
+    """True si dt cae en horario laboral: lunes–viernes, 8:00–18:00."""
+    return dt.weekday() < 5 and _HORA_LAB_INI <= dt.hour < _HORA_LAB_FIN
+
+
+def _hueco_libre_ahora(user, now):
+    """¿El usuario tiene un rato libre AHORA para atender algo?
+    Libre = estamos en horario laboral (L–V 8–18) y no hay ninguna actividad
+    ocupando la hora actual. Devuelve (libre: bool, hasta_hora: int|None) donde
+    hasta_hora es la hora (0–24) hasta la que sigue libre (inicio de la próxima
+    actividad de hoy o el fin de la jornada)."""
+    from django.db.models import Q
+    from django.utils import timezone
+    from .models import Actividad
+    local = timezone.localtime(now)
+    if not _en_horario_laboral(local):
+        return (False, None)
+    hoy = local.date()
+    h_now = local.hour
+    ocupadas = set()
+    prox = _HORA_LAB_FIN
+    acts = (Actividad.objects.filter(fecha_inicio__date=hoy)
+            .filter(Q(creado_por=user) | Q(participantes=user)).distinct()
+            .values_list('fecha_inicio', 'fecha_fin'))
+    for ini, fin in acts:
+        if not ini:
+            continue
+        h0 = timezone.localtime(ini).hour
+        h1 = timezone.localtime(fin).hour if fin else h0 + 1
+        for h in range(h0, max(h0 + 1, h1 + 1)):
+            ocupadas.add(h)
+        if h0 > h_now:
+            prox = min(prox, h0)          # próxima actividad que empieza después de ahora
+    if h_now in ocupadas:
+        return (False, None)              # está en una actividad ahora mismo
+    return (True, prox)
+
+
+_CLI_STOP = {'de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'sa', 'cv', 's', 'a', 'c', 'v',
+             'rl', 'sc', 'sas', 'sapi', 'inc', 'llc', 'corp', 'co', 'mexico', 'the'}
+
+
+def _cli_palabras(nombre):
+    """Palabras significativas del nombre de un cliente, normalizadas
+    (sin acentos, sin siglas societarias tipo SA de CV)."""
+    limpio = re.sub(r'[^a-z0-9 ]+', ' ', _cor_norm(nombre))
+    return [w for w in limpio.split() if w and w not in _CLI_STOP]
+
+
+def _cliente_por_correo(correo, cuerpo=''):
+    """Detecta el CLIENTE (la empresa/institución, no la persona) a partir del
+    correo. Puro código, cero IA. En orden de confianza:
+      1-2) email exacto ya registrado en Contacto/Cliente
+      3)   dominio ya registrado en emails de Contacto/Cliente
+      4)   el dominio ES el cliente (prioridad pedida por el usuario): uabc.edu.mx
+           → 'uabc' se compara contra el catálogo por acrónimo (Universidad
+           Autonoma de Baja California → uabc), nombre pegado o palabra del nombre
+      5)   el cuerpo suele nombrar a la institución completa: buscar nombres
+           del catálogo dentro del texto del correo
+    Devuelve Cliente o None."""
+    from .models import Cliente, Contacto
+    rem = (correo.remitente_email or '').strip().lower()
+    if not rem or '@' not in rem:
+        return None
+    dom = rem.split('@')[-1]
+    # 1) Email exacto en Contacto → su cliente
+    c = Contacto.objects.filter(email__iexact=rem, cliente__isnull=False).select_related('cliente').first()
+    if c and c.cliente:
+        return c.cliente
+    # 2) Email exacto en Cliente
+    cli = Cliente.objects.filter(email__iexact=rem).first()
+    if cli:
+        return cli
+    # 3) Dominio (si no es público)
+    if dom and dom not in _COR_PUBLIC_DOM:
+        c = Contacto.objects.filter(email__iendswith='@' + dom, cliente__isnull=False).select_related('cliente').first()
+        if c and c.cliente:
+            return c.cliente
+        cli = Cliente.objects.filter(email__iendswith='@' + dom).first()
+        if cli:
+            return cli
+    # 4-5) Contra el catálogo completo: por dominio y por mención en el cuerpo
+    token = dom.split('.')[0] if (dom and dom not in _COR_PUBLIC_DOM) else ''
+    texto = _cor_norm(((correo.asunto or '') + '\n' + (cuerpo or ''))[:20000])
+    if not token and not texto.strip():
+        return None
+    candidato_dom, candidato_txt = None, None
+    for cand in Cliente.objects.only('id', 'nombre_empresa').iterator():
+        nombre = cand.nombre_empresa or ''
+        palabras = _cli_palabras(nombre)
+        if not palabras:
+            continue
+        if token and not candidato_dom:
+            acronimo = ''.join(w[0] for w in palabras)
+            pegado = ''.join(palabras)
+            if ((len(token) >= 3 and token == acronimo)
+                    or (len(token) >= 4 and token == pegado)
+                    or (len(token) >= 4 and token in palabras)):
+                candidato_dom = cand
+        if texto and not candidato_txt and (len(palabras) >= 2 or len(''.join(palabras)) >= 8):
+            if _cor_norm(nombre).strip() in texto:
+                candidato_txt = cand
+        if candidato_dom and candidato_txt:
+            break
+    # El dominio manda (casi siempre el cliente viene después del @); el
+    # cuerpo confirma o rescata cuando el dominio no dice nada.
+    return candidato_dom or candidato_txt
+
+
+def _oportunidad_draft_ia(asunto, cuerpo):
+    """(titulo, tipo) inferidos con IA a partir del correo. tipo ∈ {runrate, proyecto}.
+    Con fallback por heurística si la IA no está disponible o falla."""
+    import json as _json
+    titulo, tipo = '', ''
+    try:
+        from .models import AsistenteConfig
+        from .asistente_provider import chat
+        cfg = AsistenteConfig.get_singleton()
+        if cfg.activo:
+            sys_msg = {'role': 'system', 'content': (
+                'Eres un asistente que prepara el borrador de una OPORTUNIDAD de venta para '
+                'IAMET (integrador de tecnología) a partir de un correo de un cliente. Devuelve '
+                'SOLO un JSON válido, sin texto extra, con exactamente estas llaves:\n'
+                '{"titulo": "<título breve y claro de lo que el cliente solicita, sin \'Re:\' ni '
+                'corchetes, máx 8 palabras>", "tipo": "runrate" | "proyecto"}\n'
+                'Usa "proyecto" si implica instalación, levantamiento, integración, obra o servicio '
+                'con alcance; usa "runrate" si es compra/cotización de productos puntuales.')}
+            user_msg = {'role': 'user', 'content': 'Asunto: %s\n\nCuerpo:\n%s' % (asunto or '(sin asunto)', (cuerpo or '')[:2000])}
+            resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo, temperature=0.2, max_tokens=200)
+            raw = (resp.get('text') or '').strip()
+            if raw.startswith('```'):
+                raw = raw.strip('`')
+                if raw.lower().startswith('json'):
+                    raw = raw[4:]
+            i, j = raw.find('{'), raw.rfind('}')
+            if i >= 0 and j > i:
+                d = _json.loads(raw[i:j + 1])
+                titulo = (d.get('titulo') or '').strip()
+                t = (d.get('tipo') or '').strip().lower()
+                if t in ('runrate', 'proyecto'):
+                    tipo = t
+    except Exception:
+        pass
+    # Fallback heurístico
+    if not tipo:
+        base = _cor_norm((asunto or '') + ' ' + (cuerpo or '')[:600])
+        tipo = 'proyecto' if any(w in base for w in (
+            'proyecto', 'instalacion', 'levantamiento', 'integracion', 'obra', 'servicio')) else 'runrate'
+    if not titulo:
+        t = (asunto or 'Oportunidad').strip()
+        for pref in ('re:', 'rv:', 'fwd:', 'fw:'):
+            while t.lower().startswith(pref):
+                t = t[len(pref):].strip()
+        t = t.replace('[EXTERNAL]', '').replace('[EXTERNO]', '').strip(' -:').strip()
+        titulo = t[:80] or 'Oportunidad'
+    return titulo, tipo
+
+
+@login_required
+def api_asistente_oportunidad_draft(request, correo_id):
+    """GET — borrador SEMI-AUTOMÁTICO de oportunidad a partir de un correo. NO crea nada:
+    detecta cliente (código) e infiere título + proyecto/runrate (IA). El usuario aprueba."""
+    from django.utils import timezone
+    from datetime import timedelta
+    from .models import MailCorreo, EtapaPipeline
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+
+    cuerpo = _correo_texto(correo, request.user)
+    titulo, tipo = _oportunidad_draft_ia(correo.asunto, cuerpo)
+
+    cliente = _cliente_por_correo(correo, cuerpo)
+    if cliente:
+        cliente_id, cliente_nombre = cliente.id, cliente.nombre_empresa
+    else:
+        # Sin match en el catálogo: sugerir el DOMINIO del correo (el cliente
+        # casi siempre viene después del @) antes que el nombre de la persona,
+        # que es el usuario, no la empresa. Dominios públicos → nombre.
+        rem_nom = (correo.remitente_nombre or '').strip()
+        dom_full = (correo.remitente_email or '').split('@')[-1].lower()
+        dom = dom_full.split('.')[0]
+        if dom and dom_full not in _COR_PUBLIC_DOM:
+            sugerencia = dom.upper() if len(dom) <= 5 else dom.capitalize()
+        else:
+            sugerencia = rem_nom
+        cliente_id, cliente_nombre = None, (sugerencia or rem_nom or '')
+
+    ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
+    etapa = ep.nombre if ep else ('Oportunidad' if tipo == 'proyecto' else 'En Solicitud')
+
+    fecha_seg = _mas_dias_habiles(timezone.localdate(), 2)
+    return JsonResponse({
+        'success': True,
+        'correo_id': correo.id,
+        'titulo': titulo,
+        'cliente_id': cliente_id,
+        'cliente_nombre': cliente_nombre,
+        'cliente_detectado': bool(cliente),
+        'vendedor': (request.user.get_full_name() or request.user.username),
+        'tipo': tipo,
+        'etapa': etapa,
+        'probabilidad': 10,
+        'actividad_titulo': ('Actividad de seguimiento — %s' % (cliente_nombre or 'este correo'))[:120],
+        'actividad_fecha': fecha_seg.isoformat(),
+        'remitente': (correo.remitente_nombre or correo.remitente_email or ''),
+        'asunto': correo.asunto or '',
+    })
+
+
+def _asis_log_accion(user, accion, titulo, detalle='', mail=None, opp=None):
+    """Deja constancia en la bitácora "Atendido" del asistente (pestaña del panel).
+    Nunca truena: perder una fila de bitácora no debe romper la acción original."""
+    try:
+        from .models import AsistenteAccion
+        AsistenteAccion.objects.create(
+            usuario=user, accion=accion, titulo=(titulo or '')[:200],
+            detalle=(detalle or '')[:300], mail=mail, oportunidad=opp)
+    except Exception:
+        logger.exception('Asistente: no se pudo registrar la acción en la bitácora')
+
+
+def _seg_espejo_expediente(user, opp, act):
+    """La sección 'Actividades' del detalle de la oportunidad lee TareaOportunidad,
+    no el calendario. Mismo doble registro que hace el '+Nueva' del detalle
+    (api_tareas_oportunidad): TareaOportunidad ligada a la Actividad del calendario."""
+    if not opp or not act:
+        return None
+    try:
+        from .models import TareaOportunidad
+        t = TareaOportunidad.objects.create(
+            oportunidad=opp, titulo=act.titulo,
+            descripcion=act.descripcion or '', prioridad='normal',
+            fecha_limite=act.fecha_fin or act.fecha_inicio,
+            creado_por=user, actividad_calendario=act,
+        )
+        t.participantes.set([user.id])
+        return t
+    except Exception:
+        logger.exception('Asistente: no se pudo espejar el seguimiento en el expediente')
+        return None
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_oportunidad_crear(request):
+    """POST — crea la oportunidad ya aprobada por el usuario: TodoItem con defaults,
+    liga el correo (y su hilo) a la oportunidad, y crea la actividad de seguimiento."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import (MailCorreo, Cliente, TodoItem, EtapaPipeline, Actividad)
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    user = request.user
+
+    titulo = (data.get('titulo') or '').strip() or 'Oportunidad'
+    tipo = (data.get('tipo') or 'runrate').strip().lower()
+    if tipo not in ('runrate', 'proyecto'):
+        tipo = 'runrate'
+    try:
+        prob = int(data.get('probabilidad', 10))
+    except Exception:
+        prob = 10
+
+    # Cliente: por id, o por nombre (match / crear)
+    cliente = None
+    if data.get('cliente_id'):
+        cliente = Cliente.objects.filter(id=data['cliente_id']).first()
+    if not cliente:
+        nombre = (data.get('cliente_nombre') or '').strip()
+        if len(nombre) < 2:
+            return JsonResponse({'success': False, 'error': 'Falta el cliente.'}, status=400)
+        cliente = Cliente.objects.filter(nombre_empresa__iexact=nombre).order_by('id').first()
+        if not cliente:
+            cliente = Cliente.objects.create(nombre_empresa=nombre, asignado_a=user)
+
+    ep = EtapaPipeline.objects.filter(pipeline=tipo, activo=True).order_by('orden').first()
+    if ep:
+        etapa_c, etapa_col = ep.nombre, ep.color
+    elif tipo == 'proyecto':
+        etapa_c, etapa_col = 'Oportunidad', '#FFFFFF'
+    else:
+        etapa_c, etapa_col = 'En Solicitud', '#FFFFFF'
+
+    now_dt = timezone.localtime()
+    todo = TodoItem.objects.create(
+        usuario=user, oportunidad=titulo[:200], cliente=cliente,
+        monto=0, probabilidad_cierre=prob,
+        mes_cierre=str(now_dt.month).zfill(2), anio_cierre=now_dt.year,
+        area='SISTEMAS', producto='SOFTWARE', tipo_negociacion=tipo,
+        etapa_corta=etapa_c, etapa_completa=etapa_c, etapa_color=etapa_col, po_number='',
+    )
+    try:
+        from .views_automatizacion import ejecutar_automatizaciones
+        ejecutar_automatizaciones(todo, etapa_c, user)
+    except Exception:
+        pass
+
+    # Ligar el correo (y todo su hilo) a la nueva oportunidad. Con la FK puesta, la
+    # conversación de la opp pinta los correos sola (api_chat_oportunidad los inyecta).
+    correo = MailCorreo.objects.filter(id=data.get('correo_id'), usuario=user).first()
+    if correo:
+        MailCorreo.objects.filter(
+            usuario=user, hilo_key=correo.hilo_key, oportunidad__isnull=True
+        ).update(oportunidad=todo) if correo.hilo_key else None
+        if correo.oportunidad_id is None:
+            correo.oportunidad = todo
+            correo.save(update_fields=['oportunidad'])
+        # Timeline de la oportunidad — mismo registro que el vinculado manual de Correo.
+        try:
+            from .models import OportunidadActividad
+            OportunidadActividad.objects.create(
+                oportunidad=todo, tipo='creacion', usuario=user,
+                titulo='Oportunidad creada desde correo (asistente)',
+                descripcion='Asunto del correo: %s  |  De: %s' % (
+                    (correo.asunto or '')[:200], correo.remitente_email or ''),
+            )
+            OportunidadActividad.objects.create(
+                oportunidad=todo, tipo='email', usuario=user,
+                titulo=('Correo vinculado: %s' % (correo.asunto or ''))[:100],
+                descripcion='De: %s <%s>' % (correo.remitente_nombre or '', correo.remitente_email or ''),
+            )
+        except Exception:
+            pass
+
+    # Actividad de seguimiento (para que no se le olvide). Mismo patrón que el
+    # endpoint oficial de actividades. Si algo falla, se reporta en la respuesta.
+    actividad_id, actividad_error = None, None
+    if data.get('crear_actividad', True):
+        try:
+            fecha = (data.get('actividad_fecha') or '').strip()
+            ini = None
+            if fecha:
+                try:
+                    y, m, d = fecha.split('-')
+                    f_obj = datetime(int(y), int(m), int(d)).date()
+                    naive = datetime(int(y), int(m), int(d), _hora_disponible(user, f_obj), 0)
+                    ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+                except Exception:
+                    ini = None
+            if ini is None:
+                f_obj = _mas_dias_habiles(timezone.localdate(), 2)
+                naive = datetime(f_obj.year, f_obj.month, f_obj.day, _hora_disponible(user, f_obj), 0)
+                ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+            # Título y descripción que digan QUÉ se espera hacer, no solo "dar
+            # seguimiento": el análisis del correo ya sabe qué pidió el cliente.
+            ana_seg = getattr(correo, 'analisis', None) if correo else None
+            resumen_seg = ((ana_seg.resumen if ana_seg else '') or '').strip()
+            cat_seg = (ana_seg.categoria if ana_seg else '') or ''
+            if cat_seg == 'venta':
+                desc_seg = 'Enviar la cotización que pidió el cliente y confirmarle de recibido.'
+            elif cat_seg == 'hito':
+                desc_seg = 'Confirmar de recibido y actualizar la venta con el documento.'
+            else:
+                desc_seg = 'Retomar la conversación con el cliente y avanzar la oportunidad.'
+            if resumen_seg:
+                desc_seg += ' Del correo: %s' % resumen_seg
+            act = Actividad.objects.create(
+                titulo=(data.get('actividad_titulo') or ('Actividad de seguimiento — %s' % cliente.nombre_empresa))[:200],
+                tipo_actividad='tarea', descripcion=desc_seg,
+                fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+                creado_por=user, color='#007AFF', oportunidad_id=todo.id,
+                correo=correo,
+            )
+            act.participantes.set([user.id])
+            _seg_espejo_expediente(user, todo, act)
+            actividad_id = act.id
+        except Exception as e:
+            logger.exception('Asistente: no se pudo crear actividad de seguimiento: %s', e)
+            actividad_error = str(e)
+
+    _asis_log_accion(user, 'oportunidad', todo.oportunidad or 'Oportunidad',
+                     'Cliente: %s%s' % (cliente.nombre_empresa,
+                                        ' · con seguimiento agendado' if actividad_id else ''),
+                     mail=correo, opp=todo)
+    return JsonResponse({'success': True, 'opp_id': todo.id, 'opp_nombre': todo.oportunidad,
+                         'actividad_id': actividad_id, 'actividad_error': actividad_error})
+
+
+def _pdf_texto_correo(correo, max_chars=12000):
+    """Texto de los PDFs adjuntos CACHEADOS de un correo (pdfplumber, cero IA).
+    Solo usa la caché en BD (datos_b64, se llena al abrir el correo); no toca
+    IMAP. Devuelve '' si no hay PDFs o no se pudo extraer (p.ej. escaneados)."""
+    import io
+    import base64 as _b64
+    trozos, total = [], 0
+    try:
+        adjs = [a for a in correo.adjuntos.all()
+                if a.datos_b64 and ((a.content_type or '').lower() == 'application/pdf'
+                                    or (a.nombre_archivo or '').lower().endswith('.pdf'))]
+    except Exception:
+        return '', []
+    nombres = []
+    for adj in adjs[:3]:
+        try:
+            import pdfplumber
+            raw = _b64.b64decode(adj.datos_b64)
+            with pdfplumber.open(io.BytesIO(raw)) as pdf:
+                for page in pdf.pages[:4]:
+                    t = page.extract_text() or ''
+                    if t:
+                        trozos.append(t)
+                        total += len(t)
+                    if total > max_chars:
+                        break
+            nombres.append(adj.nombre_archivo or 'adjunto.pdf')
+        except Exception:
+            logger.warning('PDF %s: no se pudo extraer texto', getattr(adj, 'nombre_archivo', '?'))
+        if total > max_chars:
+            break
+    return '\n'.join(trozos)[:max_chars], nombres
+
+
+_PDF_RE_PO = [
+    re.compile(r'(?:orden\s+de\s+compra|purchase\s+order|p\.\s?o\.|no\.\s?de\s?orden)'
+               r'\s*(?:no\.?|num\.?|#|:)?\s*([A-Z0-9][A-Z0-9\-/]{3,19})', re.I),
+    re.compile(r'\b(60\d{8})\b'),                     # Skyworks: órdenes 60XXXXXXXX
+    re.compile(r'\b(PO[-#]?[A-Z]{0,4}\d{3,10})\b'),   # POIAM1661, PO-77123 y similares
+]
+
+
+def _pdf_datos_finos(texto, archivos=None):
+    """Datos duros de una factura/OC sacados por CÓDIGO (cero tokens): número
+    de orden, monto total y moneda. Solo devuelve lo que matchea claro; lo
+    dudoso se queda fuera (precisión sobre cobertura). `archivos` = nombres de
+    los PDFs (el nombre suele traer la PO: PO-6901704943_v1_20260713.pdf)."""
+    datos = {}
+    if not texto and not archivos:
+        return datos
+    texto = texto or ''
+    for rx in _PDF_RE_PO:
+        m = rx.search(texto)
+        if m:
+            po = m.group(1).strip().strip('.-:')
+            # Una orden real siempre trae dígitos ("TIJ13947"); sin ellos es
+            # prosa pescada por accidente ("la orden de compra respectiva").
+            if 4 <= len(po) <= 20 and any(ch.isdigit() for ch in po):
+                datos['po'] = po
+                break
+    # Sin etiqueta clara en el texto: el NOMBRE del archivo suele traerla
+    # (formato real de clientes: PO-6901704943_v1_20260713.pdf).
+    if 'po' not in datos:
+        for nom in (archivos or []):
+            # (?!\d) y no \b al final: el '_' de 'PO-6901704943_v1' es carácter
+            # de palabra y con \b el match nunca cerraba.
+            m = re.search(r'\bPO[-_ ]?(\d{5,12})(?!\d)', nom or '', re.I)
+            if m:
+                datos['po'] = m.group(1)
+                break
+    # Layouts de tabla (tipo BD): "PO NUMBER" queda en el encabezado y el
+    # número aparece líneas después, SOLO en su renglón. Se acepta un número
+    # de 9-12 dígitos sin cero inicial (los códigos internos tipo 0000022116
+    # empiezan en cero) únicamente si el doc habla de purchase order / OC.
+    if 'po' not in datos and re.search(r'purchase\s+order|orden\s+de\s+compra', texto, re.I):
+        m = re.search(r'^\s*([1-9]\d{8,11})\s*$', texto, re.M)
+        if m:
+            datos['po'] = m.group(1)
+    # Número de factura: "Factura A1234", "Invoice 0427736", "Folio 12345"
+    m = re.search(r'(?:factura|invoice|folio)\s*(?:no\.?|num\.?|#|:)?\s*([A-Z]{0,4}-?\d{3,12})\b',
+                  texto, re.I)
+    if m:
+        fac = m.group(1).strip().strip('.-:')
+        if 3 <= len(fac) <= 20 and any(ch.isdigit() for ch in fac):
+            datos['factura'] = fac
+    # Monto: primero importes pegados a "total/importe"; si no, el mayor $ del doc
+    montos = re.findall(
+        r'(?:total|importe)[^\n\d$]{0,30}\$?\s*(\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})',
+        texto, re.I)
+    if not montos:
+        # "$25,000.00" o el formato con la moneda de sufijo: "648.00 USD"
+        montos = re.findall(r'\$\s*(\d{1,3}(?:,\d{3})+\.\d{2})', texto)
+        montos += [m[0] for m in re.findall(r'(\d[\d,]*\.\d{2})\s*(USD|MXN|MN)\b', texto)]
+    try:
+        vals = sorted({float(s.replace(',', '')) for s in montos}, reverse=True)
+        if vals and vals[0] >= 100:  # importes chicos suelen ser ruido (IVA unitario, flete)
+            datos['monto'] = round(vals[0], 2)
+    except Exception:
+        pass
+    m = re.search(r'\b(USD|MXN|MN|d[oó]lares|pesos)\b', texto, re.I)
+    if m:
+        v = m.group(1).lower()
+        datos['moneda'] = 'USD' if ('usd' in v or 'dolar' in v or 'dólar' in v) else 'MXN'
+    return datos
+
+
+def _update_draft_ia(opp, etapas, asunto, cuerpo, respuesta=''):
+    """(etapa, probabilidad, resumen) propuestos por IA para actualizar la oportunidad
+    a partir del correo del cliente Y la respuesta del vendedor (contexto completo del
+    intercambio). Fallback: deja etapa/prob igual y resume por heurística."""
+    import json as _json
+    etapa_out, prob_out, resumen_out = opp.etapa_corta, opp.probabilidad_cierre, ''
+    try:
+        from .models import AsistenteConfig
+        from .asistente_provider import chat
+        cfg = AsistenteConfig.get_singleton()
+        if cfg.activo and etapas:
+            sys_msg = {'role': 'system', 'content': (
+                'Eres un asistente que ACTUALIZA una oportunidad de venta a partir del intercambio '
+                'de correos entre el cliente y el vendedor (el correo del cliente y la respuesta que '
+                'le dio el vendedor). Te doy la etapa actual, la probabilidad actual y la lista de '
+                'etapas posibles EN ORDEN. Devuelve SOLO un JSON válido:\n'
+                '{"etapa": "<exactamente una de la lista, la que mejor refleje el estado tras este '
+                'intercambio>", "probabilidad": <entero 0-100>, "resumen": "<1-2 frases, en español, '
+                'resumiendo el intercambio para la bitácora de la oportunidad>"}\n'
+                'No inventes datos. Si el intercambio no implica avance, deja la etapa igual y ajusta '
+                'la probabilidad solo si tiene sentido.')}
+            intercambio = 'Correo del cliente — Asunto: %s\nCuerpo:\n%s' % (
+                asunto or '(sin asunto)', (cuerpo or '')[:2000])
+            if (respuesta or '').strip():
+                intercambio += '\n\nRespuesta del vendedor:\n%s' % (respuesta or '')[:1500]
+            user_msg = {'role': 'user', 'content': (
+                'Oportunidad: %s\nEtapa actual: %s\nProbabilidad actual: %d%%\n'
+                'Etapas posibles (en orden): %s\n\n%s'
+            ) % (opp.oportunidad, opp.etapa_corta or '-', opp.probabilidad_cierre or 0,
+                 ', '.join(etapas), intercambio)}
+            resp = chat(messages=[sys_msg, user_msg], model=cfg.modelo, temperature=0.2, max_tokens=350)
+            raw = (resp.get('text') or '').strip()
+            if raw.startswith('```'):
+                raw = raw.strip('`')
+                if raw.lower().startswith('json'):
+                    raw = raw[4:]
+            i, j = raw.find('{'), raw.rfind('}')
+            if i >= 0 and j > i:
+                d = _json.loads(raw[i:j + 1])
+                et = (d.get('etapa') or '').strip()
+                if et:
+                    # match flexible contra la lista real de etapas
+                    for e in etapas:
+                        if e.lower() == et.lower() or et.lower() in e.lower():
+                            etapa_out = e
+                            break
+                try:
+                    p = int(d.get('probabilidad'))
+                    prob_out = max(0, min(100, p))
+                except Exception:
+                    pass
+                resumen_out = (d.get('resumen') or '').strip()
+    except Exception:
+        pass
+    if not resumen_out:
+        base = (cuerpo or asunto or '').strip().replace('\n', ' ')
+        resumen_out = ('Correo de seguimiento: ' + base[:200]) if base else 'Correo de seguimiento recibido.'
+    return etapa_out, prob_out, resumen_out
+
+
+@login_required
+def api_asistente_oportunidad_update_draft(request, correo_id):
+    """GET — borrador para ACTUALIZAR la oportunidad ligada a un correo. La IA analiza
+    el correo del cliente Y la respuesta del vendedor, y propone etapa + probabilidad +
+    resumen. Sugiere también un seguimiento (+2 días hábiles). NO aplica nada."""
+    from django.utils import timezone
+    from .models import MailCorreo, EtapaPipeline
+    try:
+        correo = MailCorreo.objects.select_related('oportunidad').get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'no encontrado'}, status=404)
+    opp = correo.oportunidad
+    if not opp and correo.hilo_key:
+        # Resolver por hilo: hereda el vínculo de otro correo del mismo hilo.
+        ligado = (MailCorreo.objects.filter(
+            usuario=request.user, oportunidad__isnull=False, hilo_key=correo.hilo_key)
+            .select_related('oportunidad').first())
+        opp = ligado.oportunidad if ligado else None
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Este correo no está ligado a una oportunidad.'}, status=400)
+
+    # Reunir el intercambio: correo del cliente (recibido) + respuesta del vendedor (enviado).
+    if correo.carpeta_display == 'SENT':
+        reply_correo = correo
+        client_correo = (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='INBOX', hilo_key=correo.hilo_key)
+            .order_by('-fecha_envio').first() if correo.hilo_key else None) or correo
+    else:
+        client_correo = correo
+        reply_correo = (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='SENT', hilo_key=correo.hilo_key)
+            .order_by('-fecha_envio').first() if correo.hilo_key else None)
+
+    etapas = list(EtapaPipeline.objects.filter(
+        pipeline=opp.tipo_negociacion, activo=True).order_by('orden').values_list('nombre', flat=True))
+    cuerpo = _correo_texto(client_correo, request.user)
+    respuesta = _correo_texto(reply_correo, request.user) if reply_correo else ''
+    etapa_sug, prob_sug, resumen = _update_draft_ia(
+        opp, etapas, client_correo.asunto, cuerpo, respuesta)
+
+    # PDFs adjuntos: datos finos por CÓDIGO, cero tokens de IA. Solo caché en BD.
+    # La dirección importa (regla del negocio): la PO nos la manda el CLIENTE
+    # (recibido) y la factura la mandamos NOSOTROS (enviado) — cada dato se
+    # busca solo donde de verdad viene, sin procesar de más.
+    pdf_datos, pdf_archivos = {}, []
+    try:
+        pdf_texto, pdf_archivos = _pdf_texto_correo(client_correo)
+        pdf_datos = _pdf_datos_finos(pdf_texto, pdf_archivos)
+        pdf_datos.pop('factura', None)  # el cliente no nos factura
+        if reply_correo:
+            t_env, arch_env = _pdf_texto_correo(reply_correo)
+            fac = _pdf_datos_finos(t_env, arch_env).get('factura')
+            if fac:
+                pdf_datos['factura'] = fac
+                pdf_archivos += arch_env
+    except Exception:
+        logger.exception('update-draft: extracción de PDF falló (se ignora)')
+
+    fecha_seg = _mas_dias_habiles(timezone.localdate(), 2)
+    hora_seg = _hora_disponible(request.user, fecha_seg)
+
+    return JsonResponse({
+        'success': True,
+        'correo_id': correo.id,
+        'opp_id': opp.id,
+        'opp_nombre': opp.oportunidad,
+        'etapa_actual': opp.etapa_corta or '',
+        'etapa_sugerida': etapa_sug or (opp.etapa_corta or ''),
+        'prob_actual': opp.probabilidad_cierre or 0,
+        'prob_sugerida': prob_sug,
+        'resumen': resumen,
+        'etapas': etapas,
+        'remitente': (client_correo.remitente_nombre or client_correo.remitente_email or ''),
+        'seg_fecha': fecha_seg.isoformat(),
+        'seg_hora': '%02d:00' % hora_seg,
+        'monto_actual': float(opp.monto or 0),
+        'po_actual': opp.po_number or '',
+        'factura_actual': opp.factura_numero or '',
+        'pdf': ({'po': pdf_datos.get('po', ''), 'monto': pdf_datos.get('monto'),
+                 'factura': pdf_datos.get('factura', ''),
+                 'moneda': pdf_datos.get('moneda', ''), 'archivos': pdf_archivos}
+                if pdf_datos else None),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_oportunidad_update_aplicar(request):
+    """POST — aplica la actualización aprobada: cambia etapa + probabilidad de la
+    oportunidad y deja el resumen del correo en su conversación (bitácora)."""
+    import json as _json
+    from .models import TodoItem, EtapaPipeline, MensajeOportunidad, MailCorreo
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    try:
+        # Sin candado de dueño: igual que el borrador y el resto del asistente
+        # (agendar, tareas). Si el usuario pudo vincular su correo a la opp y ver
+        # la propuesta, puede aplicarla — las opps se comparten entre el equipo.
+        opp = TodoItem.objects.get(id=data.get('opp_id'))
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+
+    campos = []
+    etapa = (data.get('etapa') or '').strip()
+    if etapa and etapa != opp.etapa_corta:
+        ep = EtapaPipeline.objects.filter(pipeline=opp.tipo_negociacion, nombre=etapa).first()
+        opp.etapa_corta = etapa
+        opp.etapa_completa = etapa
+        if ep:
+            opp.etapa_color = ep.color
+        campos += ['etapa_corta', 'etapa_completa', 'etapa_color']
+    try:
+        prob = int(data.get('probabilidad'))
+        prob = max(0, min(100, prob))
+        if prob != opp.probabilidad_cierre:
+            opp.probabilidad_cierre = prob
+            campos.append('probabilidad_cierre')
+    except Exception:
+        pass
+    # Monto y orden de compra (vienen de los PDFs adjuntos o del ajuste manual)
+    try:
+        from decimal import Decimal
+        monto = data.get('monto')
+        if monto not in (None, ''):
+            monto_d = Decimal(str(monto))
+            if monto_d > 0 and monto_d != (opp.monto or Decimal('0')):
+                opp.monto = monto_d
+                campos.append('monto')
+    except Exception:
+        pass
+    po = (data.get('po_number') or '').strip()
+    if po and po != (opp.po_number or ''):
+        opp.po_number = po[:50]
+        campos.append('po_number')
+    fac = (data.get('factura_numero') or '').strip()
+    if fac and fac != (opp.factura_numero or ''):
+        opp.factura_numero = fac[:100]
+        campos.append('factura_numero')
+    if campos:
+        opp.save(update_fields=list(set(campos)))
+        try:
+            from .views_automatizacion import ejecutar_automatizaciones
+            if 'etapa_corta' in campos:
+                ejecutar_automatizaciones(opp, opp.etapa_corta, request.user)
+        except Exception:
+            pass
+
+    resumen = (data.get('resumen') or '').strip()
+    if resumen:
+        try:
+            MensajeOportunidad.objects.create(
+                oportunidad=opp, usuario=request.user,
+                texto='📩 Resumen del correo (asistente): ' + resumen)
+        except Exception:
+            pass
+
+    # Marcar el correo como atendido (ya lo procesaste actualizando la oportunidad).
+    correo = MailCorreo.objects.filter(id=data.get('correo_id'), usuario=request.user).first()
+    if correo:
+        from .models import CorreoAtendido
+        from django.utils import timezone
+        CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=correo, defaults={'fecha': timezone.localdate()})
+
+    # El asistente lo hace todo: además de actualizar, agenda EN SILENCIO un seguimiento
+    # estándar (+2 días hábiles, primer hueco libre). Solo se le avisa por texto.
+    seg = {'creado': False}
+    if data.get('crear_seguimiento', True):
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        from .models import Actividad
+        try:
+            f = data.get('seg_fecha') or _mas_dias_habiles(timezone.localdate(), 2).isoformat()
+            h = data.get('seg_hora') or ('%02d:00' % _hora_disponible(request.user, _mas_dias_habiles(timezone.localdate(), 2)))
+            y, mo, d = f.split('-')
+            hh, mm = h.split(':')
+            naive = datetime(int(y), int(mo), int(d), int(hh), int(mm))
+            ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+            act = Actividad.objects.create(
+                titulo=('Seguimiento: %s' % (opp.oportunidad or ''))[:120].rstrip(': '),
+                descripcion='Realizar seguimiento de ' + (opp.oportunidad or ''),
+                tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+                creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
+                correo=correo,
+            )
+            act.participantes.set([request.user.id])
+            _seg_espejo_expediente(request.user, opp, act)
+            seg = {'creado': True, 'actividad_id': act.id, 'fecha': f, 'hora': h}
+        except Exception as e:
+            logger.exception('Asistente: no se pudo agendar seguimiento al actualizar: %s', e)
+            seg = {'creado': False, 'error': str(e)}
+
+    _asis_log_accion(request.user, 'actualizada', opp.oportunidad or 'Oportunidad',
+                     ('Etapa: %s · %s%%' % (opp.etapa_corta, opp.probabilidad_cierre))
+                     + (' · con seguimiento' if seg.get('creado') else ''),
+                     mail=correo, opp=opp)
+    return JsonResponse({'success': True, 'opp_id': opp.id, 'seguimiento': seg})
+
+
+def _hora_disponible(user, fecha):
+    """Primera hora libre dentro del horario laboral (L–V 8:00–18:00) en el
+    calendario del usuario para esa fecha."""
+    from django.db.models import Q
+    from django.utils import timezone
+    from .models import Actividad
+    busy = set()
+    acts = (Actividad.objects.filter(fecha_inicio__date=fecha)
+            .filter(Q(creado_por=user) | Q(participantes=user)).distinct()
+            .values_list('fecha_inicio', 'fecha_fin'))
+    for ini, fin in acts:
+        if not ini:
+            continue
+        h0 = timezone.localtime(ini).hour
+        h1 = timezone.localtime(fin).hour if fin else h0 + 1
+        for h in range(h0, max(h0 + 1, h1 + 1)):
+            busy.add(h)
+    for h in range(_HORA_LAB_INI, _HORA_LAB_FIN):
+        if h not in busy:
+            return h
+    return _HORA_LAB_INI
+
+
+@login_required
+def api_asistente_seguimiento_draft(request, opp_id):
+    """GET — borrador de actividad de seguimiento para una oportunidad (sin IA):
+    sugiere +2 días a la primera hora libre del calendario."""
+    from django.utils import timezone
+    from datetime import timedelta
+    from .models import TodoItem
+    opp = TodoItem.objects.filter(id=opp_id).first()
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
+    hora = _hora_disponible(request.user, fecha)
+    return JsonResponse({
+        'success': True,
+        'opp_id': opp.id,
+        'opp_nombre': opp.oportunidad,
+        'titulo': ('Seguimiento: %s' % (opp.oportunidad or ''))[:120].rstrip(': '),
+        'descripcion': 'Realizar seguimiento de ' + (opp.oportunidad or ''),
+        'fecha': fecha.isoformat(),
+        'hora': '%02d:00' % hora,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_seguimiento_crear(request):
+    """POST — crea la actividad de seguimiento ligada a la oportunidad."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import TodoItem, Actividad
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    opp = TodoItem.objects.filter(id=data.get('opp_id')).first()
+    if not opp:
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+    try:
+        y, m, d = (data.get('fecha') or '').split('-')
+        hh, mm = (data.get('hora') or '09:00').split(':')
+        naive = datetime(int(y), int(m), int(d), int(hh), int(mm))
+        ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+    except Exception:
+        ini = timezone.now() + timedelta(days=2)
+    try:
+        act = Actividad.objects.create(
+            titulo=(data.get('titulo') or 'Seguimiento')[:200],
+            descripcion=(data.get('descripcion') or ('Realizar seguimiento de ' + (opp.oportunidad or ''))),
+            tipo_actividad='tarea', fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+            creado_por=request.user, color='#007AFF', oportunidad_id=opp.id,
+        )
+        act.participantes.set([request.user.id])
+        _seg_espejo_expediente(request.user, opp, act)
+        _asis_log_accion(request.user, 'agendado', act.titulo,
+                         'Para el %s' % timezone.localtime(ini).strftime('%d/%m %H:%M'), opp=opp)
+        return JsonResponse({'success': True, 'opp_id': opp.id, 'actividad_id': act.id})
+    except Exception as e:
+        logger.exception('Asistente: no se pudo agendar seguimiento: %s', e)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def api_asistente_correo_cuerpo(request, correo_id):
+    """Cuerpo de un correo para PREVISUALIZAR en el asistente SIN marcarlo como leído.
+    Usa IMAP en modo readonly + BODY.PEEK (no toca la bandera \\Seen) y NO guarda nada
+    en el modelo, para no interferir con la carga normal (adjuntos + marcar leído) que
+    hace la sección Correo cuando el usuario lo abre de verdad.
+    """
+    import email as _email
+    from .models import MailCorreo, MailConexion
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'no encontrado'}, status=404)
+
+    # Ya en caché (se abrió antes): devolverlo sin tocar nada.
+    if correo.cuerpo_cargado:
+        return JsonResponse({'ok': True, 'cuerpo_texto': correo.cuerpo_texto or '',
+                             'cuerpo_html': correo.cuerpo_html or ''})
+
+    texto, html = '', ''
+    try:
+        from .views_mail import _get_imap
+        conexion = correo.conexion or MailConexion.objects.filter(usuario=request.user, activo=True).first()
+        if not conexion:
+            return JsonResponse({'ok': True, 'cuerpo_texto': '', 'cuerpo_html': ''})
+        imap = _get_imap(conexion)
+        imap.select(correo.carpeta_imap, readonly=True)     # readonly ⇒ NO marca \Seen
+        typ, data = imap.uid('FETCH', correo.uid_imap.encode(), '(BODY.PEEK[])')
+        raw = data[0][1] if (data and isinstance(data[0], tuple)) else None
+        if raw:
+            msg = _email.message_from_bytes(raw)
+            for part in msg.walk():
+                if part.get_filename():
+                    continue
+                ct = part.get_content_type()
+                if ct == 'text/plain' and not texto:
+                    cs = part.get_content_charset() or 'utf-8'
+                    texto = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')
+                elif ct == 'text/html' and not html:
+                    cs = part.get_content_charset() or 'utf-8'
+                    html = (part.get_payload(decode=True) or b'').decode(cs, errors='replace')[:200000]
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    except Exception:
+        return JsonResponse({'ok': True, 'cuerpo_texto': correo.cuerpo_texto or '',
+                             'cuerpo_html': correo.cuerpo_html or ''})
+
+    return JsonResponse({'ok': True, 'cuerpo_texto': texto, 'cuerpo_html': html})
+
+
+# ══════════════════════ Sección Reportes · "Mi desempeño" ══════════════════════
+
+_DES_MESES_L = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+_DES_MESES_A = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul',
+                'ago', 'sep', 'oct', 'nov', 'dic']
+
+
+def _desempeno_periodo(gran, ref):
+    """(inicio, fin, etiqueta, meses) del período que contiene ref.
+    meses = lista de (mes_int, anio) que cubre el dinero (mensual) del período."""
+    import calendar
+    from datetime import timedelta
+    if gran == 'dia':
+        return ref, ref, '%d de %s, %d' % (ref.day, _DES_MESES_L[ref.month], ref.year), [(ref.month, ref.year)]
+    if gran == 'semana':
+        start = ref - timedelta(days=ref.weekday())
+        end = start + timedelta(days=6)
+        if start.month == end.month:
+            label = '%d–%d %s %d' % (start.day, end.day, _DES_MESES_A[start.month], start.year)
+        else:
+            label = '%d %s – %d %s %d' % (start.day, _DES_MESES_A[start.month],
+                                          end.day, _DES_MESES_A[end.month], end.year)
+        return start, end, label, [(start.month, start.year)]
+    if gran == 'anio':
+        return (ref.replace(month=1, day=1), ref.replace(month=12, day=31),
+                '%d' % ref.year, [(m, ref.year) for m in range(1, 13)])
+    # mes
+    last = calendar.monthrange(ref.year, ref.month)[1]
+    return (ref.replace(day=1), ref.replace(day=last),
+            '%s %d' % (_DES_MESES_L[ref.month].capitalize(), ref.year), [(ref.month, ref.year)])
+
+
+def _desempeno_params(request):
+    """Resuelve (user_ids, es_global, gran, ref, today) desde el request.
+    user_ids None = toda la empresa (supervisor global con 'todos')."""
+    from django.utils import timezone
+    from datetime import date
+    user = request.user
+    today = timezone.localdate()
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+    gran = (request.GET.get('gran', 'mes') or 'mes').strip().lower()
+    if gran not in ('dia', 'semana', 'mes', 'anio'):
+        gran = 'mes'
+    ref = today
+    rs = (request.GET.get('ref', '') or '').strip()
+    if rs:
+        try:
+            y, m, d = rs.split('-')
+            ref = date(int(y), int(m), int(d))
+        except Exception:
+            ref = today
+    if ref > today:
+        ref = today
+    visibles = get_usuarios_visibles_ids(user)   # None = supervisor global
+    if sel == 'todos':
+        user_ids = None if visibles is None else list(visibles)
+        es_global = True
+    elif sel.isdigit():
+        tid = int(sel)
+        user_ids = [tid] if (visibles is None or tid in visibles) else [user.id]
+        es_global = False
+    else:
+        user_ids = [user.id]
+        es_global = False
+    return user_ids, es_global, gran, ref, today
+
+
+def _desempeno_dinero(user_ids, meses):
+    """(facturado, cobrado) sumando los meses dados [(mes_int, anio), ...]. Son datos
+    mensuales (archivos admin): para un vendedor se suman sus clientes (match difuso por
+    nombre); user_ids None (toda la empresa) usa el total del archivo directo."""
+    from decimal import Decimal
+    from .models import ArchivoFacturacion, ArchivoCobrado, Cliente
+    objetivo = None
+    if user_ids is not None:
+        objetivo = [(nm or '').upper().strip() for _cid, nm in
+                    Cliente.objects.filter(asignado_a_id__in=user_ids).values_list('id', 'nombre_empresa')]
+        objetivo = [n for n in objetivo if n]
+
+    def _match_sum(datos):
+        total = Decimal('0')
+        if not datos:
+            return total
+        for cname, monto in datos.items():
+            cu = (cname or '').upper().strip()
+            if not cu:
+                continue
+            if objetivo is None:
+                try:
+                    total += Decimal(str(monto))
+                except Exception:
+                    pass
+                continue
+            for nm in objetivo:
+                if nm == cu or (len(nm) >= 4 and (nm in cu or cu in nm)):
+                    try:
+                        total += Decimal(str(monto))
+                    except Exception:
+                        pass
+                    break
+        return total
+
+    fact = Decimal('0')
+    cob = Decimal('0')
+    for (m, a) in meses:
+        ms = '%02d' % m
+        af = ArchivoFacturacion.objects.filter(mes=ms, anio=a).first()
+        ac = ArchivoCobrado.objects.filter(mes=ms, anio=a).first()
+        if objetivo is None:
+            fact += (af.total_facturado if af else Decimal('0'))
+            cob += (ac.total_cobrado if ac else Decimal('0'))
+        else:
+            fact += _match_sum(af.datos_json if af else None)
+            cob += _match_sum(ac.datos_json if ac else None)
+    return fact, cob
+
+
+def _desempeno_metricas(user_ids, start, end):
+    """Conteos de actividad en el rango [start, end] para los vendedores dados
+    (user_ids None = toda la empresa)."""
+    from django.db.models import Q
+    from .models import (TodoItem, Cliente, Tarea, Actividad, MailCorreo,
+                         PendienteCompletada, TareaOportunidadHistorial,
+                         TareaOportunidad, OportunidadActividad)
+
+    opps = TodoItem.objects.all()
+    if user_ids is not None:
+        opps = opps.filter(usuario_id__in=user_ids)
+    opp_ids = list(opps.values_list('id', flat=True))
+
+    # Oportunidades trabajadas (distintas) — mismas señales que _pend_trabajadas_hoy.
+    worked = set()
+    if opp_ids:
+        pc = PendienteCompletada.objects.filter(oportunidad_id__in=opp_ids, fecha__gte=start, fecha__lte=end)
+        if user_ids is not None:
+            pc = pc.filter(usuario_id__in=user_ids)
+        worked |= set(pc.values_list('oportunidad_id', flat=True))
+        worked |= set(TareaOportunidadHistorial.objects.filter(
+            tipo='cerrada', tarea__oportunidad_id__in=opp_ids,
+            fecha__date__gte=start, fecha__date__lte=end).values_list('tarea__oportunidad_id', flat=True))
+        worked |= set(Actividad.objects.filter(
+            oportunidad_id__in=opp_ids, completada=True,
+            fecha_inicio__date__gte=start, fecha_inicio__date__lte=end).values_list('oportunidad_id', flat=True))
+        worked |= set(TareaOportunidad.objects.filter(
+            oportunidad_id__in=opp_ids,
+            fecha_creacion__date__gte=start, fecha_creacion__date__lte=end).values_list('oportunidad_id', flat=True))
+        worked |= set(OportunidadActividad.objects.filter(
+            oportunidad_id__in=opp_ids,
+            fecha_creacion__date__gte=start, fecha_creacion__date__lte=end).values_list('oportunidad_id', flat=True))
+
+    correos_qs = MailCorreo.objects.filter(
+        carpeta_display='SENT', eliminado=False,
+        fecha_envio__date__gte=start, fecha_envio__date__lte=end)
+    if user_ids is not None:
+        correos_qs = correos_qs.filter(usuario_id__in=user_ids)
+
+    nuevas = TodoItem.objects.filter(fecha_creacion__date__gte=start, fecha_creacion__date__lte=end)
+    if user_ids is not None:
+        nuevas = nuevas.filter(usuario_id__in=user_ids)
+
+    tareas_qs = Tarea.objects.filter(
+        estado='completada', fecha_completada__date__gte=start, fecha_completada__date__lte=end)
+    if user_ids is not None:
+        tareas_qs = tareas_qs.filter(asignado_a_id__in=user_ids)
+
+    act_qs = Actividad.objects.filter(
+        completada=True, fecha_inicio__date__gte=start, fecha_inicio__date__lte=end)
+    if user_ids is not None:
+        act_qs = act_qs.filter(Q(creado_por_id__in=user_ids) | Q(participantes__id__in=user_ids)).distinct()
+
+    return {
+        'opps_trabajadas': len(worked),
+        'correos': correos_qs.count(),
+        'clientes': nuevas.values('cliente').distinct().count(),
+        'tareas': tareas_qs.count(),
+        'actividades': act_qs.count(),
+        'tiene_opps': bool(opp_ids),
+        'tiene_clientes': (Cliente.objects.filter(asignado_a_id__in=user_ids).exists()
+                           if user_ids is not None else True),
+    }
+
+
+def _desempeno_fmt(v):
+    try:
+        return '${:,.0f}'.format(float(v))
+    except Exception:
+        return '$0'
+
+
+def _desempeno_paquete(request):
+    """Calcula todo el desempeño para el request → dict con título, período, dinero,
+    tiles y metadatos. Compartido por el endpoint JSON y el de exportación."""
+    user_ids, es_global, gran, ref, today = _desempeno_params(request)
+    start, end, plabel, meses = _desempeno_periodo(gran, ref)
+    met = _desempeno_metricas(user_ids, start, end)
+    facturado, cobrado = _desempeno_dinero(user_ids, meses)
+
+    hay_negocio = met['tiene_opps'] or met['tiene_clientes'] or es_global
+    tiles = []
+    if met['tiene_opps'] or es_global:
+        tiles.append({'key': 'opps', 'valor': met['opps_trabajadas'], 'label': 'Oportunidades trabajadas'})
+    tiles.append({'key': 'correos', 'valor': met['correos'], 'label': 'Correos enviados'})
+    if met['tiene_clientes'] or es_global:
+        tiles.append({'key': 'clientes', 'valor': met['clientes'], 'label': 'Clientes con oportunidad nueva'})
+    tiles.append({'key': 'tareas', 'valor': met['tareas'], 'label': 'Tareas cerradas'})
+    tiles.append({'key': 'actividades', 'valor': met['actividades'], 'label': 'Actividades completadas'})
+
+    # A quién corresponde el reporte (para la exportación).
+    if es_global:
+        quien = 'Toda la empresa'
+    elif user_ids and len(user_ids) == 1:
+        from django.contrib.auth.models import User as _User
+        u = _User.objects.filter(id=user_ids[0]).first()
+        quien = (u.get_full_name() or u.username) if u else ''
+    else:
+        quien = ''
+
+    return {
+        'titulo': ('Desempeño del equipo' if es_global else 'Tu desempeño'),
+        'quien': quien,
+        'gran': gran,
+        'ref': ref.isoformat(),
+        'periodo_label': plabel,
+        'puede_avanzar': end < today,
+        'dinero': {
+            'mostrar': bool(hay_negocio),
+            'facturado': float(facturado),
+            'cobrado': float(cobrado),
+            'facturado_fmt': _desempeno_fmt(facturado),
+            'cobrado_fmt': _desempeno_fmt(cobrado),
+        },
+        'tiles': tiles,
+    }
+
+
+@login_required
+def api_asistente_desempeno(request):
+    """GET /app/api/asistente/desempeno/?vendedor=<id|todos|mias>&gran=<dia|semana|mes|anio>&ref=YYYY-MM-DD
+    Mosaico de KPIs de desempeño. El hero facturado/cobrado es mensual (dato de archivos
+    admin); los tiles de actividad responden al período elegido. Oculta métricas que no
+    aplican al rol. `ref` fija el período a mostrar (default hoy)."""
+    pkg = _desempeno_paquete(request)
+    return JsonResponse({
+        'success': True,
+        'titulo': pkg['titulo'],
+        'gran': pkg['gran'],
+        'ref': pkg['ref'],
+        'periodo_label': pkg['periodo_label'],
+        'puede_avanzar': pkg['puede_avanzar'],
+        'dinero': {
+            'mostrar': pkg['dinero']['mostrar'],
+            'facturado_fmt': pkg['dinero']['facturado_fmt'],
+            'cobrado_fmt': pkg['dinero']['cobrado_fmt'],
+        },
+        'tiles': pkg['tiles'],
+    })
+
+
+@login_required
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_accion_interpretar(request):
+    """POST {texto} — la IA SOLO TRADUCE la petición a acciones estructuradas
+    (JSON); no crea nada. El frontend muestra las propuestas con campos
+    editables y, al confirmar el usuario, el CÓDIGO ejecuta con los endpoints
+    de siempre. Una llamada mini por petición (~$0.0001)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AsistenteConfig
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    texto = (data.get('texto') or '').strip()[:600]
+    if not texto:
+        return JsonResponse({'success': False, 'error': 'Texto vacío.'}, status=400)
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if not (cfg and cfg.activo):
+            return JsonResponse({'success': False, 'error': 'El asistente de IA está apagado.'}, status=503)
+        from .asistente_provider import chat
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'IA no disponible.'}, status=503)
+
+    hoy = timezone.localdate()
+    _DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    sys = (
+        "Extraes ACCIONES de la petición de un vendedor de CRM. Hoy es %s %s. "
+        "Devuelve SOLO JSON válido: {\"acciones\": [ ... ]} con máximo 5 elementos.\n"
+        "Cada acción es UNO de estos dos objetos:\n"
+        "1) {\"tipo\": \"actividad\", \"titulo\": \"...\", \"fecha\": \"YYYY-MM-DD\", \"hora\": \"HH:MM\"} "
+        "— para agendar actividades/reuniones/llamadas/seguimientos. Si no dan hora usa \"09:00\"; "
+        "si piden varias el mismo día sin horas, sepáralas una hora entre sí. Si no dan fecha usa mañana. "
+        "'mañana', 'el jueves', 'el 15' se calculan desde hoy.\n"
+        "2) {\"tipo\": \"oportunidad\", \"titulo\": \"...\", \"cliente\": \"...\" | null, "
+        "\"pipeline\": \"runrate\" | \"proyecto\"} — para crear oportunidades de venta. "
+        "pipeline 'proyecto' solo si lo mencionan; si no, 'runrate'.\n"
+        "Los títulos: breves y útiles, en español, sacados de lo que pidió. No inventes datos que no estén."
+    ) % (_DIAS[hoy.weekday()], hoy.isoformat())
+    try:
+        resp = chat(messages=[{'role': 'system', 'content': sys},
+                              {'role': 'user', 'content': texto}],
+                    temperature=0.0, max_tokens=500)
+        txt = (resp.get('text') or '').strip()
+        if txt.startswith('```'):
+            txt = txt.strip('`')
+            if txt.lower().startswith('json'):
+                txt = txt[4:]
+        parsed = _json.loads(txt)
+        acciones = parsed.get('acciones') or []
+    except Exception:
+        logger.exception('Asistente: fallo interpretando acciones')
+        return JsonResponse({'success': False, 'error': 'No entendí la petición — intenta con otras palabras.'})
+    limpias = []
+    for a in acciones[:5]:
+        t = (a.get('tipo') or '').strip()
+        if t == 'actividad' and (a.get('titulo') or '').strip():
+            limpias.append({'tipo': 'actividad', 'titulo': a['titulo'].strip()[:150],
+                            'fecha': (a.get('fecha') or '')[:10],
+                            'hora': (a.get('hora') or '09:00')[:5]})
+        elif t == 'oportunidad' and (a.get('titulo') or '').strip():
+            limpias.append({'tipo': 'oportunidad', 'titulo': a['titulo'].strip()[:150],
+                            'cliente': (a.get('cliente') or '').strip()[:100],
+                            'pipeline': 'proyecto' if a.get('pipeline') == 'proyecto' else 'runrate'})
+    if not limpias:
+        return JsonResponse({'success': False, 'error': 'No encontré acciones concretas en la petición.'})
+    return JsonResponse({'success': True, 'acciones': limpias})
+
+
+@login_required
+def api_asistente_reporte_oportunidades(request):
+    """GET .../reporte/oportunidades/ — Excel de oportunidades filtrado por CÓDIGO
+    (sin IA). Parámetros: tipo=<vencidas|importantes|abiertas>, cliente, etapa,
+    pipeline=<runrate|proyecto>, monto_min, top, cierre_mes, cierre_anio,
+    estancadas_dias, extras=<ultima_actividad,dias_sin_mov,po> (csv).
+    El archivo lleva cuadro informativo (fecha, autor, filtros) y tabla azul."""
+    from datetime import date
+    from django.http import HttpResponse
+    from django.utils import timezone as _tz
+    from .models import TodoItem, Actividad
+
+    g = request.GET
+    tipo = (g.get('tipo') or 'abiertas').strip().lower()
+    cliente_q = (g.get('cliente') or '').strip()
+    etapa_q = (g.get('etapa') or '').strip()
+    pipeline_q = (g.get('pipeline') or '').strip().lower()
+    extras = [x for x in (g.get('extras') or '').split(',') if x]
+
+    def _int(nombre, default=0):
+        try:
+            return int(g.get(nombre) or default)
+        except (TypeError, ValueError):
+            return default
+    monto_min = _int('monto_min')
+    top = _int('top')
+    cierre_mes = _int('cierre_mes')
+    cierre_anio = _int('cierre_anio')
+    estancadas_dias = _int('estancadas_dias')
+
+    qs = TodoItem.objects.filter(usuario=request.user).select_related('cliente')
+    if cliente_q:
+        qs = qs.filter(cliente__nombre_empresa__icontains=cliente_q)
+    if etapa_q:
+        qs = qs.filter(etapa_corta__icontains=etapa_q)
+    if pipeline_q in ('runrate', 'proyecto'):
+        qs = qs.filter(tipo_negociacion=pipeline_q)
+    opps = list(qs)
+
+    hoy = date.today()
+    ahora = _tz.now()
+
+    def _abierta(o):
+        return _cli_abierta(o.etapa_corta, o.estado_crm)
+
+    def _vencida(o):
+        if not _abierta(o):
+            return False
+        try:
+            a, m = int(o.anio_cierre or 0), int(o.mes_cierre or 0)
+        except (TypeError, ValueError):
+            return False
+        return bool(a and m) and (a, m) < (hoy.year, hoy.month)
+
+    filtros = []   # descripción legible para el cuadro informativo
+    if tipo == 'vencidas':
+        opps = [o for o in opps if _vencida(o)]
+        titulo = 'Oportunidades vencidas'
+    elif tipo == 'importantes':
+        opps = [o for o in opps if _abierta(o)]
+        titulo = 'Oportunidades más importantes'
+    else:
+        tipo = 'abiertas'
+        opps = [o for o in opps if _abierta(o)]
+        titulo = 'Pipeline abierto'
+    filtros.append('Tipo: %s' % titulo)
+    if cliente_q:
+        filtros.append('Cliente: %s' % cliente_q)
+    if etapa_q:
+        filtros.append('Etapa: %s' % etapa_q)
+    if pipeline_q in ('runrate', 'proyecto'):
+        filtros.append('Pipeline: %s' % pipeline_q.capitalize())
+    if monto_min:
+        opps = [o for o in opps if float(o.monto or 0) >= monto_min]
+        filtros.append('Monto mínimo: $%s' % ('{:,.0f}'.format(monto_min)))
+    if cierre_mes:
+        anio_c = cierre_anio or hoy.year
+        opps = [o for o in opps if (str(o.mes_cierre or '').lstrip('0') == str(cierre_mes)
+                                    and str(o.anio_cierre or '') == str(anio_c))]
+        filtros.append('Cierre: %02d/%d' % (cierre_mes, anio_c))
+    if estancadas_dias:
+        opps = [o for o in opps if o.fecha_actualizacion
+                and (ahora - o.fecha_actualizacion).days >= estancadas_dias]
+        filtros.append('Sin movimiento: %d días o más' % estancadas_dias)
+
+    opps.sort(key=lambda o: -(float(o.monto or 0)))
+    tope = top or (25 if tipo == 'importantes' else 0)
+    if tope:
+        opps = opps[:tope]
+        filtros.append('Top %d por monto' % tope)
+
+    # Columnas extra del catálogo (personalización por código)
+    _EXTRAS = {'ultima_actividad': 'Última actividad', 'dias_sin_mov': 'Días sin movimiento', 'po': 'PO'}
+    extras = [e for e in extras if e in _EXTRAS]
+    ult_act = {}
+    if 'ultima_actividad' in extras and opps:
+        ids = [o.id for o in opps]
+        for a in (Actividad.objects.filter(oportunidad_id__in=ids)
+                  .order_by('oportunidad_id', '-fecha_inicio')
+                  .values('oportunidad_id', 'titulo')):
+            ult_act.setdefault(a['oportunidad_id'], a['titulo'])
+    if extras:
+        filtros.append('Columnas extra: %s' % ', '.join(_EXTRAS[e] for e in extras))
+
+    # ── El Excel: cuadro informativo + tabla azul ──
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    AZUL, AZUL_CLARO, AZUL_BANDA = '1D4ED8', 'DBEAFE', 'EFF6FF'
+    borde = Border(bottom=Side(style='thin', color='BFDBFE'))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Oportunidades'
+
+    ws['B2'] = titulo
+    ws['B2'].font = Font(bold=True, size=16, color='0F172A')
+    info = [
+        ('Fecha del reporte', _tz.localtime().strftime('%d/%m/%Y %H:%M')),
+        ('Generado por', request.user.get_full_name() or request.user.username),
+        ('Filtros', ' · '.join(filtros)),
+        ('Resultados', str(len(opps))),
+    ]
+    r0 = 4
+    for i, (k, v) in enumerate(info):
+        ck = ws.cell(row=r0 + i, column=2, value=k)
+        cv = ws.cell(row=r0 + i, column=3, value=v)
+        ck.font = Font(bold=True, size=10, color='1E3A8A')
+        cv.font = Font(size=10, color='1F2937')
+        ck.fill = PatternFill('solid', fgColor=AZUL_CLARO)
+        cv.fill = PatternFill('solid', fgColor=AZUL_BANDA)
+        cv.alignment = Alignment(wrap_text=True, vertical='top')
+
+    headers = ['Oportunidad', 'Cliente', 'Etapa', 'Monto', 'Prob. %', 'Cierre', 'Pipeline', 'Últ. actualización']
+    headers += [_EXTRAS[e] for e in extras]
+    hrow = r0 + len(info) + 2
+    for c, h in enumerate(headers, start=2):
+        cell = ws.cell(row=hrow, column=c, value=h)
+        cell.font = Font(bold=True, color='FFFFFF', size=10)
+        cell.fill = PatternFill('solid', fgColor=AZUL)
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+    ws.row_dimensions[hrow].height = 22
+
+    r = hrow
+    for idx, o in enumerate(opps):
+        r += 1
+        fila = [
+            o.oportunidad or '',
+            (o.cliente.nombre_empresa if o.cliente_id else ''),
+            o.etapa_corta or '',
+            float(o.monto or 0),
+            o.probabilidad_cierre or 0,
+            '%s/%s' % (o.mes_cierre or '—', o.anio_cierre or '—'),
+            (o.tipo_negociacion or '').capitalize(),
+            (_tz.localtime(o.fecha_actualizacion).strftime('%d/%m/%Y') if o.fecha_actualizacion else ''),
+        ]
+        for e in extras:
+            if e == 'ultima_actividad':
+                fila.append(ult_act.get(o.id, '— sin actividades —'))
+            elif e == 'dias_sin_mov':
+                fila.append((ahora - o.fecha_actualizacion).days if o.fecha_actualizacion else '')
+            elif e == 'po':
+                fila.append(o.po_number or '')
+        for c, val in enumerate(fila, start=2):
+            cell = ws.cell(row=r, column=c, value=val)
+            cell.font = Font(size=10, color='1F2937')
+            cell.border = borde
+            if idx % 2 == 1:
+                cell.fill = PatternFill('solid', fgColor=AZUL_BANDA)
+        ws.cell(row=r, column=5).number_format = '$#,##0.00'
+    if not opps:
+        ws.cell(row=hrow + 1, column=2, value='Sin oportunidades con esos filtros.').font = Font(italic=True, color='6B7280')
+
+    anchos = [3, 42, 28, 18, 14, 9, 10, 11, 17] + [24] * len(extras)
+    for i, w in enumerate(anchos, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = ws.cell(row=hrow + 1, column=1)
+
+    import io as _io
+    buf = _io.BytesIO()
+    wb.save(buf)
+    nombre = 'Reporte_%s%s_%s.xlsx' % (
+        tipo, ('_' + '_'.join(cliente_q.split())[:30]) if cliente_q else '',
+        hoy.strftime('%d-%m-%Y'))
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="%s"' % nombre
+    return resp
+
+
+def api_asistente_desempeno_export(request):
+    """GET .../desempeno/export/?formato=<xlsx|pdf>&... — descarga el desempeño como
+    tabla Excel o PDF, respetando vendedor/período."""
+    formato = (request.GET.get('formato', 'xlsx') or 'xlsx').strip().lower()
+    pkg = _desempeno_paquete(request)
+
+    filas = []
+    if pkg['dinero']['mostrar']:
+        filas.append(('Facturado', pkg['dinero']['facturado_fmt']))
+        filas.append(('Cobrado', pkg['dinero']['cobrado_fmt']))
+    for t in pkg['tiles']:
+        filas.append((t['label'], t['valor']))
+
+    titulo = pkg['titulo']
+    quien = pkg['quien']
+    periodo = pkg['periodo_label']
+    base_name = 'desempeno_%s_%s' % (pkg['gran'], pkg['ref'])
+
+    if formato == 'pdf':
+        from django.utils.html import escape as _esc
+        filas_html = ''.join(
+            '<tr><td class="k">%s</td><td class="v">%s</td></tr>' % (_esc(str(k)), _esc(str(v)))
+            for k, v in filas)
+        html = (
+            '<html><head><meta charset="utf-8"><style>'
+            '@page{size:A4;margin:2cm;}'
+            'body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1c1d22;}'
+            'h1{font-size:22px;margin:0 0 2px;} .sub{color:#6b6d76;font-size:13px;margin-bottom:2px;}'
+            '.per{color:#0a84ff;font-weight:700;font-size:13px;margin-bottom:18px;}'
+            'table{width:100%;border-collapse:collapse;} '
+            'td{padding:11px 6px;border-bottom:1px solid #eceef1;font-size:14px;} '
+            'td.k{color:#4b5563;} td.v{text-align:right;font-weight:700;font-size:16px;} '
+            '.foot{margin-top:24px;color:#9a9ca3;font-size:11px;}'
+            '</style></head><body>'
+            '<h1>%s</h1>'
+            '<div class="sub">%s</div>'
+            '<div class="per">%s</div>'
+            '<table>%s</table>'
+            '<div class="foot">Generado desde el CRM IAMET · La facturación y cobranza son del período mensual correspondiente.</div>'
+            '</body></html>'
+        ) % (_esc(titulo), _esc(quien), _esc(periodo), filas_html)
+        from weasyprint import HTML
+        pdf = HTML(string=html).write_pdf()
+        resp = HttpResponse(pdf, content_type='application/pdf')
+        resp['Content-Disposition'] = 'attachment; filename="%s.pdf"' % base_name
+        return resp
+
+    # Excel (xlsx)
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Desempeño'
+    ws['A1'] = titulo
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A2'] = quien
+    ws['A2'].font = Font(color='6B6D76', size=11)
+    ws['A3'] = periodo
+    ws['A3'].font = Font(bold=True, color='0A84FF', size=11)
+    hrow = 5
+    ws.cell(row=hrow, column=1, value='Métrica').font = Font(bold=True, color='FFFFFF')
+    ws.cell(row=hrow, column=2, value='Valor').font = Font(bold=True, color='FFFFFF')
+    fill = PatternFill('solid', fgColor='0A84FF')
+    ws.cell(row=hrow, column=1).fill = fill
+    ws.cell(row=hrow, column=2).fill = fill
+    for i, (k, v) in enumerate(filas, start=hrow + 1):
+        ws.cell(row=i, column=1, value=str(k))
+        c = ws.cell(row=i, column=2, value=v)
+        c.alignment = Alignment(horizontal='right')
+    ws.column_dimensions['A'].width = 34
+    ws.column_dimensions['B'].width = 18
+    import io
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="%s.xlsx"' % base_name
+    return resp
+
+
+# ══════════════ Asistente proactivo · feed liviano para el launcher ══════════════
+
+def _feed_correos_items(user, limite=6):
+    """Correos importantes sin responder (BARATO: asunto/remitente, sin IMAP) como
+    ítems para el mini-panel, con categoría y acciones por tipo."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import (MailConexion, MailCorreo, CorreoAtendido, TodoItem,
+                         AvisoPospuesto, Actividad, AsistenteEstado)
+    out = []
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return out
+    now = timezone.now()
+    cutoff = now - timedelta(hours=_COR_VENTANA_HORAS)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff).select_related('oportunidad').order_by('-fecha_envio')[:300])
+    # Nota: no retornamos aunque INBOX esté vacío — el Caso 3-B (respondiste) se detecta
+    # desde los ENVIADOS y debe correr igual.
+    # Última respuesta (SENT) por hilo → "sin responder" = NO hay enviado posterior
+    # al último correo recibido (aunque ya hubieras respondido antes en el hilo).
+    hks = set(m.hilo_key for m in inbox if m.hilo_key)
+    last_sent = {}
+    if hks:
+        for s in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT',
+                                            hilo_key__in=hks).values('hilo_key', 'fecha_envio'):
+            f = s['fecha_envio']
+            if not f:
+                continue
+            hk = s['hilo_key']
+            if hk not in last_sent or f > last_sent[hk]:
+                last_sent[hk] = f
+    atendidos = set(CorreoAtendido.objects.filter(
+        usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
+    known_emails, known_domains, cliente_nombres = _cor_conocidos()
+    # "Mañana" del toast: avisos pospuestos siguen dormidos hasta su fecha.
+    hoy = timezone.localdate()
+    pospuestos = set(AvisoPospuesto.objects.filter(
+        usuario=user, tipo='correo', hasta__gt=hoy).values_list('ref_id', flat=True))
+    # ¿Cuántas veces ha insistido? = correos del hilo llegados DESPUÉS de tu última respuesta.
+    insiste = {}
+    for m in inbox:
+        hk = m.hilo_key
+        if not hk:
+            continue
+        ls = last_sent.get(hk)
+        if not ls or (m.fecha_envio and m.fecha_envio > ls):
+            insiste[hk] = insiste.get(hk, 0) + 1
+
+    def _dias(m):
+        return (timezone.localtime(now).date() - timezone.localtime(m.fecha_envio).date()).days if m.fecha_envio else 0
+
+    def _base_item(m):
+        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+        asunto = _cor_limpiar_asunto(m.asunto)
+        dias = _dias(m)
+        return {
+            'tipo': 'correo', 'grupo': 'correo',
+            'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
+            'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
+            'dias_espera': dias, 'urgente': dias >= 2,
+            # Cuerpo extendido para el nivel 2 del toast (clic = expandir en el lugar).
+            'quote_full': _cor_extracto_parrafos(m.cuerpo_texto or '', limite=1400),
+        }
+
+    # ── Redacción del toast: titular-oración + línea de contexto + cita del correo ──
+    _ORDINAL = {2: 'segunda', 3: 'tercera', 4: 'cuarta', 5: 'quinta'}
+
+    def _asunto_corto(m):
+        return _cor_limpiar_asunto(m.asunto)[:60]
+
+    def _ctx_insiste(m):
+        n = insiste.get(m.hilo_key or '', 0)
+        if n >= 2:
+            return 'Es la %s vez que te escribe sin respuesta.' % _ORDINAL.get(n, '%dª' % n)
+        return ''
+
+    def _ctx_opp(opp):
+        if not opp:
+            return ''
+        etapa = (opp.etapa_corta or '').strip()
+        try:
+            monto = float(opp.monto or 0)
+        except Exception:
+            monto = 0
+        if monto and etapa:
+            return 'La oportunidad de ${:,.0f} sigue en {}.'.format(monto, etapa)
+        if etapa:
+            return 'La oportunidad sigue en %s.' % etapa
+        return ''
+
+    def _quote(m):
+        return _cor_extracto(m.cuerpo_texto or '')
+
+    sueltos = []      # correos NO ligados sin responder (candidatos a analizar)
+    llego = []        # Caso 3-A: correos ligados que LLEGARON y aún no respondes
+    seen_hk = set()
+    for m in inbox:
+        hk = m.hilo_key
+        if hk:
+            if hk in seen_hk:
+                continue   # solo el correo más reciente de cada hilo
+            seen_hk.add(hk)
+        if m.id in atendidos or m.id in pospuestos:
+            continue
+        ls = last_sent.get(hk) if hk else None
+        respondido = bool(ls and m.fecha_envio and ls >= m.fecha_envio)
+        # ── Caso 3-A: correo LIGADO que llegó y aún NO respondes ──
+        if m.oportunidad_id:
+            if not respondido:
+                llego.append(m)   # → responder / agendar seguimiento
+            # Si YA respondiste, no se maneja aquí sino desde los ENVIADOS (Caso 3-B),
+            # así aplica aunque el correo del cliente sea viejo o de la cola pasada.
+            continue
+        # ── Correos NO ligados ──
+        if respondido:
+            continue
+        sueltos.append(m)
+
+    # Análisis persistente (IA una vez por correo; ver _cor_asegurar_analisis).
+    ana = _cor_asegurar_analisis(user, llego + sueltos,
+                                 (known_emails, known_domains, cliente_nombres))
+
+    scored = []       # (prio, m, analisis, motivos)
+    for m in sueltos:
+        a = ana.get(m.id)
+        if a is None:
+            # Confianza primero: sin veredicto todavía (la IA no lo alcanzó en este
+            # ciclo) NO se notifica — la tarjeta aparece en cuanto tenga análisis
+            # (1-2 min después). La primera impresión del asistente debe ser
+            # correcta, no provisional; una tarjeta equivocada cuesta la confianza.
+            continue
+        if a.categoria in ('ruido', 'info'):
+            continue
+        prio = 4 if a.categoria in ('venta', 'hito') else 3
+        scored.append((prio, m, a, set()))
+
+    # ── Caso 3-B: RESPONDISTE un correo ligado a una oportunidad ──
+    # Se detecta desde los ENVIADOS (no desde INBOX): siempre que respondas un correo
+    # de una oportunidad ligada —sin importar la antigüedad del correo del cliente— el
+    # asistente ofrece actualizar. La oportunidad se resuelve POR HILO (el enviado casi
+    # nunca trae el vínculo directo; lo hereda del correo del cliente en el mismo hilo).
+    # Se calla si ya actualizaste la opp tras responder o si la oportunidad ya está cerrada.
+    respondiste = []           # (m_card, opp, reply_dt)
+    respondiste_sueltos = []   # (m_card, reply_dt) — Caso 3-C: respondiste sin oportunidad
+    sent_recientes = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='SENT', fecha_envio__gte=cutoff)
+        .order_by('-fecha_envio')[:200])
+    s_hks = set(s.hilo_key for s in sent_recientes if s.hilo_key)
+    if s_hks:
+        # Oportunidad por hilo: cualquier correo (INBOX o SENT) ya ligado marca el hilo.
+        opp_por_hilo = {}
+        for c in (MailCorreo.objects.filter(
+                usuario=user, oportunidad__isnull=False, hilo_key__in=s_hks)
+                .values('hilo_key', 'oportunidad_id')):
+            opp_por_hilo.setdefault(c['hilo_key'], c['oportunidad_id'])
+        # Camino PRINCIPAL: el encabezado In-Reply-To de tu enviado apunta al
+        # Message-ID exacto del correo que respondiste — no falla aunque cambien
+        # el asunto. El hilo por asunto queda de RESPALDO (correos sin encabezado).
+        # Mismo doble chequeo que ya usa el vinculado automático al sincronizar.
+        refs = set((s.in_reply_to or '').strip() for s in sent_recientes)
+        refs.discard('')
+        por_msgid = {}
+        if refs:
+            for r in MailCorreo.objects.filter(
+                    usuario=user, carpeta_display='INBOX', message_id__in=refs):
+                por_msgid[r.message_id] = r
+        opp_ids = (set(opp_por_hilo.values())
+                   | set(s.oportunidad_id for s in sent_recientes if s.oportunidad_id)
+                   | set(r.oportunidad_id for r in por_msgid.values() if r.oportunidad_id))
+        opps = {o.id: o for o in TodoItem.objects.filter(id__in=opp_ids)} if opp_ids else {}
+        recibidos = {}
+        for r in (MailCorreo.objects.filter(
+                usuario=user, carpeta_display='INBOX', hilo_key__in=s_hks)
+                .order_by('fecha_envio')):
+            recibidos[r.hilo_key] = r          # el último recibido de cada hilo
+        vistos_opp = set()
+        cand, cand_ids = [], []
+        for s in sent_recientes:
+            m_dir = por_msgid.get((s.in_reply_to or '').strip())
+            opp_id = ((m_dir.oportunidad_id if m_dir else None)
+                      or s.oportunidad_id or opp_por_hilo.get(s.hilo_key))
+            if not opp_id or opp_id in vistos_opp:
+                continue                        # una tarjeta por oportunidad (la respuesta más reciente)
+            opp = opps.get(opp_id)
+            if not opp or not _cli_abierta(opp.etapa_corta, opp.estado_crm):
+                continue                        # sin opp o ya cerrada → no molestar
+            vistos_opp.add(opp_id)
+            if opp.fecha_actualizacion and s.fecha_envio and opp.fecha_actualizacion >= s.fecha_envio:
+                continue                        # ya actualizaste la opp después de responder
+            m_card = m_dir or recibidos.get(s.hilo_key) or s
+            cand.append((m_card, opp, s.fecha_envio))
+            cand_ids.append(m_card.id)
+        # "Revisado" ANTES de responder NO calla estas tarjetas: aquel descarte fue
+        # sobre el aviso de llegada; tu RESPUESTA es un evento nuevo que re-evalúa.
+        # Solo se calla si el descarte es POSTERIOR a la respuesta (le dijiste
+        # "Revisado" al propio "¿actualizo?" / "¿agendo seguimiento?").
+        at_b = dict(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=cand_ids).values_list('mail_id', 'created_at')) if cand_ids else {}
+
+        def _descartado_tras(at_map, mid, rt):
+            at = at_map.get(mid)
+            return bool(at and (not rt or at >= rt))
+
+        respondiste = [(mc, opp, rt) for (mc, opp, rt) in cand
+                       if not _descartado_tras(at_b, mc.id, rt) and mc.id not in pospuestos]
+
+        # ── Caso 3-C: RESPONDISTE un correo SUELTO (sin oportunidad ligada) ──
+        # Mismo detector desde los ENVIADOS, pero en hilos sin oportunidad: al
+        # responder, el asistente ofrece agendar un seguimiento para que la
+        # conversación no se pierda. Se calla si ya hay un seguimiento agendado
+        # sobre ese correo, si descartaste el aviso, o si el hilo no tiene correo
+        # RECIBIDO (un correo que iniciaste tú no es una respuesta).
+        # Arranque limpio: la oferta solo aplica a respuestas ENVIADAS después de
+        # que el asistente se activó para este usuario (la marca se crea sola la
+        # primera vez). Lo respondido antes del lanzamiento no genera tarjetas.
+        estado_asis, _creado = AsistenteEstado.objects.get_or_create(usuario=user)
+        vistos_hilo_c = set()
+        cand_c = []
+        for s in sent_recientes:
+            hk = s.hilo_key
+            if not hk or hk in vistos_hilo_c:
+                continue
+            vistos_hilo_c.add(hk)
+            if not s.fecha_envio or s.fecha_envio < estado_asis.activado_en:
+                continue                        # respondido antes de activar el asistente
+            m_dir = por_msgid.get((s.in_reply_to or '').strip())
+            if s.oportunidad_id or opp_por_hilo.get(hk) or (m_dir and m_dir.oportunidad_id):
+                continue                        # ligado a oportunidad → es del 3-B
+            m_card = m_dir or recibidos.get(hk)
+            if m_card is None:
+                continue                        # sin recibido en el hilo: no es respuesta
+            if s.fecha_envio and m_card.fecha_envio and s.fecha_envio < m_card.fecha_envio:
+                continue                        # te volvieron a escribir después → pendiente normal
+            cand_c.append((m_card, s.fecha_envio))
+        ids_c = [mc.id for mc, _ in cand_c]
+        at_c = dict(CorreoAtendido.objects.filter(
+            usuario=user, mail_id__in=ids_c).values_list('mail_id', 'created_at')) if ids_c else {}
+        ya_agendados = set(Actividad.objects.filter(
+            creado_por=user, correo_id__in=ids_c).values_list('correo_id', flat=True)) if ids_c else set()
+        respondiste_sueltos = [
+            (mc, rt) for (mc, rt) in cand_c
+            if not _descartado_tras(at_c, mc.id, rt) and mc.id not in pospuestos
+            and mc.id not in ya_agendados][:6]
+
+    # Orden: lo que ACABA de llegar va primero (el asistente avisa en cuanto llega);
+    # después pesa la urgencia (prioridad + días esperando). Sin el bono de frescura,
+    # los correos viejos acumulan puntos y entierran al recién llegado (visto en pruebas).
+    def _frescura(m):
+        if not m.fecha_envio:
+            return 0.0
+        horas = (now - m.fecha_envio).total_seconds() / 3600.0
+        return 3.0 if horas <= 4 else (1.0 if horas <= 24 else 0.0)
+
+    scored.sort(key=lambda t: -(t[0] + min(_dias(t[1]), 7) * 0.4 + _frescura(t[1])))
+    llego.sort(key=_dias)
+
+    # 1) Respondiste un correo ligado → ACTUALIZAR (con contexto de ambos correos).
+    for m_card, opp, reply_dt in respondiste:
+        item = _base_item(m_card)
+        if reply_dt:
+            item['hace'] = _cor_hace(timezone.localtime(reply_dt), timezone.localtime(now))
+        item['opp_id'] = opp.id
+        item['opp_nombre'] = opp.oportunidad or ''
+        item['categoria'] = 'Respondiste — ¿actualizo?'
+        item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+        item['headline'] = 'Respondiste a %s sobre %s' % (item['titulo'], opp.oportunidad or 'una oportunidad')
+        item['contexto'] = ('¿Actualizo la oportunidad con este intercambio? ' + _ctx_opp(opp)).strip()
+        item['quote'] = _quote(m_card)
+        out.append(item)
+
+    # 1-bis) Respondiste un correo suelto → ofrecer AGENDAR seguimiento (Caso 3-C).
+    for m_card, reply_dt in respondiste_sueltos:
+        item = _base_item(m_card)
+        if reply_dt:
+            item['hace'] = _cor_hace(timezone.localtime(reply_dt), timezone.localtime(now))
+        a_c = getattr(m_card, 'analisis', None)
+        resumen_c = ((a_c.resumen if a_c else '') or '').strip()
+        item['categoria'] = 'Respondiste — ¿agendo seguimiento?'
+        # Primero desbloquear el valor: si esta conversación es de una venta,
+        # vincularla (y el asistente ofrecerá actualizar); agendar queda a un clic.
+        item['acciones'] = ['vincular_oportunidad', 'agendar_correo', 'no_importa']
+        item['headline'] = 'Respondiste a %s — ¿le agendo un seguimiento?' % item['titulo']
+        item['contexto'] = (' '.join(x for x in [
+            resumen_c, 'Si es de una venta, vincúlala y la actualizo; o te agendo un seguimiento.'] if x)).strip()
+        item['quote'] = _quote(m_card)
+        out.append(item)
+
+    # 2) Correo ligado que llegó y no respondes → RESPONDER / agendar seguimiento.
+    #    Excepción: si es un HITO (factura / OC firmada / pago), ofrecer actualizar de una
+    #    vez (con seguimiento), sin esperar a que respondas.
+    for m in llego:
+        item = _base_item(m)
+        item['opp_id'] = m.oportunidad_id
+        opp = m.oportunidad
+        item['opp_nombre'] = (opp.oportunidad if opp else '')
+        a = ana.get(m.id)
+        resumen = (a.resumen if a else '') or ''
+        # ¿Es hito? Requiere veredicto guardado (confianza primero: sin análisis
+        # aún, tarjeta neutra). PERO en un correo YA LIGADO a la oportunidad,
+        # las palabras duras (orden de compra / factura / purchase order / pago)
+        # mandan aunque la IA lo haya etiquetado 'respuesta' — el código es las
+        # manos: si el cliente manda su PO, hay que ofrecer actualizar SIEMPRE.
+        es_hito = bool(a) and (a.categoria == 'hito' or _cor_es_hito(m.asunto, m.cuerpo_texto))
+        if es_hito:
+            item['categoria'] = 'Factura / orden recibida'
+            item['acciones'] = ['actualizar_oportunidad', 'agendar_seguimiento', 'no_importa']
+            item['headline'] = 'Llegó factura u orden sobre %s' % (item['opp_nombre'] or 'una oportunidad')
+            item['contexto'] = (' '.join(x for x in [
+                resumen, 'Buen momento para actualizarla.', _ctx_opp(opp)] if x)).strip()
+        else:
+            item['categoria'] = 'Correo de una oportunidad'
+            item['acciones'] = ['responder', 'agendar_seguimiento', 'no_importa']
+            item['headline'] = '%s te escribió sobre %s' % (item['titulo'], item['opp_nombre'] or 'una oportunidad')
+            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m), _ctx_opp(opp)] if x)).strip()
+        item['quote'] = _quote(m)
+        out.append(item)
+
+    # 3) Correos no ligados (Caso 1) — el análisis manda: venta / hito / respuesta.
+    for _prio, m, a, motivos in scored:
+        if len(out) >= limite:
+            break
+        item = _base_item(m)
+        dias = item['dias_espera']
+        asunto_c = _asunto_corto(m)
+        resumen = (a.resumen if a else '') or ''
+        cat = a.categoria if a else ('venta' if 'negocio' in motivos else 'respuesta')
+        if cat == 'venta':                   # posible venta nueva → crear oportunidad
+            item['categoria'] = 'Posible venta nueva'
+            item['acciones'] = ['crear_oportunidad', 'responder', 'no_importa']
+            item['headline'] = '%s trae una posible venta' % item['titulo']
+            item['contexto'] = (' '.join(x for x in [
+                resumen or (('Escribió sobre «%s».' % asunto_c) if asunto_c else ''),
+                _ctx_insiste(m)] if x)).strip()
+        elif cat == 'hito':                  # factura/orden/pago SIN oportunidad ligada
+            item['categoria'] = 'Factura / orden recibida'
+            # La acción de valor de un hito es ACTUALIZAR la venta, pero sin vínculo
+            # no se puede — así que lo primario es desbloquearla: vincular. Al
+            # vincular, el feed se rehace y la tarjeta vuelve ofreciendo actualizar.
+            item['acciones'] = ['vincular_oportunidad', 'responder', 'no_importa']
+            item['headline'] = '%s te envió una factura u orden' % item['titulo']
+            item['contexto'] = (' '.join(x for x in [
+                resumen, '¿De qué venta es? Vincúlala y la actualizo.'] if x)).strip()
+        else:                                # correo importante sin responder → responder
+            item['categoria'] = ('Lleva %d días sin responder' % dias) if item['urgente'] else 'Correo sin responder'
+            item['acciones'] = ['responder', 'no_importa']
+            item['headline'] = '%s espera tu respuesta' % item['titulo'] + ((' sobre %s' % asunto_c) if asunto_c else '')
+            item['contexto'] = (' '.join(x for x in [resumen, _ctx_insiste(m)] if x)).strip()
+        item['quote'] = _quote(m)
+        out.append(item)
+    return out[:limite]
+
+
+def _etapa_avance_map():
+    """Mapa nombre-de-etapa normalizado → avance 0..1 (0 = inicio del pipeline,
+    1 = a punto de cerrar). Usa EtapaPipeline.orden dentro de cada pipeline."""
+    from .models import EtapaPipeline
+    por_pipe = {}
+    for e in EtapaPipeline.objects.filter(activo=True).values('pipeline', 'nombre', 'orden'):
+        por_pipe.setdefault(e['pipeline'], []).append((e['nombre'], e['orden']))
+    out = {}
+    for etapas in por_pipe.values():
+        mx = max((o for _, o in etapas), default=0) or 1
+        for nombre, orden in etapas:
+            k = (nombre or '').strip().lower()
+            if k:
+                out[k] = max(out.get(k, 0.0), orden / mx)   # si repite en 2 pipelines, el más avanzado
+    return out
+
+
+def _feed_equipo_panorama(user, today, limite=8):
+    """Panorama del equipo para el asistente por ROL: supervisores globales,
+    supervisores de grupo y administradores ven cuántos correos importantes sin
+    responder y oportunidades sin avance trae cada vendedor suyo (misma
+    visibilidad que el resto del CRM). Solo conteos por código — el detalle se
+    ve en Mi día con el selector de vendedor. Un vendedor raso NO recibe
+    panorama: ver los pendientes de sus compañeros no es su rol."""
+    from django.contrib.auth.models import User as _User
+    from .models import UserProfile, GrupoTrabajo
+    from .views_grupos import get_usuarios_visibles_ids
+
+    es_admin = UserProfile.objects.filter(user=user, rol='administrador').exists()
+    if is_supervisor(user) or es_admin:
+        visibles = get_usuarios_visibles_ids(user)   # None = ve a todos
+    else:
+        # ¿Supervisor de grupo sin ser supervisor global? Ve solo a sus miembros.
+        miembros = set()
+        for g in GrupoTrabajo.objects.filter(supervisor_grupo=user, activo=True):
+            miembros.update(g.miembros.values_list('id', flat=True))
+        miembros.discard(user.id)
+        if not miembros:
+            return []
+        visibles = miembros
+
+    if visibles is None:
+        vqs = _User.objects.filter(is_active=True).exclude(id=user.id).exclude(groups__name='Supervisores')
+    else:
+        visibles = set(visibles)
+        visibles.discard(user.id)
+        vqs = _User.objects.filter(is_active=True, id__in=visibles)
+
+    roles = dict(UserProfile.objects.filter(user__in=vqs).values_list('user_id', 'rol'))
+    out = []
+    for u in vqs.order_by('first_name', 'last_name')[:20]:
+        if roles.get(u.id, 'vendedor') != 'vendedor':
+            continue
+        n_cor = len(_feed_correos_items(u))
+        n_opp = len(_feed_opps_estancadas(u, today))
+        if not (n_cor or n_opp):
+            continue
+        out.append({'id': u.id, 'nombre': u.get_full_name() or u.username,
+                    'correos': n_cor, 'pipeline': n_opp})
+    out.sort(key=lambda v: -(v['correos'] + v['pipeline']))
+    return out[:limite]
+
+
+def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
+    """Oportunidades ABIERTAS del usuario sin movimiento en >= dias_min (usa
+    fecha_actualizacion como 'última vez que se tocó'). Se excluyen las que ya
+    tienen una actividad reciente o futura agendada (ya no están 'sin moverse').
+
+    Prioridad (para recordar primero lo que más importa): MONTO alto + ETAPA
+    avanzada pesan como criterio principal; la antigüedad pesa como criterio
+    menor (pero levanta las rezagadas cuando no hay nada más urgente)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import TodoItem, Actividad, AvisoPospuesto
+    corte = timezone.now() - timedelta(days=dias_min)
+    cand = [o for o in (TodoItem.objects.filter(usuario=user, fecha_actualizacion__lt=corte)
+                        .select_related('cliente').order_by('fecha_actualizacion')[:80])
+            if _cli_abierta(o.etapa_corta, o.estado_crm)]
+    con_actividad = set()
+    if cand:
+        con_actividad = set(Actividad.objects.filter(
+            oportunidad_id__in=[o.id for o in cand], fecha_inicio__gte=corte
+        ).values_list('oportunidad_id', flat=True))
+    pospuestos = set(AvisoPospuesto.objects.filter(
+        usuario=user, tipo='oportunidad', hasta__gt=today).values_list('ref_id', flat=True))
+    cand = [o for o in cand if o.id not in con_actividad and o.id not in pospuestos]
+    if not cand:
+        return []
+    avance = _etapa_avance_map()
+    max_monto = max((float(o.monto or 0) for o in cand), default=0) or 1.0
+    ranked = []
+    for o in cand:
+        dias = (today - timezone.localtime(o.fecha_actualizacion).date()).days
+        monto = float(o.monto or 0)
+        m_norm = monto / max_monto                                  # 0..1
+        e_norm = avance.get((o.etapa_corta or '').strip().lower(), 0.35)  # 0..1 (default medio)
+        a_norm = min(dias / 30.0, 1.0)                              # 0..1 (antigüedad, tope 30 días)
+        # Monto y etapa = principal (0.4 c/u); antigüedad = menor (0.2).
+        prioridad = 0.4 * m_norm + 0.4 * e_norm + 0.2 * a_norm
+        ranked.append((prioridad, dias, o))
+    ranked.sort(key=lambda t: (-t[0], -t[1]))
+    out = []
+    for prioridad, dias, o in ranked[:limite]:
+        cliente = (o.cliente.nombre_empresa if o.cliente else '') or ''
+        etapa = (o.etapa_corta or 'Sin etapa')
+        monto = o.monto or 0
+        piezas = [cliente, etapa]
+        if monto:
+            piezas.append('${:,.0f}'.format(float(monto)))
+        piezas.append('sin avance %d días' % dias)
+        out.append({
+            'tipo': 'oportunidad', 'grupo': 'pipeline', 'categoria': 'Sin moverse',
+            'opp_id': o.id, 'titulo': o.oportunidad or 'Oportunidad',
+            'desc': ' · '.join([p for p in piezas if p]),
+            'hace': '%d días' % dias, 'dias': dias,
+            'acciones': ['agendar', 'abrir', 'no_importa'],
+            'headline': '%s lleva %d días sin moverse' % (o.oportunidad or 'Una oportunidad', dias),
+            'contexto': (' · '.join([p for p in [cliente, etapa, ('${:,.0f}'.format(float(monto)) if monto else '')] if p])),
+        })
+    return out
+
+
+@login_required
+def api_asistente_feed(request):
+    """GET /app/api/asistente/feed/ — feed proactivo del asistente reducido: lo importante
+    que necesita atención AHORA (correos importantes sin responder + oportunidades sin
+    avance). 100% código, apto para sondeo. Devuelve resumen corto (launcher), brief
+    (saludo del mini-panel), conteos por grupo e ítems con acciones."""
+    from django.utils import timezone
+    user = request.user
+
+    # Regla por rol: al INGENIERO el asistente comercial no le aplica — su
+    # trabajo no es vender, y su Mi día ya tiene vista propia de tareas y
+    # actividades. Mismo tratamiento que sin-buzón: el asistente no existe.
+    if is_ingeniero(user) and not is_supervisor(user):
+        return JsonResponse({
+            'success': True, 'sin_correo': True, 'motivo': 'rol_ingeniero',
+            'total': 0, 'correos': 0, 'pipeline': 0,
+            'resumen': '', 'brief': '', 'hueco': {'libre': False}, 'items': [],
+        })
+
+    # Regla general: sin buzón vinculado NO hay asistente — ni burbuja en la
+    # esquina, ni avisos, ni columna "Asistente" en Mi día. Mi día sigue
+    # funcionando con su resumen de tareas/agenda, que no depende del correo.
+    from .models import MailConexion
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return JsonResponse({
+            'success': True, 'sin_correo': True, 'motivo': 'sin_buzon',
+            'total': 0, 'correos': 0, 'pipeline': 0,
+            'resumen': '', 'brief': '', 'hueco': {'libre': False}, 'items': [],
+        })
+
+    now = timezone.now()
+    today = timezone.localdate()
+
+    correos_items = _feed_correos_items(user)
+    opps_items = _feed_opps_estancadas(user, today)
+    n_cor, n_opp = len(correos_items), len(opps_items)
+    total = n_cor + n_opp
+
+    # Caso 2: si el usuario tiene un rato libre AHORA (horario laboral, sin junta),
+    # es buen momento para atender la oportunidad clave (la primera, ya rankeada por
+    # monto + etapa avanzada). La elevamos con un marco de "aprovecha este hueco".
+    libre, hasta = _hueco_libre_ahora(user, now)
+    hueco = {'libre': bool(libre)}
+    if libre and opps_items:
+        top = opps_items[0]
+        hasta_txt = ('%02d:00' % hasta) if hasta else 'fin del día'
+        top['categoria'] = 'Buen momento — libre hasta las %s' % hasta_txt
+        top['hueco'] = True
+        hueco['hasta'] = hasta_txt
+        hueco['opp'] = top.get('titulo', '')
+
+    nombre = (user.first_name or '').strip() or (user.get_full_name() or user.username or '').split(' ')[0]
+    hora = timezone.localtime().hour
+    saludo = 'Buenos días' if hora < 12 else ('Buenas tardes' if hora < 19 else 'Buenas noches')
+
+    partes = []
+    if n_cor:
+        partes.append('%d correo%s importante%s sin responder' % (
+            n_cor, '' if n_cor == 1 else 's', '' if n_cor == 1 else 's'))
+    if n_opp:
+        partes.append('%d oportunidad%s sin avance' % (n_opp, '' if n_opp == 1 else 'es'))
+
+    if partes:
+        cuerpo = ' y '.join(partes)
+        resumen = (('%s, ' % nombre) if nombre else '') + cuerpo + '.'
+        resumen = resumen[0].upper() + resumen[1:]
+        brief = '%s%s. Revisé tu correo y tu pipeline: %s. Lo demás puede esperar.' % (
+            saludo, (', ' + nombre) if nombre else '', cuerpo)
+        if libre and opps_items:
+            brief += ' Tienes un rato libre hasta las %s: buen momento para mover «%s».' % (
+                hueco.get('hasta', 'el fin del día'), hueco.get('opp', ''))
+    else:
+        resumen = 'Todo bajo control%s. Te aviso si algo necesita tu atención.' % (
+            (', ' + nombre) if nombre else '')
+        brief = '%s%s. Revisé tu correo y tu pipeline y no hay nada urgente por ahora. Sigue así.' % (
+            saludo, (', ' + nombre) if nombre else '')
+
+    # Panorama del equipo — solo cuando el panel Mi día lo pide (?panorama=1):
+    # el sondeo de la burbuja cada 60s no lo necesita y así se mantiene barato.
+    equipo = []
+    if request.GET.get('panorama') == '1':
+        equipo = _feed_equipo_panorama(user, today)
+        if equipo:
+            n_eq = len(equipo)
+            brief += (' Ojo con tu equipo: %d vendedor%s trae%s pendientes '
+                      'acumulados; te dejo el detalle aquí abajo.') % (
+                n_eq, '' if n_eq == 1 else 'es', '' if n_eq == 1 else 'n')
+
+    return JsonResponse({
+        'success': True,
+        'total': total,
+        'correos': n_cor,
+        'pipeline': n_opp,
+        'resumen': resumen,
+        'brief': brief,
+        'hueco': hueco,
+        'equipo': equipo,
+        'items': correos_items + opps_items,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_posponer(request):
+    """POST — "Mañana" del toast: pospone el aviso al siguiente día HÁBIL.
+    A diferencia de "No importa" (descarte), esto es un snooze honesto: vuelve."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AvisoPospuesto
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    hasta = _mas_dias_habiles(timezone.localdate(), 1)
+    AvisoPospuesto.objects.update_or_create(
+        usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': hasta})
+    return JsonResponse({'success': True, 'hasta': hasta.isoformat()})
+
+
+@login_required
+def api_asistente_aviso_agendar_draft(request):
+    """GET — preview del seguimiento que agendaría el toast (verificación humana):
+    título propuesto + fecha/hora sugeridas (+2 días hábiles, primer hueco libre).
+    El usuario revisa/ajusta y recién entonces se agenda (POST agendar)."""
+    from django.utils import timezone
+    from .models import MailCorreo, TodoItem
+    tipo = request.GET.get('tipo')
+    ref_id = request.GET.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
+    hora = _hora_disponible(request.user, fecha)
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
+        titulo = ('Seguimiento: %s' % asunto_l)[:120]
+    else:
+        opp = TodoItem.objects.filter(id=ref_id).first()
+        if not opp:
+            return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+        titulo = ('Seguimiento: %s' % (opp.oportunidad or 'oportunidad'))[:120]
+    return JsonResponse({'success': True, 'titulo': titulo,
+                         'fecha': fecha.isoformat(), 'hora': '%02d:00' % hora})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_agendar(request):
+    """POST — "Agendar" del toast: crea la actividad de seguimiento y silencia el
+    aviso hasta ese día (si sigue pendiente, vuelve justo cuando toca darle
+    seguimiento). La fecha/hora vienen del preview aprobado por el usuario
+    (verificación humana); sin ellas, +2 días hábiles en el primer hueco libre."""
+    import json as _json
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from .models import AvisoPospuesto, MailCorreo, TodoItem, Actividad
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    fecha = _mas_dias_habiles(timezone.localdate(), 2)
+    hora = _hora_disponible(request.user, fecha)
+    minuto = 0
+    f_raw = (data.get('fecha') or '').strip()
+    if f_raw:
+        try:
+            y_f, m_f, d_f = f_raw.split('-')
+            fecha = datetime(int(y_f), int(m_f), int(d_f)).date()
+        except Exception:
+            pass
+    h_raw = (data.get('hora') or '').strip()
+    if h_raw:
+        try:
+            partes_h = h_raw.split(':')
+            hora = max(0, min(23, int(partes_h[0])))
+            minuto = max(0, min(59, int(partes_h[1]))) if len(partes_h) > 1 else 0
+        except Exception:
+            pass
+    opp, m = None, None
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).select_related('oportunidad').first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        opp = m.oportunidad
+        rem = (m.remitente_nombre or m.remitente_email or '').strip()
+        asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
+        titulo_act = ('Seguimiento: %s' % asunto_l)[:120]
+        desc = ('Dar seguimiento al correo de %s: %s' % (rem, (m.asunto or '').strip()))[:500]
+    else:
+        opp = TodoItem.objects.filter(id=ref_id).first()
+        if not opp:
+            return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada.'}, status=404)
+        titulo_act = ('Seguimiento: %s' % (opp.oportunidad or 'oportunidad'))[:120]
+        desc = 'Realizar seguimiento de ' + (opp.oportunidad or '')
+    try:
+        naive = datetime(fecha.year, fecha.month, fecha.day, hora, minuto)
+        ini = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+        act = Actividad.objects.create(
+            titulo=titulo_act, descripcion=desc, tipo_actividad='tarea',
+            fecha_inicio=ini, fecha_fin=ini + timedelta(hours=1),
+            creado_por=request.user, color='#007AFF',
+            oportunidad_id=(opp.id if opp else None),
+            correo=m,
+        )
+        act.participantes.set([request.user.id])
+        _seg_espejo_expediente(request.user, opp, act)
+    except Exception as e:
+        logger.exception('Asistente: no se pudo agendar desde el toast: %s', e)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    AvisoPospuesto.objects.update_or_create(
+        usuario=request.user, tipo=tipo, ref_id=int(ref_id), defaults={'hasta': fecha})
+    _asis_log_accion(request.user, 'agendado', titulo_act,
+                     'Para el %s a las %02d:%02d' % (fecha.strftime('%d/%m'), hora, minuto),
+                     mail=m, opp=opp)
+    return JsonResponse({'success': True, 'actividad_id': act.id,
+                         'fecha': fecha.isoformat(), 'hora': '%02d:%02d' % (hora, minuto)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_asistente_aviso_revisado(request):
+    """POST — "Revisado" del toast: el usuario ya lo vio y no quiere ninguna acción.
+    Correos: descarte definitivo (CorreoAtendido). Oportunidades: se silencia una
+    semana hábil (la opp sigue abierta; si sigue estancada, reaparece)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import AvisoPospuesto, MailCorreo, CorreoAtendido, TodoItem
+    try:
+        data = _json.loads(request.body or '{}')
+    except Exception:
+        data = {}
+    tipo = data.get('tipo')
+    ref_id = data.get('ref_id')
+    if tipo not in ('correo', 'oportunidad') or not ref_id:
+        return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    if tipo == 'correo':
+        m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
+        if not m:
+            return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
+        at, creado = CorreoAtendido.objects.get_or_create(
+            usuario=request.user, mail=m, defaults={'fecha': timezone.localdate()})
+        if not creado:
+            # Re-marcar refresca el sello de tiempo: un "Revisado" viejo (previo a tu
+            # respuesta) ya no silencia las tarjetas de "respondiste" — este sí debe.
+            at.fecha = timezone.localdate()
+            at.created_at = timezone.now()
+            at.save(update_fields=['fecha', 'created_at'])
+        _asis_log_accion(request.user, 'revisado',
+                         _cor_limpiar_asunto(m.asunto or '') or (m.remitente_nombre or m.remitente_email or 'Correo'),
+                         'De %s' % (m.remitente_nombre or m.remitente_email or ''), mail=m)
+    else:
+        opp_r = TodoItem.objects.filter(id=ref_id).first()
+        AvisoPospuesto.objects.update_or_create(
+            usuario=request.user, tipo='oportunidad', ref_id=int(ref_id),
+            defaults={'hasta': _mas_dias_habiles(timezone.localdate(), 5)})
+        if opp_r:
+            _asis_log_accion(request.user, 'revisado', opp_r.oportunidad or 'Oportunidad',
+                             'Silenciada una semana', opp=opp_r)
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_asistente_atendidos(request):
+    """GET — pestaña "Atendido" del asistente: lo que ya atendiste HOY.
+
+    La jornada corre de 8am a 8am: a las 8 de la mañana la pestaña amanece
+    vacía y va acumulando el día en curso (las filas viejas se conservan en
+    BD como historial, solo se deja de mostrarlas). Además de la bitácora,
+    los correos que RESPONDISTE se detectan solos desde los enviados."""
+    import json as _json
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import AsistenteAccion, MailCorreo
+    now = timezone.localtime()
+    ini_dia = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now.hour < 8:
+        ini_dia -= timedelta(days=1)
+
+    _ETIQUETAS = {'respondido': 'Respondiste', 'agendado': 'Agendaste seguimiento',
+                  'oportunidad': 'Creaste oportunidad', 'actualizada': 'Actualizaste oportunidad',
+                  'revisado': 'Marcaste revisado'}
+    items = []
+    for a in (AsistenteAccion.objects.filter(usuario=request.user, created_at__gte=ini_dia)
+              .order_by('-created_at')[:100]):
+        t = timezone.localtime(a.created_at)
+        items.append({
+            'accion': a.accion, 'etiqueta': _ETIQUETAS.get(a.accion, a.accion),
+            'titulo': a.titulo, 'detalle': a.detalle,
+            'hora': t.strftime('%H:%M'), 'ts': t.isoformat(),
+            'mail_id': a.mail_id, 'opp_id': a.oportunidad_id,
+        })
+
+    # Respondidos: cada enviado de la jornada cuenta como correo atendido,
+    # sin importar desde dónde lo hayas contestado (asistente o Correo).
+    for s in (MailCorreo.objects.filter(
+            usuario=request.user, carpeta_display='SENT', fecha_envio__gte=ini_dia)
+            .order_by('-fecha_envio')[:60]):
+        dest = ''
+        try:
+            lst = _json.loads(s.destinatarios_json or '[]')
+            dest = (lst[0] if isinstance(lst, list) and lst else '') or ''
+            if isinstance(dest, dict):
+                dest = dest.get('email') or dest.get('nombre') or ''
+        except Exception:
+            dest = ''
+        t = timezone.localtime(s.fecha_envio)
+        items.append({
+            'accion': 'respondido', 'etiqueta': 'Respondiste',
+            'titulo': _cor_limpiar_asunto(s.asunto or '') or 'Correo sin asunto',
+            'detalle': ('A %s' % dest) if dest else '',
+            'hora': t.strftime('%H:%M'), 'ts': t.isoformat(),
+            'mail_id': s.id, 'opp_id': s.oportunidad_id,
+        })
+
+    items.sort(key=lambda x: x['ts'], reverse=True)
+    return JsonResponse({'success': True, 'items': items, 'total': len(items),
+                         'desde': timezone.localtime(ini_dia).strftime('%d/%m %H:%M')})
 
 
 @login_required
@@ -7308,3 +11381,352 @@ def api_pendientes_replay(request):
     return JsonResponse({'success': True, **data})
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULADOR DE CORREOS — banco de pruebas del asistente (solo datos del usuario).
+# Inyecta correos realistas directo a MailCorreo (sin IMAP) para probar los 4
+# casos del asistente y ver el veredicto del análisis en vivo. Los correos usan
+# el dominio simulacion.iamet; api_mail_responder NO manda SMTP a ese dominio.
+# Limpieza total con un botón. Nada de esto toca correos reales.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_SIM_DOMINIO = 'simulacion.iamet'   # mismo literal en views_mail.api_mail_responder
+
+
+def _sim_cliente(user):
+    """Cliente demo (remitente 'conocido' para el análisis). Se crea una vez."""
+    from .models import Cliente
+    c = Cliente.objects.filter(nombre_empresa='[DEMO] Aceros del Norte').first()
+    if not c:
+        c = Cliente.objects.create(
+            nombre_empresa='[DEMO] Aceros del Norte', asignado_a=user,
+            email='compras@%s' % _SIM_DOMINIO)
+    return c
+
+
+def _sim_correo(user, nombre, email, asunto, cuerpo, opp=None, minutos_atras=0):
+    """Inyecta un correo 'recibido' con cuerpo listo (no requiere IMAP)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailCorreo, MailConexion
+    cx = MailConexion.objects.filter(usuario=user, activo=True).first()
+    now = timezone.now() - timedelta(minutes=minutos_atras)
+    stamp = int(now.timestamp() * 1000)
+    return MailCorreo.objects.create(
+        usuario=user, conexion=cx,
+        uid_imap='sim_%d' % stamp,                      # no numérico → el worker lo ignora
+        message_id='<sim-%d@%s>' % (stamp, _SIM_DOMINIO),
+        carpeta_imap='INBOX', carpeta_display='INBOX',
+        remitente_nombre=nombre, remitente_email=email,
+        destinatarios_json='[]', asunto=asunto,
+        cuerpo_texto=cuerpo, cuerpo_html='', cuerpo_cargado=True,
+        leido=False, fecha_envio=now, oportunidad=opp,
+    )
+
+
+def _sim_opp(user, titulo, monto=185000, prob=60):
+    """Oportunidad demo en etapa avanzada (para escenarios ligados)."""
+    from django.utils import timezone
+    from .models import TodoItem, EtapaPipeline
+    existente = TodoItem.objects.filter(usuario=user, oportunidad=titulo).first()
+    if existente:
+        return existente
+    etapas = list(EtapaPipeline.objects.filter(pipeline='runrate', activo=True).order_by('orden'))
+    if etapas:
+        ep = etapas[len(etapas) // 2]           # etapa intermedia-avanzada
+        etapa_c, etapa_col = ep.nombre, ep.color
+    else:
+        etapa_c, etapa_col = 'Cotización', '#FFFFFF'
+    now_dt = timezone.localtime()
+    return TodoItem.objects.create(
+        usuario=user, oportunidad=titulo, cliente=_sim_cliente(user),
+        monto=monto, probabilidad_cierre=prob,
+        mes_cierre=str(now_dt.month).zfill(2), anio_cierre=now_dt.year,
+        area='SISTEMAS', producto='SOFTWARE', tipo_negociacion='runrate',
+        etapa_corta=etapa_c, etapa_completa=etapa_c, etapa_color=etapa_col, po_number='',
+    )
+
+
+def _sim_pdf_po(numero, total_str):
+    """PDF de UNA página generado a mano (bytes crudos, sin librerías): una
+    orden de compra realista con número y total, suficiente para que
+    pdfplumber le extraiga el texto y _pdf_datos_finos saque PO/monto."""
+    lineas = [
+        'ACEROS DEL NORTE S.A. DE C.V.',
+        'Av. Industrial 2400, Parque Norte, Monterrey N.L.',
+        '',
+        'PURCHASE ORDER No. %s' % numero,
+        'Vendor / Proveedor: IAMET',
+        'Concepto: Tableros de control — planta Este',
+        '',
+        'Subtotal: $362,068.97',
+        'IVA (16%%): $57,931.03',
+        'Total: $%s MXN' % total_str,
+        '',
+        'Autorizado por: Direccion de Compras',
+    ]
+    partes = ['BT /F1 12 Tf 16 TL 50 760 Td']
+    for ln in lineas:
+        ln = ln.replace('\\', r'\\').replace('(', r'\(').replace(')', r'\)')
+        partes.append('(%s) Tj T*' % ln)
+    partes.append('ET')
+    stream = ' '.join(partes).encode('latin-1', 'replace')
+    objs = [
+        b'<< /Type /Catalog /Pages 2 0 R >>',
+        b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        (b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+         b'/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>'),
+        b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        b'<< /Length %d >>\nstream\n%s\nendstream' % (len(stream), stream),
+    ]
+    out = bytearray(b'%PDF-1.4\n')
+    offsets = []
+    for i, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b'%d 0 obj\n' % i + o + b'\nendobj\n'
+    xref_pos = len(out)
+    out += b'xref\n0 %d\n0000000000 65535 f \n' % (len(objs) + 1)
+    for off in offsets:
+        out += b'%010d 00000 n \n' % off
+    out += (b'trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n'
+            % (len(objs) + 1, xref_pos))
+    return bytes(out)
+
+
+# Escenarios: cada uno inyecta datos y declara qué DEBERÍA hacer el asistente,
+# para comparar contra lo que realmente haga.
+_SIM_ESCENARIOS = {
+    'venta': {
+        'nombre': 'Posible venta nueva',
+        'esperado': "Toast 'Posible venta nueva' con botón Crear oportunidad. Veredicto IA: venta.",
+    },
+    'duda': {
+        'nombre': 'Cliente con duda (menciona "pedido")',
+        'esperado': "Toast 'espera tu respuesta' (Responder). Veredicto: respuesta — NO venta ni hito aunque diga 'pedido'.",
+    },
+    'liberacion': {
+        'nombre': 'Liberación de pedido (el caso real)',
+        'esperado': "Veredicto: hito ('Factura / orden recibida'), NO 'Posible venta nueva'. Antes fallaba.",
+    },
+    'ligado': {
+        'nombre': 'Correo ligado a oportunidad (caso 3-A)',
+        'esperado': "Toast 'X te escribió sobre [opp]' con Responder. Al RESPONDERLO desde Correo → 'Respondiste — ¿actualizo?' (3-B).",
+    },
+    'hito_ligado': {
+        'nombre': 'OC firmada ligada a oportunidad',
+        'esperado': "Toast 'Factura / orden recibida' con Actualizar oportunidad de inmediato (sin esperar respuesta).",
+    },
+    'po_pdf': {
+        'nombre': 'PO en PDF adjunto (extracción sin IA)',
+        'esperado': ("Toast hito con Actualizar (aunque la IA diga 'respuesta': las palabras "
+                     "PO/orden mandan en correos ligados). La propuesta debe traer 'Registro la "
+                     "PO PO-77123' y 'Pongo el monto en $420,000.00 MXN' — del PDF, cero tokens."),
+    },
+    'insiste': {
+        'nombre': 'Cliente insiste (2do correo del hilo)',
+        'esperado': "Toast con contexto 'Es la segunda vez que te escribe sin respuesta.'",
+    },
+    'ruido': {
+        'nombre': 'Promoción / newsletter',
+        'esperado': "NADA: veredicto ruido, no debe salir notificación. Si sale, hay fuga de precisión.",
+    },
+}
+
+
+def _sim_ejecutar(user, esc):
+    """Crea los datos del escenario. Devuelve descripción de lo inyectado."""
+    dom = _SIM_DOMINIO
+    _sim_cliente(user)   # asegura remitente conocido
+    if esc == 'venta':
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Solicitud de cotización — refacciones prensa hidráulica',
+            'Buenas tardes:\n\nPor este medio le solicito cotización de 12 pzas de sellos '
+            'hidráulicos serie HD-220 y 4 juegos de empaques para nuestra prensa Schuler. '
+            '¿Podría indicarnos precio, tiempo de entrega y condiciones de pago?\n\n'
+            'Quedo pendiente de su pronta respuesta.\n\nLaura Mendoza\nCompras — Aceros del Norte')
+        return {'correo_id': m.id, 'detalle': 'Correo de cotización inyectado (remitente conocido).'}
+    if esc == 'duda':
+        m = _sim_correo(
+            user, 'Jorge Salas', 'jsalas@%s' % dom,
+            'Duda sobre nuestro pedido en curso',
+            'Estimado proveedor:\n\nSobre el pedido que levantamos la semana pasada, '
+            '¿me confirma si la entrega sigue programada para el viernes? Necesitamos '
+            'coordinar al personal de recibo en planta.\n\nSaludos,\nJorge Salas')
+        return {'correo_id': m.id, 'detalle': 'Duda de cliente inyectada (dice "pedido" pero NO es venta ni hito).'}
+    if esc == 'liberacion':
+        m = _sim_correo(
+            user, 'Patricia Núñez', 'pnunez@%s' % dom,
+            'Confirmo la liberación de su pedido',
+            'Buen día:\n\nLe confirmo que su pedido No. 88412 quedó liberado por nuestro '
+            'departamento de calidad y ya puede programar el embarque. El material fue '
+            'aprobado sin observaciones.\n\nSaludos cordiales,\nPatricia Núñez')
+        return {'correo_id': m.id, 'detalle': 'El caso real que antes salía como "posible venta". A ver qué dice ahora.'}
+    if esc == 'ligado':
+        opp = _sim_opp(user, '[DEMO] Suministro de rodamientos SKF')
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Cotización rodamientos SKF — comentarios',
+            'Buenas tardes:\n\nRevisamos su cotización de los rodamientos SKF. El precio nos '
+            'parece competitivo pero necesitamos confirmar si el tiempo de entrega puede '
+            'bajar a 3 semanas; es condición de nuestra gerencia para autorizar.\n\n'
+            '¿Lo ve factible?\n\nLaura Mendoza', opp=opp)
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'Oportunidad demo + correo ligado. Respóndelo desde Correo para disparar el 3-B.'}
+    if esc == 'hito_ligado':
+        opp = _sim_opp(user, '[DEMO] Bandas transportadoras L4', monto=420000, prob=80)
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'Orden de compra OC-4512 firmada',
+            'Estimado proveedor:\n\nAdjunto encontrará la orden de compra OC-4512 debidamente '
+            'firmada por nuestra dirección, correspondiente a las bandas transportadoras de la '
+            'línea 4. Favor de confirmar recepción y fecha estimada de entrega.\n\n'
+            'Saludos,\nLaura Mendoza', opp=opp)
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'OC firmada ligada a oportunidad de $420,000. Debe ofrecer actualizar YA.'}
+    if esc == 'po_pdf':
+        from .models import MailAdjunto
+        import base64 as _b64
+        opp = _sim_opp(user, '[DEMO] Tableros de control planta Este', monto=0, prob=70)
+        m = _sim_correo(
+            user, 'Laura Mendoza', 'compras@%s' % dom,
+            'PO PO-77123 — tableros planta Este',
+            'Estimado proveedor:\n\nLe adjunto en PDF la purchase order debidamente '
+            'autorizada, correspondiente a los tableros de control de la planta Este. '
+            'Favor de confirmar recepción y tiempo de entrega.\n\n'
+            'Laura Mendoza\nCompras — Aceros del Norte', opp=opp)
+        pdf = _sim_pdf_po('PO-77123', '420,000.00')
+        MailAdjunto.objects.create(
+            correo=m, nombre_archivo='PO-77123.pdf', content_type='application/pdf',
+            tamanio_bytes=len(pdf), datos_b64=_b64.b64encode(pdf).decode())
+        m.tiene_adjuntos = True
+        m.save(update_fields=['tiene_adjuntos'])
+        return {'correo_id': m.id, 'opp_id': opp.id,
+                'detalle': 'Correo ligado con PDF de OC real adjunto (opp sin monto ni PO). '
+                           'La propuesta debe llenar ambos desde el PDF.'}
+    if esc == 'insiste':
+        asunto = 'Seguimiento a muestra de material'
+        _sim_correo(
+            user, 'Marco Treviño', 'mtrevino@%s' % dom, asunto,
+            'Buen día:\n\n¿Tuvo oportunidad de revisar lo de la muestra de material que le '
+            'comenté? Nos urge definir para arrancar pruebas.\n\nMarco Treviño',
+            minutos_atras=60 * 24 * 3)
+        m = _sim_correo(
+            user, 'Marco Treviño', 'mtrevino@%s' % dom, 'Re: ' + asunto,
+            'Estimado:\n\nLe reitero el correo anterior sobre la muestra de material. '
+            'Seguimos sin respuesta y el proyecto está detenido por este tema. '
+            'Agradezco me confirme cualquier avance.\n\nMarco Treviño')
+        return {'correo_id': m.id, 'detalle': 'Hilo con 2 correos sin responder (el 1º hace 3 días).'}
+    if esc == 'ruido':
+        m = _sim_correo(
+            user, 'Boletín Industrial MX', 'newsletter@promo-%s' % dom,
+            'Webinar gratuito: ahorre 30% en mantenimiento predictivo',
+            'No te pierdas nuestro próximo evento. Aprovecha esta oferta exclusiva y '
+            'regístrate gratis. Da clic para dejar de recibir estos correos o darse de baja.')
+        return {'correo_id': m.id, 'detalle': 'Promo inyectada. NO debería generar notificación.'}
+    return None
+
+
+@login_required
+def vista_simulador_correo(request):
+    """GET /app/simulador-correo/ — banco de pruebas del asistente."""
+    return render(request, 'simulador_correo.html', {})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_inyectar(request):
+    """POST {escenario} — inyecta el escenario y analiza al instante."""
+    import json as _json
+    try:
+        esc = (_json.loads(request.body or '{}').get('escenario') or '').strip()
+    except Exception:
+        esc = ''
+    if esc not in _SIM_ESCENARIOS:
+        return JsonResponse({'success': False, 'error': 'Escenario desconocido.'}, status=400)
+    r = _sim_ejecutar(request.user, esc)
+    # Análisis inmediato (mismo pipeline que el worker) para no esperar 3 min.
+    try:
+        analizar_correos_recientes(request.user)
+    except Exception:
+        pass
+    return JsonResponse({'success': True, 'escenario': esc,
+                         'esperado': _SIM_ESCENARIOS[esc]['esperado'], **(r or {})})
+
+
+@login_required
+def api_sim_estado(request):
+    """GET — correos con su veredicto (auditoría en vivo). Por default solo los
+    simulados; con ?todos=1 audita TODA la bandeja reciente (últimos 7 días)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailCorreo
+    rows = []
+    qs = MailCorreo.objects.filter(
+        usuario=request.user, carpeta_display='INBOX', eliminado=False)
+    if request.GET.get('todos') == '1':
+        qs = qs.filter(fecha_envio__gte=timezone.now() - timedelta(hours=_COR_VENTANA_HORAS))
+    else:
+        qs = qs.filter(remitente_email__icontains=_SIM_DOMINIO)
+    qs = qs.select_related('analisis', 'oportunidad').order_by('-fecha_envio')[:50]
+    for m in qs:
+        a = getattr(m, 'analisis', None)
+        rows.append({
+            'mail_id': m.id, 'de': m.remitente_nombre or m.remitente_email,
+            'asunto': m.asunto, 'ligado': (m.oportunidad.oportunidad if m.oportunidad_id else ''),
+            'veredicto': (a.categoria if a else '— pendiente —'),
+            'resumen': (a.resumen if a else ''),
+            'fuente': (a.fuente if a else ''),
+            'confianza': (round(a.confianza, 2) if a else None),
+        })
+    return JsonResponse({'success': True, 'items': rows})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_limpiar(request):
+    """POST — borra TODO lo simulado del usuario (correos, análisis, opps y cliente demo)."""
+    from django.db.models import Q
+    from .models import MailCorreo, TodoItem, Cliente, Actividad
+    user = request.user
+    correos = MailCorreo.objects.filter(usuario=user).filter(
+        Q(remitente_email__icontains=_SIM_DOMINIO) |
+        Q(uid_imap__startswith='sim_') |
+        Q(destinatarios_json__icontains=_SIM_DOMINIO))
+    n_correos = correos.count()
+    correos.delete()                     # CorreoAnalisis y adjuntos caen en cascada
+    opps = TodoItem.objects.filter(usuario=user, oportunidad__startswith='[DEMO]')
+    opp_ids = list(opps.values_list('id', flat=True))
+    n_acts = 0
+    if opp_ids:
+        n_acts = Actividad.objects.filter(oportunidad_id__in=opp_ids).count()
+        Actividad.objects.filter(oportunidad_id__in=opp_ids).delete()
+    n_opps = len(opp_ids)
+    opps.delete()
+    n_cli = Cliente.objects.filter(nombre_empresa__startswith='[DEMO]').count()
+    Cliente.objects.filter(nombre_empresa__startswith='[DEMO]').delete()
+    return JsonResponse({'success': True, 'correos': n_correos, 'oportunidades': n_opps,
+                         'actividades': n_acts, 'clientes': n_cli})
+
+@login_required
+@require_http_methods(["POST"])
+def api_sim_reanalizar(request):
+    """POST — borra los veredictos de la última semana (INBOX) y re-clasifica todo
+    con el prompt vigente. Es el ciclo de corrección: se afina el prompt → se
+    re-analiza → se comparan veredictos. Solo toca los análisis del usuario."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import CorreoAnalisis
+    cutoff = timezone.now() - timedelta(hours=_COR_VENTANA_HORAS)
+    borrados = CorreoAnalisis.objects.filter(
+        usuario=request.user, correo__carpeta_display='INBOX',
+        correo__fecha_envio__gte=cutoff).delete()[0]
+    total = 0
+    # Drena por lotes de IA hasta terminar la bandeja de la semana. 40 rondas × 8
+    # correos = 320 correos (~$0.04) — con 8 rondas los correos viejos se quedaban
+    # con las reglas gratis y los veredictos "no cambiaban" tras afinar el prompt.
+    for _ in range(40):
+        hechos = analizar_correos_recientes(request.user)
+        total += hechos
+        if not hechos:
+            break
+    return JsonResponse({'success': True, 'borrados': borrados, 'reanalizados': total})

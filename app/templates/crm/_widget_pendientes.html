@@ -5,66 +5,142 @@
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
-<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Resumen">
+<!-- Toast del asistente (abajo-derecha), 2 estados:
+     · Píldora (reposo): presencia mínima; clic → aviso completo.
+     · Aviso (evento): categoría·hace | 1 de N | × / titular-oración / contexto /
+       cita del correo / [acción azul] [Mañana]. Clic fuera de botones → NIVEL 2:
+       se expande ahí mismo (más cuerpo + todas las acciones); el panel completo
+       queda detrás de "Ver todo lo pendiente". -->
+<div class="pend-launcher" id="pendLauncher" style="display:none;">
+  <div class="pend-toast-pill" id="pendToastPill" style="display:none;" onclick="pendToastReabrir()">
+    <span class="pend-lc-dot"></span> Mi Asistente
+    <span class="pend-toast-pill-badge" id="pendToastPillBadge" style="display:none;">0</span>
+  </div>
+  <div class="pend-toast-main" id="pendToastMain" onclick="pendToastOpenBig(event)">
+    <div class="pend-toast-top">
+      <span class="pend-toast-cat" id="pendToastCat"></span>
+      <span class="pend-toast-pos" id="pendToastPos"></span>
+      <button type="button" class="pend-toast-x" onclick="pendToastCerrar(event)" title="Ocultar">&times;</button>
+    </div>
+    <div class="pend-toast-title" id="pendToastTitle"></div>
+    <div class="pend-toast-ctx" id="pendToastCtx" style="display:none;"></div>
+    <div class="pend-toast-quote" id="pendToastQuote" style="display:none;"></div>
+    <div class="pend-toast-acts" id="pendToastActs"></div>
+  </div>
+  <!-- Expandido: respuesta / plan de la acción elegida -->
+  <div class="pend-toast-focus" id="pendLcFocus" style="display:none;"></div>
+</div>
+<!-- Mini panel del asistente: se abre al dar clic al launcher; brief + tarjetas con acciones rápidas -->
+<div class="pend-mini" id="pendMini" style="display:none;">
+  <div class="pend-mini-head">
+    <div class="pend-mini-h1"><span class="pend-lc-dot"></span> Mi Asistente <span class="pend-mini-badge" id="pendMiniBadge">0</span></div>
+    <div class="pend-mini-tools">
+      <button type="button" class="pend-mini-expand" onclick="pendMiniExpandir()" title="Abrir panel completo">&#10530;</button>
+      <button type="button" class="pend-mini-x" onclick="pendMiniCerrar()" title="Cerrar">&times;</button>
+    </div>
+    <div class="pend-mini-sub" id="pendMiniSub">Tu asistente</div>
+  </div>
+  <div class="pend-mini-body" id="pendMiniBody"></div>
+  <div class="pend-mini-foot">
+    <input type="text" class="pend-mini-in" placeholder="Pídeme algo…" id="pendMiniIn" onkeydown="if(event.key==='Enter')pendMiniAsk()">
+    <button type="button" class="pend-mini-go" onclick="pendMiniAsk()" aria-label="Enviar">&#8593;</button>
+  </div>
+  <!-- Asideros de redimensión: 4 orillas + 4 esquinas -->
+  <div class="pend-mini-rs" data-rs="n"></div><div class="pend-mini-rs" data-rs="s"></div>
+  <div class="pend-mini-rs" data-rs="e"></div><div class="pend-mini-rs" data-rs="w"></div>
+  <div class="pend-mini-rs" data-rs="ne"></div><div class="pend-mini-rs" data-rs="nw"></div>
+  <div class="pend-mini-rs" data-rs="se"></div><div class="pend-mini-rs" data-rs="sw"></div>
+</div>
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi día">
   <div class="ww-card pend-card">
-    <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
-    <div class="pend-topbar">
-      <div class="pend-tabs">
-        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
-        <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
-          Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
-        </button>
-        <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
-          Hoy <span class="pend-count" id="pendCount-hoy">0</span>
-        </button>
-        <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
-          Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
-        </button>
-        <span class="pend-replay-wrap">
-          <button type="button" class="pend-tab pend-tab-replay" data-tab="replay" id="pendTabReplay" onclick="pendSetTab('replay')">
-            <span id="pendReplayLabel">Replay</span>
+    <!-- Controles de ventana (— □ ×): esquina superior derecha, discretos -->
+    <div class="pend-winctl">
+      <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
+    </div>
+    <div class="pend-shell">
+
+      <!-- Mini-sidebar -->
+      <nav class="pend-side">
+        <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi día</div>
+        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Recomendaciones del día</button>
+        <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes sin atender</button>
+        <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correos importantes sin atender</button>
+        <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
+        <span class="pend-replay-wrap pend-side-bottom">
+          <button type="button" class="pend-side-item" id="pendTabReplay" data-nav="mes" onclick="pendNav('mes')">
+            <span id="pendReplayLabel">Resumen</span>
             <span class="pend-replay-caret" onclick="pendReplayPicker(event)"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
           </button>
           <div id="pendReplayMenu" class="pend-replay-menu"></div>
         </span>
-      </div>
-      <div class="pend-head-actions">
-        <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
-          <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
-            <span id="pendVendedorLabel">Mías</span>
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+      </nav>
+
+      <!-- Centro: Mi día / secciones -->
+      <div class="pend-main">
+        <div class="pend-maintop">
+          <div class="pend-tabs" id="pendSubtabs">
+            <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
+            <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">Pendientes <span class="pend-count" id="pendCount-pendientes">0</span></button>
+            <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">Hoy <span class="pend-count" id="pendCount-hoy">0</span></button>
+            <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">Próximamente <span class="pend-count" id="pendCount-proximamente">0</span></button>
+          </div>
+          <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
+            <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
+              <span id="pendVendedorLabel">Mías</span>
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+          </div>
         </div>
-        <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
+        <div class="pend-body" id="pendBody">
+          <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
+          <!-- Vista "Asistente" en grande: el mini panel como protagonista del centro.
+               El chat (flujo + barra) se MUEVE aquí desde la columna derecha al entrar. -->
+          <!-- Sección "Asistente" del modal: CONVERSACIÓN estilo Codex/Claude Code.
+               El asistente saluda con el brief + sugerencias; el flujo del chat
+               (#pendChatFlow) y la caja (#pendChat) se mueven aquí al entrar. -->
+          <div id="pendAsisBig" style="display:none;">
+            <div class="abig-status" id="asisBigStatus"></div>
+            <div id="asisBigCentro">
+              <div id="asisBigSaludo" class="abig-saludo"></div>
+              <div id="asisBigChatSlot"></div>
+              <div id="asisBigSugs" class="abig-sugs"></div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Body: un solo scroll (resumen/lista arriba + conversación con el asistente debajo) -->
-    <div class="pend-body" id="pendBody">
-      <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
-      <div id="pendChatFlow" class="pend-chatflow"></div>
-    </div>
+      <!-- Panel del asistente (derecha) -->
+      <aside class="pend-asis">
+        <div class="pend-asis-head">
+          <div class="pend-asis-h1"><span class="pend-asis-dot"></span> Asistente</div>
+          <div class="pend-asis-sub">Lo importante que necesita tu atención</div>
+        </div>
+        <div class="pend-asis-body">
+          <div id="pendAsisFeed" class="pend-asis-feed"></div>
+          <div id="pendChatFlow" class="pend-chatflow"></div>
+        </div>
+        <div class="pend-chat" id="pendChat">
+          <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
+            <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
+                   placeholder="Pídele algo al asistente…">
+            <button type="submit" class="pend-chat-send" title="Enviar">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </form>
+        </div>
+      </aside>
 
-    <!-- Barra de entrada del chat (solo en Resumen). Las respuestas salen en el body. -->
-    <div class="pend-chat" id="pendChat" style="display:none;">
-      <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
-        <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
-               placeholder="Pregúntale al asistente sobre tus oportunidades…">
-        <button type="submit" class="pend-chat-send" title="Enviar">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
-      </form>
     </div>
   </div>
 </div>
 
 <style>
   /* La ventana: hereda .ww-card (posición/resize la maneja widget_window.css en modo ventana) */
-  #widgetPendientes .pend-card{width:min(1420px,96vw);height:min(90vh,880px);max-width:96vw;
+  #widgetPendientes .pend-card{width:min(1680px,97vw);height:min(94vh,1020px);max-width:97vw;
     background:#fafbfc;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 70px rgba(0,0,0,.32);
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;}
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;}
   .pend-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;background:#fff;border-bottom:1px solid #f0f1f3;}
   .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;flex:none;}
   /* Combina con los [— □] que inyecta widget_window.js (.ww-btn: 30px, #F2F2F7) */
@@ -113,7 +189,7 @@
   .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.95rem;}
   /* Resumen — saludo */
   .pend-res-hero{padding:4px 4px 16px;}
-  .pend-res-saludo{font-size:1.45rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-res-saludo{font-size:1.5rem;font-weight:700;color:#16181d;letter-spacing:-.02em;}
   .pend-res-sub{font-size:.9rem;color:#8a8c93;margin-top:5px;}
   .pend-res-empty2{text-align:center;color:#9a9ca3;padding:40px 20px;font-size:.95rem;}
   /* Tarjeta dividida (una oportunidad a la vez) */
@@ -154,6 +230,249 @@
   .pend-sc-btn{margin-top:auto;width:100%;border:none;border-radius:11px;background:#111317;color:#fff;font-size:.95rem;font-weight:700;
     padding:13px;cursor:pointer;transition:background .15s;}
   .pend-sc-btn:hover{background:#000;}
+  .pend-sc-btn.blue{background:#0a84ff;}
+  .pend-sc-btn.blue:hover{background:#0060df;}
+  .pend-sc-btn:disabled{opacity:.55;cursor:default;}
+  /* ── Sección Reportes · Mi desempeño (editorial, coherente con Resumen/Clientes) ── */
+  .pend-des{max-width:960px;margin:0 auto;padding:4px 8px 24px;}
+  .pend-des-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .pend-des-actions{display:flex;gap:8px;flex:none;}
+  .pend-des-xbtn{border:1px solid #e2e4e8;border-radius:9px;background:#fff;color:#4b5563;font-size:.82rem;font-weight:600;
+    padding:7px 14px;cursor:pointer;transition:background .12s,border-color .12s;}
+  .pend-des-xbtn:hover{background:#f5f6f8;border-color:#d4d6da;}
+  .pend-des-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+  .pend-des-seg{display:inline-flex;background:#f0f1f3;border-radius:10px;padding:3px;gap:2px;}
+  .pend-des-seg button{border:none;background:none;font-size:.82rem;font-weight:600;color:#6b6d76;padding:6px 15px;border-radius:8px;cursor:pointer;transition:all .12s;}
+  .pend-des-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
+  .pend-des-nav{display:inline-flex;align-items:center;gap:8px;}
+  .pend-des-nav button{width:30px;height:30px;border-radius:8px;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;font-size:1.05rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+  .pend-des-nav button:hover:not(:disabled){background:#f5f6f8;}
+  .pend-des-nav button:disabled{opacity:.35;cursor:default;}
+  .pend-des-nav-lbl{font-size:.9rem;font-weight:700;color:#1c1d22;min-width:130px;text-align:center;}
+  .pend-des-money{display:flex;gap:56px;padding:2px 4px 22px;border-bottom:1px solid #edeef1;margin-bottom:26px;flex-wrap:wrap;}
+  .pend-des-money-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9a9ca3;margin-bottom:5px;}
+  .pend-des-money-val{font-size:2.1rem;font-weight:800;color:#16181d;letter-spacing:-.02em;line-height:1;}
+  .pend-des-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:28px 24px;padding:0 4px;}
+  .pend-des-kpi-val{font-size:2.4rem;font-weight:800;color:#16181d;line-height:1;letter-spacing:-.02em;}
+  .pend-des-kpi-lbl{font-size:.86rem;color:#6b6d76;font-weight:600;margin-top:9px;line-height:1.3;}
+  @media (max-width:640px){ .pend-des-kpis{grid-template-columns:repeat(2,1fr);gap:22px 16px;} .pend-des-money{gap:32px;} }
+  /* ── Launcher (asistente reducido, siempre visible) ── */
+  .pend-launcher{position:fixed;right:22px;bottom:22px;width:420px;max-width:calc(100vw - 44px);background:#fff;border:1px solid #e9eaee;
+    border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.16);padding:14px 16px;z-index:11500;transition:box-shadow .2s,transform .2s;}
+  .pend-launcher.expanded{width:440px;}
+  /* Nivel 2 (aviso expandido en el lugar): crece proporcional desde la esquina
+     (ancho Y alto) y el cuerpo del correo manda. La doble clase le gana al
+     clamp de 3 líneas de .pend-toast-quote del aviso chico. */
+  .pend-launcher.expanded.n2{width:680px;max-width:calc(100vw - 44px);}
+  .pend-launcher.expanded.n2 .pend-toast-focus{max-height:82vh;}
+  .pend-toast-quote.pend-n2-quote{display:block;-webkit-line-clamp:unset;max-height:56vh;
+    overflow:auto;white-space:pre-wrap;font-size:.83rem;line-height:1.55;}
+  .pend-n2-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center;}
+  .pend-n2-acts .pend-foc-btn{padding:6px 10px;font-size:.76rem;border-radius:8px;white-space:nowrap;}
+  .pend-n2-acts .pend-foc-btn.pri{flex:none;}
+  .pend-n2-cat{display:block;margin-bottom:8px;}
+  /* Franja superior del nivel 2: TODA es clicable para colapsar (no solo "Volver"). */
+  .pend-n2-top{cursor:pointer;margin-bottom:12px;padding:2px 0;}
+  .pend-n2-top .pend-foc-back{margin-bottom:0;pointer-events:none;}
+  .pend-n2-top:hover .pend-foc-back{color:#16181d;}
+  /* Resultados del buscador "Vincular a oportunidad" del nivel 2 */
+  .pend-vinc-row{padding:9px 12px;border-radius:8px;cursor:pointer;border-bottom:1px solid #f0f1f3;}
+  .pend-vinc-row:hover{background:#f0f6ff;}
+  .pend-vinc-t{font-size:.85rem;font-weight:600;color:#16181d;}
+  .pend-vinc-c{font-size:.74rem;color:#9a9ca3;margin-top:2px;}
+  /* Píldora en reposo = "liquid glass": translúcida, difumina lo que tenga detrás
+     y baja su presencia para camuflarse con cualquier vista (oportunidad, correo…).
+     Al pasar el cursor recupera cuerpo; el aviso completo conserva su blanco sólido. */
+  .pend-launcher.pill{width:auto;padding:8px 14px;border-radius:999px;cursor:pointer;
+    background:rgba(255,255,255,.4);border-color:rgba(255,255,255,.45);
+    -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+    box-shadow:0 3px 12px rgba(15,23,42,.07),inset 0 1px 0 rgba(255,255,255,.55);
+    opacity:.55;transition:opacity .25s,background .25s,box-shadow .25s,transform .2s;}
+  .pend-launcher.pill:hover{opacity:1;background:rgba(255,255,255,.72);
+    box-shadow:0 14px 34px rgba(15,23,42,.16),inset 0 1px 0 rgba(255,255,255,.65);}
+  .pend-lc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
+  /* Píldora (reposo) */
+  .pend-toast-pill{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:800;color:#16181d;white-space:nowrap;}
+  .pend-toast-pill-badge{background:#16181d;color:#fff;font-size:.68rem;font-weight:800;border-radius:10px;padding:1px 7px;}
+  .pend-launcher.pill .pend-toast-pill{color:#43464d;font-weight:700;}
+  .pend-launcher.pill .pend-toast-pill-badge{background:rgba(22,24,29,.72);}
+  .pend-launcher.pill:hover .pend-toast-pill{color:#16181d;}
+  /* Aviso (evento): categoría·hace | 1 de N | × / titular / contexto / cita / acciones */
+  .pend-toast-main{cursor:pointer;}
+  .pend-toast-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .pend-toast-cat{flex:1;min-width:0;font-size:.64rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-toast-cat.urg{color:#c2410c;} .pend-toast-cat.hueco{color:#0a7d3c;}
+  .pend-toast-pos{flex:none;font-size:.72rem;color:#9a9ca3;font-weight:600;}
+  .pend-toast-x{flex:none;border:none;background:none;color:#b3b5bb;font-size:1.05rem;line-height:1;cursor:pointer;padding:0 1px;}
+  .pend-toast-x:hover{color:#16181d;}
+  .pend-toast-title{font-size:1.02rem;font-weight:800;color:#16181d;line-height:1.3;letter-spacing:-.01em;margin-bottom:6px;}
+  .pend-toast-ctx{font-size:.82rem;color:#5b5d63;line-height:1.45;margin-bottom:9px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pend-toast-quote{background:#f4f5f7;border-radius:10px;padding:9px 12px;font-size:.8rem;color:#4b5563;line-height:1.45;margin-bottom:11px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .pend-toast-acts{display:flex;align-items:center;gap:8px;}
+  .pend-toast-btn{border:none;border-radius:999px;padding:8px 16px;font-size:.83rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .pend-toast-btn.pri{background:#0a84ff;color:#fff;} .pend-toast-btn.pri:hover{background:#0060df;}
+  .pend-toast-btn.sec{background:#f2f3f6;color:#374151;} .pend-toast-btn.sec:hover{background:#e9eaee;}
+  .pend-toast-btn.txt{background:none;color:#8a8c93;padding:8px 7px;margin-left:auto;} .pend-toast-btn.txt:hover{color:#16181d;}
+  .pend-toast-focus{max-height:70vh;overflow:auto;cursor:default;}
+  .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
+  @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
+  /* ── Mini panel del asistente: ventanita arrastrable y redimensionable.
+     Sin minimizar (eso es el toast) ni maximizar (eso es "Mi día"). ── */
+  .pend-mini{position:fixed;right:22px;bottom:22px;width:520px;max-width:calc(100vw - 44px);height:min(78vh,860px);max-height:92vh;background:#fff;
+    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:11500;display:flex;flex-direction:column;overflow:hidden;
+    min-width:400px;min-height:340px;}
+  /* Asideros invisibles en orillas y esquinas para redimensionar desde cualquiera */
+  .pend-mini-rs{position:absolute;z-index:6;}
+  .pend-mini-rs[data-rs="n"]{top:0;left:14px;right:14px;height:7px;cursor:n-resize;}
+  .pend-mini-rs[data-rs="s"]{bottom:0;left:14px;right:14px;height:7px;cursor:s-resize;}
+  .pend-mini-rs[data-rs="e"]{right:0;top:14px;bottom:14px;width:7px;cursor:e-resize;}
+  .pend-mini-rs[data-rs="w"]{left:0;top:14px;bottom:14px;width:7px;cursor:w-resize;}
+  .pend-mini-rs[data-rs="ne"]{top:0;right:0;width:16px;height:16px;cursor:ne-resize;}
+  .pend-mini-rs[data-rs="nw"]{top:0;left:0;width:16px;height:16px;cursor:nw-resize;}
+  .pend-mini-rs[data-rs="se"]{bottom:0;right:0;width:16px;height:16px;cursor:se-resize;}
+  .pend-mini-rs[data-rs="sw"]{bottom:0;left:0;width:16px;height:16px;cursor:sw-resize;}
+  .pend-mini-head{padding:15px 17px 12px;border-bottom:1px solid #f0f1f3;position:relative;cursor:move;user-select:none;}
+  .pend-mini-h1{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:800;color:#16181d;}
+  .pend-mini-badge{background:#eef1f6;color:#6b7280;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;}
+  .pend-mini-tools{position:absolute;top:12px;right:13px;display:flex;align-items:center;gap:2px;}
+  .pend-mini-expand,.pend-mini-x{border:none;background:none;color:#c2c6cd;cursor:pointer;line-height:1;padding:4px 6px;border-radius:6px;}
+  .pend-mini-x{font-size:1.15rem;} .pend-mini-expand{font-size:.9rem;}
+  .pend-mini-expand:hover,.pend-mini-x:hover{background:#f2f3f6;color:#6b7280;}
+  .pend-mini-sub{font-size:.76rem;color:#9a9ca3;margin-top:3px;}
+  /* Padding lateral que solo crece al AGRANDAR la ventana: en el tamaño
+     predeterminado (520px) queda en los 17px de siempre; a partir de ahí el
+     texto conserva un ancho de lectura cómodo en vez de ir de pared a pared. */
+  .pend-mini-body{flex:1;overflow-y:auto;padding:15px clamp(17px, calc(8% - 24px), 120px);}
+  /* ── Chat dentro de la ventanita ── */
+  .mc-top{margin-bottom:10px;}
+  .mc-msg{display:flex;margin-bottom:10px;}
+  .mc-msg.mc-user{justify-content:flex-end;}
+  .mc-burbuja{max-width:88%;border-radius:14px;padding:10px 14px;font-size:.88rem;line-height:1.55;}
+  .mc-user .mc-burbuja{background:#0a84ff;color:#fff;border-bottom-right-radius:5px;}
+  .mc-bot .mc-burbuja{background:#f4f5f7;color:#1d1d1f;border-bottom-left-radius:5px;max-width:100%;flex:1;}
+  .mc-nota{font-size:.86rem;color:#374151;margin-bottom:6px;}
+  .mc-bot .pend-mini-card{background:#fff;border:1px solid #e9eaee;border-radius:12px;padding:12px 14px;margin:8px 0;}
+  .pend-mini-brief{font-size:.9rem;line-height:1.55;color:#374151;}
+  .pend-mini-brief b{color:#16181d;font-weight:700;}
+  .pend-mini-tabs{display:flex;gap:7px;margin:16px 0 2px;flex-wrap:wrap;}
+  .pend-mini-tab{border:none;background:#f2f3f6;color:#6b7280;border-radius:18px;padding:6px 13px;font-size:.76rem;font-weight:700;cursor:pointer;}
+  .pend-mini-tab.on{background:#16181d;color:#fff;}
+  .pend-mini-card{padding:15px 2px;border-bottom:1px solid #f0f1f3;}
+  .pend-mini-card:last-child{border-bottom:none;}
+  .pend-mini-open{cursor:pointer;border-radius:8px;margin:-4px -6px 0;padding:4px 6px;transition:background .12s;}
+  .pend-mini-open:hover{background:#f7f8fa;}
+  .pend-mini-clbl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:5px;}
+  .pend-mini-clbl.urg{color:#c2410c;}
+  .pend-mini-clbl.hueco{color:#0a7d3c;}
+  .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
+  .pend-mini-cd{font-size:.83rem;color:#4b5563;line-height:1.5;}
+  /* Mensaje de la IA en la tarjeta: COMPLETO, nunca recortado (el correo puede
+     recortarse; la voz del asistente no). */
+  .pend-mini-ctx{font-size:.8rem;color:#5a5c63;line-height:1.5;margin-top:4px;}
+  /* ── Vista "Asistente" en grande (centro del panel) — diseño del mockup 3-A ── */
+  .pend-shell.asis-mode .pend-asis{display:none;}          /* la columna derecha se retira: el asistente ya es el centro */
+  .pend-shell.asis-mode .pend-maintop{display:none;}
+  .pend-shell.asis-mode .pend-main{background:#fff;}
+  .pend-shell.asis-mode .pend-body{padding:0;}
+  #pendAsisBig{padding:0;}
+  .abig-status{display:flex;align-items:center;gap:7px;font-size:.84rem;color:#6b7280;
+    padding:14px 130px 14px 32px;border-bottom:1px solid #eef0f3;background:#fff;position:sticky;top:0;z-index:5;}
+  .abig-status b{color:#16181d;}
+  .abig-dot{width:8px;height:8px;background:#34c759;border-radius:50%;flex:none;}
+  .abig-refresh{margin-left:auto;border:1px solid #e2e4e9;background:#fff;border-radius:10px;padding:6px 14px;
+    font-size:.8rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
+  .abig-refresh:hover{background:#f6f7f9;}
+  /* Portada estilo Claude: saludo grande + caja + sugerencias, centrados en el
+     alto. Con conversación: el saludo/sugerencias se van y la caja ancla abajo. */
+  #pendAsisBig{display:flex;flex-direction:column;min-height:100%;}
+  #asisBigCentro{flex:1;display:flex;flex-direction:column;}
+  #pendAsisBig.abig-idle #asisBigCentro{justify-content:center;padding-bottom:9vh;}
+  .abig-saludo{max-width:760px;margin:0 auto;padding:10px 24px 0;width:100%;}
+  .abig-hola{font-size:1.7rem;font-weight:700;color:#16181d;text-align:center;
+    letter-spacing:-.02em;margin-bottom:14px;}
+  .abig-brief2{font-size:.96rem;color:#4b5563;text-align:center;line-height:1.7;
+    max-width:640px;margin:0 auto 10px;}
+  .abig-sugs{display:flex;gap:9px;margin:16px auto 6px;flex-wrap:wrap;justify-content:center;
+    max-width:760px;padding:0 24px;}
+  .abig-sug{border:1px solid #e2e4e9;background:#fff;border-radius:999px;padding:8px 16px;
+    font-size:.84rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;}
+  .abig-sug:hover{background:#f6f7f9;border-color:#d5d8de;}
+  #pendAsisBig.abig-convo #asisBigSaludo{display:none;}
+  #pendAsisBig.abig-convo #asisBigSugs{display:none;}
+  #pendAsisBig.abig-convo #asisBigChatSlot{flex:1;display:flex;flex-direction:column;}
+  #pendAsisBig.abig-convo #pendChatFlow{flex:1;}
+  #pendAsisBig.abig-idle .pend-chat{position:static;border-top:none;background:transparent;padding:6px 24px 0;}
+  #pendAsisBig .pend-chat{position:sticky;bottom:0;background:#fff;padding:14px 24px 16px;margin-top:8px;
+    border-top:1px solid #eef0f3;}
+  #pendAsisBig .pend-chat .pend-chat-form{max-width:672px;margin:0 auto;}
+  #pendAsisBig .pend-chat-input{font-size:.95rem;padding:13px 18px;border-radius:14px;}
+  #pendAsisBig .pend-chatflow{padding:6px 24px 0;max-width:720px;margin:0 auto;}
+  .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
+  .pend-mini-btn.pri{background:#0a84ff;color:#fff;} .pend-mini-btn.pri:hover{background:#0060df;}
+  .pend-mini-btn.sec{background:#f2f3f6;color:#374151;} .pend-mini-btn.sec:hover{background:#e9eaee;}
+  .pend-mini-btn.txt{background:none;color:#9a9ca3;padding:8px 4px;} .pend-mini-btn.txt:hover{color:#6b7280;}
+  .pend-mini-empty{font-size:.86rem;color:#9a9ca3;padding:18px 2px;text-align:center;}
+  .pend-mini-foot{border-top:1px solid #f0f1f3;padding:11px 14px;display:flex;align-items:center;gap:9px;}
+  .pend-mini-in{flex:1;border:1px solid #e9eaee;background:#f7f8fa;border-radius:22px;padding:10px 15px;font-size:.85rem;color:#374151;outline:none;font-family:inherit;}
+  .pend-mini-go{width:34px;height:34px;border-radius:50%;background:#16181d;color:#fff;border:none;font-size:.95rem;cursor:pointer;flex:none;}
+  /* ── Vista enfocada dentro del panel (borrador conversacional) ── */
+  .pend-foc-back{border:none;background:none;color:#6b7280;font-size:.82rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:12px;}
+  .pend-foc-back:hover{color:#16181d;}
+  .pend-foc-lbl{font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;margin-bottom:7px;}
+  .pend-foc-intro{font-size:.9rem;line-height:1.55;color:#374151;margin-bottom:14px;}
+  .pend-foc-intro b{color:#16181d;font-weight:700;}
+  .pend-foc-card{border:1px solid #e9eaee;border-radius:14px;padding:14px 15px;background:#fff;}
+  .pend-foc-fld{padding:9px 0;border-bottom:1px solid #f2f3f6;}
+  .pend-foc-fld:last-child{border-bottom:none;}
+  .pend-foc-k{font-size:.66rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#9a9ca3;margin-bottom:3px;display:flex;gap:6px;align-items:center;}
+  .pend-foc-tag{background:#eef8f1;color:#2b8a3e;font-size:.58rem;font-weight:800;border-radius:8px;padding:1px 6px;text-transform:none;letter-spacing:0;}
+  .pend-foc-in{width:100%;border:none;background:none;font-size:.98rem;font-weight:600;color:#16181d;outline:none;font-family:inherit;padding:1px 0;box-sizing:border-box;}
+  .pend-foc-in::placeholder{color:#c2c6cd;}
+  .pend-foc-sel{border:1px solid #e2e4e8;border-radius:9px;padding:8px 10px;font-weight:500;font-size:.9rem;cursor:pointer;}
+  textarea.pend-foc-sel{cursor:text;line-height:1.5;resize:vertical;}
+  .pend-foc-sel:focus{border-color:#0a84ff;}
+  .pend-foc-seg{display:inline-flex;background:#f0f1f3;border-radius:9px;padding:3px;gap:2px;margin-top:2px;}
+  .pend-foc-seg button{border:none;background:none;font-size:.8rem;font-weight:700;color:#6b6d76;padding:6px 15px;border-radius:7px;cursor:pointer;font-family:inherit;}
+  .pend-foc-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
+  .pend-foc-meta{font-size:.83rem;color:#4b5563;line-height:1.55;margin-top:12px;}
+  .pend-foc-meta b{color:#16181d;font-weight:700;}
+  .pend-foc-acts{display:flex;gap:10px;margin-top:16px;}
+  .pend-foc-btn{border:none;border-radius:11px;padding:11px 18px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
+  .pend-foc-btn.pri{background:#0a84ff;color:#fff;flex:1;} .pend-foc-btn.pri:hover{background:#0060df;} .pend-foc-btn.pri:disabled{opacity:.55;cursor:default;}
+  .pend-foc-btn.sec{background:#f2f3f6;color:#374151;} .pend-foc-btn.sec:hover{background:#e9eaee;}
+  .pend-foc-note{font-size:.75rem;color:#9a9ca3;margin-top:12px;text-align:center;}
+  /* Plan conversacional del asistente (actualizar oportunidad sin sensación de formulario) */
+  .pend-foc-plan{display:flex;flex-direction:column;gap:9px;margin:4px 0 2px;}
+  .pend-foc-plan-row{position:relative;padding-left:20px;font-size:.9rem;line-height:1.5;color:#2b2d33;}
+  .pend-foc-plan-row::before{content:'';position:absolute;left:3px;top:8px;width:7px;height:7px;border-radius:50%;background:#0a7d3c;}
+  .pend-foc-plan-row b{color:#16181d;font-weight:700;}
+  .pend-foc-plan-row .was{color:#9a9ca3;font-size:.82rem;}
+  .pend-foc-plan-row.note{color:#5b5d63;font-style:italic;}
+  .pend-foc-plan-row.note::before{background:#c9cbd1;}
+  .pend-foc-edit{margin-top:12px;}
+  .pend-foc-ajustar{border:none;background:none;color:#6b7280;font-size:.82rem;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;}
+  .pend-foc-ajustar:hover{color:#16181d;}
+  .pend-foc-ok{font-size:.92rem;line-height:1.55;color:#1f7a37;font-weight:600;margin-bottom:6px;}
+  .pend-foc-ok-sub{font-size:.86rem;line-height:1.5;color:#4b5563;margin-bottom:14px;}
+  /* Botonera de la tarjeta de correo */
+  .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
+  .pend-cor-btns .pend-sc-btn{margin-top:0;}
+  .pend-cor-listo{width:100%;border:1px solid #e2e4e8;border-radius:11px;background:#fff;color:#5a5c63;
+    font-size:.86rem;font-weight:600;padding:9px;cursor:pointer;transition:background .15s,border-color .15s;}
+  .pend-cor-listo:hover{background:#f5f6f8;border-color:#d4d6da;}
+  .pend-cor-listo.on{background:#eef8f1;border-color:#cfe9d7;color:#2b8a3e;}
+  /* Borrador generado por IA dentro de la columna del asistente */
+  .pend-cor-draft{margin-top:14px;background:#f0f7ff;border:1px solid #d6e8ff;border-radius:12px;padding:13px 15px;}
+  .pend-cor-draft-lbl{font-size:.68rem;font-weight:800;color:#0a84ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .pend-cor-draft-txt{font-size:.92rem;line-height:1.55;color:#26303a;white-space:pre-wrap;max-height:220px;overflow-y:auto;}
+  .pend-cor-draft-acts{display:flex;gap:8px;margin-top:10px;}
+  .pend-cor-draft-mini{border:1px solid #cfe0f5;border-radius:8px;background:#fff;color:#0a66ff;font-size:.8rem;font-weight:700;
+    padding:6px 11px;cursor:pointer;transition:background .15s;}
+  .pend-cor-draft-mini:hover{background:#eef4ff;}
   /* Paginación */
   .pend-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 4px;}
   .pend-pager-btn{width:34px;height:34px;border-radius:50%;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;
@@ -162,10 +481,10 @@
   .pend-pager-btn:disabled{opacity:.4;cursor:default;}
   .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
   /* "Mi día": mensaje arriba centrado, tarjeta centrada vertical, flechas abajo */
-  #pendResArea.pend-day{display:flex;flex-direction:column;min-height:100%;}
+  #pendResArea.pend-day{display:flex;flex-direction:column;min-height:100%;padding-top:6px;}
   #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
-  #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
-  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
+  #pendResArea.pend-day .pend-split{flex:1;margin:18px 0 0;min-height:440px;max-height:660px;}
+  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:16px 0 6px;}
   /* Replay mensual — estilo editorial "Wrapped" (fondo cálido, serif, formas) */
   .pend-tab-replay{display:inline-flex;align-items:center;gap:2px;}
   .pend-tab-replay.active{background:linear-gradient(135deg,#e07a3e,#c8551f) !important;color:#fff !important;}
@@ -212,14 +531,22 @@
   .pend-sc-done{color:#2b8a3e;font-weight:700;}
   .pend-split.done{opacity:.72;}
   .pend-split.done .pend-sc-ia{background:#e6f6ec;color:#2b8a3e;}
-  /* Recap del cierre del día */
-  .pend-recap-msg{font-size:1.15rem;line-height:1.5;color:#1c1d22;font-weight:600;background:#fff;border:1px solid #ececf0;
-    border-radius:16px;padding:18px 20px;margin-bottom:14px;}
-  .pend-recap-stats{display:flex;gap:12px;margin-bottom:14px;}
-  .pend-recap-stat{flex:1;background:#fff;border:1px solid #ececf0;border-radius:14px;padding:14px;text-align:center;}
-  .pend-recap-stat .n{display:block;font-size:1.8rem;font-weight:800;color:#1c1d22;line-height:1.1;}
-  .pend-recap-stat .l{font-size:.74rem;font-weight:700;color:#8a8c93;text-transform:uppercase;letter-spacing:.03em;}
-  .pend-recap-stat.done .n{color:#2b8a3e;}
+  /* Recap del cierre del día — editorial en BLANCO (mismo espíritu que el Replay) */
+  .rpd{position:relative;overflow:hidden;border-radius:22px;background:#fff;border:1px solid #ececf0;
+    box-shadow:0 6px 24px rgba(15,23,42,.06);padding:30px 34px;margin-bottom:20px;}
+  .rpd-shape{position:absolute;border-radius:50%;z-index:1;}
+  .rpd-s1{width:min(44%,380px);aspect-ratio:1;top:-16%;right:-8%;background:radial-gradient(circle at 30% 30%,#e9f0ff,rgba(233,240,255,0));animation:rpFloat 9s ease-in-out infinite;}
+  .rpd-s2{width:min(36%,320px);aspect-ratio:1;bottom:-26%;right:12%;background:radial-gradient(circle at 30% 30%,#e7f8ee,rgba(231,248,238,0));animation:rpFloat 12s ease-in-out infinite reverse;}
+  .rpd-inner{position:relative;z-index:2;}
+  .rpd-headline{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.95rem;line-height:1.15;
+    color:#1c1d22;margin-top:14px;letter-spacing:-.01em;max-width:88%;}
+  .rpd-hero{margin-top:26px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+  .rpd-hero-main{display:flex;flex-direction:column;padding-right:22px;margin-right:6px;border-right:1px solid #eef0f3;}
+  .rpd-hero-n{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:3.5rem;line-height:.85;color:#2b8a3e;}
+  .rpd-hero-l{font-size:.72rem;font-weight:800;color:#8a8c93;text-transform:uppercase;letter-spacing:.06em;margin-top:10px;}
+  .rpd-box{background:#f7f8fa;border-radius:16px;padding:14px 20px;min-width:104px;}
+  .rpd-box-v{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.9rem;color:#1c1d22;line-height:1;}
+  .rpd-box-l{font-size:.72rem;color:#8a8c93;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.04em;}
   .pend-recap-sec{font-size:.72rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 8px;}
   .pend-recap-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #f0f1f3;border-radius:12px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:box-shadow .15s;}
   .pend-recap-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
@@ -253,6 +580,47 @@
     display:flex;align-items:center;justify-content:center;transition:background .15s;}
   .pend-chat-send:hover{background:#0060df;}
   .pend-chat-send:disabled{background:#c7c9ce;cursor:default;}
+  /* ===== Layout "Mi Asistente": mini-sidebar + centro + panel ===== */
+  .pend-shell{display:flex;flex:1;min-height:0;}
+  .pend-side{width:230px;flex:none;background:#fff;border-right:1px solid #f0f1f3;display:flex;flex-direction:column;padding:16px 14px;}
+  .pend-side-brand{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:800;color:#1c1d22;padding:4px 10px 16px;}
+  .pend-side-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
+  .pend-side-item{display:flex;align-items:center;justify-content:space-between;text-align:left;width:100%;border:none;background:none;border-radius:9px;
+    padding:9px 12px;margin-bottom:2px;font-size:.92rem;font-weight:500;color:#6b6d75;cursor:pointer;font-family:inherit;}
+  .pend-side-item:hover{background:#f4f5f7;}
+  .pend-side-item.active{background:#f2f3f6;color:#1c1d22;font-weight:600;}
+  .pend-side-bottom{margin-top:auto;position:relative;}
+  .pend-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fafbfc;}
+  .pend-maintop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;border-bottom:1px solid #f0f1f3;background:#fff;}
+  #widgetPendientes .pend-maintop .pend-vend{margin-left:auto;}   /* siempre a la derecha, aunque no haya sub-tabs */
+  .pend-asis{width:392px;flex:none;background:#fff;border-left:1px solid #f0f1f3;display:flex;flex-direction:column;min-width:0;}
+  /* Panorama del equipo (solo supervisores/administradores) */
+  .pend-eq{background:#f7f8fa;border:1px solid #eef0f3;border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+  .pend-eq-h{font-size:.68rem;font-weight:800;letter-spacing:.05em;color:#8a8c93;text-transform:uppercase;margin-bottom:4px;}
+  .pend-eq-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;}
+  .pend-eq-row:hover{background:#eef4ff;}
+  .pend-eq-nom{font-size:.84rem;font-weight:700;color:#1c1d22;white-space:nowrap;}
+  .pend-eq-det{font-size:.76rem;color:#5b5d63;text-align:right;line-height:1.35;}
+  .pend-asis-head{padding:16px 18px 12px;border-bottom:1px solid #f0f1f3;flex:none;}
+  .pend-asis-h1{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:800;color:#1c1d22;}
+  .pend-asis-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;}
+  .pend-asis-sub{font-size:.78rem;color:#9a9ca3;margin-top:3px;}
+  .pend-asis-body{flex:1;overflow-y:auto;padding:16px 18px;}
+  .pend-asis-soon{border:1px dashed #e2e5ea;border-radius:14px;padding:18px;background:#fafbfc;}
+  .pend-asis-soon-t{font-size:.95rem;font-weight:700;color:#1c1d22;margin-bottom:6px;}
+  .pend-asis-soon-d{font-size:.85rem;color:#8a8c93;line-height:1.5;}
+  /* Cuerpo del correo (Correo) */
+  .pend-cor-msg{flex:1;min-height:0;display:flex;flex-direction:column;}
+  .pend-cor-body{font-size:.88rem;color:#4b5563;line-height:1.55;margin-top:6px;flex:1;min-height:0;max-height:340px;overflow-y:auto;
+    background:#fbfbfc;border:1px solid #f0f1f3;border-radius:10px;padding:12px 14px;word-break:break-word;}
+  /* Controles de ventana (— □ ×): esquina superior derecha, discretos */
+  .pend-winctl{position:absolute;top:9px;right:12px;z-index:6;display:flex;align-items:center;gap:5px;}
+  #widgetPendientes .pend-winctl .ww-btn,
+  #widgetPendientes .pend-winctl .pend-close{width:26px;height:26px;background:transparent;color:#b3b6bd;font-size:15px;box-shadow:none;}
+  #widgetPendientes .pend-winctl .ww-btn:hover,
+  #widgetPendientes .pend-winctl .pend-close:hover{background:#f0f1f3;color:#5a5c63;}
+  /* El selector de meses del Resumen se despliega HACIA ARRIBA (vive abajo del sidebar) */
+  .pend-side-bottom .pend-replay-menu{top:auto;bottom:calc(100% + 6px);left:0;}
 </style>
 
 <script>
@@ -261,13 +629,15 @@
   window.__pendInit = true;
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
+  var _section = 'dia', _cliData = null, _cliIdx = 0, _corData = null, _corIdx = 0;
+  var _desData = null, _desGran = 'mes', _desRef = null;
   var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
   function _normalRect() {
     var vw = window.innerWidth, vh = window.innerHeight;
-    var w = Math.min(Math.round(vw * 0.90), 1420);
-    var h = Math.min(Math.round(vh * 0.88), 860);
+    var w = Math.min(Math.round(vw * 0.95), 1680);
+    var h = Math.min(Math.round(vh * 0.93), 1020);
     return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
   }
   function _setRect(ov, r) {
@@ -328,8 +698,18 @@
     if (!ov) return;
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
-    var chat = el('pendChat'); if (chat) chat.style.display = (_tab === 'resumen') ? '' : 'none';
+    var _lc = el('pendLauncher'); if (_lc) _lc.style.display = 'none';   // ocultar launcher al expandir
+    var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
+    // Abrir siempre en "Recomendaciones del día". El asistente vive en el toast
+    // y el panel flotante (decisión de producto: no duplicar chats — el modal
+    // es el tablero "Mi día"). Conserva el recap 18:00.
+    _tab = 'resumen';
+    var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
     pendCargar();
+    pendNav('dia');
+    // La columna derecha "Asistente" del tablero: mismo feed que el panel
+    // flotante, embebido junto a las oportunidades del día.
+    if (window.pendAsisFeedLoad) pendAsisFeedLoad();
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
     if (!_ensureWindow(ov)) {
@@ -337,7 +717,16 @@
     }
     // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
     if (_pollTimer) clearInterval(_pollTimer);
-    _pollTimer = setInterval(function () { if (_tab === 'resumen') pendRefreshEstado(); }, 3000);
+    var _asisTick = 0;
+    _pollTimer = setInterval(function () {
+      if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado();
+      else if (_section === 'clientes') pendRefreshClientes();
+      else if (_section === 'correo') pendRefreshCorreos();
+      else if (_section === 'asistente') {
+        _asisTick++;
+        if (_asisTick % 20 === 0 && window.pendAsisFeedLoad) pendAsisFeedLoad();   // ~60s
+      }
+    }, 3000);
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
@@ -350,6 +739,7 @@
     ov.classList.remove('active');
     if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    pendLauncherShow(); pendFeedRefresh();   // vuelve el launcher reducido
   };
 
   window.pendSetTab = function (tab) {
@@ -357,8 +747,2051 @@
     document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t){
       t.classList.toggle('active', t.getAttribute('data-tab') === tab);
     });
-    var chat = el('pendChat'); if (chat) chat.style.display = (tab === 'resumen') ? '' : 'none';
     _render();
+  };
+
+  // Mini-sidebar: cambia la sección del CENTRO (Mi día / Resumen del mes / próximamente)
+  window.pendNav = function (section) {
+    _section = section;
+    document.querySelectorAll('#widgetPendientes .pend-side-item').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-nav') === section);
+    });
+    var subtabs = el('pendSubtabs');
+    var card = document.querySelector('#widgetPendientes .pend-card');
+    if (card) card.classList.remove('replay-on');
+    // El selector de vendedor solo aplica a secciones por-vendedor (Mi día / Clientes).
+    var vw = el('pendVendedorWrap');
+    if (vw) { var canSel = _data && _data.puede_seleccionar; vw.style.display = ((section === 'dia' || section === 'clientes' || section === 'reportes') && canSel) ? '' : 'none'; }
+    _asisModo(section === 'asistente');
+    if (section === 'asistente') {
+      if (subtabs) subtabs.style.display = 'none';
+      _asisBigDraw();
+      if (window.pendAsisFeedLoad) pendAsisFeedLoad();   // refresca el feed al entrar
+    } else if (section === 'dia') {
+      if (subtabs) subtabs.style.display = '';
+      pendSetTab('resumen');
+    } else if (section === 'mes') {
+      if (subtabs) subtabs.style.display = 'none';
+      pendSetTab('replay');
+    } else if (section === 'clientes') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderClientes();
+    } else if (section === 'correo') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderCorreos();
+    } else if (section === 'reportes') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderReportesChat();
+    } else {
+      if (subtabs) subtabs.style.display = 'none';
+      var res = el('pendResArea');
+      if (res) { res.className = ''; res.innerHTML = '<div class="pend-empty">Esta sección estará disponible pronto.</div>'; }
+    }
+  };
+
+  // ── Sección Clientes: clientes "en pausa" (sin oportunidad nueva hace tiempo) ──
+  function _renderClientes() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_cliData) { _drawClientes(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Revisando tus clientes…</div>';
+    fetch('/app/api/asistente/clientes/?vendedor=' + encodeURIComponent(_sel), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudieron cargar los clientes</div>'; return; }
+        _cliData = d; _cliIdx = 0; _drawClientes(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  var _CLI_TIER = {
+    1: { t: 'Clientes en pausa', s: 'que llevan más de un mes sin oportunidad ni contacto', e: 'Cliente en pausa' },
+    2: { t: 'Contacto sin concretar', s: 'con seguimiento reciente pero sin oportunidad nueva · prioridad baja', e: 'Contacto sin concretar' },
+    3: { t: 'Próximos a enfriarse', s: 'por cumplir un mes sin una oportunidad nueva', e: 'Próximo a cumplir un mes' }
+  };
+  function _drawClientes(res) {
+    if (!_cliData) return;
+    // "Todo bien": sin clientes en pausa → tarjeta de felicitación
+    if (_cliData.modo === 'todobien') {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;">' +
+        '<div class="pend-res-saludo" style="text-align:center;">Clientes al día</div>' +
+        '<div class="pend-split" style="margin-top:20px;"><div class="pend-sc-left">' +
+          '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+            '<div class="pend-sc-agent-name">Asistente</div>' +
+            '<div class="pend-sc-agent-sub">Todo en orden</div></div></div>' +
+          '<div class="pend-sc-msg">' + _esc(_cliData.mensaje_ok || 'No tienes clientes en pausa.') + '</div>' +
+        '</div></div></div>';
+      return;
+    }
+    var items = _cliData.items || [];
+    var total = items.length;
+    var cfg = _CLI_TIER[_cliData.tier] || _CLI_TIER[1];
+    var pend = (_cliData.pendientes != null ? _cliData.pendientes : items.filter(function (x) { return !x.completada; }).length);
+    var comp = (_cliData.completadas != null ? _cliData.completadas : total - pend);
+    var sub;
+    if (pend > 0) { sub = '<b>' + pend + '</b> cliente' + (pend === 1 ? '' : 's') + ' ' + cfg.s; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    else if (comp > 0) { sub = '¡Reactivaste a todos por hoy! <b>' + comp + '</b> ✓'; }
+    else { sub = 'Sin pendientes'; }
+    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">' + cfg.t + '</div>' +
+      '<div class="pend-res-sub">' + sub + '</div></div>';
+    if (!total) { res.className = ''; res.innerHTML = hero; return; }
+    if (_cliIdx >= total) _cliIdx = total - 1;
+    if (_cliIdx < 0) _cliIdx = 0;
+    var it = items[_cliIdx];
+    var mostrarVend = (_sel !== 'mias');
+    var abLbl = it.n_abiertas + ' abierta' + (it.n_abiertas === 1 ? '' : 's');
+    var estadoLbl = (_CLI_TIER[it.tier] || cfg).e;
+    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Reactivado hoy</span>' : (estadoLbl + ' · ' + it.dias + ' días');
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Le creaste una oportunidad nueva a este cliente.</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+          '<div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div></div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        playBlock +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">Cliente</div>' +
+        '<div class="pend-sc-value" style="font-size:1.35rem;line-height:1.2;">' + _esc(it.nombre) + '</div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Sin oportunidad nueva</div>' +
+          '<div class="pend-sc-kv-val">' + it.dias + ' días</div></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Oportunidades</div>' +
+          '<div class="pend-sc-kv-val">' + it.n_opp + ' en total · ' + abLbl + '</div></div>' +
+        (it.ult_etapa ? '<div class="pend-sc-block"><div class="pend-sc-flabel">Última etapa</div><div class="pend-sc-kv-val">' + _esc(it.ult_etapa) + '</div></div>' : '') +
+        '<div class="pend-sc-divider"></div>' +
+        (it.contacto ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(it.contacto) + '</div></div>' : '') +
+        (it.telefono ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Teléfono</div><div class="pend-sc-kv-val">' + _esc(it.telefono) + '</div></div>' : '') +
+        (mostrarVend && it.vendedor ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Vendedor</div><div class="pend-sc-kv-val">' + _esc(it.vendedor) + '</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendVerCliente(' + it.cliente_id + ',\'' + _esc(it.nombre).replace(/'/g, "\\'") + '\')">Ver cliente</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCliNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Cliente ' + (_cliIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCliNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.className = 'pend-day';
+    res.innerHTML = hero + card + pager;
+  }
+  window.pendCliNav = function (delta) {
+    if (!_cliData) return;
+    var n = (_cliData.items || []).length; if (!n) return;
+    _cliIdx = (_cliIdx + delta + n) % n;
+    _drawClientes(el('pendResArea'));
+  };
+  window.pendVerCliente = function (id, nombre) {
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    if (typeof window.openClienteModal === 'function') window.openClienteModal(id, nombre || '', 'info');
+    else window.location = '/app/?open_cliente=' + id;
+  };
+  // Sondeo de Clientes: detecta al instante cuando le creas una oportunidad nueva a uno.
+  function pendRefreshClientes() {
+    if (!_cliData || !_cliData.items || !_cliData.items.length) return;
+    var ids = _cliData.items.map(function (it) { return it.cliente_id; }).join(',');
+    fetch('/app/api/asistente/clientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {}; (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var changed = false;
+        _cliData.items.forEach(function (it) {
+          var now = !!worked[it.cliente_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+        });
+        if (changed) {
+          var p = _cliData.items.filter(function (x) { return !x.completada; });
+          var q = _cliData.items.filter(function (x) { return x.completada; });
+          _cliData.items = p.concat(q);
+          _cliData.pendientes = p.length; _cliData.completadas = q.length;
+          if (_section === 'clientes') _drawClientes(el('pendResArea'));
+        }
+      }).catch(function () {});
+  }
+  window.pendRefreshClientes = pendRefreshClientes;
+
+  // ── Sección Correo: correos importantes de las últimas 24h sin responder ──
+  function _renderCorreos() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_corData) { _drawCorreos(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Revisando tu correo…</div>';
+    fetch('/app/api/asistente/correos/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo cargar el correo</div>'; return; }
+        _corData = d; _corIdx = 0; _drawCorreos(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  function _drawCorreos(res) {
+    if (!_corData) return;
+    if (!_corData.conectado) {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;text-align:center;">' +
+        '<div class="pend-res-saludo">Conecta tu correo</div>' +
+        '<div class="pend-res-sub" style="margin-top:8px;">Cuando conectes tu buzón en la sección <b>Correo</b>, el asistente te avisará aquí de los correos importantes que siguen sin respuesta — e insistirá con los que llevan días.</div></div>';
+      return;
+    }
+    var items = _corData.items || [];
+    var total = items.length;
+    // Sin correos importantes: tarjeta del asistente (mismo formato que Clientes al día).
+    if (!total) {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;">' +
+        '<div class="pend-res-saludo" style="text-align:center;">Correo al día</div>' +
+        '<div class="pend-split" style="margin-top:20px;"><div class="pend-sc-left">' +
+          '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+            '<div class="pend-sc-agent-name">Asistente</div>' +
+            '<div class="pend-sc-agent-sub">Todo en orden</div></div></div>' +
+          '<div class="pend-sc-msg">No tienes correos importantes sin responder. En cuanto llegue algo que valga la pena, te lo muestro aquí.</div>' +
+        '</div></div></div>';
+      return;
+    }
+    var pend = (_corData.pendientes != null ? _corData.pendientes : items.filter(function (x) { return !x.completada; }).length);
+    var comp = (_corData.completadas != null ? _corData.completadas : total - pend);
+    var sub;
+    if (pend > 0) { sub = '<b>' + pend + '</b> correo' + (pend === 1 ? '' : 's') + ' importante' + (pend === 1 ? '' : 's') + ' sin responder'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    else if (comp > 0) { sub = 'Respondiste todo por hoy · <b>' + comp + '</b> ✓ — vuelvo a revisar mañana'; }
+    else { sub = 'Sin correos importantes sin responder'; }
+    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Correo</div><div class="pend-res-sub">' + sub + '</div></div>';
+    if (_corIdx >= total) _corIdx = total - 1;
+    if (_corIdx < 0) _corIdx = 0;
+    var it = items[_corIdx];
+    var esListo = it.motivo_done === 'listo';
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">' + (esListo ? '✓ Marcado como listo' : '✓ Respondido hoy') + '</span>'
+      : ('Sin responder · ' + _esc(it.hace));
+    var playDoneTxt = esListo ? 'Marcaste este correo como atendido.' : 'Respondiste este correo. Queda registrado por hoy.';
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">' + playDoneTxt + '</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    // Borrador IA persistido en el item (si ya se generó en esta sesión).
+    var draftBlock = it._draft
+      ? ('<div class="pend-cor-draft"><div class="pend-cor-draft-lbl">Borrador de respuesta</div>' +
+         '<div class="pend-cor-draft-txt">' + _esc(it._draft) + '</div>' +
+         '<div class="pend-cor-draft-acts">' +
+           '<button type="button" class="pend-cor-draft-mini" onclick="pendCorCopiar(' + it.mail_id + ')">Copiar</button>' +
+           '<button type="button" class="pend-cor-draft-mini" onclick="pendCorAbrirConRespuesta(' + it.mail_id + ')">Abrir en correo</button>' +
+         '</div></div>')
+      : '';
+    var listoOn = esListo ? ' on' : '';
+    var listoLbl = esListo ? '✓ Listo — quitar' : 'Marcar como listo';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+          '<div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div></div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        playBlock + draftBlock +
+        '<div class="pend-cor-btns">' +
+          '<button type="button" class="pend-sc-btn blue" id="pendCorGenBtn" onclick="pendCorGenerar(' + it.mail_id + ')">Generar respuesta</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">De</div>' +
+        '<div class="pend-sc-kv-val">' + _esc(it.remitente) + '</div>' +
+        (it.remitente_email ? '<div style="font-size:.8rem;color:#9a9ca3;margin-top:1px;">' + _esc(it.remitente_email) + '</div>' : '') +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Asunto</div><div class="pend-sc-kv-val">' + _esc(it.asunto) + '</div></div>' +
+        (it.adjuntos ? '<div class="pend-sc-flabel" style="margin-top:8px;">📎 Con adjuntos</div>' : '') +
+        '<div class="pend-sc-block pend-cor-msg"><div class="pend-sc-flabel">Mensaje</div><div id="pendCorBody" class="pend-cor-body"></div></div>' +
+        '<div class="pend-cor-btns">' +
+          '<button type="button" class="pend-sc-btn" onclick="pendVerCorreo(' + it.mail_id + ')">Abrir</button>' +
+          '<button type="button" class="pend-cor-listo' + listoOn + '" onclick="pendCorListo(' + it.mail_id + ',' + (esListo ? 'false' : 'true') + ')">' + listoLbl + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCorNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Correo ' + (_corIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCorNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.className = 'pend-day';
+    res.innerHTML = hero + card + pager;
+    _loadCorBody(it);   // baja el cuerpo real (lazy, reusa el endpoint del correo)
+  }
+  // Deja SOLO el mensaje principal: corta hilo citado/reenvío, firma, redes, imágenes cid.
+  function _corLimpiar(txt) {
+    if (!txt) return '';
+    var t = txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    t = t.replace(/\[cid:[^\]]*\]/gi, '').replace(/\[(imagenpegada|image|imagen)[^\]]*\]/gi, '');
+    t = t.replace(/<(mailto:|https?:\/\/|tel:)[^>]*>/gi, '');
+    var lines = t.split('\n'), out = [];
+    var qz = /^(_{5,}|-{2,}\s*Original|>|\s*(De|From|Enviado|Sent|Para|To|Cc|Asunto|Subject)\s*:|\s*El .+escrib|\s*On .+wrote:)/i;
+    var sig = /^--\s*$/;
+    var phone = /(\+?\d[\d ().\-]{7,}\d)/;
+    var social = /\b(facebook|twitter|linkedin|instagram|youtube|tiktok)\b/i;
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (qz.test(ln)) break;                 // historial citado / reenvío
+      if (sig.test(ln)) break;                // delimitador de firma "-- "
+      if (i >= 2 && (phone.test(ln) || social.test(ln) || /https?:\/\//i.test(ln))) break;  // bloque de firma
+      out.push(ln);
+    }
+    var res = out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (res.length > 900) res = res.slice(0, 900).replace(/\s+\S*$/, '') + '…';
+    return res;
+  }
+  function _loadCorBody(it) {
+    var box = el('pendCorBody'); if (!box) return;
+    var render = function (raw) {
+      var txt = _corLimpiar(raw);
+      if (!txt) { box.innerHTML = '<span style="color:#9a9ca3;">Sin texto para previsualizar — ábrelo para verlo completo.</span>'; return; }
+      box.innerHTML = _esc(txt).replace(/\n/g, '<br>');
+    };
+    if (it._body != null) { render(it._body); return; }
+    box.innerHTML = '<span style="color:#9a9ca3;">Cargando contenido…</span>';
+    fetch('/app/api/asistente/correo/' + it.mail_id + '/cuerpo/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var txt = '';
+        if (d && d.ok) {
+          txt = (d.cuerpo_texto || '').trim();
+          if (!txt && d.cuerpo_html) { var t = document.createElement('div'); t.innerHTML = d.cuerpo_html; txt = (t.textContent || '').trim(); }
+        }
+        it._body = txt;
+        var cur = (_corData.items || [])[_corIdx];
+        if (_section === 'correo' && cur && cur.mail_id === it.mail_id) render(txt);
+      })
+      .catch(function () {
+        it._body = it.snippet || '';
+        var cur = (_corData.items || [])[_corIdx];
+        if (_section === 'correo' && cur && cur.mail_id === it.mail_id) render(it._body);
+      });
+  }
+  window.pendCorNav = function (delta) {
+    if (!_corData) return;
+    var n = (_corData.items || []).length; if (!n) return;
+    _corIdx = (_corIdx + delta + n) % n;
+    _drawCorreos(el('pendResArea'));
+  };
+  window.pendVerCorreo = function (id) {
+    // Ver un correo desde el asistente = la VENTANA individual de lectura.
+    if (typeof window.mailAbrirVentana === 'function') { try { mailAbrirVentana(id); return; } catch (e) {} }
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    var mw = document.getElementById('widgetMail');
+    if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+    if (mw) mw.style.zIndex = '11000';
+    if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); return; } catch (e) {} }
+    window.location = '/app/?tab=correo';
+  };
+  // Abre el correo en el módulo Correo y despliega Responder con el borrador ya redactado.
+  // Abre el correo en el módulo Correo y despliega Responder con un borrador inyectado.
+  // Reutilizable desde la tarjeta de Correo y desde el mini-panel del asistente.
+  function _abrirMailConBorrador(id, draft) {
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    var mw = document.getElementById('widgetMail');
+    if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+    if (mw) mw.style.zIndex = '11000';
+    // Limpiamos el asunto ANTES de cargar: el módulo lo repuebla cuando el detalle
+    // termina de cargar y en ese mismo paso cierra cualquier Responder abierto. Por
+    // eso esperamos a que el asunto vuelva a tener texto para recién ahí abrir Responder
+    // (si lo abrimos antes, esa carga tardía nos lo cerraría a los pocos segundos).
+    var subEl = document.getElementById('mailDetailSubject');
+    if (subEl) subEl.textContent = '';
+    if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
+    else { window.location = '/app/?tab=correo'; return; }
+    if (!draft) return;
+    var draftHtml = _esc(draft).replace(/\n/g, '<br>');
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var s = document.getElementById('mailDetailSubject');
+      if (s && (s.textContent || '').trim().length > 0) {   // el detalle ya cargó
+        try { if (typeof window.mailResponder === 'function') window.mailResponder(false); } catch (e) {}
+        var panel = document.getElementById('mailReplyPanel');
+        if (panel && window.getComputedStyle(panel).display !== 'none') {
+          var ed = document.getElementById('mailRespEditor');
+          if (ed) { ed.innerHTML = draftHtml + '<br><br>' + ed.innerHTML; try { ed.focus(); } catch (e) {} }
+          clearInterval(iv);
+          return;
+        }
+      }
+      if (tries > 80) clearInterval(iv);   // ~12s de tope (IMAP lento)
+    }, 150);
+  }
+  window.pendCorAbrirConRespuesta = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    _abrirMailConBorrador(id, (it && it._draft) ? it._draft : '');
+  };
+  // Genera un borrador de respuesta con la IA (mismo proveedor del asistente).
+  window.pendCorGenerar = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    if (!it) return;
+    var btn = el('pendCorGenBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Redactando…'; }
+    fetch('/app/api/asistente/correo/' + id + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.success) {
+          it._draft = d.borrador || '';
+          it._draftAsunto = d.asunto || '';
+          if (_section === 'correo') _drawCorreos(el('pendResArea'));
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = 'Generar respuesta'; }
+          alert((d && d.error) || 'No se pudo generar la respuesta.');
+        }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Generar respuesta'; }
+        alert('No se pudo generar la respuesta.');
+      });
+  };
+  window.pendCorCopiar = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    if (!it || !it._draft) return;
+    var done = function () {
+      var b = event && event.target; if (b) { var t = b.textContent; b.textContent = '¡Copiado!'; setTimeout(function () { b.textContent = t; }, 1400); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(it._draft).then(done, function () {}); }
+    else { try { var ta = document.createElement('textarea'); ta.value = it._draft; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } catch (e) {} }
+  };
+  window.pendCorListo = function (id, marcar) {
+    fetch('/app/api/asistente/correo/' + id + '/listo/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marcar: !!marcar })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { alert('No se pudo actualizar.'); return; }
+        var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+        if (!it) return;
+        it.completada = !!d.completada;
+        it.motivo_done = d.motivo_done || '';
+        var p = _corData.items.filter(function (x) { return !x.completada; });
+        var q = _corData.items.filter(function (x) { return x.completada; });
+        var idx = p.concat(q).indexOf(it);
+        _corData.items = p.concat(q);
+        _corData.pendientes = p.length; _corData.completadas = q.length;
+        if (idx >= 0) _corIdx = idx;
+        if (_section === 'correo') _drawCorreos(el('pendResArea'));
+      })
+      .catch(function () { alert('No se pudo actualizar.'); });
+  };
+  function pendRefreshCorreos() {
+    if (!_corData || !_corData.items || !_corData.items.length) return;
+    var ids = _corData.items.map(function (it) { return it.mail_id; }).join(',');
+    fetch('/app/api/asistente/correos/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {}; (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var changed = false;
+        _corData.items.forEach(function (it) {
+          var now = !!worked[it.mail_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+        });
+        if (changed) {
+          var p = _corData.items.filter(function (x) { return !x.completada; });
+          var q = _corData.items.filter(function (x) { return x.completada; });
+          _corData.items = p.concat(q);
+          _corData.pendientes = p.length; _corData.completadas = q.length;
+          if (_section === 'correo') _drawCorreos(el('pendResArea'));
+        }
+      }).catch(function () {});
+  }
+  window.pendRefreshCorreos = pendRefreshCorreos;
+
+  // ── Sección Reportes · "Mi desempeño" (editorial + período navegable + export) ──
+  function _desQS() {
+    return 'vendedor=' + encodeURIComponent(_sel) + '&gran=' + encodeURIComponent(_desGran) +
+      (_desRef ? '&ref=' + encodeURIComponent(_desRef) : '');
+  }
+  // ── Sección Reportes: CHAT de reportes con el asistente ──────────────────
+  // Los chips predeterminados son CÓDIGO PURO (descargan el archivo directo,
+  // cero tokens); la barra libre va al motor de IA para reportes a la medida.
+  var _repHist = [];
+  function _repChip(label, onclick) {
+    return '<button type="button" class="abig-sug" onclick="' + onclick + '">' + label + '</button>';
+  }
+  function _renderReportesChat() {
+    var res = el('pendResArea'); if (!res) return;
+    res.className = '';
+    var chips =
+      _repChip('📉 Oportunidades vencidas (Excel)', "pendRepOpps('vencidas','')") +
+      _repChip('⭐ Mis más importantes (Excel)', "pendRepOpps('importantes','')") +
+      _repChip('📊 Pipeline abierto (Excel)', "pendRepOpps('abiertas','')") +
+      _repChip('🏅 Mi desempeño del mes (Excel)', "pendRepDescarga('xlsx')") +
+      _repChip('🗓️ Resumen de mi día', "pendRepPrompt('Hazme un resumen de lo que he atendido hoy')");
+    res.innerHTML =
+      '<div style="max-width:760px;margin:0 auto;padding:24px 20px 0;display:flex;flex-direction:column;min-height:100%;">' +
+        '<div class="abig-hola">¿Qué reporte necesitas?</div>' +
+        '<div class="abig-brief2">Pídemelo con tus palabras — «oportunidades vencidas del cliente Eaton», «mis 10 más grandes» — o usa uno de los rápidos.</div>' +
+        '<div class="abig-sugs" style="justify-content:center;">' + chips + '</div>' +
+        '<div id="repFlow" style="margin-top:16px;flex:1;"></div>' +
+        '<div class="pend-mini-foot" style="position:sticky;bottom:0;background:#fafbfc;padding:12px 0;border-top:none;display:flex;gap:9px;">' +
+          '<input type="text" id="repIn" class="pend-mini-in" style="flex:1;" placeholder="Describe el reporte que quieres…" onkeydown="if(event.key===\'Enter\')pendRepSend()">' +
+          '<button type="button" class="pend-mini-go" onclick="pendRepSend()" aria-label="Pedir">&#8593;</button>' +
+        '</div>' +
+      '</div>';
+    _repDraw();
+  }
+  // Reporte de oportunidades: descarga DIRECTA por código (cero IA, cero tokens).
+  // `p` puede ser un objeto con todos los filtros o (tipo, cliente) suelto.
+  window.pendRepOpps = function (tipo, cliente) {
+    var p = (typeof tipo === 'object') ? tipo : { tipo: tipo, cliente: cliente || '' };
+    var nom = p.tipo === 'vencidas' ? 'oportunidades vencidas'
+      : (p.tipo === 'importantes' ? 'tus oportunidades más importantes' : 'tu pipeline abierto');
+    var det = [];
+    if (p.cliente) det.push('cliente ' + p.cliente);
+    if (p.etapa) det.push('etapa ' + p.etapa);
+    if (p.pipeline) det.push(p.pipeline);
+    if (p.monto_min) det.push('desde $' + Number(p.monto_min).toLocaleString());
+    if (p.top) det.push('top ' + p.top);
+    if (p.cierre_mes) det.push('cierre ' + p.cierre_mes + '/' + (p.cierre_anio || new Date().getFullYear()));
+    if (p.estancadas_dias) det.push('sin movimiento ' + p.estancadas_dias + '+ días');
+    if (p.extras) det.push('+ ' + p.extras.split(',').join(', ').replace(/_/g, ' '));
+    _repPush('bot', '✓ Entendido: <b>' + _esc(nom) + '</b>' + (det.length ? ' · ' + _esc(det.join(' · ')) : '') + '. Generando tu Excel…');
+    var qs = ['tipo=' + encodeURIComponent(p.tipo)];
+    ['cliente', 'etapa', 'pipeline', 'monto_min', 'top', 'cierre_mes', 'cierre_anio', 'estancadas_dias', 'extras']
+      .forEach(function (k) { if (p[k]) qs.push(k + '=' + encodeURIComponent(p[k])); });
+    var a = document.createElement('a');
+    a.href = '/app/api/asistente/reporte/oportunidades/?' + qs.join('&');
+    a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  // Parser por CÓDIGO del texto libre: tipo + cliente + etapa + pipeline +
+  // monto + top N + mes de cierre + estancamiento + columnas extra. Sin IA.
+  var _REP_MESES = { enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+    julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12 };
+  function _repParseOpps(q) {
+    var s = ' ' + q.toLowerCase() + ' ';
+    if (!/oportunidad|pipeline|vencid|important|grandes|estancad/.test(s)) return null;
+    var p = {};
+    p.tipo = /vencid/.test(s) ? 'vencidas'
+      : (/important|grandes|top|mejores|mayores/.test(s) ? 'importantes'
+        : (/abiert|pipeline|todas|estancad/.test(s) ? 'abiertas' : null));
+    if (!p.tipo) return null;
+    var m = s.match(/cliente\s+([a-z0-9áéíóúñü&\.\- ]{2,45}?)(?=\s*(?:en\s+excel|en\s+pdf|por\s+favor|con\s|que\s|y\s+agr|$|\.|,))/);
+    if (m) p.cliente = m[1].trim();
+    m = s.match(/etapa\s+([a-záéíóúñ ]{3,25}?)(?=\s*(?:en\s+excel|$|\.|,|con\s|del?\s))/);
+    if (m) p.etapa = m[1].trim();
+    if (/runrate/.test(s)) p.pipeline = 'runrate';
+    else if (/\bproyectos?\b/.test(s) && !/proyecto\s+de/.test(s)) p.pipeline = 'proyecto';
+    m = s.match(/(?:mayores?|arriba|m[aá]s)\s+de\s+\$?\s*([\d,\.]+)\s*(k|mil|m\b|millones)?/);
+    if (m) {
+      var n = parseFloat(m[1].replace(/,/g, ''));
+      if (m[2] === 'k' || m[2] === 'mil') n *= 1000;
+      if (m[2] === 'm' || m[2] === 'millones') n *= 1000000;
+      if (n) p.monto_min = Math.round(n);
+    }
+    m = s.match(/top\s*(\d{1,3})/) || s.match(/(?:mis|las)\s+(\d{1,3})\s+m[aá]s/);
+    if (m) { p.top = +m[1]; p.tipo = p.tipo === 'abiertas' ? 'importantes' : p.tipo; }
+    m = s.match(/cierran?\s+(?:en\s+)?(este\s+mes|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/);
+    if (m) {
+      var hoy2 = new Date();
+      p.cierre_mes = m[1] === 'este mes' ? (hoy2.getMonth() + 1) : _REP_MESES[m[1]];
+      p.cierre_anio = hoy2.getFullYear();
+    }
+    if (/estancad|sin\s+movimiento|sin\s+mover/.test(s)) {
+      m = s.match(/(\d{1,3})\s*(d[ií]as|semanas)/);
+      p.estancadas_dias = m ? (+m[1] * (/semanas/.test(m[2]) ? 7 : 1)) : 14;
+    }
+    var ex = [];
+    if (/[uú]ltima\s+actividad/.test(s)) ex.push('ultima_actividad');
+    if (/d[ií]as\s+sin\s+movimiento/.test(s)) ex.push('dias_sin_mov');
+    if (/\bpo\b|orden(es)?\s+de\s+compra/.test(s)) ex.push('po');
+    if (ex.length) p.extras = ex.join(',');
+    return p;
+  }
+  function _repDraw() {
+    var flow = el('repFlow'); if (!flow) return;
+    flow.innerHTML = _repHist.map(function (m) {
+      return '<div class="mc-msg mc-' + m.role + '"><div class="mc-burbuja">' + m.html + '</div></div>';
+    }).join('');
+    var body = el('pendBody'); if (body) body.scrollTop = body.scrollHeight;
+  }
+  function _repPush(role, html) { _repHist.push({ role: role, html: html }); _repDraw(); return _repHist.length - 1; }
+  function _repSet(i, html) { if (_repHist[i]) { _repHist[i].html = html; _repDraw(); } }
+  // Chip directo: descarga el archivo por código, sin IA.
+  window.pendRepDescarga = function (fmt) {
+    _repPush('bot', '✓ Listo — tu desempeño de este mes en ' + (fmt === 'pdf' ? 'PDF' : 'Excel') + ' se está descargando.');
+    var url = '/app/api/asistente/desempeno/export/?formato=' + fmt + '&vendedor=' + encodeURIComponent(_sel) + '&gran=mes';
+    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  window.pendRepTablero = function () { _renderDesempeno(); };
+  window.pendRepPrompt = function (t) {
+    var i = el('repIn'); if (i) i.value = t;
+    pendRepSend();
+  };
+  window.pendRepSend = function () {
+    var i = el('repIn'); if (!i) return;
+    var q = (i.value || '').trim(); if (!q) return;
+    i.value = '';
+    _repPush('user', _esc(q));
+    // 1º: ¿es un reporte de oportunidades que el CÓDIGO entiende? → Excel directo.
+    var po = _repParseOpps(q);
+    if (po) { pendRepOpps(po); return; }
+    // Intents gratis también aquí (atendido del día por código puro).
+    if (/atendid|resumen\s+de\s+(lo\s+que|mi\s+d[ií]a)|qu[eé]\s+he\s+hecho/i.test(q)) {
+      var idx0 = _repPush('bot', '<span class="pend-typing2">Armando tu resumen…</span>');
+      fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d2) {
+          var ats = (d2 && d2.items) || [];
+          _repSet(idx0, ats.length
+            ? ('<div class="mc-nota">Tu día hasta ahora (' + ats.length + '):</div>' + ats.map(_atCard).join(''))
+            : 'Todavía no registro nada atendido hoy. La jornada corre desde las 8am.');
+        })
+        .catch(function () { _repSet(idx0, 'No pude leer tu bitácora ahora mismo.'); });
+      return;
+    }
+    var idx = _repPush('bot', '<span class="pend-typing2">Preparando…</span>');
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var md = (d && (d.respuesta || d.error)) || 'No pude preparar eso ahora mismo.';
+        _repSet(idx, (typeof window.asistenteRenderMarkdown === 'function')
+          ? window.asistenteRenderMarkdown(md) : _esc(md));
+      })
+      .catch(function () { _repSet(idx, 'Error de conexión con el asistente.'); });
+  };
+
+  function _renderDesempeno() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_desData) { _drawDesempeno(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Calculando tu desempeño…</div>';
+    fetch('/app/api/asistente/desempeno/?' + _desQS(), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo calcular el desempeño</div>'; return; }
+        _desData = d; _drawDesempeno(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  function _drawDesempeno(res) {
+    if (!_desData) return;
+    var d = _desData;
+    var seg = [['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']].map(function (p) {
+      return '<button type="button" class="' + (_desGran === p[0] ? 'on' : '') + '" onclick="pendDesGran(\'' + p[0] + '\')">' + p[1] + '</button>';
+    }).join('');
+    var nav = '<div class="pend-des-nav">' +
+      '<button type="button" onclick="pendDesNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-des-nav-lbl">' + _esc(d.periodo_label || '') + '</span>' +
+      '<button type="button" onclick="pendDesNav(1)"' + (d.puede_avanzar ? '' : ' disabled') + ' aria-label="Siguiente">›</button>' +
+    '</div>';
+    var money = '';
+    if (d.dinero && d.dinero.mostrar) {
+      money = '<div class="pend-des-money">' +
+        '<div><div class="pend-des-money-lbl">Facturado</div><div class="pend-des-money-val">' + _esc(d.dinero.facturado_fmt) + '</div></div>' +
+        '<div><div class="pend-des-money-lbl">Cobrado</div><div class="pend-des-money-val">' + _esc(d.dinero.cobrado_fmt) + '</div></div>' +
+      '</div>';
+    }
+    var kpis = (d.tiles || []).map(function (t) {
+      return '<div><div class="pend-des-kpi-val">' + t.valor + '</div><div class="pend-des-kpi-lbl">' + _esc(t.label) + '</div></div>';
+    }).join('');
+    res.className = '';
+    res.innerHTML = '<div class="pend-des">' +
+      '<div class="pend-des-top"><div>' +
+        '<div class="pend-res-saludo">' + _esc(d.titulo || 'Tu desempeño') + '</div>' +
+        '<div class="pend-res-sub">' + _esc(d.periodo_label || '') + '</div></div>' +
+        '<div class="pend-des-actions">' +
+          '<button type="button" class="pend-des-xbtn" onclick="pendDesExport(\'xlsx\')">Excel</button>' +
+          '<button type="button" class="pend-des-xbtn" onclick="pendDesExport(\'pdf\')">PDF</button>' +
+        '</div></div>' +
+      '<div class="pend-des-controls"><div class="pend-des-seg">' + seg + '</div>' + nav + '</div>' +
+      money +
+      '<div class="pend-des-kpis">' + kpis + '</div>' +
+    '</div>';
+  }
+  function _desParseRef() {
+    if (_desRef) { var p = _desRef.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+  function _desFmtRef(dt) {
+    return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2);
+  }
+  window.pendDesGran = function (g) {
+    if (_desGran === g) return;
+    _desGran = g; _desData = null; _renderDesempeno();
+  };
+  window.pendDesNav = function (delta) {
+    var dt = _desParseRef();
+    if (_desGran === 'dia') dt.setDate(dt.getDate() + delta);
+    else if (_desGran === 'semana') dt.setDate(dt.getDate() + delta * 7);
+    else if (_desGran === 'anio') dt.setFullYear(dt.getFullYear() + delta);
+    else dt.setMonth(dt.getMonth() + delta);
+    var hoy = new Date(); hoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    if (dt > hoy) dt = hoy;
+    _desRef = _desFmtRef(dt); _desData = null; _renderDesempeno();
+  };
+  window.pendDesExport = function (fmt) {
+    var url = '/app/api/asistente/desempeno/export/?formato=' + fmt + '&' + _desQS();
+    var a = document.createElement('a'); a.href = url; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+
+  // ── Launcher = TOAST (píldora en reposo / aviso completo cuando hay algo nuevo) ──
+  var _lcTotal = -1, _lcTimer = null, _toastExpanded = false;
+  var _toastMode = (function () { try { return localStorage.getItem('pendToastMode') || 'full'; } catch (e) { return 'full'; } })();
+  function _toastSetMode(m) {
+    _toastMode = m;
+    try { localStorage.setItem('pendToastMode', m); } catch (e) {}
+    _toastApplyMode();
+  }
+  function _toastApplyMode() {
+    var lc = el('pendLauncher'); if (!lc) return;
+    var pill = el('pendToastPill'), main = el('pendToastMain'), f = el('pendLcFocus');
+    if (_toastExpanded) {
+      if (pill) pill.style.display = 'none';
+      if (main) main.style.display = 'none';
+      lc.classList.remove('pill');
+      return;
+    }
+    if (f) f.style.display = 'none';
+    var items = (_miniData && _miniData.items) || [];
+    // Sin pendientes: el asistente desaparece por completo. Con pendientes SIEMPRE
+    // está presente — el aviso completo, o la píldora si el usuario lo cerró con la ×
+    // (pendFeedRefresh lo despierta de la píldora cuando llega algo nuevo).
+    if (!items.length) {
+      lc.style.display = 'none';
+      lc.classList.remove('pill');
+      return;
+    }
+    var ov = el('widgetPendientes'), mini = el('pendMini');
+    var tapado = (ov && ov.classList.contains('active')) || (mini && mini.style.display !== 'none');
+    if (!tapado) lc.style.display = '';
+    var showPill = (_toastMode === 'pill');
+    if (pill) pill.style.display = showPill ? 'flex' : 'none';
+    if (main) main.style.display = showPill ? 'none' : '';
+    lc.classList.toggle('pill', showPill);
+  }
+  function pendLauncherShow() {
+    var ov = el('widgetPendientes'), lc = el('pendLauncher'); if (!lc) return;
+    var abierto = ov && ov.classList.contains('active');
+    lc.style.display = abierto ? 'none' : '';
+    _toastExpanded = false; lc.classList.remove('expanded');
+    var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
+    _toastApplyMode();
+  }
+  window.pendLauncherShow = pendLauncherShow;
+  function _toastTop() { return (_miniData && _miniData.items && _miniData.items[0]) || null; }
+  // Color de la etiqueta de categoría — el MISMO en el aviso chico y en el nivel 2.
+  // Urgencia/hueco mandan; si no, el tipo de tarjeta da su color.
+  function _catColor(it) {
+    if (it.hueco) return '#0a7d3c';
+    if (it.urgente) return '#c2410c';
+    var c = (it.categoria || '').toLowerCase();
+    if (c.indexOf('venta') !== -1) return '#0a7d3c';
+    if (c.indexOf('factura') !== -1 || c.indexOf('orden') !== -1) return '#B45309';
+    if (c.indexOf('respondiste') !== -1) return '#AF52DE';
+    if (c.indexOf('oportunidad') !== -1) return '#0052D4';
+    return '#9a9ca3';
+  }
+  function _toastHeadline(it) {
+    var t = it.titulo || 'Aviso';
+    if (it.tipo === 'correo' && it.opp_nombre) return t + ' · ' + it.opp_nombre;
+    return t;
+  }
+  function _toastDraw() {
+    var lc = el('pendLauncher'); if (!lc) return;
+    var d = _miniData, items = (d && d.items) || [];
+    var total = (d && d.total) || 0;
+    var pb = el('pendToastPillBadge');
+    if (pb) { if (total > 0) { pb.textContent = total; pb.style.display = ''; } else pb.style.display = 'none'; }
+    _toastApplyMode();
+    if (!items.length) return;
+    var it = items[0];
+    var catEl = el('pendToastCat');
+    if (catEl) {
+      catEl.textContent = ((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase();
+      catEl.className = 'pend-toast-cat' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : ''));
+      catEl.style.color = _catColor(it);
+    }
+    var pos = el('pendToastPos'); if (pos) pos.textContent = items.length > 1 ? ('1 de ' + items.length) : '';
+    var titleEl = el('pendToastTitle'); if (titleEl) titleEl.textContent = it.headline || _toastHeadline(it);
+    var ctxEl = el('pendToastCtx');
+    if (ctxEl) {
+      var ctx = it.contexto || '';
+      if (ctx) { ctxEl.textContent = ctx; ctxEl.style.display = ''; } else ctxEl.style.display = 'none';
+    }
+    var qEl = el('pendToastQuote');
+    if (qEl) {
+      if (it.quote) { qEl.textContent = '“' + it.quote + '”'; qEl.style.display = ''; }
+      else qEl.style.display = 'none';
+    }
+    var actsEl = el('pendToastActs');
+    if (actsEl) {
+      var pri = (it.acciones || [])[0], acts = '';
+      if (pri === 'responder' && it.mail_id) {
+        // Aviso chico: la acción azul es ABRIR el correo (directo, sin IA).
+        // "Generar respuesta" (borrador con IA) vive en el expandido.
+        acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAbrirSolo(' + it.mail_id + ')">Abrir correo</button>';
+      }
+      else if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
+      // "Agendar" directo (sin formulario) — se omite si la acción azul ya es agendar.
+      if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
+        acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastAgendar()">Agendar</button>';
+      }
+      acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastRevisado()">Revisado</button>';
+      actsEl.innerHTML = acts;
+    }
+  }
+  function _toastExpand() {
+    _toastExpanded = true;
+    var lc = el('pendLauncher'); if (lc) { lc.classList.add('expanded'); lc.classList.remove('pill'); }
+    var m = el('pendToastMain'); if (m) m.style.display = 'none';
+    var p = el('pendToastPill'); if (p) p.style.display = 'none';
+    var f = el('pendLcFocus'); if (f) { f.style.display = ''; f.innerHTML = '<div class="pend-mini-empty">Un momento…</div>'; }
+  }
+  function _toastCollapse() {
+    _toastExpanded = false;
+    var f = el('pendLcFocus'); if (f) { f.style.display = 'none'; f.innerHTML = ''; }
+    var lc = el('pendLauncher'); if (lc) { lc.classList.remove('expanded'); lc.classList.remove('n2'); }
+    _toastDraw();
+  }
+  window.pendToastCollapse = _toastCollapse;
+  // Clic en el aviso = NIVEL 2: se expande AHÍ MISMO con más cuerpo del correo y
+  // todas las acciones. El panel completo queda detrás de "Ver todo lo pendiente".
+  // (Antes el clic abría el panel de golpe — cambio de contexto que confundía.)
+  window.pendToastOpenBig = function () { pendToastNivel2(); };
+  // Detalle "nivel 2" de un aviso — COMPARTIDO por el toast y la ventanita:
+  // más cuerpo del correo + botonera completa, con acciones amarradas al ítem.
+  function _nivel2Html(it, ctx) {
+    var esToast = (ctx === 'toast');
+    var esCorreo = it.tipo === 'correo';
+    var ref = esCorreo ? it.mail_id : it.opp_id;
+    var cuerpo = it.quote_full || it.quote || '';
+    var volver = esToast ? 'pendToastCollapse()' : 'pendMiniVolver()';
+    var revisado = esToast ? 'pendToastCollapse();pendToastRevisado()'
+                           : ("pendMiniDescartar('" + it.tipo + "'," + ref + ')');
+    function _btn(cls, onclick, label) {
+      return '<button type="button" class="pend-foc-btn ' + cls + '" onclick="' + onclick + '">' + label + '</button>';
+    }
+    var btns = '';
+    if (esCorreo && it.opp_id) {
+      // Correo LIGADO a oportunidad: botonera fija de UNA fila (orden acordado).
+      var priActualizar = ((it.acciones || [])[0] === 'actualizar_oportunidad');
+      var bAbrir = _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
+      var bAct = _btn(priActualizar ? 'pri' : 'sec', 'pendMiniActualizarOpp(' + it.mail_id + ')', 'Actualizar oportunidad');
+      var bAgen = _btn(priActualizar ? 'sec' : 'pri', 'pendMiniAgendar(' + it.opp_id + ')', 'Agendar seguimiento');
+      btns = (priActualizar ? (bAct + bAgen + bAbrir) : (bAgen + bAbrir + bAct)) + _btn('sec', revisado, 'Revisado');
+    } else {
+      var accs = (it.acciones || []).filter(function (a) { return a !== 'no_importa' && a !== 'responder' && _MINI_ACTS[a]; });
+      btns = accs.map(function (a, i) {
+        return _btn(i === 0 ? 'pri' : 'sec', _MINI_ACTS[a].f(it), _esc(_MINI_ACTS[a].l));
+      }).join('');
+      if (esCorreo) {
+        var resp = esToast ? "pendToastAct('responder')" : ('pendMiniResponder(' + it.mail_id + ')');
+        btns += _btn(accs.length ? 'sec' : 'pri', resp, 'Generar respuesta');
+        btns += _btn('sec', 'pendToastAbrirSolo(' + it.mail_id + ')', 'Abrir');
+        if (accs.indexOf('vincular_oportunidad') === -1) {
+          btns += _btn('sec', 'pendToastVincular(' + it.mail_id + ')', 'Vincular a oportunidad');
+        }
+      } else if (it.opp_id) {
+        btns += _btn('sec', (esToast ? 'pendToastCollapse();' : '') + 'pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
+      }
+      var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
+      if (!tieneAgendar) {
+        btns += _btn('sec', "pendToastAgendarPrev('" + it.tipo + "'," + ref + ')', 'Agendar seguimiento');
+      }
+      btns += _btn('sec', revisado, 'Revisado');
+    }
+    var pie = esToast
+      ? '<div class="pend-foc-note" style="cursor:pointer;text-decoration:underline;" onclick="pendToastVerTodo()">Ver todo lo pendiente' + (((_miniData && _miniData.total) || 0) > 1 ? ' (' + _miniData.total + ')' : '') + ' →</div>'
+      : '';
+    return '<div class="pend-n2-top" onclick="' + volver + '"><span class="pend-foc-back">‹ Volver</span></div>' +
+      '<span class="pend-toast-cat pend-n2-cat" style="color:' + _catColor(it) + ';">' + _esc(((it.categoria || '') + (it.hace ? ' · ' + it.hace : '')).toUpperCase()) + '</span>' +
+      '<div class="pend-toast-title" style="cursor:default;">' + _esc(it.headline || it.titulo || '') + '</div>' +
+      (it.contexto ? '<div class="pend-toast-ctx" style="display:block;">' + _esc(it.contexto) + '</div>' : '') +
+      (cuerpo ? '<div class="pend-toast-quote pend-n2-quote">“' + _esc(cuerpo) + '”</div>' : '') +
+      '<div class="pend-n2-acts">' + btns + '</div>' + pie;
+  }
+  window.pendToastNivel2 = function () {
+    var it = _toastTop(); if (!it) return;
+    _toastExpand();
+    var lcN2 = el('pendLauncher'); if (lcN2) lcN2.classList.add('n2');
+    var box = el('pendLcFocus'); if (!box) return;
+    box.innerHTML = _nivel2Html(it, 'toast');
+  };
+  // Clic en una tarjeta de la ventanita (o de la columna de "Mi día"): el detalle
+  // se abre AHÍ MISMO — la lista se retira y vuelve con "‹ Volver".
+  window.pendMiniNivel2 = function (tipo, ref) {
+    var items = (_miniData && _miniData.items) || [];
+    var it = items.filter(function (x) {
+      return x.tipo === tipo && (tipo === 'correo' ? x.mail_id === ref : x.opp_id === ref);
+    })[0];
+    if (!it) return;
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = _nivel2Html(it, 'mini');
+  };
+  window.pendMiniVolver = function () { _feedRedraw(); };
+  // "Ver todo lo pendiente" abre el panel flotante del asistente (la joya):
+  // ahí viven los pendientes. El modal grande es la CONVERSACIÓN con el asistente.
+  window.pendToastVerTodo = function () { _toastCollapse(); pendMiniAbrir(); };
+  // "Abrir correo" del asistente: la VENTANA de lectura individual (con
+  // responder / responder a todos / reenviar), no el módulo completo.
+  window.pendToastAbrirSolo = function (mailId) {
+    _toastCollapse();
+    if (typeof window.mailAbrirVentana === 'function') { mailAbrirVentana(mailId); return; }
+    _abrirMailConBorrador(mailId, '');   // respaldo si el módulo de correo no cargó
+  };
+  // ── Vincular correo → oportunidad desde el aviso (arranque en frío) ──
+  // Funciona desde el toast (nivel 1 o 2) Y desde el mini panel: pinta en la
+  // vista activa y al volver regresa a donde estabas.
+  window.pendToastVincVolver = function () {
+    if (_toastExpanded) { pendToastNivel2(); return; }
+    if (typeof window.pendMiniFocusCerrar === 'function') pendMiniFocusCerrar();
+  };
+  window.pendToastVincular = function (mailId) {
+    if (!_toastExpanded && el('pendLauncher') && el('pendLauncher').style.display !== 'none'
+        && (!el('pendMini') || el('pendMini').style.display === 'none')) {
+      _toastExpand();   // desde el aviso chico: expandir para tener dónde pintar
+    }
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML =
+      '<div class="pend-n2-top" onclick="pendToastVincVolver()"><span class="pend-foc-back">‹ Volver</span></div>' +
+      '<div class="pend-foc-lbl">VINCULAR A OPORTUNIDAD</div>' +
+      '<input type="text" class="pend-foc-in" id="toastVincQ" placeholder="Escribe el nombre de la oportunidad…" autocomplete="off" oninput="pendToastVincBuscar(' + mailId + ', this.value)">' +
+      '<div id="toastVincRes" style="max-height:300px;overflow:auto;margin-top:8px;"></div>' +
+      '<div class="pend-foc-note">Al vincular, todo el hilo queda ligado a la oportunidad y el asistente te ofrecerá actualizarla.</div>';
+    var inp = el('toastVincQ'); if (inp) { try { inp.focus(); } catch (e) {} }
+  };
+  var _vincTimer = null;
+  window.pendToastVincBuscar = function (mailId, q) {
+    clearTimeout(_vincTimer);
+    var res = el('toastVincRes'); if (!res) return;
+    if (!q || q.trim().length < 2) { res.innerHTML = ''; return; }
+    _vincTimer = setTimeout(function () {
+      fetch('/app/api/buscar-oportunidades-proyecto/?q=' + encodeURIComponent(q.trim()), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var opps = (d && d.oportunidades) || [];
+          if (!opps.length) { res.innerHTML = '<div class="pend-mini-empty">Sin resultados.</div>'; return; }
+          res.innerHTML = opps.slice(0, 8).map(function (o) {
+            return '<div class="pend-vinc-row" onclick="pendToastVincularA(' + mailId + ',' + o.id + ')">' +
+              '<div class="pend-vinc-t">' + _esc(o.titulo || '') + '</div>' +
+              (o.cliente__nombre_empresa ? '<div class="pend-vinc-c">' + _esc(o.cliente__nombre_empresa) + '</div>' : '') +
+              '</div>';
+          }).join('');
+        })
+        .catch(function () {});
+    }, 300);
+  };
+  window.pendToastVincularA = function (mailId, oppId) {
+    fetch('/app/api/mail/vincular/' + mailId + '/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oportunidad_id: oppId })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.ok)) { alert((d && d.error) || 'No se pudo vincular.'); return; }
+        // Con el vínculo puesto, el feed se rehace donde estés (toast/mini/panel):
+        // la tarjeta vuelve como correo de oportunidad (hito → ofrece actualizar).
+        _feedReloadActive();
+      })
+      .catch(function () { alert('No se pudo vincular.'); });
+  };
+  window.pendToastCerrar = function (e) {
+    if (e) e.stopPropagation();
+    _toastSetMode('pill');
+  };
+  window.pendToastReabrir = function () { _toastSetMode('full'); _toastDraw(); };
+  // Quita el aviso indicado del feed local y redibuja (avanza al siguiente).
+  function _toastQuitar(tipo, ref) {
+    if (!(_miniData && _miniData.items)) return;
+    _miniData.items = _miniData.items.filter(function (x) {
+      var xid = x.tipo === 'correo' ? x.mail_id : x.opp_id;
+      return !(x.tipo === tipo && xid === ref);
+    });
+    _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
+    _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
+    _miniData.total = _miniData.items.length;
+    _lcTotal = _miniData.total;
+    _feedRedraw();
+  }
+  // "Agendar": PREVIEW con verificación humana — muestra qué agendará (título +
+  // fecha/hora editables) y solo al confirmar lo crea. Nada se agenda a ciegas.
+  window.pendToastAgendar = function () {
+    var it = _toastTop(); if (!it) return;
+    pendToastAgendarPrev(it.tipo, it.tipo === 'correo' ? it.mail_id : it.opp_id);
+  };
+  window.pendToastAgendarCorreo = function (mailId) { pendToastAgendarPrev('correo', mailId); };
+  window.pendToastAgendarPrev = function (tipo, ref) {
+    if (!_toastExpanded && el('pendLauncher') && el('pendLauncher').style.display !== 'none'
+        && (!el('pendMini') || el('pendMini').style.display === 'none')) {
+      _toastExpand();   // desde el aviso chico: expandir para tener dónde pintar
+    }
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Buscando un hueco en tu calendario…</div>';
+    fetch('/app/api/asistente/aviso/agendar-draft/?tipo=' + tipo + '&ref_id=' + ref, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo preparar.') + '</div>'; return; }
+        // Narrado como el de "Actualizar oportunidad": el asistente dice en texto
+        // qué hará; los campos de fecha/hora solo aparecen si quieres ajustar.
+        box.innerHTML =
+          '<div class="pend-n2-top" onclick="pendToastVincVolver()"><span class="pend-foc-back">‹ Volver</span></div>' +
+          '<div class="pend-foc-lbl">AGENDAR SEGUIMIENTO</div>' +
+          '<div class="pend-toast-ctx" style="display:block;font-size:.92rem;color:#1d1d1f;line-height:1.55;">' +
+            'Te agendo <b>«' + _esc(d.titulo || 'Seguimiento') + '»</b> para el ' +
+            '<b id="segPrevFecha">' + _esc(_fechaLegible(d.fecha)) + '</b> a las ' +
+            '<b id="segPrevHora">' + _esc(d.hora || '09:00') + '</b> — tu primer hueco libre.' +
+          '</div>' +
+          '<div id="segPrevInputs" style="display:none;gap:10px;margin:10px 0 2px;">' +
+            '<input type="date" class="pend-foc-in" id="toastSegFecha" value="' + _esc(d.fecha || '') + '" onchange="pendToastSegPrevUpd()" style="flex:1;">' +
+            '<input type="time" class="pend-foc-in" id="toastSegHora" value="' + _esc(d.hora || '09:00') + '" onchange="pendToastSegPrevUpd()" style="width:130px;">' +
+          '</div>' +
+          '<div class="pend-foc-acts">' +
+            '<button type="button" class="pend-foc-btn pri" onclick="pendToastAgendarGo(\'' + tipo + '\',' + ref + ')">Agendar seguimiento</button>' +
+            '<button type="button" class="pend-foc-btn sec" onclick="pendToastVincVolver()">Cancelar</button>' +
+          '</div>' +
+          '<div class="pend-foc-note"><span style="cursor:pointer;text-decoration:underline;" onclick="pendToastSegAjustar()">Ajustar los detalles</span> · Nada se agenda sin que lo confirmes.</div>';
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar.</div>'; });
+  };
+  window.pendToastSegAjustar = function () {
+    var d = el('segPrevInputs');
+    if (d) d.style.display = (d.style.display === 'none') ? 'flex' : 'none';
+  };
+  window.pendToastSegPrevUpd = function () {
+    // Los campos editan el TEXTO del plan en vivo: lo que lees es lo que se agenda.
+    var f = el('toastSegFecha'), h = el('toastSegHora');
+    var pf = el('segPrevFecha'), ph = el('segPrevHora');
+    if (pf && f && f.value) pf.textContent = _fechaLegible(f.value);
+    if (ph && h && h.value) ph.textContent = h.value;
+  };
+  window.pendToastAgendarGo = function (tipo, ref) {
+    var f = el('toastSegFecha'), h = el('toastSegHora');
+    fetch('/app/api/asistente/aviso/agendar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: tipo, ref_id: ref, fecha: (f && f.value) || '', hora: (h && h.value) || '' })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { alert((d && d.error) || 'No se pudo agendar.'); return; }
+        var box = _activeFeedBox();
+        if (box) box.innerHTML = '<div class="pend-mini-empty">✓ Seguimiento agendado para el ' + _fechaLegible(d.fecha) + ' a las ' + _esc(d.hora || '') + '.</div>';
+        setTimeout(function () { _toastQuitar(tipo, ref); _feedReloadActive(); }, 1600);
+      })
+      .catch(function () { alert('No se pudo agendar.'); });
+  };
+  // "Revisado": ya lo vio, sin acción — quita el ruido y avanza.
+  window.pendToastRevisado = function () {
+    var it = _toastTop(); if (!it) return;
+    var tipo = it.tipo, ref = tipo === 'correo' ? it.mail_id : it.opp_id;
+    fetch('/app/api/asistente/aviso/revisado/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: tipo, ref_id: ref })
+    }).catch(function () {});
+    _toastQuitar(tipo, ref);
+  };
+  window.pendToastAct = function (actionName) {
+    var it = _toastTop(); if (!it) return;
+    if (actionName === 'responder') { _toastResponder(it.mail_id); return; }
+    // Agendar con preview (verificación humana) — pinta en la vista activa.
+    if (actionName === 'agendar_correo') { pendToastAgendar(); return; }
+    var c = _MINI_ACTS[actionName]; if (!c) return;
+    if (actionName === 'abrir') { try { new Function(c.f(it))(); } catch (e) {} return; }  // navega, no expande
+    _toastExpand();
+    try { new Function(c.f(it))(); } catch (e) { _toastCollapse(); }
+  };
+  function _toastResponder(mailId) {
+    _toastExpand();
+    var box = el('pendLcFocus'); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Redactando una respuesta…</div>';
+    fetch('/app/api/asistente/correo/' + mailId + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo generar.') + '</div>'; return; }
+        box.innerHTML =
+          '<button type="button" class="pend-foc-back" onclick="pendToastCollapse()">‹ Volver</button>' +
+          '<div class="pend-foc-lbl">Respuesta sugerida</div>' +
+          '<textarea class="pend-foc-in pend-foc-sel" id="toastReplyTxt" rows="7">' + _esc(d.borrador || '') + '</textarea>' +
+          '<div class="pend-foc-acts">' +
+            '<button type="button" class="pend-foc-btn pri" onclick="pendToastAbrirCorreo(' + mailId + ')">Abrir en correo</button>' +
+            '<button type="button" class="pend-foc-btn sec" onclick="pendToastCollapse()">Cancelar</button>' +
+          '</div>' +
+          '<div class="pend-foc-note">Revísala; se abre en Correo para enviarla.</div>';
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al redactar.</div>'; });
+  }
+  window.pendToastAbrirCorreo = function (mailId) {
+    var t = el('toastReplyTxt'), draft = t ? t.value : '';
+    _toastCollapse();
+    _abrirMailConBorrador(mailId, draft);
+  };
+  function pendFeedRefresh() {
+    // No pisar datos si el usuario está en el mini/panel o en una vista enfocada.
+    var mini = el('pendMini'); if (mini && mini.style.display !== 'none') return;
+    if (_toastExpanded || _oppDraft || _updDraft || _segDraft) return;
+    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var prev = _lcTotal;
+        _miniData = d; _lcTotal = d.total;
+        _sinCorreoAplicar(d);
+        _toastDraw();
+        // Si aumentó (llegó algo nuevo): despierta de la píldora y late para avisar.
+        if (prev >= 0 && d.total > prev) {
+          if (_toastMode === 'pill') _toastSetMode('full');
+          var lc = el('pendLauncher');
+          if (lc && lc.style.display !== 'none') { lc.classList.remove('pulse'); void lc.offsetWidth; lc.classList.add('pulse'); }
+        }
+      }).catch(function () {});
+  }
+  window.pendFeedRefresh = pendFeedRefresh;
+  (function _pendLauncherInit() {
+    var start = function () {
+      pendLauncherShow();
+      pendFeedRefresh();
+      if (_lcTimer) clearInterval(_lcTimer);
+      _lcTimer = setInterval(function () {
+        var ov = el('widgetPendientes');
+        if (!(ov && ov.classList.contains('active'))) pendFeedRefresh();
+      }, 60000);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+
+  // ── Mini panel del asistente (nivel intermedio: launcher → mini → panel grande) ──
+  var _miniData = null, _miniTab = 'todo';
+  // Pestaña "Atendido": bitácora del día (desde las 8am) de lo que ya se atendió.
+  var _atendidos = null;
+  function _atFetch() {
+    fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) return;
+        _atendidos = d;
+        if (_miniTab === 'atendido') _miniDraw();
+        var ov = el('widgetPendientes');
+        if (ov && ov.classList.contains('active')) _asisDraw();   // refresca la columna de "Mi día"
+      })
+      .catch(function () {});
+  }
+  var _AT_COLORS = { respondido: '#34C759', agendado: '#007AFF', oportunidad: '#AF52DE', actualizada: '#FF9500', revisado: '#8E8E93' };
+  function _atCard(it) {
+    var open = it.opp_id ? ('pendMiniAbrirOpp(' + it.opp_id + ')') : (it.mail_id ? ('pendVerCorreo(' + it.mail_id + ')') : '');
+    return '<div class="pend-mini-card"><div class="pend-mini-open"' + (open ? ' onclick="' + open + '"' : '') + '>' +
+      '<div class="pend-mini-clbl"><span style="color:' + (_AT_COLORS[it.accion] || '#5a5c63') + ';">' + _esc(it.etiqueta || '') + '</span><span>' + _esc(it.hora || '') + '</span></div>' +
+      '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
+      (it.detalle ? '<div class="pend-mini-cd">' + _esc(it.detalle) + '</div>' : '') +
+      '</div></div>';
+  }
+  window.pendMiniAbrir = function () {
+    _toastExpanded = false;
+    var lc = el('pendLauncher'); if (lc) { lc.style.display = 'none'; lc.classList.remove('expanded'); }
+    var mini = el('pendMini'); if (!mini) return;
+    // Cada apertura arranca fresca: tamaño por defecto y en su esquina de siempre
+    // (donde nacen las tarjetas), aunque la vez pasada la hayas movido o agrandado.
+    mini.style.left = ''; mini.style.top = ''; mini.style.right = ''; mini.style.bottom = '';
+    mini.style.width = ''; mini.style.height = ''; mini.style.maxWidth = ''; mini.style.maxHeight = '';
+    mini.style.display = 'flex';
+    if (_miniData) { _miniDraw(); }
+    else {
+      var body = el('pendMiniBody'); if (body) body.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
+    }
+    _miniLoad();   // siempre refresca al abrir (feed barato)
+  };
+  window.pendMiniCerrar = function () {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    pendLauncherShow(); pendFeedRefresh();
+  };
+  window.pendMiniExpandir = function () {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    pendAbrir();
+  };
+  window.pendMiniTab = function (t) { _miniTab = t; if (t === 'atendido') _atFetch(); _miniDraw(); };
+  // Arrastrar la ventanita por su encabezado (los botones no arrastran). Al primer
+  // arrastre se suelta del ancla de la esquina y queda donde la dejes.
+  (function _miniDrag() {
+    var down = null;
+    document.addEventListener('mousedown', function (e) {
+      var head = e.target.closest ? e.target.closest('.pend-mini-head') : null;
+      if (!head || (e.target.closest && e.target.closest('.pend-mini-tools'))) return;
+      var mini = el('pendMini'); if (!mini || mini.style.display === 'none') return;
+      var r = mini.getBoundingClientRect();
+      mini.style.left = r.left + 'px'; mini.style.top = r.top + 'px';
+      mini.style.right = 'auto'; mini.style.bottom = 'auto';
+      down = { x: e.clientX, y: e.clientY, l: r.left, t: r.top };
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!down) return;
+      var mini = el('pendMini'); if (!mini) return;
+      mini.style.left = Math.min(window.innerWidth - 80, Math.max(0, down.l + e.clientX - down.x)) + 'px';
+      mini.style.top = Math.min(window.innerHeight - 60, Math.max(0, down.t + e.clientY - down.y)) + 'px';
+    });
+    document.addEventListener('mouseup', function () { down = null; });
+  })();
+  // Redimensionar desde cualquier orilla o esquina (asideros .pend-mini-rs).
+  (function _miniResize() {
+    var rs = null, MINW = 400, MINH = 340;
+    document.addEventListener('mousedown', function (e) {
+      var h = e.target.closest ? e.target.closest('.pend-mini-rs') : null;
+      if (!h) return;
+      var mini = el('pendMini'); if (!mini || mini.style.display === 'none') return;
+      var r = mini.getBoundingClientRect();
+      mini.style.left = r.left + 'px'; mini.style.top = r.top + 'px';
+      mini.style.right = 'auto'; mini.style.bottom = 'auto';
+      mini.style.width = r.width + 'px'; mini.style.height = r.height + 'px';
+      mini.style.maxHeight = 'none'; mini.style.maxWidth = 'none';
+      rs = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, w: r.width, h: r.height,
+             d: h.getAttribute('data-rs') || '' };
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!rs) return;
+      var mini = el('pendMini'); if (!mini) return;
+      var dx = e.clientX - rs.x, dy = e.clientY - rs.y;
+      if (rs.d.indexOf('e') !== -1) mini.style.width = Math.max(MINW, rs.w + dx) + 'px';
+      if (rs.d.indexOf('s') !== -1) mini.style.height = Math.max(MINH, rs.h + dy) + 'px';
+      if (rs.d.indexOf('w') !== -1) {
+        var nw = Math.max(MINW, rs.w - dx);
+        mini.style.left = (rs.l + (rs.w - nw)) + 'px'; mini.style.width = nw + 'px';
+      }
+      if (rs.d.indexOf('n') !== -1) {
+        var nh = Math.max(MINH, rs.h - dy);
+        mini.style.top = (rs.t + (rs.h - nh)) + 'px'; mini.style.height = nh + 'px';
+      }
+    });
+    document.addEventListener('mouseup', function () { rs = null; });
+  })();
+  function _miniLoad() {
+    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _miniDraw(); })
+      .catch(function () { var b = el('pendMiniBody'); if (b) b.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
+  }
+  window.pendMiniRecargar = function () { _miniData = null; _miniLoad(); };
+  function _miniTabBtn(k, lbl, n) {
+    return '<button type="button" class="pend-mini-tab' + (_miniTab === k ? ' on' : '') + '" onclick="pendMiniTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
+  }
+  // Mapa de acciones: label + función que devuelve el onclick (con el id correcto
+  // por acción). La CLASE (color) se asigna por POSICIÓN: la 1ª siempre azul (pri).
+  var _MINI_ACTS = {
+    crear_oportunidad: { l: 'Crear oportunidad', f: function (it) { return 'pendMiniCrearOpp(' + it.mail_id + ')'; } },
+    responder: { l: 'Responder', f: function (it) { return 'pendMiniResponder(' + it.mail_id + ')'; } },
+    actualizar_oportunidad: { l: 'Actualizar oportunidad', f: function (it) { return 'pendMiniActualizarOpp(' + it.mail_id + ')'; } },
+    agendar_seguimiento: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + (it.opp_id || 0) + ')'; } },
+    agendar: { l: 'Agendar seguimiento', f: function (it) { return 'pendMiniAgendar(' + it.opp_id + ')'; } },
+    agendar_correo: { l: 'Agendar seguimiento', f: function (it) { return 'pendToastAgendarCorreo(' + it.mail_id + ')'; } },
+    vincular_oportunidad: { l: 'Vincular a oportunidad', f: function (it) { return 'pendToastVincular(' + it.mail_id + ')'; } },
+    abrir: { l: 'Abrir', f: function (it) { return 'pendMiniAbrirOpp(' + it.opp_id + ')'; } },
+    no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + (it.tipo === 'correo' ? it.mail_id : it.opp_id) + ')'; } }
+  };
+  function _miniCard(it) {
+    // Clic en el cuadro = abrir el DETALLE ahí mismo (nivel 2 interno).
+    var ref = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    var openCall = "pendMiniNivel2('" + it.tipo + "'," + ref + ')';
+    // Botonera espejo del toast: [primaria] [Agendar] [Revisado].
+    var pri = (it.acciones || [])[0], acts = '';
+    if (pri === 'responder' && it.mail_id) {
+      acts += '<button type="button" class="pend-mini-btn pri" onclick="pendToastAbrirSolo(' + it.mail_id + ')">Abrir correo</button>';
+    } else if (pri && _MINI_ACTS[pri]) {
+      acts += '<button type="button" class="pend-mini-btn pri" onclick="' + _MINI_ACTS[pri].f(it) + '">' + _esc(_MINI_ACTS[pri].l) + '</button>';
+    }
+    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
+      acts += '<button type="button" class="pend-mini-btn sec" onclick="pendToastAgendarPrev(\'' + it.tipo + '\',' + ref + ')">Agendar</button>';
+    }
+    acts += '<button type="button" class="pend-mini-btn txt" onclick="pendMiniDescartar(\'' + it.tipo + '\',' + ref + ')">Revisado</button>';
+    return '<div class="pend-mini-card">' +
+      '<div class="pend-mini-open" onclick="' + openCall + '">' +
+        '<div class="pend-mini-clbl' + (it.hueco ? ' hueco' : (it.urgente ? ' urg' : '')) + '"><span style="color:' + _catColor(it) + ';">' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+        '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
+        '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
+        (it.contexto ? '<div class="pend-mini-ctx">' + _esc(it.contexto) + '</div>' : '') +
+      '</div>' +
+      '<div class="pend-mini-acts">' + acts + '</div>' +
+    '</div>';
+  }
+  function _miniDraw() {
+    if (_chatMode) return;   // el chat manda: no pisar la conversación con el feed
+    var d = _miniData; if (!d) return;
+    var badge = el('pendMiniBadge'); if (badge) badge.textContent = d.total || 0;
+    var sub = el('pendMiniSub'); if (sub) sub.textContent = 'Revisé tu correo y tu pipeline';
+    var body = el('pendMiniBody'); if (!body) return;
+    var items = (d.items || []).filter(function (it) { return _miniTab === 'todo' || it.grupo === _miniTab; });
+    var tabs = '<div class="pend-mini-tabs">' +
+      _miniTabBtn('todo', 'Todo', d.total) +
+      _miniTabBtn('correo', 'Correo', d.correos) +
+      _miniTabBtn('pipeline', 'Pipeline', d.pipeline) +
+      _miniTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) + '</div>';
+    var cards;
+    if (_miniTab === 'atendido') {
+      var ats = (_atendidos && _atendidos.items) || [];
+      cards = ats.length
+        ? ats.map(_atCard).join('')
+        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
+    } else {
+      cards = items.length
+        ? items.map(_miniCard).join('')
+        : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
+    }
+    body.innerHTML = '<div class="pend-mini-brief">' + _esc(d.brief || '') + '</div>' + tabs + cards;
+    if (_atendidos === null) _atFetch();   // primer conteo de la pestaña sin esperar el clic
+  }
+  // Acciones rápidas del mini
+  window.pendMiniResponder = function (id) {
+    fetch('/app/api/asistente/correo/' + id + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { alert((d && d.error) || 'No se pudo generar la respuesta.'); return; }
+        _abrirMailConBorrador(id, d.borrador || '');
+      })
+      .catch(function () { alert('No se pudo generar la respuesta.'); });
+  };
+  // Contenedor de feed activo (mini panel o columna derecha del panel grande),
+  // para pintar la vista enfocada donde el usuario está mirando.
+  function _activeFeedBox() {
+    if (_toastExpanded) return el('pendLcFocus');
+    var mini = el('pendMini');
+    if (mini && mini.style.display !== 'none') return el('pendMiniBody');
+    var ov = el('widgetPendientes');
+    if (ov && ov.classList.contains('active')) return el('pendAsisFeed');
+    return el('pendMiniBody');
+  }
+  var _MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function _fechaLegible(iso) {
+    if (!iso) return '';
+    var p = iso.split('-'); if (p.length !== 3) return iso;
+    return (+p[2]) + ' de ' + (_MESES_ES[(+p[1]) - 1] || '');
+  }
+  // Crear oportunidad SEMI-AUTOMÁTICA: el asistente PREPARA el borrador y se enfoca
+  // en él DENTRO del panel (nada de modal). Cliente por código, título+tipo por IA.
+  var _oppDraft = null;
+  window.pendMiniCrearOpp = function (id) {
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Preparando el borrador…</div>';
+    fetch('/app/api/asistente/correo/' + id + '/oportunidad-draft/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">No se pudo preparar el borrador.</div>'; return; }
+        _oppDraft = { correo_id: id, prob: d.probabilidad, etapa: d.etapa,
+          actividad_titulo: d.actividad_titulo, actividad_fecha: d.actividad_fecha };
+        _focusOppRender(box, d);
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar el borrador.</div>'; });
+  };
+  function _focusOppRender(box, d) {
+    var tag = d.cliente_detectado ? '<span class="pend-foc-tag" id="focOppTag">detectado</span>' : '';
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Nueva oportunidad</div>' +
+      '<div class="pend-foc-intro">Preparé esta oportunidad con lo del correo de <b>' + _esc(d.remitente || '') + '</b>. Revísala, cámbiala si quieres, y la creo.</div>' +
+      '<div class="pend-foc-card">' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Título</div>' +
+          '<input type="text" class="pend-foc-in" id="focOppTitulo" value="' + _esc(d.titulo || '') + '" placeholder="Título de la oportunidad"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Cliente ' + tag + '</div>' +
+          '<div style="position:relative;">' +
+            '<input type="text" class="pend-foc-in" id="focOppCliente" value="' + _esc(d.cliente_nombre || '') + '" data-cid="' + (d.cliente_id || '') + '" placeholder="Busca un cliente o escribe uno nuevo" autocomplete="off" ' +
+              'oninput="this.dataset.cid=\'\';var t=el(\'focOppTag\');if(t)t.style.display=\'none\';pendOppCliBuscar(this.value);" ' +
+              'onfocus="pendOppCliBuscar(this.value);" onblur="setTimeout(pendOppCliCerrar,180);">' +
+            '<div id="focOppCliDD" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #E5E7EB;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,20,0.14);z-index:60;max-height:220px;overflow-y:auto;"></div>' +
+          '</div></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Tipo</div>' +
+          '<div class="pend-foc-seg" id="focOppTipo">' +
+            '<button type="button" data-tipo="runrate" onclick="pendOppdSetTipo(\'runrate\')">Runrate</button>' +
+            '<button type="button" data-tipo="proyecto" onclick="pendOppdSetTipo(\'proyecto\')">Proyecto</button>' +
+          '</div></div>' +
+      '</div>' +
+      '<div class="pend-foc-meta">La dejo en <b>' + _esc(d.etapa || '') + '</b> al <b>' + (d.probabilidad != null ? d.probabilidad : 10) + '%</b>, y te agendo un <b>seguimiento</b> para el <b>' + _fechaLegible(d.actividad_fecha) + '</b>. El monto y la fecha de cierre los completas después.</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focOppBtn" onclick="pendOppDraftCrear()">Crear oportunidad</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note">Nada se crea sin que lo confirmes.</div>';
+    pendOppdSetTipo(d.tipo || 'runrate');
+  }
+  window.pendOppdSetTipo = function (t) {
+    document.querySelectorAll('#focOppTipo button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tipo') === t);
+    });
+    var seg = el('focOppTipo'); if (seg) seg.dataset.tipo = t;
+  };
+  /* ── Autocomplete de cliente en el borrador de oportunidad: la misma
+     búsqueda del formulario real (/api/buscar-clientes/), para corregir a
+     mano cuando la detección automática no atine. ── */
+  var _oppCliTO = null;
+  window.pendOppCliBuscar = function (q) {
+    clearTimeout(_oppCliTO);
+    q = (q || '').trim();
+    if (q.length < 2) { pendOppCliCerrar(); return; }
+    _oppCliTO = setTimeout(function () {
+      fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var dd = el('focOppCliDD');
+          var inp = el('focOppCliente');
+          if (!dd || !inp || (inp.value || '').trim() !== q) return;
+          var lista = (d && d.clientes) || [];
+          var h = '';
+          lista.slice(0, 8).forEach(function (c) {
+            h += '<div onmousedown="pendOppCliPick(' + c.id + ',\'' + _esc(String(c.nombre || '').replace(/'/g, '\\\'')) + '\')" ' +
+              'style="padding:9px 12px;font-size:0.83rem;color:#1F2937;cursor:pointer;display:flex;align-items:center;gap:8px;" ' +
+              'onmouseenter="this.style.background=\'#F0F7FF\'" onmouseleave="this.style.background=\'\'">' +
+              '<span style="background:#EEF3FF;color:#0052D4;border-radius:5px;font-size:0.6rem;font-weight:800;padding:2px 6px;flex-shrink:0;">CLIENTE</span>' +
+              '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(c.nombre || '') + '</span></div>';
+          });
+          h += '<div onmousedown="pendOppCliCerrar()" style="padding:9px 12px;font-size:0.8rem;color:#6B7280;cursor:pointer;border-top:1px solid #F0F2F5;" ' +
+            'onmouseenter="this.style.background=\'#F9FAFB\'" onmouseleave="this.style.background=\'\'">+ Crear cliente nuevo «' + _esc(q) + '»</div>';
+          dd.innerHTML = h;
+          dd.style.display = 'block';
+        })
+        .catch(function () { });
+    }, 250);
+  };
+  window.pendOppCliPick = function (id, nombre) {
+    var inp = el('focOppCliente');
+    if (inp) { inp.value = nombre; inp.dataset.cid = id; }
+    var t = el('focOppTag'); if (t) t.style.display = '';
+    pendOppCliCerrar();
+  };
+  window.pendOppCliCerrar = function () {
+    clearTimeout(_oppCliTO);
+    var dd = el('focOppCliDD');
+    if (dd) { dd.style.display = 'none'; dd.innerHTML = ''; }
+  };
+  window.pendMiniFocusCerrar = function () { _oppDraft = null; _updDraft = null; _segDraft = null; _feedRedraw(); };
+  window.pendOppDraftCrear = function () {
+    if (!_oppDraft) return;
+    var btn = el('focOppBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+    var seg = el('focOppTipo');
+    var payload = {
+      correo_id: _oppDraft.correo_id,
+      titulo: (el('focOppTitulo').value || '').trim(),
+      cliente_id: el('focOppCliente').dataset.cid || '',
+      cliente_nombre: (el('focOppCliente').value || '').trim(),
+      tipo: ((seg && seg.dataset.tipo) || 'runrate'),
+      probabilidad: (_oppDraft.prob != null ? _oppDraft.prob : 10),
+      crear_actividad: true,
+      actividad_titulo: _oppDraft.actividad_titulo || '',
+      actividad_fecha: _oppDraft.actividad_fecha || ''
+    };
+    fetch('/app/api/asistente/oportunidad/crear/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
+          alert((d && d.error) || 'No se pudo crear la oportunidad.'); return;
+        }
+        if (d.actividad_error) {
+          alert('La oportunidad se creó, pero el seguimiento no se pudo agendar:\n' + d.actividad_error);
+        }
+        var cid = _oppDraft.correo_id;
+        _oppDraft = null;
+        if (cid != null) pendMiniDescartar('correo', cid);   // lo quita del feed + redibuja
+        else _feedRedraw();
+        if (window.pendAbrirOpp) { try { window.pendAbrirOpp(d.opp_id); } catch (e) {} }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Crear oportunidad'; }
+        alert('No se pudo crear la oportunidad.');
+      });
+  };
+  // ── Actualizar oportunidad desde un correo ligado (IA analiza y propone) ──
+  var _updDraft = null;
+  window.pendMiniActualizarOpp = function (mailId) {
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Analizando el correo…</div>';
+    fetch('/app/api/asistente/correo/' + mailId + '/oportunidad-update-draft/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo analizar.') + '</div>'; return; }
+        _updDraft = {
+          correo_id: mailId, opp_id: d.opp_id, opp_nombre: d.opp_nombre,
+          etapa: d.etapa_sugerida, prob: (d.prob_sugerida != null ? d.prob_sugerida : (d.prob_actual || 0)),
+          seg_fecha: d.seg_fecha, seg_hora: d.seg_hora,
+          pdf: d.pdf || null, monto_actual: d.monto_actual || 0, po_actual: d.po_actual || '',
+          factura_actual: d.factura_actual || ''
+        };
+        _focusUpdRender(box, d);
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al analizar.</div>'; });
+  };
+  function _focusUpdRender(box, d) {
+    var opts = (d.etapas || []).map(function (e) {
+      return '<option value="' + _esc(e) + '"' + (e === d.etapa_sugerida ? ' selected' : '') + '>' + _esc(e) + '</option>';
+    }).join('');
+    var prob = (d.prob_sugerida != null ? d.prob_sugerida : (d.prob_actual || 0));
+    var cambiaEtapa = d.etapa_sugerida && d.etapa_sugerida !== d.etapa_actual;
+    var cambiaProb = prob !== (d.prob_actual || 0);
+    // Plan en lenguaje natural: el asistente narra lo que hará. Los campos van ocultos
+    // bajo "Ajustar" para que no se sienta un formulario.
+    var plan = '';
+    plan += '<div class="pend-foc-plan-row">Dejo la etapa en <b>' + _esc(d.etapa_sugerida || d.etapa_actual || '-') + '</b>' +
+      (cambiaEtapa ? ' <span class="was">(antes: ' + _esc(d.etapa_actual || '-') + ')</span>' : '') + '</div>';
+    plan += '<div class="pend-foc-plan-row">Pongo la probabilidad en <b>' + prob + '%</b>' +
+      (cambiaProb ? ' <span class="was">(antes ' + (d.prob_actual || 0) + '%)</span>' : '') + '</div>';
+    // Datos duros sacados de los PDFs adjuntos por código (factura/OC): cero IA
+    if (d.pdf && d.pdf.monto) {
+      plan += '<div class="pend-foc-plan-row">Pongo el monto en <b>$' +
+        Number(d.pdf.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }) +
+        (d.pdf.moneda ? ' ' + _esc(d.pdf.moneda) : '') + '</b> <span class="was">(del PDF ' +
+        _esc((d.pdf.archivos && d.pdf.archivos[0]) || 'adjunto') + ')</span></div>';
+    }
+    if (d.pdf && d.pdf.po) {
+      plan += '<div class="pend-foc-plan-row">Registro la PO <b>' + _esc(d.pdf.po) + '</b> <span class="was">(del PDF adjunto)</span></div>';
+    }
+    if (d.pdf && d.pdf.factura) {
+      plan += '<div class="pend-foc-plan-row">Registro la factura <b>' + _esc(d.pdf.factura) + '</b> <span class="was">(del PDF adjunto)</span></div>';
+    }
+    if (d.seg_fecha) {
+      plan += '<div class="pend-foc-plan-row">Agendo un <b>seguimiento</b> para el <b>' + _fechaLegible(d.seg_fecha) + '</b>' +
+        (d.seg_hora ? ' a las <b>' + _esc(d.seg_hora) + '</b>' : '') + '</div>';
+    }
+    if (d.resumen) {
+      plan += '<div class="pend-foc-plan-row note">«' + _esc(d.resumen) + '»</div>';
+    }
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Actualizar oportunidad</div>' +
+      '<div class="pend-foc-intro">Leí el correo de <b>' + _esc(d.remitente || '') + '</b> sobre <b>' + _esc(d.opp_nombre || '') + '</b> y tu respuesta. Yo me encargo:</div>' +
+      '<div class="pend-foc-plan" id="focUpdPlan">' + plan + '</div>' +
+      '<div class="pend-foc-edit" id="focUpdEdit" style="display:none;">' +
+        '<div class="pend-foc-card">' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Etapa</div>' +
+            '<select class="pend-foc-in pend-foc-sel" id="focUpdEtapa">' + (opts || '<option>Sin etapas</option>') + '</select></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Probabilidad de cierre</div>' +
+            '<input type="number" class="pend-foc-in" id="focUpdProb" min="0" max="100" value="' + prob + '"></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Monto</div>' +
+            '<input type="number" step="0.01" min="0" class="pend-foc-in" id="focUpdMonto" value="' + ((d.pdf && d.pdf.monto) || d.monto_actual || 0) + '"></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">PO (orden de compra)</div>' +
+            '<input type="text" class="pend-foc-in" id="focUpdPo" value="' + _esc((d.pdf && d.pdf.po) || d.po_actual || '') + '" placeholder="Sin orden de compra"></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Factura</div>' +
+            '<input type="text" class="pend-foc-in" id="focUpdFactura" value="' + _esc((d.pdf && d.pdf.factura) || d.factura_actual || '') + '" placeholder="Sin factura"></div>' +
+          '<div class="pend-foc-fld"><div class="pend-foc-k">Resumen para la conversación</div>' +
+            '<textarea class="pend-foc-in pend-foc-sel" id="focUpdResumen" rows="3">' + _esc(d.resumen || '') + '</textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focUpdBtn" onclick="pendOppUpdAplicar()">Actualizar oportunidad</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note"><button type="button" class="pend-foc-ajustar" id="focUpdAjustar" onclick="_updToggleAjuste()">Ajustar los detalles</button></div>';
+  }
+  window._updToggleAjuste = function () {
+    var plan = el('focUpdPlan'), edit = el('focUpdEdit'), aj = el('focUpdAjustar');
+    if (!edit) return;
+    if (edit.style.display === 'none') {
+      edit.style.display = ''; if (plan) plan.style.display = 'none'; if (aj) aj.textContent = 'Ver resumen';
+    } else {
+      edit.style.display = 'none'; if (plan) plan.style.display = ''; if (aj) aj.textContent = 'Ajustar los detalles';
+    }
+  };
+  window.pendOppUpdAplicar = function () {
+    if (!_updDraft) return;
+    var box = _activeFeedBox();
+    var btn = el('focUpdBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
+    // Si el usuario abrió "Ajustar", tomamos los campos; si no, usamos lo que propuso la IA.
+    var eEtapa = el('focUpdEtapa'), eProb = el('focUpdProb'), eResumen = el('focUpdResumen');
+    var eMonto = el('focUpdMonto'), ePo = el('focUpdPo'), eFac = el('focUpdFactura');
+    var payload = {
+      correo_id: _updDraft.correo_id, opp_id: _updDraft.opp_id,
+      etapa: (eEtapa && eEtapa.value) || _updDraft.etapa || '',
+      probabilidad: parseInt((eProb && eProb.value) || _updDraft.prob || 0, 10),
+      resumen: (eResumen && eResumen.value) || '',
+      seg_fecha: _updDraft.seg_fecha, seg_hora: _updDraft.seg_hora,
+      // Monto/PO: lo del PDF (o lo ajustado a mano); si no cambió, el backend no toca nada
+      monto: (eMonto ? eMonto.value : ((_updDraft.pdf && _updDraft.pdf.monto) || '')),
+      po_number: (ePo ? ePo.value : ((_updDraft.pdf && _updDraft.pdf.po) || '')),
+      factura_numero: (eFac ? eFac.value : ((_updDraft.pdf && _updDraft.pdf.factura) || ''))
+    };
+    fetch('/app/api/asistente/oportunidad/actualizar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Actualizar oportunidad'; }
+          alert((d && d.error) || 'No se pudo actualizar.'); return;
+        }
+        var cid = _updDraft.correo_id, oppId = _updDraft.opp_id, oppN = _updDraft.opp_nombre;
+        var montoNuevo = parseFloat(payload.monto || 0) || 0;
+        var montoCambio = montoNuevo > 0 && montoNuevo !== (_updDraft.monto_actual || 0);
+        var poCambio = (payload.po_number || '') && payload.po_number !== (_updDraft.po_actual || '');
+        var facCambio = (payload.factura_numero || '') && payload.factura_numero !== (_updDraft.factura_actual || '');
+        var seg = d.seguimiento || {};
+        _updDraft = null;
+        if (box) {
+          var sub = 'La etapa quedó en <b>' + _esc(payload.etapa || '-') + '</b> al <b>' + payload.probabilidad + '%</b>' +
+            ', con el resumen en la bitácora.';
+          if (montoCambio) sub += ' Monto: <b>$' + montoNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + '</b>.';
+          if (poCambio) sub += ' PO: <b>' + _esc(payload.po_number) + '</b>.';
+          if (facCambio) sub += ' Factura: <b>' + _esc(payload.factura_numero) + '</b>.';
+          if (seg.creado && seg.fecha) sub += ' Agendé un seguimiento para el <b>' + _fechaLegible(seg.fecha) + '</b>.';
+          box.innerHTML =
+            '<div class="pend-foc-lbl">Listo</div>' +
+            '<div class="pend-foc-ok">✓ Actualicé «' + _esc(oppN || 'la oportunidad') + '».</div>' +
+            '<div class="pend-foc-ok-sub">' + sub + '</div>' +
+            '<div class="pend-foc-acts">' +
+              '<button type="button" class="pend-foc-btn pri" onclick="pendMiniAbrirOpp(' + oppId + ')">Abrir oportunidad</button>' +
+              '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar();_feedReloadActive();">Listo</button>' +
+            '</div>';
+        } else {
+          if (cid != null) pendMiniDescartar('correo', cid);
+        }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Actualizar oportunidad'; }
+        alert('No se pudo actualizar.');
+      });
+  };
+  window.pendMiniAbrirOpp = function (id) {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    // Dejar el toast visible detrás de la ventana de la oportunidad: al cerrarla,
+    // el asistente sigue ahí (antes desaparecía hasta recargar la página).
+    pendLauncherShow();
+    if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
+    pendAbrir();
+  };
+  // Recarga el feed activo desde el servidor (para que caigan los ítems ya resueltos).
+  function _feedReloadActive() {
+    var mini = el('pendMini');
+    if (mini && mini.style.display !== 'none') { _miniData = null; _miniLoad(); return; }
+    var ov = el('widgetPendientes');
+    if (ov && ov.classList.contains('active')) { if (window.pendAsisFeedLoad) pendAsisFeedLoad(); return; }
+    // Toast: recargar y redibujar el aviso compacto.
+    _toastExpanded = false; pendFeedRefresh();
+  }
+  // ── Agendar seguimiento (sin IA): sugiere fecha/hora libre y crea la actividad ──
+  var _segDraft = null;
+  window.pendMiniAgendar = function (oppId) {
+    if (!oppId) return;
+    var box = _activeFeedBox(); if (!box) return;
+    box.innerHTML = '<div class="pend-mini-empty">Buscando un hueco en tu calendario…</div>';
+    fetch('/app/api/asistente/oportunidad/' + oppId + '/seguimiento-draft/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { box.innerHTML = '<div class="pend-mini-empty">' + _esc((d && d.error) || 'No se pudo preparar.') + '</div>'; return; }
+        _segDraft = { opp_id: d.opp_id };
+        _focusSegRender(box, d);
+      })
+      .catch(function () { box.innerHTML = '<div class="pend-mini-empty">Error al preparar.</div>'; });
+  };
+  function _focusSegRender(box, d) {
+    box.innerHTML =
+      '<button type="button" class="pend-foc-back" onclick="pendMiniFocusCerrar()">‹ Volver</button>' +
+      '<div class="pend-foc-lbl">Agendar seguimiento</div>' +
+      '<div class="pend-foc-intro">Te agendo un seguimiento de <b>' + _esc(d.opp_nombre || '') + '</b> para dentro de 2 días, en el primer hueco libre de tu calendario. Ajústalo si quieres.</div>' +
+      '<div class="pend-foc-card">' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Título</div>' +
+          '<input type="text" class="pend-foc-in" id="focSegTit" value="' + _esc(d.titulo || 'Seguimiento') + '"></div>' +
+        '<div class="pend-foc-fld"><div class="pend-foc-k">Nota</div>' +
+          '<textarea class="pend-foc-in pend-foc-sel" id="focSegDesc" rows="2">' + _esc(d.descripcion || '') + '</textarea></div>' +
+        '<div class="pend-foc-fld" style="display:flex;gap:10px;">' +
+          '<div style="flex:1;"><div class="pend-foc-k">Fecha</div><input type="date" class="pend-foc-in pend-foc-sel" id="focSegFecha" value="' + _esc(d.fecha || '') + '"></div>' +
+          '<div style="flex:1;"><div class="pend-foc-k">Hora</div><input type="time" class="pend-foc-in pend-foc-sel" id="focSegHora" value="' + _esc(d.hora || '09:00') + '"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pend-foc-meta">Queda en tu calendario y en la oportunidad, para que no se te pase.</div>' +
+      '<div class="pend-foc-acts">' +
+        '<button type="button" class="pend-foc-btn pri" id="focSegBtn" onclick="pendSegCrear()">Agendar seguimiento</button>' +
+        '<button type="button" class="pend-foc-btn sec" onclick="pendMiniFocusCerrar()">Cancelar</button>' +
+      '</div>' +
+      '<div class="pend-foc-note">Nada se agenda sin que lo confirmes.</div>';
+  }
+  window.pendSegCrear = function () {
+    if (!_segDraft) return;
+    var btn = el('focSegBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Agendando…'; }
+    var payload = {
+      opp_id: _segDraft.opp_id,
+      titulo: (el('focSegTit') || {}).value || 'Seguimiento',
+      descripcion: (el('focSegDesc') || {}).value || '',
+      fecha: (el('focSegFecha') || {}).value || '',
+      hora: (el('focSegHora') || {}).value || '09:00'
+    };
+    fetch('/app/api/asistente/seguimiento/crear/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Agendar seguimiento'; }
+          alert((d && d.error) || 'No se pudo agendar.'); return;
+        }
+        _segDraft = null;
+        _feedReloadActive();   // la oportunidad ya tiene actividad → sale de "sin moverse"
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Agendar seguimiento'; }
+        alert('No se pudo agendar.');
+      });
+  };
+  window.pendMiniDescartar = function (tipo, id) {
+    if (tipo === 'correo') {
+      fetch('/app/api/asistente/correo/' + id + '/listo/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marcar: true })
+      }).catch(function () {});
+    }
+    if (_miniData && _miniData.items) {
+      _miniData.items = _miniData.items.filter(function (it) {
+        var iid = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+        return !(it.tipo === tipo && iid === id);
+      });
+      _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
+      _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
+      _miniData.total = _miniData.items.length;
+      _feedRedraw();
+    }
+  };
+  // ── Chat DENTRO de la ventanita ─────────────────────────────────────────
+  // Filosofía de costos: el CÓDIGO trae y filtra la información; la IA solo
+  // redacta cuando de verdad hace falta. Los intents conocidos (pendientes,
+  // atendido) se contestan pegando lo que ya está en memoria: CERO tokens.
+  var _chatMode = false, _chatHist = [];   // [{role:'user'|'bot', html}]
+  function _chatDraw() {
+    var body = el('pendMiniBody'); if (!body) return;
+    body.innerHTML =
+      '<div class="mc-top"><span class="pend-foc-back" onclick="pendMiniChatVolver()">‹ Pendientes</span></div>' +
+      '<div id="miniChatFlow">' + _chatHist.map(function (m) {
+        return '<div class="mc-msg mc-' + m.role + '"><div class="mc-burbuja">' + m.html + '</div></div>';
+      }).join('') + '</div>';
+    body.scrollTop = body.scrollHeight;
+  }
+  function _chatPush(role, html) {
+    _chatHist.push({ role: role, html: html });
+    _chatMode = true;
+    _chatDraw();
+    return _chatHist.length - 1;   // índice, para reemplazar el "Pensando…"
+  }
+  function _chatSet(idx, html) {
+    if (_chatHist[idx]) { _chatHist[idx].html = html; _chatDraw(); }
+  }
+  window.pendMiniChatVolver = function () { _chatMode = false; _miniDraw(); };
+  // Intents GRATIS (código puro, sin IA). Devuelve true si la pregunta quedó
+  // respondida localmente.
+  function _chatGratis(q) {
+    var s = q.toLowerCase();
+    // Pendientes (todo / solo correos / solo pipeline): pegar las tarjetas.
+    if (/pendient|sin\s+(responder|atender|avance)|qu[eé]\s+(tengo|hay)\s+(hoy|pendiente)/.test(s)) {
+      var d = _miniData;
+      if (!d) return false;
+      var grupo = /correo|mail/.test(s) ? 'correo' : (/pipeline|oportunidad/.test(s) ? 'pipeline' : null);
+      var items = (d.items || []).filter(function (it) { return !grupo || it.grupo === grupo; });
+      _chatPush('bot', items.length
+        ? ('<div class="mc-nota">Esto es lo que traes' + (grupo ? ' de ' + grupo : '') + ' (' + items.length + '):</div>' + items.map(_miniCard).join(''))
+        : '<div class="mc-nota">Nada pendiente' + (grupo ? ' en ' + grupo : '') + ' por ahora. Te aviso si llega algo. ✅</div>');
+      return true;
+    }
+    // Atendido / bitácora del día: código puro (fetch a la bitácora, sin IA).
+    if (/atendid|bit[aá]cora|qu[eé]\s+he\s+hecho|resumen\s+de\s+mi\s+d[ií]a/.test(s)) {
+      var idx = _chatPush('bot', '<span class="pend-typing2">Revisando tu día…</span>');
+      fetch('/app/api/asistente/atendidos/', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d2) {
+          var ats = (d2 && d2.items) || [];
+          _atendidos = d2 && d2.success ? d2 : _atendidos;
+          _chatSet(idx, ats.length
+            ? ('<div class="mc-nota">Tu día hasta ahora (' + ats.length + ' cosas atendidas):</div>' + ats.map(_atCard).join(''))
+            : '<div class="mc-nota">Todavía no registro nada atendido hoy. La jornada corre desde las 8am.</div>');
+        })
+        .catch(function () { _chatSet(idx, '<div class="mc-nota">No pude leer tu bitácora ahora mismo.</div>'); });
+      return true;
+    }
+    return false;
+  }
+  // ── Acciones por chat: "agéndame 2 actividades mañana", "créame una
+  // oportunidad sobre X". El código detecta la intención; UNA llamada mini de
+  // IA traduce a datos; el usuario CONFIRMA (editable); el código crea.
+  var _accProps = [];
+  function _accEsAccion(s) {
+    // Sin acentos ni signos raros: "agéndame", "'agendame", "créame…" cuentan igual.
+    var n = ' ' + s.normalize('NFD').replace(/[̀-ͯ]/g, '') + ' ';
+    return /(agenda|agendame|agendar|crea\b|creame|crear|hazme|ponme|programa)/.test(n) &&
+           /actividad|seguimiento|reunion|llamada|tarea|oportunidad|cita|visita/.test(n);
+  }
+  function _accCard(a, i) {
+    if (a.tipo === 'actividad') {
+      return '<div class="pend-mini-card" id="accCard' + i + '">' +
+        '<div class="pend-mini-clbl"><span style="color:#0a84ff;">AGENDAR ACTIVIDAD</span></div>' +
+        '<input type="text" class="pend-foc-in" id="accT' + i + '" value="' + _esc(a.titulo) + '" style="width:100%;margin-bottom:7px;">' +
+        '<div style="display:flex;gap:8px;">' +
+          '<input type="date" class="pend-foc-in" id="accF' + i + '" value="' + _esc(a.fecha) + '" style="flex:1;">' +
+          '<input type="time" class="pend-foc-in" id="accH' + i + '" value="' + _esc(a.hora) + '" style="width:110px;">' +
+        '</div>' +
+        '<div class="pend-mini-acts"><button type="button" class="pend-mini-btn pri" id="accB' + i + '" onclick="pendAccConfirmar(' + i + ')">Agendar</button></div>' +
+      '</div>';
+    }
+    return '<div class="pend-mini-card" id="accCard' + i + '">' +
+      '<div class="pend-mini-clbl"><span style="color:#0a7d3c;">CREAR OPORTUNIDAD · ' + _esc((a.pipeline || 'runrate').toUpperCase()) + '</span></div>' +
+      '<input type="text" class="pend-foc-in" id="accT' + i + '" value="' + _esc(a.titulo) + '" style="width:100%;margin-bottom:7px;">' +
+      '<input type="text" class="pend-foc-in" id="accC' + i + '" value="' + _esc(a.cliente || '') + '" placeholder="Cliente" style="width:100%;">' +
+      '<div class="pend-mini-acts"><button type="button" class="pend-mini-btn pri" id="accB' + i + '" onclick="pendAccConfirmar(' + i + ')">Crear</button></div>' +
+    '</div>';
+  }
+  function _accInterpretar(q) {
+    var idx = _chatPush('bot', '<span class="pend-typing2">Entendiendo tu encargo…</span>');
+    fetch('/app/api/asistente/accion/interpretar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { _chatSet(idx, _esc((d && d.error) || 'No entendí el encargo.')); return; }
+        var base = _accProps.length;
+        d.acciones.forEach(function (a) { _accProps.push(a); });
+        var html = '<div class="mc-nota">Esto es lo que haré — revisa, ajusta y confirma:</div>' +
+          d.acciones.map(function (a, j) { return _accCard(a, base + j); }).join('') +
+          '<div class="mc-nota" style="color:#9a9ca3;">Nada se crea sin que lo confirmes.</div>';
+        _chatSet(idx, html);
+      })
+      .catch(function () { _chatSet(idx, 'Error de conexión con el asistente.'); });
+  }
+  window.pendAccConfirmar = function (i) {
+    var a = _accProps[i]; if (!a) return;
+    var btn = el('accB' + i); if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+    var t = (el('accT' + i) && el('accT' + i).value || a.titulo).trim();
+    var done = function (ok, msg) {
+      var card = el('accCard' + i);
+      if (card) card.innerHTML = '<div class="mc-nota">' + (ok ? '✓ ' : '✗ ') + _esc(msg) + '</div>';
+    };
+    if (a.tipo === 'actividad') {
+      var f = (el('accF' + i) && el('accF' + i).value) || a.fecha;
+      var h = (el('accH' + i) && el('accH' + i).value) || a.hora || '09:00';
+      var ini = f + 'T' + h + ':00';
+      var fin = f + 'T' + ('0' + ((+h.split(':')[0]) + 1)).slice(-2) + ':' + h.split(':')[1] + ':00';
+      fetch('/app/api/actividades/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+        body: JSON.stringify({ title: t, start: ini, end: fin, description: '', tipo: 'tarea', color: '#007AFF', participants: [] })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.id) done(true, 'Agendada «' + t + '» el ' + _fechaLegible(f) + ' a las ' + h + '.');
+          else done(false, (d && d.error) || 'No se pudo agendar.');
+        })
+        .catch(function () { done(false, 'Error de conexión.'); });
+    } else {
+      var cli = (el('accC' + i) && el('accC' + i).value || a.cliente || '').trim();
+      if (cli.length < 2) { done(false, 'Falta el cliente — escríbelo y vuelve a intentar.'); return; }
+      fetch('/app/api/asistente/oportunidad/crear/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+        body: JSON.stringify({ titulo: t, cliente_nombre: cli, tipo: a.pipeline || 'runrate', crear_actividad: true })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.success) done(true, 'Oportunidad «' + t + '» creada para ' + cli + ', con su seguimiento agendado.');
+          else done(false, (d && d.error) || 'No se pudo crear.');
+        })
+        .catch(function () { done(false, 'Error de conexión.'); });
+    }
+  };
+  window.pendMiniAsk = function () {
+    var inp = el('pendMiniIn'); if (!inp) return;
+    var q = (inp.value || '').trim(); if (!q) return;
+    inp.value = '';
+    _chatPush('user', _esc(q));
+    if (_chatGratis(q)) return;   // respondido por código: cero tokens
+    if (_accEsAccion(q.toLowerCase())) { _accInterpretar(q); return; }   // encargo → propuesta editable
+    // Lo demás sí va al motor (herramientas + IA redacta).
+    var idx = _chatPush('bot', '<span class="pend-typing2">Pensando…</span>');
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: q })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var md = (d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.';
+        _chatSet(idx, (typeof window.asistenteRenderMarkdown === 'function')
+          ? window.asistenteRenderMarkdown(md) : _esc(md));
+      })
+      .catch(function () { _chatSet(idx, '<div class="mc-nota">Error de conexión con el asistente.</div>'); });
+  };
+
+  // ── Vista "Asistente" EN GRANDE (protagonista del centro del panel) ──
+  // El mini panel a escala completa: brief + pestañas + tarjetas con el mensaje
+  // de la IA entero + el chat (los nodos del chat se MUEVEN aquí, mismos ids).
+  var _asisBigTab = 'todo';
+  var _asisLastLoad = null;   // timestamp de la última revisión del feed (barra "Al día")
+  function _asisModo(on) {
+    var shell = document.querySelector('#widgetPendientes .pend-shell');
+    if (shell) shell.classList.toggle('asis-mode', !!on);
+    var big = el('pendAsisBig'), res = el('pendResArea');
+    if (big) big.style.display = on ? '' : 'none';
+    if (res) res.style.display = on ? 'none' : '';
+    var flow = el('pendChatFlow'), chat = el('pendChat');
+    if (on) {
+      var slot = el('asisBigChatSlot');
+      if (slot && flow) slot.appendChild(flow);
+      if (slot && chat) slot.appendChild(chat);
+      _asisBigModoUpd();
+    } else {
+      var asideBody = document.querySelector('#widgetPendientes .pend-asis-body');
+      var aside = document.querySelector('#widgetPendientes .pend-asis');
+      if (asideBody && flow) asideBody.appendChild(flow);
+      if (aside && chat) aside.appendChild(chat);
+    }
+  }
+  // Idle (sin conversación): saludo + caja + sugerencias CENTRADOS verticalmente,
+  // como la portada de Claude. En cuanto hay mensajes → modo conversación:
+  // el saludo/sugerencias se retiran y la caja se ancla abajo.
+  function _asisBigModoUpd() {
+    var big = el('pendAsisBig'); if (!big) return;
+    var flow = el('pendChatFlow');
+    var convo = !!(flow && flow.children.length);
+    big.classList.toggle('abig-convo', convo);
+    big.classList.toggle('abig-idle', !convo);
+  }
+  // Sugerencias del chat: un clic = preguntarle eso al asistente.
+  window.pendAsisSugerir = function (t) {
+    var i = el('pendChatInput'); if (i) i.value = t;
+    pendChatSend();
+  };
+  function _abigBriefHtml(txt) {
+    // Negritas a las cifras clave del brief ("6 correos…", "6 oportunidades…").
+    var e = _esc(txt || '');
+    return e.replace(/(\d+\s+correos?[^.,;:«]*)/gi, '<b>$1</b>')
+            .replace(/(\d+\s+oportunidades?[^.,;:«]*)/gi, '<b>$1</b>');
+  }
+  function _asisBigStatusHtml() {
+    var mins = _asisLastLoad ? Math.max(0, Math.round((Date.now() - _asisLastLoad) / 60000)) : null;
+    var t = (mins === null) ? 'Revisando tu correo y tu pipeline…'
+      : (mins < 1 ? 'Última revisión hace un momento' : 'Última revisión hace ' + mins + ' min');
+    return '<span class="abig-dot"></span><b>Al día</b> · ' + t +
+      '<button type="button" class="abig-refresh" onclick="pendAsisFeedLoad()">&#8635; Volver a revisar</button>';
+  }
+  function _asisBigDraw() {
+    // Chat estilo Codex: el asistente te recibe con el brief como su primer
+    // mensaje + sugerencias de un clic. La conversación (#pendChatFlow) corre
+    // debajo y la caja grande (#pendChat) vive abajo. Sin feed aquí — los
+    // pendientes viven en el panel flotante.
+    var statusEl = el('asisBigStatus');
+    if (statusEl) statusEl.innerHTML = _asisBigStatusHtml();
+    var sal = el('asisBigSaludo'); if (!sal) return;
+    var d = _miniData;
+    // Saludo estilo portada de Claude: encabezado grande + el resto del brief
+    // como párrafo. El brief llega "Buenas tardes, X. Revisé tu correo…".
+    var hola = 'Hola', resto = '';
+    if (d && d.brief) {
+      var m = d.brief.match(/^([^.]{3,60})\.\s*(.*)$/);
+      if (m) { hola = m[1]; resto = m[2]; } else { resto = d.brief; }
+    } else {
+      resto = 'Un momento — estoy revisando tu correo y tu pipeline…';
+    }
+    sal.innerHTML =
+      '<div class="abig-hola">' + _esc(hola) + '</div>' +
+      (resto ? '<div class="abig-brief2">' + _abigBriefHtml(resto) + '</div>' : '');
+    var sugs = el('asisBigSugs');
+    if (sugs) {
+      var pendTxt = (d && d.total) ? ('Ver mis ' + d.total + ' pendientes') : 'Ver mis pendientes';
+      sugs.innerHTML =
+        '<button type="button" class="abig-sug" onclick="pendCerrar();pendMiniAbrir()">' + _esc(pendTxt) + '</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Cómo va mi pipeline este mes?\')">¿Cómo va mi pipeline?</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué correos importantes no he respondido?\')">¿Qué correos no he respondido?</button>' +
+        '<button type="button" class="abig-sug" onclick="pendAsisSugerir(\'¿Qué debería hacer ahora mismo?\')">¿Qué hago ahora?</button>';
+    }
+    _asisBigModoUpd();
+  }
+
+  // ── Mismo feed dentro del panel grande (columna derecha "Asistente") ──
+  var _asideTab = 'todo';
+  window.pendAsisTab = function (t) {
+    _asideTab = t;
+    if (t === 'atendido') _atFetch();
+    _asisDraw();
+  };
+  function _asideTabBtn(k, lbl, n) {
+    return '<button type="button" class="pend-mini-tab' + (_asideTab === k ? ' on' : '') + '" onclick="pendAsisTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
+  }
+  // Panorama del equipo (solo llega para supervisores/administradores): filas
+  // compactas bajo el saludo; el clic abre Mi día filtrado a ese vendedor.
+  function _equipoHtml(d) {
+    var eq = (d && d.equipo) || [];
+    if (!eq.length) return '';
+    var rows = eq.map(function (v) {
+      var partes = [];
+      if (v.correos) partes.push(v.correos + ' correo' + (v.correos > 1 ? 's' : '') + ' sin responder');
+      if (v.pipeline) partes.push(v.pipeline + ' oportunidad' + (v.pipeline > 1 ? 'es' : '') + ' sin avance');
+      return '<div class="pend-eq-row" onclick="pendEquipoVer(' + v.id + ',\'' + _esc(v.nombre).replace(/'/g, '&#39;') + '\')">' +
+        '<span class="pend-eq-nom">' + _esc(v.nombre) + '</span>' +
+        '<span class="pend-eq-det">' + partes.join(' · ') + '</span></div>';
+    }).join('');
+    return '<div class="pend-eq"><div class="pend-eq-h">Tu equipo</div>' + rows + '</div>';
+  }
+  window.pendEquipoVer = function (id, nombre) {
+    pendNav('dia');
+    if (typeof pendSelVendedor === 'function') pendSelVendedor(String(id), nombre);
+  };
+  function _asisDraw() {
+    var box = el('pendAsisFeed'); if (!box || !_miniData) return;
+    var d = _miniData;
+    var tabs = '<div class="pend-mini-tabs">' +
+      _asideTabBtn('todo', 'Todo', d.total) +
+      _asideTabBtn('correo', 'Correo', d.correos) +
+      _asideTabBtn('pipeline', 'Pipeline', d.pipeline) +
+      _asideTabBtn('atendido', 'Atendido', (_atendidos && _atendidos.total) || 0) + '</div>';
+    var cards;
+    if (_asideTab === 'atendido') {
+      var ats = (_atendidos && _atendidos.items) || [];
+      cards = ats.length
+        ? ats.map(_atCard).join('')
+        : '<div class="pend-mini-empty">Nada atendido todavía. La jornada corre desde las 8am.</div>';
+    } else {
+      var items = (d.items || []).filter(function (it) { return _asideTab === 'todo' || it.grupo === _asideTab; });
+      cards = items.length
+        ? items.map(_miniCard).join('')
+        : '<div class="pend-mini-empty">Nada urgente por ahora. Te aviso si llega algo.</div>';
+    }
+    box.innerHTML = '<div class="pend-mini-brief" style="margin-bottom:6px;">' + _esc(d.brief || '') + '</div>' + _equipoHtml(d) + tabs + cards;
+    if (_atendidos === null) _atFetch();
+  }
+  function _feedRedraw() {
+    if (_toastExpanded) { _toastCollapse(); return; }
+    var lc = el('pendLauncher');
+    if (lc && lc.style.display !== 'none') _toastDraw();
+    var mini = el('pendMini'); if (mini && mini.style.display !== 'none') _miniDraw();
+    var asis = el('pendAsisFeed'), ov = el('widgetPendientes');
+    if (asis && ov && ov.classList.contains('active')) _asisDraw();
+    var big = el('pendAsisBig');
+    if (big && big.style.display !== 'none' && ov && ov.classList.contains('active')) _asisBigDraw();
+  }
+  // Sin buzón vinculado: el asistente no existe para ese usuario — se retira la
+  // columna "Asistente" (feed + chat) y la sección de correos de Mi día. La
+  // burbuja de la esquina ya se oculta sola (el feed llega vacío). Mi día sigue
+  // con su resumen de tareas/agenda, que no depende del correo.
+  function _sinCorreoAplicar(d) {
+    var sin = !!(d && d.sin_correo);
+    var aside = document.querySelector('#widgetPendientes .pend-asis');
+    if (aside) aside.style.display = sin ? 'none' : '';
+    var navCor = document.querySelector('#widgetPendientes .pend-side-item[data-nav="correo"]');
+    if (navCor) navCor.style.display = sin ? 'none' : '';
+    return sin;
+  }
+  window.pendAsisFeedLoad = function () {
+    var box = el('pendAsisFeed'); if (!box) return;
+    if (_miniData && !_sinCorreoAplicar(_miniData)) { _asisDraw(); _asisBigDraw(); }
+    else if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
+    fetch('/app/api/asistente/feed/?panorama=1', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _asisLastLoad = Date.now(); if (_sinCorreoAplicar(d)) return; _asisDraw(); _asisBigDraw(); })
+      .catch(function () { if (!_miniData) box.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
   };
 
   // ── Chat con el asistente general (el "consultor") ──
@@ -379,6 +2812,7 @@
     b.textContent = text;
     row.appendChild(b);
     flow.appendChild(row);
+    if (typeof _asisBigModoUpd === 'function') _asisBigModoUpd();   // portada → conversación
     _scrollBody();
   }
   function _pushAiMsg(markdown) {
@@ -437,13 +2871,16 @@
     _sel = val;
     var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
-    pendCargar();
+    if (_section === 'clientes') { _cliData = null; _renderClientes(); }
+    else if (_section === 'reportes') { _desData = null; _renderDesempeno(); }
+    else pendCargar();
   };
 
   // Refresca SOLO el estado (trabajadas hoy) sin recargar todo ni re-ordenar:
   // marca la actual como completada en su lugar; se ordena al final al reabrir.
   function pendRefreshEstado() {
     var r = _data && _data.resumen; if (!r || !r.items || !r.items.length) return;
+    if (r.tipo === 'tarea') return;   // el sondeo es por oportunidad; en modo tarea no aplica
     var ids = r.items.map(function (it) { return it.opp_id; }).join(',');
     fetch('/app/api/pendientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
       .then(function (res) { return res.json(); })
@@ -558,6 +2995,7 @@
     res.classList.remove('pend-day');
     if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
     if (r.modo === 'recap') { _renderRecap(res, r); return; }
+    if (r.tipo === 'tarea') { _renderResumenTareas(res, r); return; }
     var items = r.items || [];
     var total = items.length;
     var pendientes = (r.pendientes != null ? r.pendientes : total);
@@ -569,7 +3007,7 @@
     } else if (completadas > 0) {
       subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
     } else {
-      subtxt = 'Vas al día — no hay nada urgente para hoy. 🎉';
+      subtxt = 'Vas al día — no hay nada urgente para hoy.';
     }
     var hero = '<div class="pend-res-hero">' +
       '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
@@ -633,8 +3071,73 @@
     _renderResumen();
   };
   function _completedMsg(it) {
-    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
-    return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
+    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad.';
+    return '¡Listo! Completaste la tarea de esta oportunidad.';
+  }
+  window.pendIrUrl = function (u) { if (u) window.location = u; };
+  function _completedMsgTA(it) {
+    return '¡Listo! Cerraste esta ' + (it && it.tipo === 'actividad' ? 'actividad' : 'tarea') + '.';
+  }
+  // "Mi día" para roles SIN oportunidades: sus TAREAS y ACTIVIDADES pendientes/hechas.
+  function _renderResumenTareas(res, r) {
+    var items = r.items || [];
+    var total = items.length;
+    var pendientes = (r.pendientes != null ? r.pendientes : total);
+    var completadas = r.completadas || 0;
+    var subtxt;
+    if (pendientes > 0) {
+      subtxt = 'Hoy tienes <b>' + pendientes + '</b> pendiente' + (pendientes === 1 ? '' : 's') + ' · tareas y actividades en orden de prioridad';
+      if (completadas > 0) subtxt += ' · <b>' + completadas + '</b> ✓';
+    } else if (completadas > 0) {
+      subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
+    } else {
+      subtxt = 'Vas al día — no hay tareas ni actividades pendientes.';
+    }
+    var hero = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
+      '<div class="pend-res-sub">' + subtxt + '</div></div>';
+    if (!total) { res.innerHTML = hero; res.classList.add('pend-day'); return; }
+    if (_resIdx >= total) _resIdx = total - 1;
+    if (_resIdx < 0) _resIdx = 0;
+    var it = items[_resIdx];
+    var rk = (it.riesgo || 'medio').toLowerCase();
+    var esAct = it.tipo === 'actividad';
+    var tipoLbl = esAct ? 'Actividad' : 'Tarea';
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">✓ Completada hoy</span>'
+      : ('Prioridad ' + it.prioridad + ' · ' + tipoLbl);
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">' + _esc(_completedMsgTA(it)) + '</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent">' +
+          '<div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div>' +
+        '</div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || it.proyecto || '') + '</div>' +
+        playBlock +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">' + (esAct ? 'Tipo de actividad' : 'Prioridad') + '</div>' +
+        '<div><span class="pend-sc-riesgo ' + rk + '">' + _esc(it.prioridad_lbl || tipoLbl) + '</span></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Vence</div>' +
+          '<div class="pend-sc-kv-val">' + _esc(it.vence || 'Sin fecha') + '</div></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Estado</div>' +
+          '<div class="pend-sc-kv-val">' + _esc(it.estado_lbl || '') + '</div></div>' +
+        (it.cliente ? '<div class="pend-sc-divider"></div>' +
+          '<div class="pend-sc-kv"><div class="pend-sc-flabel">' + (esAct ? 'Relacionada con' : 'Proyecto / Cliente') + '</div><div class="pend-sc-kv-val">' + _esc(it.cliente) + '</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendIrUrl(\'' + _esc(it.url || '') + '\')">' + (esAct ? 'Ver en calendario' : 'Ver tarea') + '</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">' + (_resIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.innerHTML = hero + card + pager;
+    res.classList.add('pend-day');
   }
 
   // ── Replay mensual (Wrapped) ──
@@ -745,32 +3248,47 @@
   };
 
   function _recapRow(it, done) {
-    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
+    var click = it.opp_id ? ('pendAbrirOpp(' + it.opp_id + ')') : ("pendIrUrl('" + _esc(it.url || '') + "')");
+    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="' + click + '">' +
       '<span class="pend-recap-ic">' + (done ? '✓' : '○') + '</span>' +
       '<span class="pend-recap-nombre">' + _esc(it.proyecto) + '</span>' +
-      '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' +
-      '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' +
+      (it.cliente ? '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' : '') +
+      (it.valor_fmt ? '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' : '') +
     '</div>';
   }
   function _renderRecap(res, r) {
+    res.classList.remove('pend-day');
     var items = r.items || [];
     var done = items.filter(function (it) { return it.completada; });
     var pend = items.filter(function (it) { return !it.completada; });
-    var html = '<div class="pend-res-hero">' +
-      '<div class="pend-res-saludo">Cierre del día 🌙</div>' +
-      '<div class="pend-res-sub">Así te fue hoy, ' + _esc(r.nombre) + '</div></div>';
-    html += '<div class="pend-recap-msg">' + _esc(r.recap_msg || '') + '</div>';
-    html += '<div class="pend-recap-stats">' +
-      '<div class="pend-recap-stat done"><span class="n">' + done.length + '</span><span class="l">Completadas</span></div>' +
-      '<div class="pend-recap-stat pend"><span class="n">' + pend.length + '</span><span class="l">Pendientes</span></div>' +
+    var esTarea = r.recap_tipo === 'tarea';
+    var unidadTot = esTarea ? 'Tareas del día' : 'Del día';
+    // Tarjeta editorial en blanco (mismo lenguaje visual que el Replay)
+    var html = '<div class="rpd">' +
+      '<div class="rpd-shape rpd-s1"></div><div class="rpd-shape rpd-s2"></div>' +
+      '<div class="rpd-inner">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">Cierre del día 🌙</div></div></div>' +
+        '<div class="rpd-headline">' + _esc(r.recap_msg || '') + '</div>' +
+        '<div class="rpd-hero">' +
+          '<div class="rpd-hero-main"><div class="rpd-hero-n">' + done.length + '</div>' +
+            '<div class="rpd-hero-l">Completada' + (done.length === 1 ? '' : 's') + '</div></div>' +
+          '<div class="rpd-box"><div class="rpd-box-v">' + pend.length + '</div><div class="rpd-box-l">Pendientes</div></div>' +
+          '<div class="rpd-box"><div class="rpd-box-v">' + items.length + '</div><div class="rpd-box-l">' + unidadTot + '</div></div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
     if (done.length) {
-      html += '<div class="pend-recap-sec">✓ Trabajadas hoy</div>';
+      html += '<div class="pend-recap-sec">✓ ' + (esTarea ? 'Tareas cerradas hoy' : 'Trabajadas hoy') + '</div>';
       done.forEach(function (it) { html += _recapRow(it, true); });
     }
     if (pend.length) {
-      html += '<div class="pend-recap-sec">○ Quedaron pendientes</div>';
+      html += '<div class="pend-recap-sec">○ ' + (esTarea ? 'Tareas pendientes' : 'Quedaron pendientes') + '</div>';
       pend.forEach(function (it) { html += _recapRow(it, false); });
+    }
+    if (!items.length) {
+      html += '<div class="pend-empty">Sin actividad registrada hoy 🌙</div>';
     }
     res.innerHTML = html;
   }
@@ -780,27 +3298,29 @@
     if (!res) return;
     var _card = document.querySelector('#widgetPendientes .pend-card');
     if (_card) _card.classList.toggle('replay-on', _tab === 'replay');
-    var chatFlow = el('pendChatFlow');
-    if (_tab === 'replay') { if (chatFlow) chatFlow.style.display = 'none'; _renderReplay(); return; }
+    if (_tab === 'replay') { _renderReplay(); return; }
     if (!_data) return;
-    if (_tab === 'resumen') { if (chatFlow) chatFlow.style.display = ''; _renderResumen(); return; }
-    if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
+    if (_tab === 'resumen') { _renderResumen(); return; }
     res.classList.remove('pend-day');
     var items = (_data.buckets && _data.buckets[_tab]) || [];
+    var esTareaB = (_data.buckets_tipo === 'tarea');
     if (!items.length) {
-      var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      var vacioOpp = { pendientes:'No hay oportunidades atrasadas ni sin agendar', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      var vacioTar = { pendientes:'No tienes tareas ni actividades atrasadas', hoy:'Nada para hoy', proximamente:'Nada programado a futuro' };
+      var vacio = esTareaB ? vacioTar : vacioOpp;
       res.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
       return;
     }
     var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
-    var mostrarVend = (_sel !== 'mias');
+    var mostrarVend = (_sel !== 'mias') && !esTareaB;
     var html = '';
     items.forEach(function (it){
       var chips = '';
       if (it.cliente)  chips += '<span class="pend-chip" title="Cliente">' + _ICON_CLIENTE + _esc(it.cliente) + '</span>';
       if (it.pipeline) chips += '<span class="pend-chip" title="Pipeline">' + _ICON_PIPE + _esc(it.pipeline) + '</span>';
       if (it.etapa)    chips += '<span class="pend-chip" title="Etapa">' + _ICON_ETAPA + _esc(it.etapa) + '</span>';
-      html += '<div class="pend-cardrow" onclick="pendAbrirOpp(' + it.id + ')">' +
+      var clickB = it.url ? ("pendIrUrl('" + _esc(it.url) + "')") : ('pendAbrirOpp(' + it.id + ')');
+      html += '<div class="pend-cardrow" onclick="' + clickB + '">' +
         '<span class="pend-dot ' + tone + '"></span>' +
         '<div class="pend-c-main">' +
           '<div class="pend-c-nombre">' + _esc(it.nombre) + '</div>' +

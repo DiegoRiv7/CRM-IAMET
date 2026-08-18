@@ -500,6 +500,20 @@ body[data-theme="espacial"] .wo-card {
     background: #202024 !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
+/* Pestaña de Drive al pie de Cotizaciones: en los temas claros es blanca
+   sobre card gris; aquí se invierte — un tono más claro que la card. */
+body[data-theme="espacial"] .opp-v2 .wo-drive-block {
+    background: #2A2A30 !important;
+}
+body[data-theme="espacial"] .opp-v2 .wo-drive-head h4 { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .opp-v2 .wo-drive-nombre { color: #E4E4E9 !important; }
+
+/* Chip de pipeline en los metadatos: discreto igual que en claro, pero con
+   el texto y el contorno legibles sobre la card oscura. */
+body[data-theme="espacial"] .opp-v2 .wo-g-info .wo-type-badge {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #E4E4E9 !important;
+}
 body[data-theme="espacial"] .wo-card-accent {
     background: linear-gradient(135deg, #23232B, #1C1C24) !important;
     border: 1px solid rgba(94, 92, 230, 0.35) !important;

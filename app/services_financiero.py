@@ -13,8 +13,10 @@ Cuando se sube un archivo al drive de una oportunidad:
 4. Se crea automáticamente el registro financiero en el proyecto vinculado
 """
 
+import io
 import re
 import logging
+import threading
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
@@ -130,11 +132,27 @@ def analizar_archivo_drive(archivo_oportunidad):
     # Buscar proyecto IAMET vinculado a esta oportunidad
     proyecto = ProyectoIAMET.objects.filter(oportunidad=oportunidad).first()
     if not proyecto:
-        logger.info(f"[Financiero] Archivo '{nombre}' detectado como {tipo} pero la oportunidad {oportunidad.id} no tiene proyecto IAMET vinculado.")
+        # Sin proyecto no hay dónde crear el registro de OC/factura, pero el
+        # monto SÍ se guarda en el archivo: la utilidad de la oportunidad se
+        # calcula con esto y no todas las oportunidades llegan a tener proyecto.
+        # Antes se marcaba el tipo y el importe se perdía.
+        monto_mxn = None
+        if pdf_data.get('monto') is not None:
+            monto_mxn, _tc = _convertir_a_mxn(
+                pdf_data['monto'], pdf_data.get('moneda') or 'MXN',
+                pdf_data.get('tipo_cambio'))
+            if monto_mxn is not None:
+                monto_mxn = monto_mxn.quantize(Decimal('0.01'))
+        logger.info(f"[Financiero] '{nombre}' es {tipo} y la oportunidad {oportunidad.id} "
+                    f"no tiene proyecto vinculado; se guarda el monto ({monto_mxn}) "
+                    f"para la utilidad y no se crea registro de proyecto.")
         archivo_oportunidad.procesado_financiero = True
         archivo_oportunidad.tipo_financiero = tipo
-        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
-        return {'procesado': True, 'tipo': tipo, 'monto': None, 'error': 'Sin proyecto vinculado'}
+        archivo_oportunidad.monto_extraido = monto_mxn
+        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero',
+                                                'monto_extraido'])
+        return {'procesado': True, 'tipo': tipo, 'monto': monto_mxn,
+                'error': None if monto_mxn is not None else 'Sin monto legible'}
 
     # Verificar que no exista ya un registro vinculado a este archivo
     if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(archivo_drive=archivo_oportunidad).exists():
@@ -354,6 +372,688 @@ def analizar_archivo_proyecto(archivo_proyecto):
 # ═══════════════════════════════════════════════════════════════
 #  EXTRACCIÓN DE DATOS DEL PDF
 # ═══════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════
+# PO DEL CLIENTE → MONTO DE LA OPORTUNIDAD
+# ══════════════════════════════════════════════════════════════════════
+# OJO CON LA PALABRA "OC": en este módulo tipo_financiero='oc' significa la
+# orden que NOSOTROS le emitimos a un proveedor, y alimenta el gasto del
+# proyecto. La PO del cliente es lo contrario —es lo que nos van a comprar—,
+# así que lleva su propio tipo: 'po_cliente'.
+
+#: Marca del archivo cuando resulta ser una PO del cliente.
+TIPO_PO_CLIENTE = 'po_cliente'
+
+#: ── Pistas de que un PDF es una PO del cliente ──
+#: En los NOMBRES los separadores son de todo tipo: PO-123, PO_123, PO 123,
+#: PO#123, PO123, Purchase_Order_123, orden-de-compra-123. Por eso [\s_.\-#]*
+#: en lugar de \s*, que solo cubre el espacio.
+_SEP = r'[\s_.\-#]*'
+_PO_PISTAS_NOMBRE = re.compile(
+    r'\bP' + _SEP + r'O' + _SEP + r'\d'          # PO-123, PO_123, PO123, P.O. 123
+    r'|purchase' + _SEP + r'order'                 # PurchaseOrder, Purchase_Order
+    r'|orden' + _SEP + r'(?:de' + _SEP + r')?compra'  # orden-de-compra, orden_compra
+    r'|pedido' + _SEP + r'(?:de' + _SEP + r')?compra'  # como lo llama SAP en español
+    r'|\bOrder' + _SEP + r'\d{5,}'                # Order_9014800042623
+    r'|order' + _SEP + r'request'                  # POOL4TOOL order request 1453140
+    # PO#TJ00176: el folio arranca con letras. Se exige separador entre "PO" y
+    # el folio para no confundirlo con cualquier palabra que empiece con PO
+    # (POOL4TOOL, POSTAL2024) — esas no llevan nada en medio.
+    r'|\bPO[\s_.\-#]+[A-Z]{1,4}\d',
+    re.I)
+#: En el CUERPO se exige el término completo: un "PO" suelto dentro de un
+#: párrafo no prueba nada, y marcar de más infla el monto de la oportunidad.
+#: El título "PURCHASE ORDER" con las letras separadas —"P U R C H A S E
+#: O R D E R"— es como lo imprime el ERP de Aptiv. Se admite un espacio entre
+#: letras, lo que de paso cubre el caso normal y el pegado.
+_PO_TITULO = r'p ?u ?r ?c ?h ?a ?s ?e\s*o ?r ?d ?e ?r'
+_PO_PISTAS_TEXTO = re.compile(
+    _PO_TITULO
+    # "Pedido de compra" es como SAP nombra a la PO en español; así llega todo
+    # lo que pasa por SAP Business Network / Ariba.
+    + r'|orden\s*de\s*compra|pedido\s*de\s*compra|p\.\s?o\.\s*(?:no|num|#)'
+    r'|n[uú]mero\s*oc\s*\d'
+    # "PO Number: 1453140" (Zeiss/POOL4TOOL) y "PO No. 123". Aquí sí se acepta
+    # un PO sin puntos, pero solo pegado a la palabra que lo declara y con el
+    # número enseguida — no un "PO" suelto en un párrafo.
+    r'|\bPO\s*(?:number|num|no\b\.?|#)\s*:?\s*\d'
+    r'|order\s*request\s*\d', re.I)
+
+
+def _texto_pdf(archivo_field, max_paginas=6):
+    """Texto plano de un PDF ya guardado. '' si no se puede leer."""
+    try:
+        import pdfplumber
+        with archivo_field.open('rb') as fh:
+            datos = fh.read()
+        partes = []
+        with pdfplumber.open(io.BytesIO(datos)) as pdf:
+            for pagina in pdf.pages[:max_paginas]:
+                partes.append(pagina.extract_text() or '')
+        return '\n'.join(partes)
+    except Exception as e:
+        logger.warning('PO: no se pudo leer el PDF %s: %s', getattr(archivo_field, 'name', '?'), e)
+        return ''
+
+
+#: Cuántas páginas se pasan por OCR. El total vive en la primera y a veces en
+#: la segunda; de ahí en adelante son términos y condiciones, y cada página
+#: cuesta un par de segundos.
+_PO_OCR_MAX_PAGINAS = 3
+#: Resolución del render antes de reconocer. A 200dpi ya lee bien los importes
+#: de la PO de Fisher & Paykel y tarda ~1.6s por página; 300dpi tarda 2.4s sin
+#: leer nada nuevo.
+_PO_OCR_DPI = 200
+
+
+#: El motor se arma una sola vez por proceso: cargar los modelos en cada
+#: archivo es trabajo repetido para nada.
+_ocr_motor = None
+#: Una PO a la vez. Reconocer ocupa ~5s de CPU repartidos en varios núcleos, y
+#: el worker es gevent: si alguien suelta cinco POs escaneadas juntas, sin este
+#: candado se pelean por la máquina entera. Con él hacen fila y cada una espera
+#: unos segundos, muy por debajo del timeout de 90s de gunicorn.
+_ocr_candado = threading.Lock()
+
+
+def _texto_ocr(archivo_field, max_paginas=_PO_OCR_MAX_PAGINAS, basta=None):
+    """Texto de un PDF ESCANEADO, reconociendo la imagen. '' si no se puede.
+
+    Solo tiene sentido cuando el PDF no trae capa de texto (la PO de Fisher &
+    Paykel llega así: tres páginas, cero caracteres). Si las librerías no están
+    instaladas devuelve '' y todo sigue como antes — el archivo simplemente no
+    aporta monto, que es el comportamiento de siempre.
+
+    Con `basta` se corta en cuanto lo reconocido ya sirve, sin gastar las
+    páginas restantes: casi siempre el total está en la primera y lo demás son
+    términos y condiciones.
+    """
+    global _ocr_motor
+    try:
+        import numpy as np
+        import pypdfium2 as pdfium
+        from rapidocr_onnxruntime import RapidOCR
+    except ImportError as e:
+        logger.info('PO: PDF sin texto y OCR no disponible (%s). Se omite.', e)
+        return ''
+    try:
+        with archivo_field.open('rb') as fh:
+            crudo = fh.read()
+        doc = pdfium.PdfDocument(crudo)
+        partes = []
+        with _ocr_candado:
+            if _ocr_motor is None:
+                _ocr_motor = RapidOCR()
+            for i in range(min(len(doc), max_paginas)):
+                img = np.array(
+                    doc[i].render(scale=_PO_OCR_DPI / 72).to_pil().convert('RGB'))
+                res, _ = _ocr_motor(img)
+                partes.append('\n'.join(r[1] for r in (res or [])))
+                if basta and basta('\n'.join(partes)):
+                    break
+        return '\n'.join(partes)
+    except Exception as e:
+        logger.warning('PO: falló el OCR de %s: %s',
+                       getattr(archivo_field, 'name', '?'), e)
+        return ''
+
+
+def texto_de_po(archivo_field):
+    """Texto de la PO y de dónde salió: (texto, uso_ocr).
+
+    El aviso de si vino de OCR importa: ahí el reconocimiento devuelve una caja
+    por renglón visual y la etiqueta se separa de su importe ("Total Value This
+    Order:" en una línea y "44,489.25" en la siguiente). El extractor necesita
+    saberlo para aflojar esa regla SOLO en ese caso.
+    """
+    texto = _texto_pdf(archivo_field)
+    if texto.strip():
+        return texto, False
+    # En cuanto una página suelta un importe con etiqueta, ya está: seguir
+    # reconociendo las siguientes son varios segundos de CPU para leer
+    # cláusulas legales.
+    return _texto_ocr(archivo_field,
+                      basta=lambda t: monto_de_po(t, ocr=True) is not None), True
+
+
+#: ── Nuestras propias OC, que NO son POs del cliente ──
+#: Las ordenes que le emitimos a un proveedor se titulan "Orden de compra"
+#: igual que las del cliente, asi que el detector de POs las enganchaba y las
+#: sumaba como INGRESO cuando son GASTO: el monto de la oportunidad salia
+#: inflado y la utilidad nunca se calculaba, porque el archivo se quedaba
+#: marcado como PO y ya no pasaba por el modulo financiero.
+#:
+#: No sirve el detector generico de OC para distinguirlas: da 'oc' a cualquier
+#: archivo con "orden de compra" EN EL NOMBRE, y la PO de Lateral Fulfillment
+#: se llama justo "IT PO#TJ00176 Orden de Compra - Iamet.pdf". Hace falta la
+#: firma de NUESTRO sistema, que ninguna PO de cliente trae:
+#:   · el nombre empieza con OCC-
+#:   · el cuerpo trae "Elaborado por" y "Aprobado por"
+#:   · o el renglon "Documento: OrdenDeCompra-<folio>"
+_OC_PROPIA_NOMBRE = re.compile(r'^\s*OCC[\s\-_]?', re.I)
+_OC_PROPIA_TEXTO = re.compile(
+    r'elaborado\s*por[\s\S]{0,300}aprobado\s*por'
+    r'|documento\s*:\s*orden\s*de\s*compra\s*-', re.I)
+
+
+def es_oc_a_proveedor(nombre, texto):
+    """¿Es una orden que NOSOTROS le emitimos a un proveedor?"""
+    if _OC_PROPIA_NOMBRE.search(nombre or ''):
+        return True
+    return bool(_OC_PROPIA_TEXTO.search(texto or ''))
+
+
+def es_po_de_cliente(nombre, texto):
+    """¿Este PDF es una orden de compra que nos manda el cliente?
+
+    Se exige una pista explícita —en el nombre o en el cuerpo— para no marcar
+    como PO cualquier PDF con un número grande. Precisión sobre cobertura: es
+    peor inflar el monto de una oportunidad que dejar una PO sin detectar.
+    """
+    nombre = nombre or ''
+    texto = texto or ''
+    # Lo primero: descartar las nuestras. Comparten titulo con las del cliente
+    # y sumarlas como ingreso es el peor error posible aqui.
+    if es_oc_a_proveedor(nombre, texto):
+        return False
+    if _PO_PISTAS_NOMBRE.search(nombre):
+        return True
+    return bool(_PO_PISTAS_TEXTO.search(texto))
+
+
+#: ── Importes ──
+#: Etiquetado ("Total: 25,000") puede venir sin centavos y hasta como entero
+#: pelón: la etiqueta ya es prueba de que es dinero.
+_PO_IMP_ETIQ = r'(\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2}|\d{3,})'
+#: Suelto (sin etiqueta) SÍ exige centavos o separador de miles. Un entero
+#: pelón sin etiqueta puede ser una fecha, un código postal o el propio número
+#: de orden.
+_PO_IMP_SUELTO = r'(\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2})'
+#: Formato europeo: 25.000,00 — el punto agrupa y la coma decimal.
+_PO_IMP_EURO = r'(\d{1,3}(?:\.\d{3})+,\d{2})'
+
+#: Palabras que anteceden al importe. Se aceptan las inglesas porque muchas POs
+#: llegan en inglés (SAP escribe "Net Value", Coupa "Grand Total").
+#: Ojo con los ESPACIOS: pdfplumber a veces devuelve las palabras pegadas
+#: ("ValorNetoTotalUSD", "OrdendeCompra"), según cómo esté armado el PDF. Por
+#: eso \s* y no \s+ entre palabras, y por eso las etiquetas compuestas van
+#: ANTES de la suelta: "ValorNetoTotal" no tiene frontera de palabra antes de
+#: "Total", así que un \btotal solo nunca la encontraría.
+_PO_ETIQ_SUB = r'(?:sub\s*-?\s*total)'
+_PO_ETIQ_TOT = (
+    r'(?:valor\s*neto\s*total'      # Baxter / Welch Allyn: "ValorNetoTotalUSD"
+    r'|importe\s*neto\s*total'
+    r'|monto\s*total|importe\s*total'
+    r'|grand\s*total|gran\s*total'
+    r'|net\s*value'                  # SAP
+    r'|\btotal|\bimporte|\bamount|\bmonto)'
+)
+
+def _re_etiq(etiqueta, importe):
+    r"""Etiqueta + importe EN LA MISMA LÍNEA.
+
+    El [ \t]* (no \s*) es deliberado: si el regex cruza el salto de línea, en
+    las POs con tabla "Total" es un encabezado de columna y acaba capturando el
+    número del primer renglón.
+    """
+    return re.compile(etiqueta + r'[^\n\d]{0,20}\$?[ \t]*' + importe, re.I)
+
+
+def _re_etiq_ocr(etiqueta, importe):
+    r"""Igual, pero tolera que el importe quede en otro renglón.
+
+    Solo para texto de OCR. El reconocimiento devuelve una caja por bloque
+    visual y las junta en el orden que se le da la gana, que además cambia con
+    la resolución. La misma PO de Fisher & Paykel sale así:
+
+        300dpi: "Total Value This Order:" / "44,489.25"
+        200dpi: "Total Value This Order:" / "MXN" / "44,489.25"
+
+    Por eso se permiten un par de renglones de por medio, pero SOLO si son
+    cortos y no traen dígitos —"MXN" pasa, un renglón de tabla no—, para que
+    la etiqueta no se enganche con un número de otra parte de la hoja.
+
+    Esta versión NO se usa con el texto normal de un PDF: ahí cruzar el salto
+    de línea es justo lo que hace que "Total" —encabezado de columna— capture
+    el número del primer renglón de la tabla.
+    """
+    return re.compile(
+        etiqueta + r'[^\n\d]{0,25}(?:\n[^\n\d]{0,15}){0,2}'
+        r'\n?[ \t]*\$?[ \t]*' + importe, re.I)
+
+
+_PO_RE_SUBTOTAL = _re_etiq(_PO_ETIQ_SUB, _PO_IMP_ETIQ)
+_PO_RE_SUBTOTAL_EURO = _re_etiq(_PO_ETIQ_SUB, _PO_IMP_EURO)
+_PO_RE_TOTAL = _re_etiq(r'\b' + _PO_ETIQ_TOT, _PO_IMP_ETIQ)
+_PO_RE_TOTAL_EURO = _re_etiq(r'\b' + _PO_ETIQ_TOT, _PO_IMP_EURO)
+_PO_RE_SUBTOTAL_OCR = _re_etiq_ocr(_PO_ETIQ_SUB, _PO_IMP_ETIQ)
+_PO_RE_SUBTOTAL_OCR_EURO = _re_etiq_ocr(_PO_ETIQ_SUB, _PO_IMP_EURO)
+_PO_RE_TOTAL_OCR = _re_etiq_ocr(r'\b' + _PO_ETIQ_TOT, _PO_IMP_ETIQ)
+_PO_RE_TOTAL_OCR_EURO = _re_etiq_ocr(r'\b' + _PO_ETIQ_TOT, _PO_IMP_EURO)
+#: "540.00 USD" — el formato de las POs con tabla y moneda de sufijo.
+_PO_RE_SUFIJO = re.compile(_PO_IMP_SUELTO + r'\s*(?:USD|MXN|MN)\b')
+_PO_RE_PESOS = re.compile(r'\$[ \t]*' + _PO_IMP_SUELTO)
+
+#: Piso solo para los importes SIN etiqueta: ahí un número chico suele ser
+#: ruido (cantidad, número de renglón, precio unitario). Un "Total: $80.00"
+#: etiquetado se respeta tal cual — hay POs chicas.
+_PO_MONTO_MINIMO_SUELTO = 100
+
+
+def _al_inicio_de_linea(texto, pos):
+    """¿La coincidencia arranca la línea (solo espacios antes)?
+
+    Sirve para distinguir el total de la tabla —que siempre va en su propio
+    renglón— de un "total" enterrado en una frase. La PO de CDA Industrial trae
+    en la descripción "el monto total a pagar será de $70,000.00 MXN", y ese
+    número se llevaba el lugar del total real de la tabla.
+    """
+    return not texto[texto.rfind('\n', 0, pos) + 1:pos].strip()
+
+
+def _a_float(s, europeo=False):
+    """'25,000.00' o '25.000,00' → 25000.0. None si no se puede."""
+    try:
+        if europeo:
+            s = s.replace('.', '').replace(',', '.')
+        else:
+            s = s.replace(',', '')
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+#: Un renglón de impuesto CON importe: "I.V.A 13.28", "IVA (16%): $23,760.08".
+#:
+#: Tres cosas que NO son un impuesto desglosado, y que aparecen en las POs
+#: reales — de ahí cada restricción:
+#:   · "Tax" e "Impuesto" como encabezado de columna (Eaton, Baxter): por eso
+#:     se exige el importe en la misma línea.
+#:   · "VAT/TIN: EIN0306306H6" (Eaton): es el RFC. Por eso el importe tiene que
+#:     traer decimales o separador de miles —un número pelón no cuenta— y no
+#:     puede venir pegado a letras.
+#:   · "Precios mas IVA del 16%" (CDA Industrial): es la tasa, no el impuesto.
+#:     Por eso se descarta lo que trae % detrás.
+#:   · "Valor neto incl. IVA 54.25 USD" (Zeiss): el importe es el valor neto,
+#:     no el impuesto. Lo filtra _PO_RE_IVA_INCLUIDO.
+_PO_RE_IVA = re.compile(
+    r'(?:i\.?\s?v\.?\s?a\.?|impuestos?|\bVAT\b|\btax\b)'
+    r'[^\n\d]{0,20}\$?[ \t]*(?<![A-Za-z0-9])' + _PO_IMP_SUELTO + r'(?![ \t]*%)', re.I)
+
+
+#: Lo que antecede a la etiqueta cuando el impuesto viene INCLUIDO en la cifra
+#: en vez de aparte: "Valor neto incl. IVA", "Precio incluye IVA", "con IVA".
+_PO_RE_IVA_INCLUIDO = re.compile(r'\b(?:incl\w*|con|más|mas)\s*\.?\s*$', re.I)
+
+
+def importe_iva_desglosado(texto):
+    """Cuánto impuesto trae separado la PO, o None si no desglosa.
+
+    Decide de cuál cifra se toma el monto. Si el impuesto va aparte, el TOTAL
+    lo incluye; si no aparece, el total ya es neto (que es como vienen casi
+    todas las POs de los clientes).
+
+    Devuelve el IMPORTE y no solo un sí/no porque hay POs que desglosan el
+    impuesto y aun así no imprimen subtotal —la de Autoliv trae
+    "Sales Tax: 44.66 Total: 323.77" y nada más—, y ahí el neto solo se puede
+    obtener restando.
+
+    Si hubiera varios renglones de impuesto se toma el mayor: en las POs que
+    los separan por concepto, el acumulado es el que interesa.
+    """
+    if not texto:
+        return None
+    vals = []
+    for m in _PO_RE_IVA.finditer(texto):
+        if _PO_RE_IVA_INCLUIDO.search(texto[max(0, m.start() - 20):m.start()]):
+            continue
+        v = _a_float(m.group(1))
+        if v is not None and v > 0:
+            vals.append(v)
+    return max(vals) if vals else None
+
+
+def tiene_iva_desglosado(texto):
+    """¿La PO separa el impuesto en su propio renglón, con importe?"""
+    return importe_iva_desglosado(texto) is not None
+
+
+#: Tasa máxima creíble al despejar el neto de un total. El IVA mexicano es 16%
+#: y el sales tax de EE.UU. anda por 8%; un 30% deja margen de sobra. Si la
+#: resta implica más que esto, lo que se detectó como impuesto probablemente no
+#: lo era, y se prefiere devolver el total antes que un número inventado.
+_PO_TASA_MAXIMA = 0.30
+
+
+def monto_de_po(texto, ocr=False):
+    """Importe de una PO, en orden de confianza. None si nada convence.
+
+    El monto de la oportunidad SIEMPRE va sin impuesto, para que todas las
+    oportunidades sean comparables entre sí y para que la utilidad —POs menos
+    OCs— no salga inflada. De ahí que la primera pregunta sea si la PO desglosa
+    el impuesto, y solo después de cuál etiqueta se toma la cifra.
+
+    De cada estrategia se toma el MAYOR: en una PO con varias partidas, el que
+    interesa es el acumulado, no el de un renglón.
+
+    El europeo va PRIMERO en cada pareja: sobre "25.000,00" la variante normal
+    captura "25.00" (lee el punto como decimal) y devolvería 25. Al revés no
+    hay riesgo — el patrón europeo exige puntos de millar Y coma decimal, así
+    que un "1,234.56" normal no lo activa.
+    """
+    if not texto:
+        return None
+
+    def _mayor(regex, europeo=False, piso=0):
+        # Los que empiezan renglón mandan sobre los que van dentro de una
+        # frase; los sueltos solo entran si no hubo ninguno anclado (así las
+        # POs cuyo importe vive al final de un renglón de tabla siguen leyéndose).
+        anclados, sueltos = [], []
+        for m in regex.finditer(texto):
+            v = _a_float(m.group(1), europeo)
+            if v is None or v < piso:
+                continue
+            (anclados if _al_inicio_de_linea(texto, m.start()) else sueltos).append(v)
+        vals = anclados or sueltos
+        return max(vals) if vals else None
+
+    if ocr:
+        subtotales = [(_PO_RE_SUBTOTAL_OCR_EURO, True, 0),
+                      (_PO_RE_SUBTOTAL_OCR, False, 0)]
+        totales = [(_PO_RE_TOTAL_OCR_EURO, True, 0),
+                   (_PO_RE_TOTAL_OCR, False, 0)]
+    else:
+        subtotales = [(_PO_RE_SUBTOTAL_EURO, True, 0),
+                      (_PO_RE_SUBTOTAL, False, 0)]
+        totales = [(_PO_RE_TOTAL_EURO, True, 0),
+                   (_PO_RE_TOTAL, False, 0)]
+    sin_etiqueta = [(_PO_RE_SUFIJO, False, _PO_MONTO_MINIMO_SUELTO),
+                    (_PO_RE_PESOS, False, _PO_MONTO_MINIMO_SUELTO)]
+
+    def _primero(estrategias):
+        for regex, euro, piso in estrategias:
+            v = _mayor(regex, euro, piso)
+            if v is not None:
+                return v
+        return None
+
+    iva = importe_iva_desglosado(texto)
+    if iva is None:
+        # Sin impuesto desglosado el total ya viene neto: manda él. Así llegan
+        # casi todas — Schlage, Eaton, Baxter, BD, Essilor, Zeiss.
+        return _primero(totales + subtotales + sin_etiqueta)
+
+    # Con impuesto desglosado el total lo incluye, así que hay que llegar al
+    # neto por alguno de estos dos caminos:
+    #   · Si la PO imprime subtotal, ese ya es el neto (Telnor, Lateral).
+    #   · Si no lo imprime, se despeja restando (Autoliv: "Sales Tax: 44.66
+    #     Total: 323.77" y ni un subtotal en toda la hoja).
+    v = _primero(subtotales)
+    if v is not None:
+        return v
+    v = _primero(totales)
+    if v is not None:
+        neto = round(v - iva, 2)
+        if neto > 0 and iva / neto <= _PO_TASA_MAXIMA:
+            return neto
+        # La resta no da una tasa creíble: lo que se tomó por impuesto
+        # seguramente no lo era. Mejor el total que un número despejado mal.
+        logger.info('PO: impuesto %s sobre total %s da una tasa inverosímil; '
+                    'se conserva el total', iva, v)
+        return v
+    return _primero(sin_etiqueta)
+
+
+#: La moneda pegada al total. Puede ir DESPUÉS del importe
+#: ("Total: 841.00 (USD)") o ANTES ("ValorNetoTotalUSD 1,850.00").
+_PO_RE_MONEDA_JUNTO = re.compile(
+    r'(?:total|importe|amount|valor)[^\n\d]{0,20}\$?[ \t]*[\d,.]+\s*[\(\[]?\s*(USD|MXN|MN)\b', re.I)
+_PO_RE_MONEDA_ANTES = re.compile(
+    r'(?:total|importe|amount|valor)[^\n\d]{0,12}?(USD|MXN|MN)\b[ \t]*\$?[ \t]*\d', re.I)
+#: Declaración explícita: "All prices are expressed in USD", "Moneda: MXN".
+#: Dos formas de declararla, con tolerancias distintas:
+#:   · Etiqueta de campo ("Currency", "Moneda"). Admite relleno en medio porque
+#:     las plantillas lo ensucian: la PO de Lateral Fulfillment imprime
+#:     "MONEDAN(SELECT) MXN".
+#:   · Frase corrida ("esta PO se encuentra en dólares"). Aquí el código va
+#:     pegado a la preposición; darle holgura marcaría de más.
+_PO_RE_MONEDA_DICHA = re.compile(
+    r'(?:'
+    r'(?:expressed\s+in|currency|moneda)[^\n\d]{0,15}?'
+    r'|(?:se\s+encuentra\s+en|precios?\s+en|cotizad[oa]s?\s+en'
+    r'|facturad[oa]s?\s+en|\ben)\s*:?\s*'
+    r')[\(\[]?\s*(USD|MXN|MN|d[oó]lares|pesos)\b', re.I)
+#: Igual que en _detectar_moneda: el código de moneda puede venir pegado a un
+#: número ("41/100USD"), así que solo se exige que no venga después de una letra.
+_PO_RE_MONEDA_SUELTA = re.compile(
+    r'(?<![A-Za-z])(USD|MXN|MN|d[oó]lares|pesos)\b', re.I)
+
+
+def _es_usd(v):
+    v = (v or '').lower()
+    return 'usd' in v or 'dolar' in v or 'dólar' in v
+
+
+def moneda_de_po(texto):
+    """USD o MXN, en orden de confianza. MXN por defecto (la moneda del CRM).
+
+    1. La que va PEGADA a un total que empieza renglón: "Total: 841.00 (USD)".
+       Es la única que describe al importe que nos llevamos.
+    2. La declarada: "expressed in USD", "Currency: MXN", "esta PO se
+       encuentra en dólares".
+    3. La pegada a un total dentro de una frase.
+    4. La que más veces aparezca.
+
+    No basta con la primera del documento: una PO de Eaton en dólares trae
+    "MXN" en el pie de la página 2 (el código de la unidad de negocio), y una
+    en pesos puede mencionar USD de referencia. Equivocarse aquí multiplica o
+    divide el monto por el tipo de cambio.
+    """
+    if not texto:
+        return 'MXN'
+
+    # Pegada al total, pero solo si ese total empieza renglón: en la PO de CDA
+    # Industrial la frase "el monto total a pagar será de $70,000.00 MXN" decía
+    # MXN cuando la orden está en dólares.
+    for regex in (_PO_RE_MONEDA_JUNTO, _PO_RE_MONEDA_ANTES):
+        for m in regex.finditer(texto):
+            if _al_inicio_de_linea(texto, m.start()):
+                return 'USD' if _es_usd(m.group(1)) else 'MXN'
+    m = _PO_RE_MONEDA_DICHA.search(texto)
+    if m:
+        return 'USD' if _es_usd(m.group(1)) else 'MXN'
+    for regex in (_PO_RE_MONEDA_JUNTO, _PO_RE_MONEDA_ANTES):
+        m = regex.search(texto)
+        if m:
+            return 'USD' if _es_usd(m.group(1)) else 'MXN'
+
+    hallazgos = [g.lower() for g in _PO_RE_MONEDA_SUELTA.findall(texto)]
+    if hallazgos:
+        usd = sum(1 for h in hallazgos if _es_usd(h))
+        return 'USD' if usd > (len(hallazgos) - usd) else 'MXN'
+    return 'MXN'
+
+
+#: El TC impreso en una PO, con palabras de por medio: la de CDA Industrial
+#: dice "un tipo de cambio conforme al DOF de $17.3305 MXN por USD". El patrón
+#: del módulo de facturas exige el número pegado a la etiqueta y no lo ve.
+_PO_RE_TC = re.compile(
+    r'(?:tipo\s*de\s*cambio|tipo\s*cambio|\bT\.?\s?C\.?\b)'
+    r'[^\n\d]{0,40}\$?\s*(\d{1,2}\.\d{2,6})', re.I)
+
+
+def _tipo_cambio_impreso_en_po(texto):
+    """El TC pactado en la PO, o None. Se valida el rango para no confundirlo
+    con cualquier otro número de la línea."""
+    if not texto:
+        return None
+    for m in _PO_RE_TC.finditer(texto):
+        try:
+            v = Decimal(m.group(1))
+        except (InvalidOperation, TypeError):
+            continue
+        if Decimal('5') <= v <= Decimal('50'):
+            return v
+    return None
+
+
+def tipo_cambio_para_po(texto):
+    """Tipo de cambio USD→MXN a usar para una PO, en orden de confianza.
+
+    1. El que venga IMPRESO en la propia PO. Si el cliente lo pactó, ese manda.
+    2. El mismo que usan las cotizaciones: la tasa real del día
+       (get_tipo_cambio_usd_mxn, con caché de una hora). Convertir la cotización
+       a una tasa y la PO a otra dejaba montos que no se pueden comparar, y la
+       utilidad —POs menos OCs— saldría torcida.
+    3. El respaldo del módulo financiero (TIPO_CAMBIO_USD_FALLBACK).
+    """
+    tc = _extraer_tipo_cambio(texto) or _tipo_cambio_impreso_en_po(texto)
+    if tc:
+        return tc, 'impreso en la PO'
+    try:
+        from .views_cotizaciones import get_tipo_cambio_usd_mxn
+        tc = get_tipo_cambio_usd_mxn()
+        if tc:
+            return Decimal(str(tc)), 'tasa del día'
+    except Exception as e:
+        logger.warning('PO: no se pudo obtener el tipo de cambio del día: %s', e)
+    return _tipo_cambio_fallback(), 'respaldo fijo'
+
+
+def analizar_po_cliente(archivo):
+    """Si el archivo es una PO del cliente, le saca el monto y lo deja guardado.
+
+    Devuelve el monto (Decimal) o None. NO recalcula la oportunidad: de eso se
+    encarga recalcular_monto_por_po, para poder subir varios archivos y sumar
+    una sola vez al final.
+    """
+    from decimal import Decimal as _D
+
+    if (archivo.extension or '').lower().lstrip('.') != 'pdf':
+        return None
+
+    texto, uso_ocr = texto_de_po(archivo.archivo)
+    if not es_po_de_cliente(archivo.nombre_original, texto):
+        return None
+
+    # ── El monto ──
+    # Lo saca monto_de_po, escrito para este caso: prefiere el SUBTOTAL (sin
+    # IVA, que es como siempre se ha guardado el monto de la oportunidad) y
+    # exige que la etiqueta y el importe estén EN LA MISMA LÍNEA.
+    #
+    # No se usa _extraer_datos_pdf: en las POs con tabla, "Total" es un
+    # encabezado de columna y su regex cruza el salto de línea, así que
+    # devuelve el número de renglón. Con la PO real de BD BuySmart daba 1.
+    monto = monto_de_po(texto, ocr=uso_ocr)
+    moneda = moneda_de_po(texto)
+    datos_moneda_original = monto
+
+    if monto is None:
+        logger.info('PO: %s parece PO pero no se le pudo sacar monto', archivo.nombre_original)
+        return None
+
+    monto = _D(str(monto))
+    # Las POs en dólares se guardan en pesos, que es la moneda del CRM.
+    # _convertir_a_mxn devuelve (monto, tipo_de_cambio): hay que desempacar,
+    # o al campo le llega la tupla entera.
+    if (moneda or '').upper() == 'USD':
+        tc, fuente_tc = tipo_cambio_para_po(texto)
+        monto, _ = _convertir_a_mxn(monto, 'USD', tc)
+        logger.info('PO %s: %s USD x %s (%s) = %s MXN',
+                    archivo.nombre_original, datos_moneda_original, tc, fuente_tc, monto)
+
+    # A dos decimales: la multiplicación por el tipo de cambio deja tres
+    # (540 × 17.00 = 9180.000) y el campo solo acepta dos.
+    monto = monto.quantize(_D('0.01'))
+
+    archivo.tipo_financiero = TIPO_PO_CLIENTE
+    archivo.monto_extraido = monto
+    archivo.procesado_financiero = True
+    archivo.save(update_fields=['tipo_financiero', 'monto_extraido', 'procesado_financiero'])
+    logger.info('PO detectada en opp %s: %s = %s', archivo.oportunidad_id,
+                archivo.nombre_original, monto)
+    return monto
+
+
+def recalcular_monto_por_po(oportunidad):
+    """Pone en la oportunidad la SUMA de todas sus POs. None si no hay ninguna.
+
+    Es la fuente de verdad del monto en cuanto entra la primera PO: mientras no
+    haya, el monto lo sigue mandando la cotización.
+    """
+    from django.db.models import Sum
+    from decimal import Decimal as _D
+    from .models import ArchivoOportunidad
+
+    agg = (ArchivoOportunidad.objects
+           .filter(oportunidad=oportunidad, tipo_financiero=TIPO_PO_CLIENTE)
+           .exclude(monto_extraido__isnull=True)
+           .aggregate(total=Sum('monto_extraido')))
+    total = agg['total']
+    if total is None:
+        return None
+
+    # TodoItem.monto es DecimalField(max_digits=10): tope 99,999,999.99. Sumar
+    # varias POs puede pasarse y MySQL en modo estricto rechazaría el save.
+    TOPE = _D('99999999.99')
+    if total > TOPE:
+        logger.error('PO: la suma de POs de la opp %s (%s) rebasa el tope del campo; se recorta',
+                     oportunidad.id, total)
+        total = TOPE
+
+    total = total.quantize(_D('0.01'))
+    if oportunidad.monto != total:
+        oportunidad.monto = total
+        oportunidad.save(update_fields=['monto', 'fecha_actualizacion'])
+    return total
+
+
+#: Marca del archivo cuando es una OC que NOSOTROS le emitimos a un proveedor.
+#: Es el valor que _detectar_tipo_financiero ya venía usando; se nombra aquí
+#: para que la utilidad no dependa de una cadena suelta.
+TIPO_OC_PROVEEDOR = 'oc'
+
+
+def utilidad_de_oportunidad(oportunidad_id):
+    """Lo que deja la oportunidad: (po_total, oc_total, utilidad, porcentaje).
+
+    Todo sale de los archivos del Drive, sin depender de que exista un proyecto:
+    las POs del cliente son el ingreso y las OC a proveedores el gasto. Los dos
+    montos ya están en pesos y sin impuesto, así que se restan directo.
+
+    Hacen falta LAS DOS para que haya utilidad: sin PO no hay ingreso contra el
+    cual medir, y sin OC no se conoce el costo. Si falta cualquiera de las dos,
+    la utilidad y el porcentaje salen en None —que el widget pinta como guion—
+    en vez de un número que se leería como definitivo. Un 100% "porque todavía
+    no suben las OC" engaña más que un guion.
+    """
+    from django.db.models import Sum
+    from .models import ArchivoOportunidad
+
+    montos = (ArchivoOportunidad.objects
+              .filter(oportunidad_id=oportunidad_id,
+                      tipo_financiero__in=[TIPO_PO_CLIENTE, TIPO_OC_PROVEEDOR])
+              .exclude(monto_extraido__isnull=True)
+              .values('tipo_financiero')
+              .annotate(total=Sum('monto_extraido')))
+    por_tipo = {m['tipo_financiero']: (m['total'] or Decimal('0')) for m in montos}
+    po_total = por_tipo.get(TIPO_PO_CLIENTE, Decimal('0'))
+    oc_total = por_tipo.get(TIPO_OC_PROVEEDOR, Decimal('0'))
+    if po_total <= 0 or oc_total <= 0:
+        return po_total, oc_total, None, None
+    utilidad = po_total - oc_total
+    pct = (utilidad / po_total * 100).quantize(Decimal('0.1'))
+    return po_total, oc_total, utilidad, pct
+
+
+def oportunidad_tiene_po(oportunidad_id):
+    """¿Ya entró al menos una PO con monto? Decide de dónde manda el monto."""
+    from .models import ArchivoOportunidad
+    return (ArchivoOportunidad.objects
+            .filter(oportunidad_id=oportunidad_id, tipo_financiero=TIPO_PO_CLIENTE)
+            .exclude(monto_extraido__isnull=True)
+            .exists())
+
 
 def _extraer_datos_pdf_from_bytes(content_bytes):
     """Versión que acepta bytes en vez de un FileField (para uploads manuales)."""
@@ -621,8 +1321,13 @@ def _detectar_moneda(text):
             return 'USD'
         if 'MXN' in val or 'PESO' in val or 'M.N' in val or 'NACIONAL' in val:
             return 'MXN'
-    # 2) Señales fuertes de USD en cualquier parte del documento
-    if re.search(r'\bUSD\b|US\s?\$|\bD[OÓ]LARES?\b|\bDLLS?\b', t):
+    # 2) Señales fuertes de USD en cualquier parte del documento.
+    # La frontera de palabra IZQUIERDA se relaja a "no venir después de una
+    # letra": la OC de BAJANET imprime el total con letra y el código pegado
+    # —"OCHOCIENTOSQUINCE41/100USD"—, y un \bUSD\b no lo ve porque entre el
+    # '0' y la 'U' no hay frontera. Confundir dólares con pesos multiplica el
+    # gasto por el tipo de cambio.
+    if re.search(r'(?<![A-Z])USD\b|US\s?\$|\bD[OÓ]LARES?\b|\bDLLS?\b', t):
         return 'USD'
     return 'MXN'
 

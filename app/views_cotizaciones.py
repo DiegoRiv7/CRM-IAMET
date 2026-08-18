@@ -734,15 +734,20 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             logger.debug(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
 
-            # Actualizar siempre el monto de la oportunidad con el subtotal (sin IVA) en MXN
+            # El monto de la oportunidad lo manda el subtotal (sin IVA) de la
+            # cotización... MIENTRAS no haya una PO del cliente en el Drive.
+            # En cuanto entra la primera PO, ese es el monto real de lo que nos
+            # van a comprar y una cotización nueva ya no debe pisarlo.
             if cotizacion.oportunidad and cotizacion.subtotal > 0:
                 opp = cotizacion.oportunidad
-                monto_mxn = cotizacion.subtotal
-                if cotizacion.moneda and cotizacion.moneda.upper() == 'USD':
-                    tc = get_tipo_cambio_usd_mxn()
-                    monto_mxn = (cotizacion.subtotal * tc).quantize(Decimal('0.01'))
-                opp.monto = monto_mxn
-                opp.save(update_fields=['monto', 'fecha_actualizacion'])
+                from .services_financiero import oportunidad_tiene_po
+                if not oportunidad_tiene_po(opp.id):
+                    monto_mxn = cotizacion.subtotal
+                    if cotizacion.moneda and cotizacion.moneda.upper() == 'USD':
+                        tc = get_tipo_cambio_usd_mxn()
+                        monto_mxn = (cotizacion.subtotal * tc).quantize(Decimal('0.01'))
+                    opp.monto = monto_mxn
+                    opp.save(update_fields=['monto', 'fecha_actualizacion'])
             
             # Guardar elementos en orden correcto (títulos Y productos).
             for elemento in elementos_combinados:
