@@ -6995,7 +6995,11 @@ class ReplayMensual(models.Model):
 # responsable configurado en el Panel de Administración → Leads Web.
 
 class LeadWebConfig(models.Model):
-    """Configuración de la integración de leads externos (singleton)."""
+    """Un SITIO externo que manda leads al CRM (iamet.mx, bajanet, ...).
+    Cada sitio tiene su propio token y su propio responsable — dejó de ser
+    singleton el 2026-08-19 cuando se sumó la página de bajanet."""
+    nombre = models.CharField(max_length=80, default='iamet.mx',
+                              help_text='Nombre del sitio/página que manda los leads.')
     responsable = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='leads_web_asignados',
@@ -7022,7 +7026,7 @@ class LeadWebConfig(models.Model):
         return cfg
 
     def __str__(self):
-        return f'Leads Web → {self.responsable or "sin responsable"}'
+        return f'{self.nombre} → {self.responsable or "sin responsable"}'
 
 
 class LeadWeb(models.Model):
@@ -7061,6 +7065,10 @@ class LeadWeb(models.Model):
     )
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='procesado')
     error = models.TextField(blank=True, default='')
+    sitio = models.ForeignKey(
+        'LeadWebConfig', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='leads', help_text='Sitio/página del que llegó el lead.'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

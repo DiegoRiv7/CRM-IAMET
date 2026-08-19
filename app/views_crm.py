@@ -10789,7 +10789,7 @@ def _feed_leads_items(user, limite=4):
     qs = (LeadWeb.objects.filter(
         prospecto__usuario=user, prospecto__etapa='identificado',
         estado='procesado', fecha_creacion__gte=cutoff)
-        .select_related('prospecto', 'cliente').order_by('-fecha_creacion'))
+        .select_related('prospecto', 'cliente', 'sitio').order_by('-fecha_creacion'))
     for lw in qs:
         if lw.id in silenciados:
             continue
@@ -10810,7 +10810,7 @@ def _feed_leads_items(user, limite=4):
             'hace': (_cor_hace(timezone.localtime(lw.fecha_creacion), timezone.localtime(now))
                      if lw.fecha_creacion else ''),
             'urgente': True,
-            'categoria': 'Lead nuevo — página web',
+            'categoria': 'Lead nuevo — %s' % (lw.sitio.nombre if lw.sitio else 'página web'),
             'headline': ('%s de %s pidió información en la página' % (quien, empresa)) if empresa
                         else ('%s pidió información en la página' % quien),
             'contexto': ' · '.join(ctx),

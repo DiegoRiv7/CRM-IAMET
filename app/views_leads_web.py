@@ -43,6 +43,16 @@ def _token_del_request(request):
     return ''
 
 
+def _sitio_por_token(token):
+    """Devuelve el sitio (LeadWebConfig) cuyo token coincide, o None."""
+    if not token:
+        return None
+    for cfg in LeadWebConfig.objects.select_related('responsable').all():
+        if cfg.token and constant_time_compare(token, cfg.token):
+            return cfg
+    return None
+
+
 def _responsable_efectivo(cfg):
     """Responsable configurado, o un supervisor como respaldo para no perder leads."""
     if cfg.responsable and cfg.responsable.is_active:
@@ -53,9 +63,9 @@ def _responsable_efectivo(cfg):
     return respaldo
 
 
-def _comentarios_prospecto(data):
+def _comentarios_prospecto(data, sitio_nombre='iamet.mx'):
     """Arma el bloque de comentarios del Prospecto con todo el contexto del lead."""
-    lineas = ['Lead recibido desde la página web (iamet.mx).', '']
+    lineas = ['Lead recibido desde la página web (%s).' % sitio_nombre, '']
     nombre = (data.get('contactName') or data.get('nombre') or '').strip()
     email = (data.get('email') or '').strip()
     telefono = (data.get('phone') or data.get('telefono') or '').strip()
@@ -93,12 +103,12 @@ def api_leads_web(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
 
-    cfg = LeadWebConfig.obtener()
-    token = _token_del_request(request)
-    if not token or not constant_time_compare(token, cfg.token):
+    LeadWebConfig.obtener()  # garantiza que exista el sitio default con token
+    cfg = _sitio_por_token(_token_del_request(request))
+    if not cfg:
         return JsonResponse({'success': False, 'error': 'Token inválido'}, status=401)
     if not cfg.activo:
-        return JsonResponse({'success': False, 'error': 'Integración desactivada'}, status=503)
+        return JsonResponse({'success': False, 'error': 'Integración desactivada para este sitio'}, status=503)
 
     try:
         data = json.loads(request.body)
@@ -119,7 +129,8 @@ def api_leads_web(request):
 
     # Anti-duplicados: si la web reintenta el mismo lead, respondemos OK sin recrear.
     if external_id:
-        previo = LeadWeb.objects.filter(external_id=external_id, fuente=fuente).exclude(estado='error').first()
+        previo = LeadWeb.objects.filter(external_id=external_id, fuente=fuente,
+                                        sitio=cfg).exclude(estado='error').first()
         if previo:
             return JsonResponse({
                 'success': True, 'duplicado': True,
@@ -167,7 +178,7 @@ def api_leads_web(request):
                 contacto=contacto,
                 producto='',
                 area=industria or 'SISTEMAS',
-                comentarios=_comentarios_prospecto(data),
+                comentarios=_comentarios_prospecto(data, cfg.nombre),
             )
 
             lead = LeadWeb.objects.create(
@@ -181,6 +192,7 @@ def api_leads_web(request):
                 prospecto=prospecto,
                 cliente=cliente,
                 estado='procesado',
+                sitio=cfg,
             )
     except Exception as e:
         logger.error(f'[leads-web] Error procesando lead: {e}')
@@ -188,7 +200,7 @@ def api_leads_web(request):
             LeadWeb.objects.create(
                 external_id=external_id, fuente=fuente, empresa=empresa,
                 nombre_contacto=nombre_contacto, email=email, telefono=telefono,
-                payload=data, estado='error', error=str(e)[:1000],
+                payload=data, estado='error', error=str(e)[:1000], sitio=cfg,
             )
         except Exception:
             pass
@@ -203,7 +215,8 @@ def _notificar_lead_nuevo(cfg, responsable, lead):
     quien = lead.nombre_contacto or lead.email or 'Alguien'
     empresa = f' de {lead.empresa}' if lead.empresa else ''
     titulo = 'Nuevo lead desde la página web'
-    mensaje = f'{quien}{empresa} pidió información vía {lead.get_fuente_display().lower()}. Ya está en tu kanban de prospección.'
+    sitio = lead.sitio.nombre if lead.sitio else 'la página web'
+    mensaje = f'{quien}{empresa} pidió información en {sitio}. Ya está en tu kanban de prospección.'
     destinatarios = {responsable.id: responsable}
     if cfg.notificar_supervisores:
         for sup in User.objects.filter(groups__name='Supervisores', is_active=True):
@@ -223,11 +236,11 @@ def _notificar_lead_nuevo(cfg, responsable, lead):
 
 @login_required
 def api_admin_leads_web(request):
-    """Panel de Administración → Leads Web: configuración + últimos leads."""
+    """Panel de Administración → Leads Web: sitios conectados + últimos leads."""
     if not is_supervisor(request.user):
         return JsonResponse({'error': 'No autorizado'}, status=403)
 
-    cfg = LeadWebConfig.obtener()
+    LeadWebConfig.obtener()  # garantiza que exista al menos el sitio default
 
     if request.method == 'POST':
         try:
@@ -235,27 +248,58 @@ def api_admin_leads_web(request):
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
 
-        if data.get('accion') == 'regenerar_token':
-            cfg.token = secrets.token_urlsafe(32)
-            cfg.save(update_fields=['token', 'fecha_actualizacion'])
+        accion = data.get('accion', '')
+        if accion == 'crear_sitio':
+            nombre = (data.get('nombre') or '').strip()[:80]
+            if not nombre:
+                return JsonResponse({'success': False, 'error': 'Nombre del sitio requerido'}, status=400)
+            if LeadWebConfig.objects.filter(nombre__iexact=nombre).exists():
+                return JsonResponse({'success': False, 'error': 'Ya existe un sitio con ese nombre'}, status=400)
+            LeadWebConfig.objects.create(nombre=nombre, token=secrets.token_urlsafe(32))
         else:
-            if 'responsable_id' in data:
-                rid = data.get('responsable_id')
-                if rid:
-                    try:
-                        cfg.responsable = User.objects.get(id=int(rid), is_active=True)
-                    except (User.DoesNotExist, ValueError, TypeError):
-                        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=400)
-                else:
-                    cfg.responsable = None
-            if 'activo' in data:
-                cfg.activo = bool(data['activo'])
-            if 'notificar_supervisores' in data:
-                cfg.notificar_supervisores = bool(data['notificar_supervisores'])
-            cfg.save()
+            try:
+                cfg = LeadWebConfig.objects.get(id=int(data.get('sitio_id')))
+            except (LeadWebConfig.DoesNotExist, ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Sitio no encontrado'}, status=404)
+            if accion == 'regenerar_token':
+                cfg.token = secrets.token_urlsafe(32)
+                cfg.save(update_fields=['token', 'fecha_actualizacion'])
+            elif accion == 'eliminar_sitio':
+                if cfg.leads.exists():
+                    return JsonResponse({'success': False, 'error': 'Este sitio ya recibió leads; mejor desactívalo'}, status=400)
+                cfg.delete()
+            else:
+                if 'nombre' in data:
+                    nombre = (data.get('nombre') or '').strip()[:80]
+                    if nombre:
+                        cfg.nombre = nombre
+                if 'responsable_id' in data:
+                    rid = data.get('responsable_id')
+                    if rid:
+                        try:
+                            cfg.responsable = User.objects.get(id=int(rid), is_active=True)
+                        except (User.DoesNotExist, ValueError, TypeError):
+                            return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=400)
+                    else:
+                        cfg.responsable = None
+                if 'activo' in data:
+                    cfg.activo = bool(data['activo'])
+                if 'notificar_supervisores' in data:
+                    cfg.notificar_supervisores = bool(data['notificar_supervisores'])
+                cfg.save()
+
+    sitios = [{
+        'id': c.id,
+        'nombre': c.nombre,
+        'responsable_id': c.responsable_id,
+        'activo': c.activo,
+        'notificar_supervisores': c.notificar_supervisores,
+        'token': c.token,
+        'leads_recibidos': c.leads.count(),
+    } for c in LeadWebConfig.objects.all().order_by('id')]
 
     leads = []
-    for l in LeadWeb.objects.select_related('prospecto')[:30]:
+    for l in LeadWeb.objects.select_related('prospecto', 'sitio')[:30]:
         leads.append({
             'id': l.id,
             'fecha': l.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
@@ -264,6 +308,7 @@ def api_admin_leads_web(request):
             'email': l.email,
             'telefono': l.telefono,
             'fuente': l.get_fuente_display(),
+            'sitio': l.sitio.nombre if l.sitio else '—',
             'estado': l.estado,
             'prospecto_id': l.prospecto_id,
             'prospecto_etapa': l.prospecto.get_etapa_display() if l.prospecto else '',
@@ -276,13 +321,8 @@ def api_admin_leads_web(request):
 
     return JsonResponse({
         'success': True,
-        'config': {
-            'responsable_id': cfg.responsable_id,
-            'activo': cfg.activo,
-            'notificar_supervisores': cfg.notificar_supervisores,
-            'token': cfg.token,
-            'endpoint': request.build_absolute_uri('/app/api/leads/web/'),
-        },
+        'sitios': sitios,
+        'endpoint': request.build_absolute_uri('/app/api/leads/web/'),
         'usuarios': usuarios,
         'leads': leads,
     })
