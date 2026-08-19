@@ -1686,6 +1686,7 @@ class Notificacion(models.Model):
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
         ('mensaje_grupo', 'Mensaje en grupo de trabajo'),
         ('prospecto_asignado', 'Prospecto asignado por supervisor'),
+        ('lead_web', 'Lead desde la página web'),
         ('certificacion_por_vencer', 'Certificación por vencer'),
         ('certificacion_vencida', 'Certificación vencida'),
     ]
@@ -6975,3 +6976,89 @@ class ReplayMensual(models.Model):
 
     def __str__(self):
         return f'Replay {self.usuario_id} {self.mes}/{self.anio}'
+
+
+# ──────────────────────────────────────────────
+# LEADS WEB — leads que llegan desde la página pública (iamet-platform)
+# ──────────────────────────────────────────────
+# La página web (staging.iamet.mx) empuja cada lead de sus formularios al
+# CRM vía POST /app/api/leads/web/ con token Bearer. El lead se convierte en
+# Prospecto (kanban de prospección, etapa 'identificado') asignado al
+# responsable configurado en el Panel de Administración → Leads Web.
+
+class LeadWebConfig(models.Model):
+    """Configuración de la integración de leads externos (singleton)."""
+    responsable = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='leads_web_asignados',
+        help_text='Usuario al que se asignan los prospectos que llegan de la web.'
+    )
+    token = models.CharField(max_length=64, blank=True, default='')
+    activo = models.BooleanField(default=True)
+    notificar_supervisores = models.BooleanField(default=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuración de Leads Web'
+        verbose_name_plural = 'Configuración de Leads Web'
+
+    @classmethod
+    def obtener(cls):
+        import secrets
+        cfg = cls.objects.select_related('responsable').first()
+        if not cfg:
+            cfg = cls.objects.create(token=secrets.token_urlsafe(32))
+        elif not cfg.token:
+            cfg.token = secrets.token_urlsafe(32)
+            cfg.save(update_fields=['token'])
+        return cfg
+
+    def __str__(self):
+        return f'Leads Web → {self.responsable or "sin responsable"}'
+
+
+class LeadWeb(models.Model):
+    """Lead crudo recibido desde la página web (auditoría y anti-duplicados)."""
+    ESTADO_CHOICES = [
+        ('procesado', 'Procesado'),
+        ('duplicado', 'Duplicado'),
+        ('error', 'Error'),
+    ]
+    FUENTE_CHOICES = [
+        ('form', 'Formulario de contacto'),
+        ('agent', 'Agente virtual'),
+        ('advisor', 'Tech Advisor'),
+        ('quote', 'Cotización de tienda'),
+        ('academy', 'Academia'),
+        ('otro', 'Otro'),
+    ]
+
+    external_id = models.CharField(
+        max_length=100, blank=True, default='', db_index=True,
+        help_text='ID del lead en la plataforma web, para no duplicar en reintentos.'
+    )
+    fuente = models.CharField(max_length=20, choices=FUENTE_CHOICES, default='form')
+    empresa = models.CharField(max_length=200, blank=True, default='')
+    nombre_contacto = models.CharField(max_length=200, blank=True, default='')
+    email = models.CharField(max_length=254, blank=True, default='')
+    telefono = models.CharField(max_length=30, blank=True, default='')
+    payload = models.JSONField(default=dict, blank=True)
+    prospecto = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='leads_web'
+    )
+    cliente = models.ForeignKey(
+        'Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='leads_web'
+    )
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='procesado')
+    error = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Lead Web'
+        verbose_name_plural = 'Leads Web'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'{self.empresa or self.email or "Lead"} ({self.get_fuente_display()})'

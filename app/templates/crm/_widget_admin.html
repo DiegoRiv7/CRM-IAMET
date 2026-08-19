@@ -273,6 +273,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Oportunidades
         </button>
+        <button class="admin-nav-item" id="admNav-leadsweb" onclick="adminNavClick(this,'leadsweb')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Leads Web
+        </button>
         <p class="admin-section-label" style="margin-top:8px;">Acceso</p>
         <button class="admin-nav-item" id="admNav-permisos" onclick="adminNavClick(this,'permisos')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -326,10 +330,11 @@ function getAC(){ return document.getElementById('adminContent'); }
 function getCsrf(){ return (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||''; }
 
 var _adminConfirmCb = null;
-window.adminConfirm = function(title, msg, onOk) {
+window.adminConfirm = function(title, msg, onOk, okText) {
   var d = document.getElementById('adminConfirmDlg');
   document.getElementById('adminConfirmTitle').textContent = title;
   document.getElementById('adminConfirmMsg').textContent = msg;
+  document.getElementById('adminConfirmOk').textContent = okText || 'Eliminar';
   _adminConfirmCb = onOk;
   d.style.display = 'flex';
 };
@@ -403,6 +408,7 @@ window.loadAdminSection = function(section){
   else if(section==='tareas_auto') loadTareasAuto();
   else if(section==='grupos')    loadGrupos();
   else if(section==='oportunidades') loadOportunidades();
+  else if(section==='leadsweb') loadLeadsWeb();
   else if(section==='permisos')  loadPermisos();
   else if(section==='alias')    loadAlias();
   else if(section==='rendimiento') loadRendimiento();
@@ -1455,6 +1461,97 @@ window._admPipelineDelete = function(nombre){
       else _showAdminToast(res.error||'Error al eliminar',false);
     });
   });
+};
+
+/* ── Leads Web (página pública iamet.mx) ────────────── */
+window.loadLeadsWeb = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/leads-web/', { credentials:'same-origin' })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!data.success){ ac.innerHTML = '<div style="color:#FF3B30;text-align:center;margin-top:60px;">'+(data.error||'Error')+'</div>'; return; }
+    window._admLWConfig = data.config;
+    var cfg = data.config;
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Leads de la P&aacute;gina Web</span></div>';
+    h += '<div style="font-size:0.78rem;color:#6E6E73;margin:-6px 0 14px;">Cada persona que llena un formulario en iamet.mx entra aqu&iacute; y se crea como prospecto en la etapa Identificado.</div>';
+
+    /* Config */
+    h += '<div class="admin-inline-form" style="display:block;margin-bottom:16px;">';
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:10px;">Configuraci&oacute;n</div>';
+    h += '<div class="admin-form-row" style="align-items:center;">';
+    h += '<div style="flex:1;"><div style="font-size:0.72rem;color:#8E8E93;margin-bottom:4px;">Responsable de los leads (a qui&eacute;n se asignan)</div>';
+    h += '<select class="admin-input" id="admLWResponsable" onchange="admLWGuardar({responsable_id:this.value})">';
+    h += '<option value="">— Sin responsable (respaldo: primer supervisor) —</option>';
+    (data.usuarios||[]).forEach(function(u){
+      h += '<option value="'+u.id+'"'+(cfg.responsable_id===u.id?' selected':'')+'>'+u.nombre+'</option>';
+    });
+    h += '</select></div>';
+    h += '<div style="display:flex;flex-direction:column;gap:8px;padding-top:14px;">';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#3A3A3C;cursor:pointer;"><label class="admin-toggle"><input type="checkbox" '+(cfg.activo?'checked':'')+' onchange="admLWGuardar({activo:this.checked})"><span class="admin-toggle-slider"></span></label> Integraci&oacute;n activa</label>';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#3A3A3C;cursor:pointer;"><label class="admin-toggle"><input type="checkbox" '+(cfg.notificar_supervisores?'checked':'')+' onchange="admLWGuardar({notificar_supervisores:this.checked})"><span class="admin-toggle-slider"></span></label> Avisar a supervisores</label>';
+    h += '</div></div>';
+    /* Token + endpoint */
+    h += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06);">';
+    h += '<div style="font-size:0.72rem;color:#8E8E93;margin-bottom:4px;">Conexi&oacute;n (para el desarrollador de la p&aacute;gina)</div>';
+    h += '<div class="admin-form-row"><input class="admin-input" readonly value="'+cfg.endpoint+'" onclick="this.select()">';
+    h += '<input class="admin-input" readonly id="admLWToken" type="password" value="'+cfg.token+'" onclick="this.select()" style="max-width:260px;">';
+    h += '<button class="admin-btn admin-btn-secondary" onclick="admLWVerToken()">Ver</button>';
+    h += '<button class="admin-btn admin-btn-secondary" onclick="admLWRegenerar()">Regenerar token</button>';
+    h += '</div></div>';
+    h += '</div>';
+
+    /* Leads table */
+    h += '<div style="font-size:0.78rem;font-weight:600;color:#3A3A3C;margin-bottom:8px;">&Uacute;ltimos leads recibidos</div>';
+    if(!(data.leads||[]).length){
+      h += '<div style="color:#8E8E93;font-size:0.8rem;padding:20px;text-align:center;background:rgba(0,0,0,0.02);border-radius:12px;">A&uacute;n no llega ning&uacute;n lead de la p&aacute;gina.</div>';
+    } else {
+      h += '<table class="admin-table"><thead><tr><th>Fecha</th><th>Empresa</th><th>Contacto</th><th>Email</th><th>Fuente</th><th>Estado</th></tr></thead><tbody>';
+      data.leads.forEach(function(l){
+        var badge = l.estado==='procesado' ? '<span class="admin-badge admin-badge-green">'+(l.prospecto_etapa||'Procesado')+'</span>'
+                  : l.estado==='duplicado' ? '<span class="admin-badge admin-badge-gray">Duplicado</span>'
+                  : '<span class="admin-badge admin-badge-red">Error</span>';
+        h += '<tr><td style="white-space:nowrap;color:#636366;">'+l.fecha+'</td>';
+        h += '<td><strong style="font-size:0.82rem;">'+(l.empresa||'&mdash;')+'</strong></td>';
+        h += '<td>'+(l.contacto||'&mdash;')+'</td>';
+        h += '<td style="color:#636366;">'+(l.email||'&mdash;')+'</td>';
+        h += '<td>'+l.fuente+'</td>';
+        h += '<td>'+badge+'</td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    h += '</div>';
+    ac.innerHTML = h;
+  });
+};
+
+window.admLWGuardar = function(cambios){
+  fetch('/app/api/admin/leads-web/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(cambios)
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(res.success) _showAdminToast('Configuración guardada');
+    else { _showAdminToast(res.error||'Error al guardar', false); loadLeadsWeb(); }
+  });
+};
+
+window.admLWVerToken = function(){
+  var i = document.getElementById('admLWToken');
+  if(i) i.type = i.type==='password' ? 'text' : 'password';
+};
+
+window.admLWRegenerar = function(){
+  adminConfirm('Regenerar token', 'La página web dejará de poder enviar leads hasta que se actualice el token nuevo en su configuración. ¿Continuar?', function(){
+    fetch('/app/api/admin/leads-web/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+      body:JSON.stringify({accion:'regenerar_token'})
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if(res.success){ _showAdminToast('Token regenerado'); loadLeadsWeb(); }
+      else _showAdminToast(res.error||'Error', false);
+    });
+  }, 'Regenerar');
 };
 
 /* ── Alias Clientes ─────────────────────────────────── */
