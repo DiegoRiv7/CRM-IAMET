@@ -264,6 +264,22 @@
         </button>
         {% endif %}
 
+        {% if sitio_web_url and es_supervisor %}
+        <!-- Sitio Web en pruebas: copia del sitio público corriendo en este
+             mismo servidor. Solo existe donde SITIO_WEB_URL esté definida
+             (pruebas) — producción no la define y no ve este botón. -->
+        <button type="button" class="crm-sb-btn" id="btnSitioWeb"
+            onclick="window.open('{{ sitio_web_url }}', '_blank')"
+            data-tooltip="Sitio Web (pruebas)">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <span class="crm-sb-label">Sitio Web</span>
+        </button>
+        {% endif %}
+
         {% if es_supervisor %}
         <!-- Admin (visible para supervisores incluso en modo ingeniero) -->
         <button type="button" class="crm-sb-btn" id="btnAdminPanel"

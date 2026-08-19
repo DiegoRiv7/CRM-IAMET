@@ -9,6 +9,11 @@ from .models import UserProfile
 # Para ocultarlo en un ambiente: RESUMEN_HABILITADO=0 en su .env.
 RESUMEN_HABILITADO = os.environ.get('RESUMEN_HABILITADO', '1') == '1'
 
+# URL del sitio web en pruebas (botón "Sitio Web" del sidebar). Solo aparece
+# donde la variable esté definida — en pruebas apunta a la copia del sitio
+# que corre en este mismo servidor; producción no la define y no ve nada.
+SITIO_WEB_URL = os.environ.get('SITIO_WEB_URL', '')
+
 def supervisor_flag(request):
     user_authenticated = request.user.is_authenticated
 
@@ -26,4 +31,5 @@ def supervisor_flag(request):
         'is_engineer': is_engineer(request.user) if user_authenticated else False,
         'user_profile': profile,
         'resumen_habilitado': RESUMEN_HABILITADO,
+        'sitio_web_url': SITIO_WEB_URL,
     }
