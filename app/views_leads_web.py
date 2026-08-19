@@ -94,6 +94,33 @@ def _comentarios_prospecto(data, sitio_nombre='iamet.mx'):
             utm.append(f'{etiqueta}: {valor}')
     if utm:
         lineas += ['', 'Campaña de origen — ' + ' · '.join(utm)]
+
+    # Campos EXTRA: cada formulario puede traer campos propios (ciudad,
+    # servicio de interés, etc.). Todo lo que no reconocemos se muestra tal
+    # cual como línea adicional — el vendedor no pierde ningún dato.
+    conocidos = {
+        'company', 'empresa', 'contactname', 'nombre', 'email', 'phone',
+        'telefono', 'industry', 'industria', 'companysize', 'tamano_empresa',
+        'problemdescription', 'descripcion', 'verticalslug', 'vertical',
+        'source', 'fuente', 'externalid', 'external_id', 'gclid', 'fbclid',
+        'msclkid', 'referrer', 'landingurl', 'firstpage', 'sessionid',
+        'score', 'scorebreakdown', 'notes',
+    }
+    extras = []
+    for clave, valor in data.items():
+        if not isinstance(clave, str) or clave.lower() in conocidos or clave.lower().startswith('utm'):
+            continue
+        if isinstance(valor, (int, float)):
+            valor = str(valor)
+        if not isinstance(valor, str) or not valor.strip():
+            continue
+        import re as _re
+        etiqueta = _re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', clave.replace('_', ' ')).strip().capitalize()
+        extras.append(f'• {etiqueta}: {valor.strip()[:150]}')
+        if len(extras) >= 10:
+            break
+    if extras:
+        lineas += ['', 'Otros datos del formulario:'] + extras
     return '\n'.join(lineas)
 
 
