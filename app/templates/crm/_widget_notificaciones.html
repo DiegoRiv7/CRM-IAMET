@@ -119,6 +119,7 @@ y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
             <button class="nd-chip active" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
             <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
             <button class="nd-chip" data-d="general" onclick="notifDrawerFiltro('general',this)">General</button>
+            <button class="nd-chip" data-d="leads" id="ndChipLeads" style="display:none;" onclick="notifDrawerFiltro('leads',this)">Leads</button>
         </div>
         <div class="nd-list" id="notifDrawerList"></div>
     </div>
@@ -662,12 +663,12 @@ body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; b
 .nd-ghost:hover { background: #E8E8ED; color: #1D1D1F; }
 
 /* Chips: ENVUELVEN para que se vean todos (Oportunidades incluida) */
-.nd-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 16px 14px; }
+.nd-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 16px 14px; }
 /* En modo ventana (más ancho) los chips van centrados. */
 .nd-drawer.ww-windowed .nd-chips { justify-content: center; }
 .nd-chip {
     flex: 0 0 auto; background: #fff; border: 1px solid rgba(15,23,42,0.07);
-    color: #475569; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    color: #475569; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
     cursor: pointer; white-space: nowrap; transition: all .15s; font-family: inherit;
     box-shadow: 0 2px 8px rgba(15,23,42,0.08);
 }
@@ -831,6 +832,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     const CAT_ADMIN = ['rendimiento_bajo', 'solicitud_cambio_perfil', 'tarea_reprogramada', 'sistema'];
 
     const ICONS = {
+        'lead_web': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
         'tarea_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         'actividad_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         'tarea_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
@@ -1325,6 +1327,16 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
                     _nData = data.notifications;
                     _updateCounts();
                     _render();
+                    // El chip "Leads" solo existe cuando hay notificaciones de leads.
+                    var chipL = document.getElementById('ndChipLeads');
+                    if (chipL) {
+                        var hayLeads = _nData.some(function (x) { return x.tipo === 'lead_web'; });
+                        chipL.style.display = hayLeads ? '' : 'none';
+                        if (!hayLeads && _dFiltro === 'leads') {
+                            var chipT = document.querySelector('.nd-chip[data-d="tareas"]');
+                            if (chipT) notifDrawerFiltro('tareas', chipT);
+                        }
+                    }
 
                     if (!_firstLoadDone) {
                         if (_nData.length > 0) {
@@ -1357,6 +1369,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         if (CAT_TAREAS.includes(n.tipo)) appName = 'Tareas & Actividades';
         else if (CAT_EQUIPO.includes(n.tipo)) appName = 'Muro del Equipo';
         else if (n.tipo === 'oportunidad_mensaje' || n.tipo === 'comentario_oportunidad') appName = 'Conversaciones';
+        else if (n.tipo === 'lead_web') appName = 'Leads de la Página Web';
         
         div.innerHTML = `
             <div class="macos-toast-icon ${iconClass}">${iconHtml}</div>
@@ -1460,10 +1473,12 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         return F_OPP_TIPOS.indexOf(n.tipo) !== -1 || !!n.oportunidad_id;
     }
 
+    function _ndIsLead(n) { return n.tipo === 'lead_web'; }
     function _drawerMatch(n) {
         if (_dFiltro === 'tareas') return _ndIsTarea(n);
         if (_dFiltro === 'oportunidades') return _ndIsOpp(n);
-        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n);
+        if (_dFiltro === 'leads') return _ndIsLead(n);
+        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n) && !_ndIsLead(n);
         return true;
     }
 
@@ -2069,6 +2084,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
 
             // ── Prospectos ──
             'prospecto_asignado':  (n) => _openProspecto(n.prospecto_id || n.oportunidad_id),
+            'lead_web':            (n) => _openProspecto(n.prospecto_id),
 
             // ── Certificaciones ──
             'certificacion_por_vencer': (n) => _openCertificacion(n.certificacion_id),
@@ -2157,8 +2173,10 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         }
         function _openProspecto(prospectoId) {
             if (!prospectoId) { _avisarSinDestino('Prospecto no especificado'); return; }
-            if (typeof window.wpAbrirDetalle === 'function') {
-                window.wpAbrirDetalle(prospectoId);
+            // abrirWidgetProspecto es el global real del kanban de Prospección
+            // (wpAbrirDetalle nunca existió — los clics viejos no abrían nada).
+            if (typeof window.abrirWidgetProspecto === 'function') {
+                window.abrirWidgetProspecto(prospectoId);
             } else {
                 window.location.href = '/app/home/?tab=prospectos&open_prospecto=' + prospectoId;
             }

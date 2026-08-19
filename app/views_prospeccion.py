@@ -625,6 +625,78 @@ def api_prospecto_detalle(request, prospecto_id):
         # base (FK prospecto_origen_directo), no en la sesión del modal: así
         # sigue ahí al cerrarlo y volver a abrirlo.
         'oportunidades': _opps_del_prospecto(p),
+        # Catálogos para la edición inline del widget (clic en un dato = editar).
+        'productos_choices': [c[0] for c in TodoItem.PRODUCTO_CHOICES],
+        'contactos_cliente': ([
+            {'id': c.id, 'nombre': (f'{c.nombre} {c.apellido or ""}').strip()}
+            for c in Contacto.objects.filter(cliente_id=p.cliente_id).order_by('nombre')[:50]
+        ] if p.cliente_id else []),
+    })
+
+
+@login_required
+def api_prospecto_editar(request, prospecto_id):
+    """POST: edición inline de datos del prospecto desde el widget
+    (contacto, producto, área, tipo de pipeline, nombre). Solo se tocan los
+    campos que lleguen en el body — el resto queda igual."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+    try:
+        p = Prospecto.objects.select_related('cliente', 'contacto').get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    cambios = []
+    if 'nombre' in data:
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse({'success': False, 'error': 'El nombre no puede quedar vacío'}, status=400)
+        p.nombre = nombre[:200]
+        cambios.append('nombre')
+    if 'producto' in data:
+        producto = (data.get('producto') or '').strip()
+        validos = {c[0] for c in TodoItem.PRODUCTO_CHOICES}
+        if producto and producto not in validos:
+            return JsonResponse({'success': False, 'error': 'Producto inválido'}, status=400)
+        p.producto = producto
+        cambios.append('producto')
+    if 'area' in data:
+        p.area = (data.get('area') or '').strip()[:50]
+        cambios.append('area')
+    if 'tipo_pipeline' in data:
+        tp = (data.get('tipo_pipeline') or '').strip()
+        if tp not in {c[0] for c in Prospecto.TIPO_PIPELINE_CHOICES}:
+            return JsonResponse({'success': False, 'error': 'Tipo de pipeline inválido'}, status=400)
+        p.tipo_pipeline = tp
+        cambios.append('tipo_pipeline')
+    if 'contacto_id' in data:
+        cid = data.get('contacto_id')
+        if cid:
+            contacto = Contacto.objects.filter(id=cid, cliente_id=p.cliente_id).first()
+            if not contacto:
+                return JsonResponse({'success': False, 'error': 'Contacto no encontrado para este cliente'}, status=400)
+            p.contacto = contacto
+        else:
+            p.contacto = None
+        cambios.append('contacto')
+
+    if not cambios:
+        return JsonResponse({'success': False, 'error': 'Nada que actualizar'}, status=400)
+    p.save()
+    return JsonResponse({
+        'success': True,
+        'cambios': cambios,
+        'nombre': p.nombre,
+        'producto': p.producto,
+        'area': p.area,
+        'tipo_pipeline': p.tipo_pipeline,
+        'contacto': p.contacto.nombre if p.contacto else '-',
+        'contacto_id': p.contacto_id,
+        'contacto_email': (p.contacto.email or '') if p.contacto else '',
     })
 
 

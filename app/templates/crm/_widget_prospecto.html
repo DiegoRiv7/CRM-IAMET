@@ -67,19 +67,19 @@
                             </div>
                             <div class="wo-info-item">
                                 <span class="wo-info-label">Contacto</span>
-                                <span class="wo-info-value medium" id="wpContacto">-</span>
+                                <span class="wo-info-value medium wp-editable" id="wpContacto" data-campo="contacto" title="Clic para editar">-</span>
                             </div>
                             <div class="wo-info-item">
                                 <span class="wo-info-label">Tipo Pipeline</span>
-                                <span class="wo-info-value medium" id="wpTipoPipeline">-</span>
+                                <span class="wo-info-value medium wp-editable" id="wpTipoPipeline" data-campo="tipo_pipeline" title="Clic para editar">-</span>
                             </div>
                             <div class="wo-info-item">
                                 <span class="wo-info-label">Producto</span>
-                                <span class="wo-info-value medium" id="wpProducto">-</span>
+                                <span class="wo-info-value medium wp-editable" id="wpProducto" data-campo="producto" title="Clic para editar">-</span>
                             </div>
                             <div class="wo-info-item">
                                 <span class="wo-info-label">Area</span>
-                                <span class="wo-info-value medium" id="wpArea">-</span>
+                                <span class="wo-info-value medium wp-editable" id="wpArea" data-campo="area" title="Clic para editar">-</span>
                             </div>
                             <div class="wo-info-item">
                                 <span class="wo-info-label">Comentario Inicial</span>
@@ -527,6 +527,15 @@
 @media (max-width: 640px) {
     #widgetCrearOppDesdeProspecto .wco-grid { grid-template-columns: 1fr; }
     #widgetCrearOppDesdeProspecto .wco-acciones { flex-wrap: wrap; }
+}
+
+/* ── Edición inline (clic en un dato = editarlo, como en la oportunidad) ── */
+.wp-editable { cursor: pointer; border-radius: 6px; padding: 1px 4px; margin: -1px -4px; transition: background .12s; }
+.wp-editable:hover { background: rgba(0, 122, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.25); }
+.wp-edit-input {
+    font: inherit; font-size: 0.85rem; padding: 3px 8px; border-radius: 8px;
+    border: 1.5px solid #007AFF; outline: none; background: #fff; color: #1C1C1E;
+    max-width: 100%; box-sizing: border-box;
 }
 </style>
 

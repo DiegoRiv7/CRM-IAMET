@@ -1477,6 +1477,8 @@
   }
   window.pendLauncherShow = pendLauncherShow;
   function _toastTop() { return (_miniData && _miniData.items && _miniData.items[0]) || null; }
+  // Referencia canónica de un ítem del feed según su tipo (correo/lead/oportunidad).
+  function _itRef(it) { return it.tipo === 'correo' ? it.mail_id : (it.tipo === 'lead' ? it.lead_id : it.opp_id); }
   // Color de la etiqueta de categoría — el MISMO en el aviso chico y en el nivel 2.
   // Urgencia/hueco mandan; si no, el tipo de tarjeta da su color.
   function _catColor(it) {
@@ -1531,7 +1533,7 @@
       }
       else if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
       // "Agendar" directo (sin formulario) — se omite si la acción azul ya es agendar.
-      if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
+      if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo' && it.tipo !== 'lead') {
         acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastAgendar()">Agendar</button>';
       }
       acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastRevisado()">Revisado</button>';
@@ -1561,7 +1563,7 @@
   function _nivel2Html(it, ctx) {
     var esToast = (ctx === 'toast');
     var esCorreo = it.tipo === 'correo';
-    var ref = esCorreo ? it.mail_id : it.opp_id;
+    var ref = _itRef(it);
     var cuerpo = it.quote_full || it.quote || '';
     var volver = esToast ? 'pendToastCollapse()' : 'pendMiniVolver()';
     var revisado = esToast ? 'pendToastCollapse();pendToastRevisado()'
@@ -1593,7 +1595,7 @@
         btns += _btn('sec', (esToast ? 'pendToastCollapse();' : '') + 'pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
       }
       var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
-      if (!tieneAgendar) {
+      if (!tieneAgendar && it.tipo !== 'lead') {
         btns += _btn('sec', "pendToastAgendarPrev('" + it.tipo + "'," + ref + ')', 'Agendar seguimiento');
       }
       btns += _btn('sec', revisado, 'Revisado');
@@ -1620,7 +1622,7 @@
   window.pendMiniNivel2 = function (tipo, ref) {
     var items = (_miniData && _miniData.items) || [];
     var it = items.filter(function (x) {
-      return x.tipo === tipo && (tipo === 'correo' ? x.mail_id === ref : x.opp_id === ref);
+      return x.tipo === tipo && _itRef(x) === ref;
     })[0];
     if (!it) return;
     var box = _activeFeedBox(); if (!box) return;
@@ -1703,7 +1705,7 @@
   function _toastQuitar(tipo, ref) {
     if (!(_miniData && _miniData.items)) return;
     _miniData.items = _miniData.items.filter(function (x) {
-      var xid = x.tipo === 'correo' ? x.mail_id : x.opp_id;
+      var xid = _itRef(x);
       return !(x.tipo === tipo && xid === ref);
     });
     _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
@@ -1716,7 +1718,7 @@
   // fecha/hora editables) y solo al confirmar lo crea. Nada se agenda a ciegas.
   window.pendToastAgendar = function () {
     var it = _toastTop(); if (!it) return;
-    pendToastAgendarPrev(it.tipo, it.tipo === 'correo' ? it.mail_id : it.opp_id);
+    pendToastAgendarPrev(it.tipo, _itRef(it));
   };
   window.pendToastAgendarCorreo = function (mailId) { pendToastAgendarPrev('correo', mailId); };
   window.pendToastAgendarPrev = function (tipo, ref) {
@@ -1782,7 +1784,7 @@
   // "Revisado": ya lo vio, sin acción — quita el ruido y avanza.
   window.pendToastRevisado = function () {
     var it = _toastTop(); if (!it) return;
-    var tipo = it.tipo, ref = tipo === 'correo' ? it.mail_id : it.opp_id;
+    var tipo = it.tipo, ref = _itRef(it);
     fetch('/app/api/asistente/aviso/revisado/', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
@@ -1988,11 +1990,13 @@
     agendar_correo: { l: 'Agendar seguimiento', f: function (it) { return 'pendToastAgendarCorreo(' + it.mail_id + ')'; } },
     vincular_oportunidad: { l: 'Vincular a oportunidad', f: function (it) { return 'pendToastVincular(' + it.mail_id + ')'; } },
     abrir: { l: 'Abrir', f: function (it) { return 'pendMiniAbrirOpp(' + it.opp_id + ')'; } },
-    no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + (it.tipo === 'correo' ? it.mail_id : it.opp_id) + ')'; } }
+    abrir_prospeccion: { l: 'Abrir', f: function (it) { return 'pendLeadAbrir(' + it.prospecto_id + ')'; } },
+    generar_respuesta_lead: { l: 'Generar respuesta', f: function (it) { return 'pendLeadResponder(' + it.prospecto_id + ')'; } },
+    no_importa: { l: 'No importa', f: function (it) { return 'pendMiniDescartar(\'' + it.tipo + '\',' + _itRef(it) + ')'; } }
   };
   function _miniCard(it) {
     // Clic en el cuadro = abrir el DETALLE ahí mismo (nivel 2 interno).
-    var ref = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    var ref = _itRef(it);
     var openCall = "pendMiniNivel2('" + it.tipo + "'," + ref + ')';
     // Botonera espejo del toast: [primaria] [Agendar] [Revisado].
     var pri = (it.acciones || [])[0], acts = '';
@@ -2001,7 +2005,7 @@
     } else if (pri && _MINI_ACTS[pri]) {
       acts += '<button type="button" class="pend-mini-btn pri" onclick="' + _MINI_ACTS[pri].f(it) + '">' + _esc(_MINI_ACTS[pri].l) + '</button>';
     }
-    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
+    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo' && it.tipo !== 'lead') {
       acts += '<button type="button" class="pend-mini-btn sec" onclick="pendToastAgendarPrev(\'' + it.tipo + '\',' + ref + ')">Agendar</button>';
     }
     acts += '<button type="button" class="pend-mini-btn txt" onclick="pendMiniDescartar(\'' + it.tipo + '\',' + ref + ')">Revisado</button>';
@@ -2364,6 +2368,32 @@
     if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
     pendAbrir();
   };
+  // Lead web → abre el widget del prospecto que se creó desde la página.
+  window.pendLeadAbrir = function (prospectoId) {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    _toastCollapse();
+    pendLauncherShow();
+    if (typeof window.abrirWidgetProspecto === 'function') {
+      try { window.abrirWidgetProspecto(prospectoId); } catch (e) {}
+    }
+  };
+  // Lead web → abre el prospecto Y dispara la redacción del primer correo con IA
+  // (mismo flujo que el botón "Nuevo correo" del widget: 1 llamada al LLM y
+  // se abre el composer con el borrador listo).
+  window.pendLeadResponder = function (prospectoId) {
+    pendLeadAbrir(prospectoId);
+    var intentos = 0;
+    var t = setInterval(function () {
+      intentos++;
+      var btn = document.getElementById('wpNuevoCorreo');
+      if (btn && String(window._currentProspectoId) === String(prospectoId)) {
+        clearInterval(t);
+        try { btn.click(); } catch (e) {}
+      } else if (intentos > 40) {
+        clearInterval(t);
+      }
+    }, 250);
+  };
   // Recarga el feed activo desde el servidor (para que caigan los ítems ya resueltos).
   function _feedReloadActive() {
     var mini = el('pendMini');
@@ -2447,9 +2477,17 @@
         body: JSON.stringify({ marcar: true })
       }).catch(function () {});
     }
+    if (tipo === 'lead' || tipo === 'oportunidad') {
+      // Persistir el descarte (si no, el aviso vuelve en el siguiente sondeo).
+      fetch('/app/api/asistente/aviso/revisado/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: tipo, ref_id: id })
+      }).catch(function () {});
+    }
     if (_miniData && _miniData.items) {
       _miniData.items = _miniData.items.filter(function (it) {
-        var iid = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+        var iid = _itRef(it);
         return !(it.tipo === tipo && iid === id);
       });
       _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;

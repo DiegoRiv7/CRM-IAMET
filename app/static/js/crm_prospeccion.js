@@ -487,6 +487,122 @@ document.addEventListener('click', function(ev) {
     }
     window.abrirWidgetProspecto = abrirWidgetProspecto;
 
+    // ── Edición inline (2026-08-19): clic en Contacto / Tipo Pipeline /
+    //    Producto / Área dentro del widget = editor en el lugar, como en la
+    //    oportunidad. Guarda vía POST /app/api/prospecto/<id>/editar/.
+    var _WP_EDIT = {
+        contacto: {
+            opciones: function (d) {
+                var ops = [{ v: '', t: '— Sin contacto —' }];
+                (d.contactos_cliente || []).forEach(function (c) { ops.push({ v: String(c.id), t: c.nombre }); });
+                return ops;
+            },
+            valor: function (d) { return d.contacto_id ? String(d.contacto_id) : ''; },
+            payload: function (v) { return { contacto_id: v ? parseInt(v, 10) : null }; }
+        },
+        producto: {
+            opciones: function (d) {
+                var ops = [{ v: '', t: '— Sin definir —' }];
+                (d.productos_choices || []).forEach(function (p) { ops.push({ v: p, t: p }); });
+                return ops;
+            },
+            valor: function (d) { return d.producto || ''; },
+            payload: function (v) { return { producto: v }; }
+        },
+        tipo_pipeline: {
+            opciones: function () { return [{ v: 'runrate', t: 'Runrate' }, { v: 'proyecto', t: 'Proyecto' }]; },
+            valor: function (d) { return d.tipo_pipeline || 'runrate'; },
+            payload: function (v) { return { tipo_pipeline: v }; }
+        },
+        area: {
+            texto: true,
+            valor: function (d) { return d.area || ''; },
+            payload: function (v) { return { area: v }; }
+        }
+    };
+
+    function _wpPintarCamposEditables(d) {
+        var c = document.getElementById('wpContacto'); if (c) c.textContent = d.contacto || '-';
+        var p = document.getElementById('wpProducto'); if (p) p.textContent = d.producto || '-';
+        var a = document.getElementById('wpArea'); if (a) a.textContent = d.area || '-';
+        var tp = document.getElementById('wpTipoPipeline');
+        if (tp) {
+            tp.innerHTML = d.tipo_pipeline === 'proyecto'
+                ? '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;background:#92400E22;color:#92400E;font-size:0.78rem;font-weight:600;">Proyecto</span>'
+                : '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;background:#34C75922;color:#34C759;font-size:0.78rem;font-weight:600;">Runrate</span>';
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var span = e.target.closest && e.target.closest('#widgetProspecto .wp-editable');
+        if (!span || span.dataset.editando) return;
+        var cfg = _WP_EDIT[span.dataset.campo];
+        var d = window._currentProspectoData;
+        if (!cfg || !d) return;
+        span.dataset.editando = '1';
+        var original = span.innerHTML;
+        var ed;
+        if (cfg.texto) {
+            ed = document.createElement('input');
+            ed.type = 'text';
+            ed.value = cfg.valor(d);
+        } else {
+            ed = document.createElement('select');
+            cfg.opciones(d).forEach(function (o) {
+                var op = document.createElement('option');
+                op.value = o.v; op.textContent = o.t;
+                if (o.v === cfg.valor(d)) op.selected = true;
+                ed.appendChild(op);
+            });
+        }
+        ed.className = 'wp-edit-input';
+        span.innerHTML = '';
+        span.appendChild(ed);
+        ed.focus();
+        var cerrado = false;
+        function cancelar() {
+            if (cerrado) return; cerrado = true;
+            span.innerHTML = original;
+            delete span.dataset.editando;
+        }
+        function guardar() {
+            if (cerrado) return; cerrado = true;
+            var v = (ed.value || '').trim();
+            fetch('/app/api/prospecto/' + d.id + '/editar/', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify(cfg.payload(v))
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                delete span.dataset.editando;
+                if (!res || !res.success) {
+                    span.innerHTML = original;
+                    if (typeof showToast === 'function') showToast((res && res.error) || 'No se pudo guardar', 'error');
+                    return;
+                }
+                d.contacto = res.contacto; d.contacto_id = res.contacto_id; d.contacto_email = res.contacto_email;
+                d.producto = res.producto; d.area = res.area;
+                d.tipo_pipeline = res.tipo_pipeline; d.nombre = res.nombre;
+                _wpPintarCamposEditables(d);
+                if (typeof showToast === 'function') showToast('Guardado', 'success');
+            }).catch(function () {
+                span.innerHTML = original;
+                delete span.dataset.editando;
+            });
+        }
+        if (cfg.texto) {
+            ed.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Enter') { ev.preventDefault(); guardar(); }
+                if (ev.key === 'Escape') cancelar();
+            });
+            ed.addEventListener('blur', guardar);
+        } else {
+            ed.addEventListener('change', guardar);
+            ed.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cancelar(); });
+            ed.addEventListener('blur', function () { setTimeout(cancelar, 150); });
+        }
+        e.stopPropagation();
+    });
+
     function _isProspectoCerrado(data) {
         if (!data) return false;
         return data.etapa === 'cerrado_ganado' || data.etapa === 'cerrado_perdido';
