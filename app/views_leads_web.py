@@ -56,6 +56,15 @@ def _responsable_efectivo(cfg):
 def _comentarios_prospecto(data):
     """Arma el bloque de comentarios del Prospecto con todo el contexto del lead."""
     lineas = ['Lead recibido desde la página web (iamet.mx).', '']
+    nombre = (data.get('contactName') or data.get('nombre') or '').strip()
+    email = (data.get('email') or '').strip()
+    telefono = (data.get('phone') or data.get('telefono') or '').strip()
+    if nombre:
+        lineas.append(f'• Contacto: {nombre}')
+    if email:
+        lineas.append(f'• Correo: {email}')
+    if telefono:
+        lineas.append(f'• Teléfono: {telefono}')
     industria = (data.get('industry') or data.get('industria') or '').strip()
     tamano = (data.get('companySize') or data.get('tamano_empresa') or '').strip()
     vertical = (data.get('verticalSlug') or data.get('vertical') or '').strip()
@@ -147,11 +156,15 @@ def api_leads_web(request):
                         cliente=cliente,
                     )
 
+            # El usuario pidió (2026-08-19) que el Área del prospecto muestre la
+            # industria que la persona eligió en el formulario web.
+            industria = (data.get('industry') or data.get('industria') or '').strip()[:50]
             prospecto = Prospecto.objects.create(
                 usuario=responsable,
                 nombre=f'Solicitud web — {nombre_cliente}'[:200],
                 cliente=cliente,
                 contacto=contacto,
+                area=industria or 'SISTEMAS',
                 comentarios=_comentarios_prospecto(data),
             )
 
