@@ -213,6 +213,7 @@ def _notificar_lead_nuevo(cfg, responsable, lead):
                 tipo='lead_web',
                 titulo=titulo,
                 mensaje=mensaje,
+                prospecto=lead.prospecto,
             )
         except Exception as e:
             logger.warning(f'[leads-web] No se pudo notificar a {u}: {e}')

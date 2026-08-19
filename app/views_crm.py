@@ -10773,6 +10773,56 @@ def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
     return out
 
 
+def _feed_leads_items(user, limite=4):
+    """Leads nuevos de la página web asignados al usuario, aún sin trabajar
+    (prospecto sigue en 'identificado'). Salen del feed cuando el prospecto
+    avanza de etapa o el usuario los marca Revisado (AvisoPospuesto tipo 'lead')."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import LeadWeb, AvisoPospuesto
+    now = timezone.now()
+    hoy = timezone.localdate()
+    cutoff = now - timedelta(days=14)
+    silenciados = set(AvisoPospuesto.objects.filter(
+        usuario=user, tipo='lead', hasta__gt=hoy).values_list('ref_id', flat=True))
+    out = []
+    qs = (LeadWeb.objects.filter(
+        prospecto__usuario=user, prospecto__etapa='identificado',
+        estado='procesado', fecha_creacion__gte=cutoff)
+        .select_related('prospecto', 'cliente').order_by('-fecha_creacion'))
+    for lw in qs:
+        if lw.id in silenciados:
+            continue
+        p = lw.payload or {}
+        quien = lw.nombre_contacto or lw.email or 'Alguien'
+        empresa = lw.empresa or (lw.cliente.nombre_empresa if lw.cliente else '')
+        problema = (p.get('problemDescription') or p.get('descripcion') or '').strip()
+        ctx = [x for x in [
+            (p.get('industry') or '').strip(),
+            (p.get('companySize') or '').strip() and ('%s empleados' % p.get('companySize')),
+            lw.email,
+        ] if x]
+        out.append({
+            'tipo': 'lead', 'grupo': 'lead',
+            'lead_id': lw.id, 'prospecto_id': lw.prospecto_id,
+            'titulo': empresa or quien,
+            'desc': (problema[:140] or 'Pidió información desde la página'),
+            'hace': (_cor_hace(timezone.localtime(lw.fecha_creacion), timezone.localtime(now))
+                     if lw.fecha_creacion else ''),
+            'urgente': True,
+            'categoria': 'Lead nuevo — página web',
+            'headline': ('%s de %s pidió información en la página' % (quien, empresa)) if empresa
+                        else ('%s pidió información en la página' % quien),
+            'contexto': ' · '.join(ctx),
+            'quote': problema[:220],
+            'quote_full': problema[:1400],
+            'acciones': ['abrir_prospeccion', 'generar_respuesta_lead'],
+        })
+        if len(out) >= limite:
+            break
+    return out
+
+
 @login_required
 def api_asistente_feed(request):
     """GET /app/api/asistente/feed/ — feed proactivo del asistente reducido: lo importante
@@ -10808,8 +10858,9 @@ def api_asistente_feed(request):
 
     correos_items = _feed_correos_items(user)
     opps_items = _feed_opps_estancadas(user, today)
-    n_cor, n_opp = len(correos_items), len(opps_items)
-    total = n_cor + n_opp
+    leads_items = _feed_leads_items(user)
+    n_cor, n_opp, n_leads = len(correos_items), len(opps_items), len(leads_items)
+    total = n_cor + n_opp + n_leads
 
     # Caso 2: si el usuario tiene un rato libre AHORA (horario laboral, sin junta),
     # es buen momento para atender la oportunidad clave (la primera, ya rankeada por
@@ -10829,6 +10880,9 @@ def api_asistente_feed(request):
     saludo = 'Buenos días' if hora < 12 else ('Buenas tardes' if hora < 19 else 'Buenas noches')
 
     partes = []
+    if n_leads:
+        partes.append('%d lead%s nuevo%s de la página web' % (
+            n_leads, '' if n_leads == 1 else 's', '' if n_leads == 1 else 's'))
     if n_cor:
         partes.append('%d correo%s importante%s sin responder' % (
             n_cor, '' if n_cor == 1 else 's', '' if n_cor == 1 else 's'))
@@ -10836,11 +10890,12 @@ def api_asistente_feed(request):
         partes.append('%d oportunidad%s sin avance' % (n_opp, '' if n_opp == 1 else 'es'))
 
     if partes:
-        cuerpo = ' y '.join(partes)
+        cuerpo = partes[0] if len(partes) == 1 else (', '.join(partes[:-1]) + ' y ' + partes[-1])
         resumen = (('%s, ' % nombre) if nombre else '') + cuerpo + '.'
         resumen = resumen[0].upper() + resumen[1:]
-        brief = '%s%s. Revisé tu correo y tu pipeline: %s. Lo demás puede esperar.' % (
-            saludo, (', ' + nombre) if nombre else '', cuerpo)
+        revisado_src = 'la página web, tu correo y tu pipeline' if n_leads else 'tu correo y tu pipeline'
+        brief = '%s%s. Revisé %s: %s. Lo demás puede esperar.' % (
+            saludo, (', ' + nombre) if nombre else '', revisado_src, cuerpo)
         if libre and opps_items:
             brief += ' Tienes un rato libre hasta las %s: buen momento para mover «%s».' % (
                 hueco.get('hasta', 'el fin del día'), hueco.get('opp', ''))
@@ -10866,11 +10921,13 @@ def api_asistente_feed(request):
         'total': total,
         'correos': n_cor,
         'pipeline': n_opp,
+        'leads': n_leads,
         'resumen': resumen,
         'brief': brief,
         'hueco': hueco,
         'equipo': equipo,
-        'items': correos_items + opps_items,
+        # Leads primero: un lead fresco se enfría en horas, es lo más urgente.
+        'items': leads_items + correos_items + opps_items,
     })
 
 
@@ -11016,8 +11073,22 @@ def api_asistente_aviso_revisado(request):
         data = {}
     tipo = data.get('tipo')
     ref_id = data.get('ref_id')
-    if tipo not in ('correo', 'oportunidad') or not ref_id:
+    if tipo not in ('correo', 'oportunidad', 'lead') or not ref_id:
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
+    if tipo == 'lead':
+        # Lead web: "Revisado" = descarte definitivo del aviso (el prospecto
+        # sigue vivo en el kanban; solo deja de insistir el asistente).
+        from .models import LeadWeb
+        lw = LeadWeb.objects.filter(id=ref_id, prospecto__usuario=request.user).first()
+        if not lw:
+            return JsonResponse({'success': False, 'error': 'Lead no encontrado.'}, status=404)
+        AvisoPospuesto.objects.update_or_create(
+            usuario=request.user, tipo='lead', ref_id=int(ref_id),
+            defaults={'hasta': timezone.localdate() + timezone.timedelta(days=3650)})
+        _asis_log_accion(request.user, 'revisado',
+                         lw.empresa or lw.nombre_contacto or 'Lead de la página web',
+                         'Lead web revisado')
+        return JsonResponse({'success': True})
     if tipo == 'correo':
         m = MailCorreo.objects.filter(id=ref_id, usuario=request.user).first()
         if not m:

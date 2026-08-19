@@ -1712,6 +1712,14 @@ class Notificacion(models.Model):
         blank=True,
         related_name='notificaciones'
     )
+    prospecto = models.ForeignKey(
+        'Prospecto',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notificaciones',
+        verbose_name="Prospecto relacionado"
+    )
     tipo = models.CharField(
         max_length=30,
         choices=TIPO_CHOICES,
@@ -6867,7 +6875,7 @@ class AvisoPospuesto(models.Model):
     """"Mañana" en el toast del asistente: pospone un aviso (correo u oportunidad)
     hasta una fecha. A diferencia de CorreoAtendido (descarte definitivo), esto es
     un snooze honesto: el aviso vuelve a aparecer cuando llega `hasta`."""
-    TIPO_CHOICES = [('correo', 'Correo'), ('oportunidad', 'Oportunidad')]
+    TIPO_CHOICES = [('correo', 'Correo'), ('oportunidad', 'Oportunidad'), ('lead', 'Lead web')]
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='avisos_pospuestos')
     tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
     ref_id = models.IntegerField()          # MailCorreo.id o TodoItem.id según tipo
