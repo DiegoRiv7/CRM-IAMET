@@ -10843,10 +10843,14 @@ def api_asistente_feed(request):
         })
 
     # Regla general: sin buzón vinculado NO hay asistente — ni burbuja en la
-    # esquina, ni avisos, ni columna "Asistente" en Mi día. Mi día sigue
-    # funcionando con su resumen de tareas/agenda, que no depende del correo.
+    # esquina, ni avisos, ni columna "Asistente" en Mi día. EXCEPCIÓN: si el
+    # usuario es responsable de leads de la página web y tiene leads sin
+    # trabajar, el asistente SÍ aparece (solo con esos leads) — un lead nuevo
+    # no puede perderse porque el responsable no haya vinculado su correo.
     from .models import MailConexion
-    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+    tiene_buzon = MailConexion.objects.filter(usuario=user, activo=True).exists()
+    leads_items = _feed_leads_items(user)
+    if not tiene_buzon and not leads_items:
         return JsonResponse({
             'success': True, 'sin_correo': True, 'motivo': 'sin_buzon',
             'total': 0, 'correos': 0, 'pipeline': 0,
@@ -10856,9 +10860,8 @@ def api_asistente_feed(request):
     now = timezone.now()
     today = timezone.localdate()
 
-    correos_items = _feed_correos_items(user)
-    opps_items = _feed_opps_estancadas(user, today)
-    leads_items = _feed_leads_items(user)
+    correos_items = _feed_correos_items(user) if tiene_buzon else []
+    opps_items = _feed_opps_estancadas(user, today) if tiene_buzon else []
     n_cor, n_opp, n_leads = len(correos_items), len(opps_items), len(leads_items)
     total = n_cor + n_opp + n_leads
 
