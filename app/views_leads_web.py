@@ -157,13 +157,15 @@ def api_leads_web(request):
                     )
 
             # El usuario pidió (2026-08-19) que el Área del prospecto muestre la
-            # industria que la persona eligió en el formulario web.
+            # industria que la persona eligió en el formulario web, y que el
+            # producto quede VACÍO — no sabemos qué marca busca hasta calificarlo.
             industria = (data.get('industry') or data.get('industria') or '').strip()[:50]
             prospecto = Prospecto.objects.create(
                 usuario=responsable,
                 nombre=f'Solicitud web — {nombre_cliente}'[:200],
                 cliente=cliente,
                 contacto=contacto,
+                producto='',
                 area=industria or 'SISTEMAS',
                 comentarios=_comentarios_prospecto(data),
             )

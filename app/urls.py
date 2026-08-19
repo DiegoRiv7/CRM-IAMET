@@ -445,6 +445,7 @@ urlpatterns = [
     path('api/crear-prospecto/', views.api_crear_prospecto, name='api_crear_prospecto'),
     path('api/prospecto/<int:prospecto_id>/detalle/', views.api_prospecto_detalle, name='api_prospecto_detalle'),
     path('api/prospecto/<int:prospecto_id>/etapa/', views.api_prospecto_etapa, name='api_prospecto_etapa'),
+    path('api/prospecto/<int:prospecto_id>/editar/', views.api_prospecto_editar, name='api_prospecto_editar'),
     path('api/prospecto/<int:prospecto_id>/convertir/', views.api_prospecto_convertir, name='api_prospecto_convertir'),
     path('api/prospecto/<int:prospecto_id>/crear-oportunidad/', views.api_crear_oportunidad_desde_prospecto, name='api_crear_oportunidad_desde_prospecto'),
     path('api/prospecto/<int:prospecto_id>/comentarios/', views.api_prospecto_comentarios, name='api_prospecto_comentarios'),
