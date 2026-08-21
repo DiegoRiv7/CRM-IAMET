@@ -1533,7 +1533,7 @@
       }
       else if (pri && _MINI_ACTS[pri]) acts += '<button type="button" class="pend-toast-btn pri" onclick="event.stopPropagation();pendToastAct(\'' + pri + '\')">' + _esc(_MINI_ACTS[pri].l) + '</button>';
       // "Agendar" directo (sin formulario) — se omite si la acción azul ya es agendar.
-      if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo' && it.tipo !== 'lead') {
+      if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
         acts += '<button type="button" class="pend-toast-btn sec" onclick="event.stopPropagation();pendToastAgendar()">Agendar</button>';
       }
       acts += '<button type="button" class="pend-toast-btn txt" onclick="event.stopPropagation();pendToastRevisado()">Revisado</button>';
@@ -1595,7 +1595,7 @@
         btns += _btn('sec', (esToast ? 'pendToastCollapse();' : '') + 'pendMiniAbrirOpp(' + it.opp_id + ')', 'Abrir oportunidad');
       }
       var tieneAgendar = accs.some(function (a) { return a === 'agendar' || a === 'agendar_seguimiento' || a === 'agendar_correo'; });
-      if (!tieneAgendar && it.tipo !== 'lead') {
+      if (!tieneAgendar) {
         btns += _btn('sec', "pendToastAgendarPrev('" + it.tipo + "'," + ref + ')', 'Agendar seguimiento');
       }
       btns += _btn('sec', revisado, 'Revisado');
@@ -2005,7 +2005,7 @@
     } else if (pri && _MINI_ACTS[pri]) {
       acts += '<button type="button" class="pend-mini-btn pri" onclick="' + _MINI_ACTS[pri].f(it) + '">' + _esc(_MINI_ACTS[pri].l) + '</button>';
     }
-    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo' && it.tipo !== 'lead') {
+    if (pri !== 'agendar' && pri !== 'agendar_seguimiento' && pri !== 'agendar_correo') {
       acts += '<button type="button" class="pend-mini-btn sec" onclick="pendToastAgendarPrev(\'' + it.tipo + '\',' + ref + ')">Agendar</button>';
     }
     acts += '<button type="button" class="pend-mini-btn txt" onclick="pendMiniDescartar(\'' + it.tipo + '\',' + ref + ')">Revisado</button>';

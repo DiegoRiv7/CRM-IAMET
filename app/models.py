@@ -350,6 +350,7 @@ class TodoItem(models.Model):
         ('PÓLIZA', 'PÓLIZA'),
         ('CISCO', 'CISCO'),
         ('SERVICIO', 'Servicio'),
+        ('CURSO', 'Curso'),
     ]
 
     # Opciones para el campo 'mes_cierre'

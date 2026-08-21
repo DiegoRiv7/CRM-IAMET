@@ -198,12 +198,18 @@ def api_leads_web(request):
             # industria que la persona eligió en el formulario web, y que el
             # producto quede VACÍO — no sabemos qué marca busca hasta calificarlo.
             industria = (data.get('industry') or data.get('industria') or '').strip()[:50]
+            # Inscripciones de IAMET Academy: el mensaje llega como "Solicita el
+            # curso: ..." — el prospecto se nombra como solicitud de curso y el
+            # producto queda en CURSO para distinguirlo en el kanban.
+            mensaje_lead = str(data.get('problemDescription') or data.get('descripcion') or '').strip()
+            es_curso = mensaje_lead.lower().startswith('solicita el curso')
             prospecto = Prospecto.objects.create(
                 usuario=responsable,
-                nombre=f'Solicitud web — {nombre_cliente}'[:200],
+                nombre=(f'Solicitud de curso — {nombre_cliente}' if es_curso
+                        else f'Solicitud web — {nombre_cliente}')[:200],
                 cliente=cliente,
                 contacto=contacto,
-                producto='',
+                producto='CURSO' if es_curso else '',
                 area=industria or 'SISTEMAS',
                 comentarios=_comentarios_prospecto(data, cfg.nombre),
             )

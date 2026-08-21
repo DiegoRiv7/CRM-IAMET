@@ -10948,7 +10948,7 @@ def api_asistente_aviso_posponer(request):
         data = {}
     tipo = data.get('tipo')
     ref_id = data.get('ref_id')
-    if tipo not in ('correo', 'oportunidad') or not ref_id:
+    if tipo not in ('correo', 'oportunidad', 'lead') or not ref_id:
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
     hasta = _mas_dias_habiles(timezone.localdate(), 1)
     AvisoPospuesto.objects.update_or_create(
@@ -10965,7 +10965,7 @@ def api_asistente_aviso_agendar_draft(request):
     from .models import MailCorreo, TodoItem
     tipo = request.GET.get('tipo')
     ref_id = request.GET.get('ref_id')
-    if tipo not in ('correo', 'oportunidad') or not ref_id:
+    if tipo not in ('correo', 'oportunidad', 'lead') or not ref_id:
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
     fecha = _mas_dias_habiles(timezone.localdate(), 2)
     hora = _hora_disponible(request.user, fecha)
@@ -10975,6 +10975,13 @@ def api_asistente_aviso_agendar_draft(request):
             return JsonResponse({'success': False, 'error': 'Correo no encontrado.'}, status=404)
         asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
         titulo = ('Seguimiento: %s' % asunto_l)[:120]
+    elif tipo == 'lead':
+        from .models import LeadWeb
+        lw = LeadWeb.objects.filter(id=ref_id, prospecto__usuario=request.user).first()
+        if not lw:
+            return JsonResponse({'success': False, 'error': 'Lead no encontrado.'}, status=404)
+        quien = lw.empresa or lw.nombre_contacto or lw.email or 'lead web'
+        titulo = ('Seguimiento lead: %s' % quien)[:120]
     else:
         opp = TodoItem.objects.filter(id=ref_id).first()
         if not opp:
@@ -11001,7 +11008,7 @@ def api_asistente_aviso_agendar(request):
         data = {}
     tipo = data.get('tipo')
     ref_id = data.get('ref_id')
-    if tipo not in ('correo', 'oportunidad') or not ref_id:
+    if tipo not in ('correo', 'oportunidad', 'lead') or not ref_id:
         return JsonResponse({'success': False, 'error': 'tipo/ref_id inválidos'}, status=400)
     fecha = _mas_dias_habiles(timezone.localdate(), 2)
     hora = _hora_disponible(request.user, fecha)
@@ -11031,6 +11038,16 @@ def api_asistente_aviso_agendar(request):
         asunto_l = _cor_limpiar_asunto(m.asunto or '') or 'correo sin asunto'
         titulo_act = ('Seguimiento: %s' % asunto_l)[:120]
         desc = ('Dar seguimiento al correo de %s: %s' % (rem, (m.asunto or '').strip()))[:500]
+    elif tipo == 'lead':
+        from .models import LeadWeb
+        lw = LeadWeb.objects.filter(id=ref_id, prospecto__usuario=request.user).first()
+        if not lw:
+            return JsonResponse({'success': False, 'error': 'Lead no encontrado.'}, status=404)
+        quien = lw.empresa or lw.nombre_contacto or lw.email or 'lead web'
+        titulo_act = ('Seguimiento lead: %s' % quien)[:120]
+        desc = ('Dar seguimiento al lead de %s%s' % (
+            lw.nombre_contacto or lw.email or quien,
+            (' (%s)' % lw.empresa) if lw.empresa else ''))[:500]
     else:
         opp = TodoItem.objects.filter(id=ref_id).first()
         if not opp:
