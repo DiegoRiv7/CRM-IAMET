@@ -657,6 +657,46 @@ body:not([data-theme="temporada"]):not([data-theme="sakura"]):not([data-theme="d
 /* Se deja envolver a dos renglones en vez de cortarse: en la mitad de la
    utilidad no cabe "$-2,770 pesos mexicanos" en una linea, y con puntos
    suspensivos la moneda —que es justo el dato— era lo que desaparecia. */
+/* ── Adjuntos en espera, sobre el compositor ── */
+.opp-v4 .wo4-pendientes {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 9px 12px 0;
+}
+.opp-v4 .wo4-pend {
+    display: inline-flex; align-items: center; gap: 7px; max-width: 210px;
+    padding: 5px 8px 5px 5px; border-radius: 9px;
+    background: #fff; border: 1px solid var(--w4-linea);
+}
+.opp-v4 .wo4-pend img {
+    width: 34px; height: 34px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+    background: #F1F5F9;
+}
+.opp-v4 .wo4-pend-ic {
+    width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #EEF2F7; color: var(--w4-gris);
+}
+.opp-v4 .wo4-pend-n {
+    font-size: .78rem; color: var(--w4-tinta); min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.opp-v4 .wo4-pend-x {
+    border: none; background: none; cursor: pointer; flex-shrink: 0;
+    font-size: 17px; line-height: 1; color: var(--w4-gris); padding: 0 2px;
+}
+.opp-v4 .wo4-pend-x:hover { color: #DC2626; }
+
+/* ── La imagen dentro de la burbuja ── */
+.opp-v4 .wo4-burbuja-img { display: block; margin-bottom: 5px; }
+.opp-v4 .wo4-burbuja-img img {
+    display: block; max-width: 260px; max-height: 300px; width: auto; height: auto;
+    border-radius: 9px; background: rgba(255, 255, 255, .18);
+}
+.opp-v4 .wo4-burbuja-file {
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px;
+    font-size: .8rem; text-decoration: underline; color: inherit;
+}
+
 .opp-v4 .wo4-moneda {
     display: block; margin-top: 2px;
     font-size: .72rem; color: var(--w4-gris); font-weight: 500;

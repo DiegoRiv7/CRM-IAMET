@@ -153,6 +153,13 @@ archivos actuales — el v4 los abre tras fijar el foco (_woCurrentOppId).
                         <div class="wo4-feed" data-wo="convFeed"></div>
                         <!-- Barra de respuesta: solo sale al elegir "Responder" en un mensaje -->
                         <div class="wo4-replybar" data-wo="convReplyBar" style="display:none;"></div>
+                        {% comment %}
+                        Adjuntos en espera, sobre el compositor: lo pegado o
+                        elegido se queda aquí con su miniatura hasta que se pulsa
+                        enviar, para poder revisarlo y acompañarlo con una nota.
+                        Antes salía solo, sin oportunidad de verlo.
+                        {% endcomment %}
+                        <div class="wo4-pendientes" data-wo="convPend" style="display:none;"></div>
                         <div class="wo4-composer">
                             <button type="button" class="wo4-cic" data-action="nueva-actividad" title="Agendar actividad">
                                 <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>

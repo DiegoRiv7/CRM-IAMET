@@ -287,7 +287,7 @@
         var convFileEl = q(inst, 'convFile');
         if (convFileEl) {
             convFileEl.addEventListener('change', function () {
-                subirAdjuntosConv(inst, this.files);
+                encolarAdjuntos(inst, this.files);
                 this.value = '';   // permite re-elegir el mismo archivo
             });
         }
@@ -315,7 +315,7 @@
                 }
                 if (!imgs.length) return;   // texto normal: que pegue como siempre
                 ev.preventDefault();
-                subirAdjuntosConv(inst, imgs);
+                encolarAdjuntos(inst, imgs);
             });
         }
         var convSearchEl = q(inst, 'convSearch');
@@ -1813,9 +1813,21 @@
                 cita = '<div class="wo4-cita"><span class="wo4-cita-n">' + esc(m.reply_to.nombre || '') + '</span>' +
                     esc(m.reply_to.texto || (m.reply_to.tiene_imagen ? 'Archivo adjunto' : '')) + '</div>';
             }
+            // La imagen del mensaje. Sin esto la burbuja salia vacia: el
+            // archivo se guardaba bien pero no se pintaba en ningun lado.
+            var adj = '';
+            if (m.imagen_url) {
+                var esImg = !m.imagen_nombre || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(m.imagen_nombre);
+                adj = esImg
+                    ? '<a class="wo4-burbuja-img" href="' + esc(m.imagen_url) + '" target="_blank" rel="noopener">' +
+                      '<img src="' + esc(m.imagen_url) + '" alt="' + esc(m.imagen_nombre || 'Adjunto') + '" loading="lazy"></a>'
+                    : '<a class="wo4-burbuja-file" href="' + esc(m.imagen_url) + '" target="_blank" rel="noopener">' +
+                      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                      esc(m.imagen_nombre || 'Archivo adjunto') + '</a>';
+            }
             h += '<div class="wo4-nota' + (mio ? ' mia' : '') + '">' +
                 '<div class="wo4-nota-row">' +
-                '<div class="wo4-burbuja">' + cita + esc(m.texto || '') +
+                '<div class="wo4-burbuja">' + cita + adj + esc(m.texto || '') +
                 (m.editado ? '<span class="wo4-editado">· editado</span>' : '') +
                 '<button type="button" data-conv-pin="' + m.id + '" class="wo-conv-pinbtn' + (m.fijado ? ' is-pinned' : '') + '" title="' + (m.fijado ? 'Desfijar' : 'Fijar mensaje') + '">' +
                 '<svg width="11" height="11" viewBox="0 0 24 24" fill="' + (m.fijado ? '#B45309' : 'none') + '" stroke="currentColor" stroke-width="1.6"><path d="M12 2C10.9 2 10 2.9 10 4V9.5C10 10.3 9.3 11 8.5 11H7C5.9 11 5 11.9 5 13V14H11V20L12 22L13 20V14H19V13C19 11.9 18.1 11 17 11H15.5C14.7 11 14 10.3 14 9.5V4C14 2.9 13.1 2 12 2Z"/></svg>' +
@@ -1983,6 +1995,58 @@
     /* Adjuntos del composer embebido: un mensaje por archivo, en serie para
        no disparar N peticiones a la vez. El texto que haya escrito el usuario
        viaja con el primero (mismo criterio que woConvSendMessage del overlay). */
+    // ── Adjuntos EN ESPERA ──
+    // Pegar o elegir un archivo ya no lo manda de inmediato: se queda en una
+    // tira sobre el compositor, con su miniatura y una X para quitarlo. Se va
+    // con el boton de enviar, junto al texto que se escriba. Antes salia solo,
+    // sin oportunidad de revisarlo ni de acompañarlo con una nota.
+    function encolarAdjuntos(inst, fileList) {
+        var files = fileList && fileList.length ? Array.prototype.slice.call(fileList) : [];
+        if (!files.length) return;
+        inst._convPend = (inst._convPend || []).concat(files);
+        pintarPendientes(inst);
+        var input = q(inst, 'convInput');
+        if (input) input.focus();
+    }
+
+    function quitarPendiente(inst, i) {
+        if (!inst._convPend) return;
+        inst._convPend.splice(i, 1);
+        pintarPendientes(inst);
+    }
+
+    function pintarPendientes(inst) {
+        var caja = q(inst, 'convPend');
+        if (!caja) return;
+        var files = inst._convPend || [];
+        if (!files.length) {
+            caja.style.display = 'none';
+            caja.innerHTML = '';
+            return;
+        }
+        caja.style.display = '';
+        caja.innerHTML = '';
+        files.forEach(function (f, i) {
+            var chip = document.createElement('div');
+            chip.className = 'wo4-pend';
+            var esImg = /^image\//.test(f.type || '');
+            chip.innerHTML =
+                (esImg ? '<img alt="">' : '<span class="wo4-pend-ic">' +
+                    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>') +
+                '<span class="wo4-pend-n">' + esc(f.name || 'archivo') + '</span>' +
+                '<button type="button" class="wo4-pend-x" title="Quitar">&times;</button>';
+            if (esImg) {
+                var url = URL.createObjectURL(f);
+                var img = chip.querySelector('img');
+                img.src = url;
+                // La miniatura se libera al soltarla, para no dejar memoria colgando.
+                img.onload = function () { URL.revokeObjectURL(url); };
+            }
+            chip.querySelector('.wo4-pend-x').onclick = function () { quitarPendiente(inst, i); };
+            caja.appendChild(chip);
+        });
+    }
+
     function subirAdjuntosConv(inst, fileList) {
         var files = fileList && fileList.length ? Array.prototype.slice.call(fileList) : [];
         if (!files.length) return;
@@ -2016,6 +2080,14 @@
     }
 
     function enviarNotaConv(inst) {
+        // Si hay adjuntos esperando, se van con este envio y se llevan el texto.
+        if (inst._convPend && inst._convPend.length) {
+            var pend = inst._convPend;
+            inst._convPend = [];
+            pintarPendientes(inst);
+            subirAdjuntosConv(inst, pend);
+            return;
+        }
         var input = q(inst, 'convInput');
         if (!input) return;
         var texto = input.value.trim();
