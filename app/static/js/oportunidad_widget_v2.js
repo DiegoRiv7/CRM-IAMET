@@ -291,6 +291,33 @@
                 this.value = '';   // permite re-elegir el mismo archivo
             });
         }
+        // Pegar una captura (Cmd/Ctrl+V) en la conversacion. Existia en el
+        // widget anterior y se quedo fuera del rediseño; el compositor nuevo
+        // es un <input type=text>, que no recibe imagenes por si solo.
+        var convInputEl = q(inst, 'convInput');
+        if (convInputEl) {
+            convInputEl.addEventListener('paste', function (ev) {
+                var cb = ev.clipboardData || window.clipboardData;
+                if (!cb || !cb.items) return;
+                var imgs = [];
+                for (var i = 0; i < cb.items.length; i++) {
+                    var it = cb.items[i];
+                    if (it.kind !== 'file') continue;
+                    var f = it.getAsFile();
+                    // Las capturas llegan sin nombre: se les pone uno para que
+                    // el archivo no quede como "image.png" repetido.
+                    if (f && /^image\//.test(f.type)) {
+                        var ext = (f.type.split('/')[1] || 'png').split('+')[0];
+                        imgs.push(new File([f], 'captura-' + Date.now() + '.' + ext, { type: f.type }));
+                    } else if (f) {
+                        imgs.push(f);
+                    }
+                }
+                if (!imgs.length) return;   // texto normal: que pegue como siempre
+                ev.preventDefault();
+                subirAdjuntosConv(inst, imgs);
+            });
+        }
         var convSearchEl = q(inst, 'convSearch');
         if (convSearchEl) {
             convSearchEl.addEventListener('input', function () {
@@ -1169,62 +1196,11 @@
         return sel;
     }
 
-    function makeAutocomplete(container, placeholder, searchUrl, onSelect) {
-        container.innerHTML = '';
-        var wrap = document.createElement('div');
-        wrap.className = 'wo-inline-ac';
-        var inp = document.createElement('input');
-        inp.type = 'text';
-        inp.placeholder = placeholder;
-        inp.className = 'wo-inline-input';
-        var dd = document.createElement('div');
-        dd.className = 'wo-ac-dropdown';
-        dd.style.display = 'none';
-        wrap.appendChild(inp);
-        wrap.appendChild(dd);
-        container.appendChild(wrap);
-        inp.focus();
-
-        function doSearch(qStr) {
-            var sep = searchUrl.indexOf('?') !== -1 ? '&' : '?';
-            fetch(searchUrl + sep + 'q=' + encodeURIComponent(qStr))
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    dd.innerHTML = '';
-                    var items = data.clientes || data.usuarios || data.contactos || [];
-                    if (items.length === 0) { dd.style.display = 'none'; return; }
-                    items.forEach(function (item) {
-                        var div = document.createElement('div');
-                        div.className = 'wo-ac-item';
-                        var name = item.nombre_completo || item.nombre || item.username || '';
-                        var sub = item.contacto_principal || item.email || item.rol || '';
-                        div.innerHTML = esc(name) + (sub ? '<div class="wo-ac-sub">' + esc(sub) + '</div>' : '');
-                        div.addEventListener('click', function () {
-                            onSelect(item);
-                            dd.style.display = 'none';
-                        });
-                        dd.appendChild(div);
-                    });
-                    dd.style.display = 'block';
-                });
-        }
-
-        doSearch('');
-
-        var acTimer = null;
-        inp.addEventListener('input', function () {
-            clearTimeout(acTimer);
-            acTimer = setTimeout(function () { doSearch(inp.value.trim()); }, 200);
-        });
-        setTimeout(function () {
-            document.addEventListener('click', function closeAc(e) {
-                if (!wrap.contains(e.target)) {
-                    dd.style.display = 'none';
-                    document.removeEventListener('click', closeAc);
-                }
-            });
-        }, 100);
-    }
+    // NOTA: aqui vivia makeAutocomplete, el autocompletado EN LINEA. Se retiro
+    // porque su desplegable (position:absolute) lo recortaba la columna lateral,
+    // que tiene overflow-y:auto: el campo se abria y la lista no aparecia nunca.
+    // Cliente, contacto y responsable usan abrirBuscador, que es un cuadro y no
+    // depende de donde este la celda.
 
     function wireSelectField(inst, name, field, options, suffix) {
         var el = q(inst, name);
@@ -1320,19 +1296,34 @@
             });
         };
 
-        // Vendedor (autocomplete)
+        // Vendedor: mismo cuadro que cliente y contacto.
+        //
+        // Con el autocompletado en linea no se podia cambiar: su desplegable es
+        // position:absolute y la columna lateral tiene overflow-y:auto, asi que
+        // lo RECORTABA — el campo se abria, se escribia el nombre y la lista no
+        // aparecia nunca. Ademas quedaba del ancho de media celda.
         var vendedorNameEl = q(inst, 'vendedorName');
         var vendedorAvatarEl = q(inst, 'vendedorAvatar');
         vendedorNameEl.classList.add('editable');
         vendedorNameEl.onclick = function () {
-            if (vendedorNameEl.querySelector('.wo-inline-ac')) return;
-            makeAutocomplete(vendedorNameEl, 'Buscar usuario...', '/app/api/buscar-usuarios/', function (item) {
-                var name = item.nombre || item.nombre_completo || item.username;
-                vendedorNameEl.textContent = name;
-                vendedorAvatarEl.textContent = getInitials(name);
-                if (item.id !== inst.data.usuario_id) {
-                    fieldChanged(inst, 'usuario', item.id);
-                }
+            abrirBuscador({
+                titulo: 'Cambiar el responsable',
+                placeholder: 'Buscar usuario…',
+                url: '/app/api/buscar-usuarios/',
+                etiqueta: function (item) {
+                    return {
+                        titulo: item.nombre || item.nombre_completo || item.username || '',
+                        sub: item.rol || item.email || '',
+                    };
+                },
+                alElegir: function (item) {
+                    var name = item.nombre || item.nombre_completo || item.username;
+                    vendedorNameEl.textContent = name;
+                    if (vendedorAvatarEl) vendedorAvatarEl.textContent = getInitials(name);
+                    if (item.id !== inst.data.usuario_id) {
+                        fieldChanged(inst, 'usuario', item.id);
+                    }
+                },
             });
         };
     }
