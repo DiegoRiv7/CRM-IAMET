@@ -159,7 +159,11 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 .tw4 .tw4-card-act {
     flex: 0 1 auto; min-height: 196px; max-height: 50%; padding: 0;
     background: #F7F8FA; border-color: #D3D7DE;
+    /* La tarjeta NO se desplaza: si lo hiciera, arrastraría también al
+       compositor y a la cabecera. Se desplaza únicamente el feed. */
+    overflow: hidden;
 }
+.tw4 .tw4-card-act .tw4-feed { overflow-y: auto; min-height: 0; }
 .tw4 .tw4-card-act .tw4-sec-t {
     position: sticky; top: 0; z-index: 2;
     margin: 0; padding: 13px 22px; background: #EDEFF3;
@@ -209,9 +213,13 @@ vive en crm_main.js (crmTaskVerDetalle y compañía).
 }
 .tw4 .crm-tw-feed-empty .crm-tw-feed-empty-sub { font-size: 12px; color: #B6BECB; }
 
-/* ── Compositor: pegado abajo dentro de la misma tarjeta ── */
+/* ── Compositor: pegado abajo dentro de la misma tarjeta ──
+   Era position:sticky, y sticky FLOTA sobre el contenido: al desplazar la
+   conversación el compositor iba tapando comentarios. La solución no es
+   moverlo, es cambiar quién se desplaza — que scrollee solo el feed y el
+   compositor quede como un hermano fijo al fondo (ver .tw4-card-act abajo). */
 .tw4 .tw4-tray {
-    position: sticky; bottom: 0; z-index: 2;
+    position: static;
     flex-shrink: 0; margin: 0 -24px; padding: 12px 24px 16px;
     background: #fff; border-top: 1px solid #F1F3F7;
 }
@@ -416,7 +424,10 @@ body[data-theme="mundial"] .tw4 .tw4-sep { background: rgba(255, 255, 255, .28);
     .tw4 .tw4-card { overflow: visible; }
     /* En una sola columna ya no hay alto que repartir: cada cuadro crece. */
     .tw4 .tw4-main > .tw4-card:not(.tw4-card-act) { flex: 0 1 auto; max-height: none; }
-    .tw4 .tw4-card-act { max-height: none; }
+    /* En una sola columna la conversación crece y desplaza la página entera:
+       ni la tarjeta recorta ni el feed lleva su propio scroll. */
+    .tw4 .tw4-card-act { max-height: none; overflow: visible; }
+    .tw4 .tw4-card-act .tw4-feed { overflow: visible; }
     .tw4 .tw4-side { border-left: none; border-top: 1px solid #E9EBEF; overflow: visible; }
     .tw4 .tw4-tray { position: static; }
 }
