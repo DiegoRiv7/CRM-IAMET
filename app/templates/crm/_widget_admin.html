@@ -287,6 +287,10 @@
           Alias Clientes
         </button>
         <p class="admin-section-label" style="margin-top:8px;">Sistema</p>
+        <button class="admin-nav-item" id="admNav-usoia" onclick="adminNavClick(this,'usoia')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 3 3v1a3 3 0 0 0 6 0v-1a3 3 0 0 0 3-3v-1a3 3 0 0 0 0-6V9a3 3 0 0 0-3-3V5a3 3 0 0 0-3-3z"/></svg>
+          Uso de IA
+        </button>
         <button class="admin-nav-item" id="admNav-rendimiento" onclick="adminNavClick(this,'rendimiento')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           Rendimiento
@@ -411,6 +415,7 @@ window.loadAdminSection = function(section){
   else if(section==='leadsweb') loadLeadsWeb();
   else if(section==='permisos')  loadPermisos();
   else if(section==='alias')    loadAlias();
+  else if(section==='usoia')     loadUsoIA();
   else if(section==='rendimiento') loadRendimiento();
 };
 
@@ -1630,6 +1635,126 @@ window.admEliminarAlias = function(id){
     if(res.success){ _showAdminToast('Alias eliminado'); loadAlias(); }
     else _showAdminToast(res.error || 'Error', false);
   });
+};
+
+/* ── Uso de IA: estilos ── */
+.uso-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0 16px; }
+.uso-kpi { background: #F8FAFC; border: 1px solid #E9EDF3; border-radius: 12px; padding: 12px 14px; }
+.uso-kpi-n { display: block; font-size: 1.5rem; font-weight: 800; color: #0F172A; line-height: 1.1; }
+.uso-kpi-l { display: block; font-size: .76rem; font-weight: 700; color: #334155; margin-top: 3px; }
+.uso-kpi-s { display: block; font-size: .7rem; color: #94A3B8; }
+.uso-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
+.uso-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+    background: #EEF4FF; color: #1D4ED8; font-size: .76rem; font-weight: 600; }
+.uso-chip b { font-weight: 800; }
+.uso-h4 { margin: 20px 0 8px; font-size: .82rem; font-weight: 800; color: #334155;
+    text-transform: uppercase; letter-spacing: .04em; }
+.uso-vacio { padding: 18px; text-align: center; color: #94A3B8; font-size: .82rem;
+    background: #F8FAFC; border: 1px dashed #E2E8F0; border-radius: 10px; }
+.uso-sub { font-size: .72rem; color: #94A3B8; }
+.uso-fecha { white-space: nowrap; color: #64748B; font-size: .78rem; }
+.uso-tit { font-size: .82rem; color: #0F172A; }
+.uso-sel { padding: 6px 10px; border: 1px solid #D7DBE2; border-radius: 8px; font: inherit; font-size: .8rem; }
+.uso-acc { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700;
+    background: #F1F5F9; color: #475569; white-space: nowrap; }
+.uso-acc--respondido { background: #DBEAFE; color: #1D4ED8; }
+.uso-acc--agendado { background: #FEF3C7; color: #92400E; }
+.uso-acc--oportunidad { background: #DCFCE7; color: #15803D; }
+.uso-acc--actualizada { background: #E0E7FF; color: #4338CA; }
+.uso-acc--revisado { background: #F1F5F9; color: #64748B; }
+
+/* ── Uso de IA ────────────────────────────────────────
+   Quién usa el asistente, cuándo y qué hizo. No hay telemetría nueva: se lee
+   lo que el propio asistente ya registraba y que hasta ahora solo se veía por
+   usuario y en la ventana del día. */
+window._usoIADias = 30;
+
+window.loadUsoIA = function(){
+  var ac = getAC();
+  var dias = window._usoIADias || 30;
+  ac.innerHTML = '<div style="text-align:center;color:#8E8E93;margin-top:60px;">Cargando…</div>';
+  fetch('/app/api/admin/uso-asistente/?dias=' + dias)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ ac.innerHTML = '<div style="color:#FF3B30;padding:20px;">No se pudo cargar.</div>'; return; }
+      var r = d.resumen || {};
+      var esc = function(s){ return String(s==null?'':s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+      var fecha = function(iso){
+        if(!iso) return '—';
+        var x = new Date(iso);
+        return x.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) + ' ' +
+               x.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+      };
+      var kpi = function(n, lbl, sub){
+        return '<div class="uso-kpi"><span class="uso-kpi-n">' + n + '</span>' +
+               '<span class="uso-kpi-l">' + lbl + '</span>' +
+               (sub ? '<span class="uso-kpi-s">' + sub + '</span>' : '') + '</div>';
+      };
+
+      var h = '<div class="admin-head-row">' +
+        '<h3 class="admin-title">Uso del asistente de IA</h3>' +
+        '<select id="usoIADias" class="uso-sel">' +
+          [7,30,90].map(function(n){
+            return '<option value="'+n+'"'+(n===dias?' selected':'')+'>Últimos '+n+' días</option>';
+          }).join('') +
+        '</select></div>' +
+        '<p class="admin-hint">Quién lo usó, cuándo y qué hizo. Se cuenta lo atendido desde ' +
+        'el panel de pendientes, lo conversado con el chat de Mi día y los correos que analizó.</p>';
+
+      h += '<div class="uso-kpis">' +
+        kpi(r.usuarios_activos||0, 'Personas', 'lo usaron') +
+        kpi(r.acciones||0, 'Acciones', 'desde pendientes') +
+        kpi(r.chat||0, 'Mensajes', 'al chat de Mi día') +
+        kpi(r.correos||0, 'Correos', 'analizados') +
+        kpi(r.en_ficha||0, 'En ficha', 'oportunidad / prospecto') +
+        '</div>';
+
+      var pa = d.por_accion || [];
+      if(pa.length){
+        h += '<div class="uso-chips">' + pa.map(function(x){
+          return '<span class="uso-chip">' + esc(x.accion) + '<b>' + x.n + '</b></span>';
+        }).join('') + '</div>';
+      }
+
+      var us = d.usuarios || [];
+      h += '<h4 class="uso-h4">Por persona</h4>';
+      if(!us.length){
+        h += '<div class="uso-vacio">Nadie usó el asistente en este periodo.</div>';
+      } else {
+        h += '<table class="admin-table"><thead><tr>' +
+          '<th>Usuario</th><th>Acciones</th><th>Chat</th><th>Correos</th>' +
+          '<th>Total</th><th>Última vez</th></tr></thead><tbody>' +
+          us.map(function(u){
+            return '<tr><td><strong>' + esc(u.usuario) + '</strong>' +
+              '<div class="uso-sub">' + esc(u.username) + '</div></td>' +
+              '<td>' + u.acciones + '</td><td>' + u.chat + '</td><td>' + u.correos + '</td>' +
+              '<td><strong>' + u.total + '</strong></td>' +
+              '<td>' + fecha(u.ultimo) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      var bi = d.bitacora || [];
+      h += '<h4 class="uso-h4">Lo último que se hizo</h4>';
+      if(!bi.length){
+        h += '<div class="uso-vacio">Sin actividad registrada en este periodo.</div>';
+      } else {
+        h += '<table class="admin-table"><thead><tr>' +
+          '<th>Cuándo</th><th>Usuario</th><th>Acción</th><th>Sobre qué</th></tr></thead><tbody>' +
+          bi.map(function(b){
+            return '<tr><td class="uso-fecha">' + fecha(b.fecha) + '</td>' +
+              '<td>' + esc(b.usuario) + '</td>' +
+              '<td><span class="uso-acc uso-acc--' + esc(b.accion_key) + '">' + esc(b.accion) + '</span></td>' +
+              '<td><div class="uso-tit">' + esc(b.titulo || '—') + '</div>' +
+              (b.detalle ? '<div class="uso-sub">' + esc(b.detalle) + '</div>' : '') + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      ac.innerHTML = h;
+      var sel = document.getElementById('usoIADias');
+      if(sel) sel.onchange = function(){ window._usoIADias = parseInt(this.value,10)||30; loadUsoIA(); };
+    })
+    .catch(function(){ ac.innerHTML = '<div style="color:#FF3B30;padding:20px;">Error de red.</div>'; });
 };
 
 /* ── Rendimiento (telemetría Modo Ligero) ────────────── */

@@ -2560,3 +2560,130 @@ def api_admin_perf_stats(request):
         'equipos': equipos,
         'recientes': recientes,
     })
+
+
+@login_required
+def api_admin_uso_asistente(request):
+    """Uso del asistente de IA: quién, cuándo y qué hizo.
+
+    No agrega telemetría nueva: reúne lo que el propio asistente ya venía
+    registrando en sus tablas, que hasta ahora solo se leía por usuario y en
+    la ventana del día.
+
+      · AsistenteAccion      lo ATENDIDO desde el panel de pendientes —
+                             respondido, agendado, oportunidad creada…
+      · MensajeAsistente     lo CONVERSADO con el chat de Mi día (se cuentan
+                             solo los mensajes del usuario, no las respuestas).
+      · CorreoAnalisis       los correos que el asistente analizó por su cuenta.
+      · *AsistenteMensaje    los asistentes que viven dentro de una oportunidad,
+                             un prospecto o una idea.
+
+    ?dias=N acota la ventana (30 por omisión).
+    """
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Count, Max
+    from .models import (
+        AsistenteAccion, MensajeAsistente, CorreoAnalisis,
+        OportunidadAsistenteMensaje, ProspectoAsistenteMensaje, IdeaAsistenteMensaje,
+    )
+
+    try:
+        dias = max(1, min(365, int(request.GET.get('dias', 30))))
+    except (TypeError, ValueError):
+        dias = 30
+    desde = timezone.now() - timedelta(days=dias)
+
+    def _nombre(u):
+        if not u:
+            return '—'
+        return (u.get_full_name() or '').strip() or u.username
+
+    # ── Por usuario ──
+    # Se arma un solo diccionario y cada fuente suma su columna, para que un
+    # usuario que solo usa el chat aparezca igual que uno que solo atiende.
+    por_usuario = {}
+
+    def _fila(u):
+        if u is None:
+            return None
+        f = por_usuario.setdefault(u.id, {
+            'usuario': _nombre(u), 'username': u.username,
+            'acciones': 0, 'chat': 0, 'correos': 0, 'en_ficha': 0, 'ultimo': None,
+        })
+        return f
+
+    def _marcar(f, cuando):
+        if cuando and (not f['ultimo'] or cuando > f['ultimo']):
+            f['ultimo'] = cuando
+
+    acciones_qs = (AsistenteAccion.objects.filter(created_at__gte=desde)
+                   .select_related('usuario'))
+    por_accion = {}
+    for a in acciones_qs:
+        f = _fila(a.usuario)
+        if f:
+            f['acciones'] += 1
+            _marcar(f, a.created_at)
+        por_accion[a.accion] = por_accion.get(a.accion, 0) + 1
+
+    chat_qs = (MensajeAsistente.objects
+               .filter(fecha__gte=desde, role='user')
+               .select_related('conversacion__usuario'))
+    for m in chat_qs:
+        f = _fila(m.conversacion.usuario if m.conversacion_id else None)
+        if f:
+            f['chat'] += 1
+            _marcar(f, m.fecha)
+
+    for c in CorreoAnalisis.objects.filter(created_at__gte=desde).select_related('usuario'):
+        f = _fila(c.usuario)
+        if f:
+            f['correos'] += 1
+            _marcar(f, c.created_at)
+
+    # Los asistentes de ficha guardan el rol pero no el usuario: se cuentan
+    # aparte, como total, y no por persona.
+    en_ficha = {
+        'oportunidad': OportunidadAsistenteMensaje.objects.filter(fecha__gte=desde, role='user').count(),
+        'prospecto': ProspectoAsistenteMensaje.objects.filter(fecha__gte=desde, role='user').count(),
+        'idea': IdeaAsistenteMensaje.objects.filter(fecha__gte=desde, role='user').count(),
+    }
+
+    filas = sorted(por_usuario.values(),
+                   key=lambda f: (f['acciones'] + f['chat'] + f['correos']), reverse=True)
+    for f in filas:
+        f['total'] = f['acciones'] + f['chat'] + f['correos']
+        f['ultimo'] = f['ultimo'].isoformat() if f['ultimo'] else ''
+
+    # ── Bitácora: lo último que se hizo, con nombre y hora ──
+    etiqueta = dict(AsistenteAccion.ACCION_CHOICES)
+    bitacora = [{
+        'usuario': _nombre(a.usuario),
+        'accion': etiqueta.get(a.accion, a.accion),
+        'accion_key': a.accion,
+        'titulo': a.titulo or '',
+        'detalle': a.detalle or '',
+        'oportunidad_id': a.oportunidad_id,
+        'fecha': a.created_at.isoformat() if a.created_at else '',
+    } for a in acciones_qs.order_by('-created_at')[:80]]
+
+    return JsonResponse({
+        'ok': True,
+        'dias': dias,
+        'resumen': {
+            'usuarios_activos': len(filas),
+            'acciones': sum(f['acciones'] for f in filas),
+            'chat': sum(f['chat'] for f in filas),
+            'correos': sum(f['correos'] for f in filas),
+            'en_ficha': sum(en_ficha.values()),
+        },
+        'por_accion': [{'accion': etiqueta.get(k, k), 'n': v}
+                       for k, v in sorted(por_accion.items(), key=lambda x: -x[1])],
+        'en_ficha': en_ficha,
+        'usuarios': filas,
+        'bitacora': bitacora,
+    })

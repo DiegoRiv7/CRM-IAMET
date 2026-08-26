@@ -303,6 +303,7 @@ urlpatterns = [
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),
     path('api/admin/etapas-pipeline/', views.api_admin_etapas_pipeline, name='api_admin_etapas_pipeline'),
     path('api/admin/alias-clientes/', views.api_admin_alias_clientes, name='api_admin_alias_clientes'),
+    path('api/admin/uso-asistente/', views.api_admin_uso_asistente, name='api_admin_uso_asistente'),
     # Leads Web (integración con la página pública iamet-platform)
     path('api/leads/web/', views_leads_web.api_leads_web, name='api_leads_web'),
     path('api/admin/leads-web/', views_leads_web.api_admin_leads_web, name='api_admin_leads_web'),
