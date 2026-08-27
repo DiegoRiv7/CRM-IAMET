@@ -210,6 +210,32 @@
 #adminToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #adminToast.toast-ok  { background: rgba(52,199,89,0.92); }
 #adminToast.toast-err { background: rgba(255,59,48,0.92); }
+
+/* ── Uso de IA: estilos ── */
+.uso-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0 16px; }
+.uso-kpi { background: #F8FAFC; border: 1px solid #E9EDF3; border-radius: 12px; padding: 12px 14px; }
+.uso-kpi-n { display: block; font-size: 1.5rem; font-weight: 800; color: #0F172A; line-height: 1.1; }
+.uso-kpi-l { display: block; font-size: .76rem; font-weight: 700; color: #334155; margin-top: 3px; }
+.uso-kpi-s { display: block; font-size: .7rem; color: #94A3B8; }
+.uso-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
+.uso-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+    background: #EEF4FF; color: #1D4ED8; font-size: .76rem; font-weight: 600; }
+.uso-chip b { font-weight: 800; }
+.uso-h4 { margin: 20px 0 8px; font-size: .82rem; font-weight: 800; color: #334155;
+    text-transform: uppercase; letter-spacing: .04em; }
+.uso-vacio { padding: 18px; text-align: center; color: #94A3B8; font-size: .82rem;
+    background: #F8FAFC; border: 1px dashed #E2E8F0; border-radius: 10px; }
+.uso-sub { font-size: .72rem; color: #94A3B8; }
+.uso-fecha { white-space: nowrap; color: #64748B; font-size: .78rem; }
+.uso-tit { font-size: .82rem; color: #0F172A; }
+.uso-sel { padding: 6px 10px; border: 1px solid #D7DBE2; border-radius: 8px; font: inherit; font-size: .8rem; }
+.uso-acc { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700;
+    background: #F1F5F9; color: #475569; white-space: nowrap; }
+.uso-acc--respondido { background: #DBEAFE; color: #1D4ED8; }
+.uso-acc--agendado { background: #FEF3C7; color: #92400E; }
+.uso-acc--oportunidad { background: #DCFCE7; color: #15803D; }
+.uso-acc--actualizada { background: #E0E7FF; color: #4338CA; }
+.uso-acc--revisado { background: #F1F5F9; color: #64748B; }
 </style>
 
 <!-- ═══ ADMIN PANEL OVERLAY ═══ -->
@@ -1636,36 +1662,6 @@ window.admEliminarAlias = function(id){
     else _showAdminToast(res.error || 'Error', false);
   });
 };
-
-</script>
-<style>
-/* ── Uso de IA: estilos ── */
-.uso-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0 16px; }
-.uso-kpi { background: #F8FAFC; border: 1px solid #E9EDF3; border-radius: 12px; padding: 12px 14px; }
-.uso-kpi-n { display: block; font-size: 1.5rem; font-weight: 800; color: #0F172A; line-height: 1.1; }
-.uso-kpi-l { display: block; font-size: .76rem; font-weight: 700; color: #334155; margin-top: 3px; }
-.uso-kpi-s { display: block; font-size: .7rem; color: #94A3B8; }
-.uso-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
-.uso-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-    background: #EEF4FF; color: #1D4ED8; font-size: .76rem; font-weight: 600; }
-.uso-chip b { font-weight: 800; }
-.uso-h4 { margin: 20px 0 8px; font-size: .82rem; font-weight: 800; color: #334155;
-    text-transform: uppercase; letter-spacing: .04em; }
-.uso-vacio { padding: 18px; text-align: center; color: #94A3B8; font-size: .82rem;
-    background: #F8FAFC; border: 1px dashed #E2E8F0; border-radius: 10px; }
-.uso-sub { font-size: .72rem; color: #94A3B8; }
-.uso-fecha { white-space: nowrap; color: #64748B; font-size: .78rem; }
-.uso-tit { font-size: .82rem; color: #0F172A; }
-.uso-sel { padding: 6px 10px; border: 1px solid #D7DBE2; border-radius: 8px; font: inherit; font-size: .8rem; }
-.uso-acc { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700;
-    background: #F1F5F9; color: #475569; white-space: nowrap; }
-.uso-acc--respondido { background: #DBEAFE; color: #1D4ED8; }
-.uso-acc--agendado { background: #FEF3C7; color: #92400E; }
-.uso-acc--oportunidad { background: #DCFCE7; color: #15803D; }
-.uso-acc--actualizada { background: #E0E7FF; color: #4338CA; }
-.uso-acc--revisado { background: #F1F5F9; color: #64748B; }
-</style>
-<script>
 
 /* ── Uso de IA ────────────────────────────────────────
    Quién usa el asistente, cuándo y qué hizo. No hay telemetría nueva: se lee
