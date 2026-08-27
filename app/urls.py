@@ -22,6 +22,7 @@ from . import views_asistente_ideas
 from . import views_asistente_prospeccion
 from . import views_widget_pages
 from . import views_leads_web
+from . import views_chat_web
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from . import views_sync
@@ -307,6 +308,11 @@ urlpatterns = [
     # Leads Web (integración con la página pública iamet-platform)
     path('api/leads/web/', views_leads_web.api_leads_web, name='api_leads_web'),
     path('api/admin/leads-web/', views_leads_web.api_admin_leads_web, name='api_admin_leads_web'),
+    # Chat Web — bandeja del chat directo de las Cuentas IAMET del sitio
+    path('chat-web/', views_chat_web.chat_web, name='chat_web'),
+    path('api/chat-web/threads/', views_chat_web.chat_web_threads, name='chat_web_threads'),
+    path('api/chat-web/messages/', views_chat_web.chat_web_messages, name='chat_web_messages'),
+    path('api/chat-web/reply/', views_chat_web.chat_web_reply, name='chat_web_reply'),
     # Clientes Potenciales (Prospectos)
     path('api/admin/prospectos/', views.api_admin_prospectos, name='api_admin_prospectos'),
     path('api/admin/prospectos/<int:potencial_id>/', views.api_admin_prospecto_detalle, name='api_admin_prospecto_detalle'),
