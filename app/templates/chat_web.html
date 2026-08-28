@@ -97,7 +97,7 @@
   }
 
   function cargaHilos() {
-    fetch('{% url "app:chat_web_threads" %}')
+    fetch('{% url "chat_web_threads" %}')
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.threads) { hilos = d.threads; pintaLista(); }
@@ -108,7 +108,7 @@
 
   function cargaMensajes() {
     if (!hiloActivo) return;
-    fetch('{% url "app:chat_web_messages" %}?sessionId=' + encodeURIComponent(hiloActivo))
+    fetch('{% url "chat_web_messages" %}?sessionId=' + encodeURIComponent(hiloActivo))
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.messages) return;
@@ -147,7 +147,7 @@
     const texto = $('cwTexto').value.trim();
     if (!texto || !hiloActivo) return;
     $('cwTexto').value = '';
-    fetch('{% url "app:chat_web_reply" %}', {
+    fetch('{% url "chat_web_reply" %}', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '' },
       body: JSON.stringify({ sessionId: hiloActivo, content: texto }),
