@@ -2,75 +2,147 @@
 {% load static %}
 
 {% block title %}Chat Web — Cuentas IAMET{% endblock %}
+{% block extra_head %}{% include "crm/_styles.html" %}{% endblock %}
 
 {% block content %}
 <style>
-  .cw-wrap { display: grid; grid-template-columns: 320px 1fr; gap: 16px; height: calc(100vh - 180px); min-height: 480px; }
-  .cw-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .cw-shell { display: grid; grid-template-columns: 300px 1fr; gap: 14px; height: calc(100vh - 120px); min-height: 480px; }
+  .cw-shell.con-ficha { grid-template-columns: 300px 1fr 320px; }
+  .cw-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
   .cw-lista { flex: 1; overflow-y: auto; }
   .cw-hilo { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
   .cw-hilo:hover { background: #f8fafc; }
   .cw-hilo.activo { background: #eff6ff; border-left: 3px solid #2563eb; }
   .cw-badge { background: #2563eb; color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 8px; }
   .cw-msgs { flex: 1; overflow-y: auto; padding: 18px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
-  .cw-burbuja { max-width: 72%; padding: 9px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+  .cw-burbuja { max-width: 72%; padding: 9px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
   .cw-burbuja.user { align-self: flex-start; background: #fff; border: 1px solid #e2e8f0; color: #334155; }
   .cw-burbuja.human { align-self: flex-end; background: #2563eb; color: #fff; }
+  .cw-burbuja img { max-height: 240px; max-width: 100%; border-radius: 10px; display: block; }
+  .cw-burbuja a { color: inherit; text-decoration: underline; }
   .cw-meta { font-size: 10px; color: #94a3b8; margin: 0 4px 2px; }
-  .cw-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e2e8f0; background: #fff; }
-  .cw-input input { flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; outline: none; }
-  .cw-input input:focus { border-color: #2563eb; }
-  .cw-input button { background: #2563eb; color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
-  .cw-input button:disabled { opacity: .4; cursor: default; }
+  .cw-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e2e8f0; background: #fff; align-items: center; }
+  .cw-input input[type=text] { flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; outline: none; min-width: 0; }
+  .cw-input input[type=text]:focus { border-color: #2563eb; }
+  .cw-btn { background: #2563eb; color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
+  .cw-btn:disabled { opacity: .4; cursor: default; }
+  .cw-btn-gris { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
   .cw-vacio { color: #94a3b8; font-size: 14px; text-align: center; margin: auto; }
-  @media (max-width: 900px) { .cw-wrap { grid-template-columns: 1fr; height: auto; } .cw-panel { min-height: 300px; } }
+  .cw-nombre-link { cursor: pointer; }
+  .cw-nombre-link:hover { color: #2563eb; text-decoration: underline; }
+  .cw-ficha { padding: 16px; overflow-y: auto; font-size: 13px; color: #334155; }
+  .cw-ficha h3 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .cw-ficha .fila { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+  .cw-ficha .fila b { color: #64748b; font-weight: 600; min-width: 92px; }
+  .cw-ficha input, .cw-ficha select { width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; font-size: 13px; margin-top: 4px; }
+  @media (max-width: 1100px) { .cw-shell, .cw-shell.con-ficha { grid-template-columns: 1fr; height: auto; } .cw-panel { min-height: 280px; } }
 </style>
 
-<div class="mb-4">
-  <h1 style="font-size:24px;font-weight:700;">💬 Chat Web — Cuentas IAMET</h1>
-  <p style="color:#64748b;font-size:14px;">Conversaciones del chat directo del sitio. Respondes como
-    <strong>{{ agente_nombre }}</strong> y el cliente lo ve al instante en la página.</p>
-</div>
+<div class="crm-page crm-page-sidebar">
+  <form style="display:none;">{% csrf_token %}</form>
+  {% include "crm/_sidebar.html" %}
 
-<div class="cw-wrap">
-  <!-- Lista de hilos -->
-  <div class="cw-panel">
-    <div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;font-weight:700;font-size:13px;color:#475569;">
-      CONVERSACIONES <span id="cwTotal" style="color:#94a3b8;font-weight:500;"></span>
+  <div class="crm-main" style="padding: 18px 20px; min-width: 0;">
+    <div style="margin-bottom: 12px;">
+      <h1 style="font-size:22px;font-weight:700;">💬 Chat Web — Cuentas IAMET</h1>
+      <p style="color:#94a3b8;font-size:13px;">Chats del sitio público. Respondes como <strong>{{ agente_nombre }}</strong> y el cliente lo ve al instante. Clic en el nombre para ver su cuenta.</p>
     </div>
-    <div class="cw-lista" id="cwLista">
-      <p class="cw-vacio" style="padding:24px;">Cargando…</p>
-    </div>
-  </div>
 
-  <!-- Conversación -->
-  <div class="cw-panel">
-    <div id="cwCabecera" style="padding:12px 16px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-weight:700;font-size:14px;" id="cwNombre">Selecciona una conversación</p>
-      <p style="font-size:12px;color:#64748b;" id="cwDetalle"></p>
-    </div>
-    <div class="cw-msgs" id="cwMsgs">
-      <p class="cw-vacio">Elige un hilo de la izquierda para leerlo y responder.</p>
-    </div>
-    <div class="cw-input">
-      <input type="text" id="cwTexto" placeholder="Escribe tu respuesta al cliente…" disabled
-             onkeydown="if(event.key==='Enter'){event.preventDefault();cwEnviar();}">
-      <button id="cwBoton" onclick="cwEnviar()" disabled>Enviar</button>
+    <div class="cw-shell" id="cwShell">
+      <!-- Hilos -->
+      <div class="cw-panel">
+        <div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;font-weight:700;font-size:13px;color:#475569;">
+          CONVERSACIONES <span id="cwTotal" style="color:#94a3b8;font-weight:500;"></span>
+        </div>
+        <div class="cw-lista" id="cwLista"><p class="cw-vacio" style="padding:24px;">Cargando…</p></div>
+      </div>
+
+      <!-- Conversación -->
+      <div class="cw-panel">
+        <div style="padding:12px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-weight:700;font-size:14px;" class="cw-nombre-link" id="cwNombre" onclick="cwFicha()">Selecciona una conversación</p>
+            <p style="font-size:12px;color:#64748b;" id="cwDetalle"></p>
+          </div>
+          <button class="cw-btn-gris" id="cwBtnFicha" style="display:none;" onclick="cwFicha()">Ver cuenta</button>
+        </div>
+        <div class="cw-msgs" id="cwMsgs"><p class="cw-vacio">Elige un hilo de la izquierda para leerlo y responder.</p></div>
+        <div class="cw-input">
+          <input type="file" id="cwArchivo" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xlsx,.txt"
+                 onchange="cwAdjuntar(this.files[0]); this.value='';">
+          <button class="cw-btn-gris" id="cwBtnClip" title="Adjuntar foto o archivo" disabled
+                  onclick="document.getElementById('cwArchivo').click()">📎</button>
+          <input type="text" id="cwTexto" placeholder="Escribe tu respuesta al cliente…" disabled
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();cwEnviar();}">
+          <button class="cw-btn" id="cwBoton" onclick="cwEnviar()" disabled>Enviar</button>
+        </div>
+      </div>
+
+      <!-- Ficha de la cuenta -->
+      <div class="cw-panel cw-ficha" id="cwFichaPanel" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+          <h3 id="fichaNombre">—</h3>
+          <button class="cw-btn-gris" onclick="cwFichaCerrar()" style="padding:4px 10px;">✕</button>
+        </div>
+        <p style="color:#94a3b8;font-size:11px;margin-bottom:10px;">Cuenta IAMET del sitio</p>
+        <div class="fila"><b>Correo</b><span id="fichaEmail">—</span></div>
+        <div class="fila"><b>Teléfono</b><span id="fichaTel">—</span></div>
+        <div class="fila"><b>Empresa</b><span id="fichaEmpresa">—</span></div>
+        <div class="fila"><b>Verificada</b><span id="fichaVerif">—</span></div>
+        <div class="fila"><b>Miembro desde</b><span id="fichaDesde">—</span></div>
+        <div class="fila"><b>Cotizaciones</b><span id="fichaCotiz">—</span></div>
+        <div class="fila"><b>Chats con IA</b><span id="fichaIA">—</span></div>
+        <div class="fila"><b>Prospecto</b><span id="fichaProspecto">—</span></div>
+
+        <!-- Crear oportunidad -->
+        <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0;" id="fichaOppForm">
+          <p style="font-weight:700;font-size:13px;margin-bottom:2px;">Crear oportunidad</p>
+          <input type="text" id="oppTitulo" placeholder="Título de la oportunidad">
+          <select id="oppTipo">
+            <option value="proyecto">Proyecto</option>
+            <option value="runrate">Runrate</option>
+          </select>
+          <input type="number" id="oppMonto" placeholder="Monto estimado (MXN, opcional)">
+          <button class="cw-btn" style="width:100%;margin-top:8px;" id="oppBoton" onclick="cwCrearOpp()">Crear oportunidad</button>
+          <p id="oppResultado" style="font-size:12px;margin-top:6px;color:#16a34a;"></p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script data-turbo-eval="false">
+// Navegación del sidebar desde esta página (Tareas/Proyectos usan crmNav)
+function crmNav(q) { window.location.href = '/app/home/' + q; }
+
 (function () {
+  const SITIO = '{{ sitio_web_url|default:"http://82.223.44.29" }}'.replace(/\/$/, '');
   let hiloActivo = null;
   let hilos = [];
+  let fichaData = null;
 
   const $ = (id) => document.getElementById(id);
+  const csrf = () => (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
 
   function esc(t) {
     const d = document.createElement('div');
     d.textContent = t == null ? '' : String(t);
     return d.innerHTML;
+  }
+
+  // [adjunto:<id>:<clave>:<img|file>:<nombre>] → HTML (imagen o enlace al sitio)
+  function renderContenido(texto) {
+    const m = String(texto).match(/^\[adjunto:(\d+):([a-f0-9]+):(img|file):(.+)\]$/);
+    if (!m) return esc(texto);
+    const url = SITIO + '/api/chat-adjunto/' + m[1] + '/' + m[2];
+    if (m[3] === 'img') return '<a href="' + url + '" target="_blank" rel="noreferrer"><img src="' + url + '" alt="' + esc(m[4]) + '"></a>';
+    return '<a href="' + url + '" target="_blank" rel="noreferrer">📄 ' + esc(m[4]) + '</a>';
+  }
+
+  function resumen(texto) {
+    const m = String(texto).match(/^\[adjunto:\d+:[a-f0-9]+:(img|file):(.+)\]$/);
+    if (m) return (m[1] === 'img' ? '📷 ' : '📎 ') + m[2];
+    return texto;
   }
 
   function pintaLista() {
@@ -83,7 +155,7 @@
     $('cwTotal').textContent = '· ' + hilos.length;
     cont.innerHTML = hilos.map(function (h) {
       const nombre = h.cuenta ? h.cuenta.name : h.sessionId;
-      const ultimo = h.ultimoMensaje ? h.ultimoMensaje.content.slice(0, 48) : 'Sin mensajes';
+      const ultimo = h.ultimoMensaje ? resumen(h.ultimoMensaje.content).slice(0, 48) : 'Sin mensajes';
       const fecha = new Date(h.updatedAt).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       return '<div class="cw-hilo' + (hiloActivo === h.sessionId ? ' activo' : '') + '" onclick="cwAbrir(\'' + h.sessionId + '\')">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
@@ -120,7 +192,7 @@
               const meta = mio ? (m.agentName || 'CRM') : 'Cliente';
               return '<div style="display:flex;flex-direction:column;' + (mio ? 'align-items:flex-end;' : 'align-items:flex-start;') + '">'
                 + '<span class="cw-meta">' + esc(meta) + '</span>'
-                + '<div class="cw-burbuja ' + (mio ? 'human' : 'user') + '">' + esc(m.content) + '</div>'
+                + '<div class="cw-burbuja ' + (mio ? 'human' : 'user') + '">' + renderContenido(m.content) + '</div>'
                 + '</div>';
             }).join('')
           : '<p class="cw-vacio">Sin mensajes todavía.</p>';
@@ -131,6 +203,8 @@
 
   window.cwAbrir = function (sessionId) {
     hiloActivo = sessionId;
+    fichaData = null;
+    cwFichaCerrar();
     const h = hilos.find(function (x) { return x.sessionId === sessionId; });
     $('cwNombre').textContent = h && h.cuenta ? h.cuenta.name : sessionId;
     $('cwDetalle').textContent = h && h.cuenta
@@ -138,6 +212,8 @@
       : '';
     $('cwTexto').disabled = false;
     $('cwBoton').disabled = false;
+    $('cwBtnClip').disabled = false;
+    $('cwBtnFicha').style.display = '';
     pintaLista();
     cargaMensajes();
     setTimeout(function () { const c = $('cwMsgs'); c.scrollTop = c.scrollHeight; }, 300);
@@ -149,12 +225,101 @@
     $('cwTexto').value = '';
     fetch('{% url "chat_web_reply" %}', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
       body: JSON.stringify({ sessionId: hiloActivo, content: texto }),
     })
       .then(function (r) { return r.json(); })
       .then(function () { cargaMensajes(); cargaHilos(); })
       .catch(function () {});
+  };
+
+  window.cwAdjuntar = function (file) {
+    if (!file || !hiloActivo) return;
+    if (file.size > 5.5 * 1024 * 1024) { alert('El archivo es muy grande (máximo 5 MB).'); return; }
+    const lector = new FileReader();
+    lector.onload = function () {
+      const base64 = String(lector.result).split(',')[1] || '';
+      $('cwBtnClip').disabled = true;
+      fetch('{% url "chat_web_upload" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        body: JSON.stringify({ sessionId: hiloActivo, nombre: file.name, mime: file.type || 'application/octet-stream', datosBase64: base64 }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          $('cwBtnClip').disabled = false;
+          if (d.error) alert(d.error);
+          cargaMensajes(); cargaHilos();
+        })
+        .catch(function () { $('cwBtnClip').disabled = false; });
+    };
+    lector.readAsDataURL(file);
+  };
+
+  // ── Ficha de la cuenta ──────────────────────────────────────────────────
+  window.cwFicha = function () {
+    if (!hiloActivo) return;
+    $('cwShell').classList.add('con-ficha');
+    $('cwFichaPanel').style.display = '';
+    $('fichaNombre').textContent = 'Cargando…';
+    fetch('{% url "chat_web_account" %}?sessionId=' + encodeURIComponent(hiloActivo))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.error) { $('fichaNombre').textContent = d.error; return; }
+        fichaData = d;
+        const c = d.cuenta || {};
+        $('fichaNombre').textContent = c.name || '—';
+        $('fichaEmail').textContent = c.email || '—';
+        $('fichaTel').textContent = c.phone || '—';
+        $('fichaEmpresa').textContent = c.company || '—';
+        $('fichaVerif').textContent = c.emailVerified ? 'Sí ✓' : 'No';
+        $('fichaDesde').textContent = c.createdAt ? new Date(c.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+        $('fichaCotiz').textContent = d.numCotizaciones;
+        $('fichaIA').textContent = d.numConversacionesIA;
+        $('fichaProspecto').textContent = d.prospectoId
+          ? ('#' + d.prospectoId + (d.prospectoEtapa ? ' (' + d.prospectoEtapa + ')' : ''))
+          : 'Aún sin prospecto';
+        $('oppTitulo').value = 'Chat web — ' + (c.name || '');
+        const yaTiene = !!d.oportunidadId;
+        $('oppResultado').textContent = yaTiene ? ('Ya tiene la oportunidad #' + d.oportunidadId + ' ✓') : '';
+        $('oppBoton').disabled = !d.prospectoId;
+        if (!d.prospectoId) $('oppResultado').textContent = 'El cliente aún no manda su primer mensaje (sin prospecto).';
+      })
+      .catch(function () { $('fichaNombre').textContent = 'Error al cargar'; });
+  };
+
+  window.cwFichaCerrar = function () {
+    $('cwShell').classList.remove('con-ficha');
+    $('cwFichaPanel').style.display = 'none';
+  };
+
+  window.cwCrearOpp = function () {
+    if (!fichaData || !fichaData.prospectoId) return;
+    const titulo = $('oppTitulo').value.trim();
+    const tipo = $('oppTipo').value;
+    const monto = $('oppMonto').value || '0';
+    $('oppBoton').disabled = true;
+    fetch('/app/api/prospecto/' + fichaData.prospectoId + '/crear-oportunidad/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: JSON.stringify({ titulo: titulo, tipo_negociacion: tipo, monto: monto, comentarios: 'Creada desde la bandeja Chat Web.' }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        $('oppBoton').disabled = false;
+        if (d.success) {
+          $('oppResultado').style.color = '#16a34a';
+          $('oppResultado').textContent = 'Oportunidad #' + d.oportunidad_id + ' creada ✓';
+        } else {
+          $('oppResultado').style.color = '#dc2626';
+          $('oppResultado').textContent = d.error || 'No se pudo crear.';
+        }
+      })
+      .catch(function () {
+        $('oppBoton').disabled = false;
+        $('oppResultado').style.color = '#dc2626';
+        $('oppResultado').textContent = 'Error de conexión.';
+      });
   };
 
   cargaHilos();

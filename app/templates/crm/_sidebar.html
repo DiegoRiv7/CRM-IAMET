@@ -57,7 +57,7 @@
 
         <!-- Tareas -->
         <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}"
-            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' or tab_activo == 'chatweb' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
             </svg>
@@ -66,7 +66,7 @@
 
         <!-- Proyectos -->
         <button type="button" class="crm-sb-btn" id="btnProyectos" data-tooltip="Proyectos"
-            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' or tab_activo == 'chatweb' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
@@ -183,7 +183,7 @@
 
         <!-- Tareas -->
         <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}"
-            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' or tab_activo == 'chatweb' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};crmNav('?')"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
             </svg>
@@ -192,7 +192,7 @@
 
         <!-- Proyectos (visible para todos) -->
         <button type="button" class="crm-sb-btn" id="btnProyectos" data-tooltip="Proyectos"
-            {% if tab_activo == 'calendario' or tab_activo == 'correo' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
+            {% if tab_activo == 'calendario' or tab_activo == 'correo' or tab_activo == 'chatweb' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};crmNav('?')"{% else %}onclick="proyectosAbrir()"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
@@ -265,23 +265,9 @@
         {% endif %}
 
         {% if sitio_web_url and es_supervisor %}
-        <!-- Sitio Web en pruebas: copia del sitio público corriendo en este
-             mismo servidor. Solo existe donde SITIO_WEB_URL esté definida
-             (pruebas) — producción no la define y no ve este botón. -->
-        <button type="button" class="crm-sb-btn" id="btnSitioWeb"
-            onclick="window.open('{{ sitio_web_url }}', '_blank')"
-            data-tooltip="Sitio Web (pruebas)">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-            <span class="crm-sb-label">Sitio Web</span>
-        </button>
-
         <!-- Chat Web: bandeja del chat directo de las Cuentas IAMET del sitio.
-             Mismo gating que Sitio Web (solo donde SITIO_WEB_URL exista). -->
-        <button type="button" class="crm-sb-btn" id="btnChatWeb"
+             Solo donde SITIO_WEB_URL esté definida (pruebas). -->
+        <button type="button" class="crm-sb-btn{% if tab_activo == 'chatweb' %} active{% endif %}" id="btnChatWeb"
             onclick="window.location.href='{% url 'chat_web' %}'"
             data-tooltip="Chat Web (sitio)">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">

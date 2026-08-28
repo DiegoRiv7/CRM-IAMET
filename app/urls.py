@@ -313,6 +313,8 @@ urlpatterns = [
     path('api/chat-web/threads/', views_chat_web.chat_web_threads, name='chat_web_threads'),
     path('api/chat-web/messages/', views_chat_web.chat_web_messages, name='chat_web_messages'),
     path('api/chat-web/reply/', views_chat_web.chat_web_reply, name='chat_web_reply'),
+    path('api/chat-web/account/', views_chat_web.chat_web_account, name='chat_web_account'),
+    path('api/chat-web/upload/', views_chat_web.chat_web_upload, name='chat_web_upload'),
     # Clientes Potenciales (Prospectos)
     path('api/admin/prospectos/', views.api_admin_prospectos, name='api_admin_prospectos'),
     path('api/admin/prospectos/<int:potencial_id>/', views.api_admin_prospecto_detalle, name='api_admin_prospecto_detalle'),
