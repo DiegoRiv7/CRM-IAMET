@@ -64,6 +64,7 @@ def chat_web(request):
     return render(request, 'chat_web.html', {
         'agente_nombre': request.user.get_full_name() or request.user.username,
         'tab_activo': 'chatweb',  # el sidebar navega con crmNav y marca el botón
+        'usuario': request.user,  # el sidebar lo usa (avatar/tooltip del perfil)
     })
 
 
