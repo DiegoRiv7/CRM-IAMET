@@ -32,4 +32,9 @@ def supervisor_flag(request):
         'user_profile': profile,
         'resumen_habilitado': RESUMEN_HABILITADO,
         'sitio_web_url': SITIO_WEB_URL,
+        # Bandeja Chat Web del sitio: supervisores siempre; el resto por flag.
+        'puede_chat_web': (
+            (is_supervisor(request.user) or bool(getattr(profile, 'puede_chat_web', False)))
+            if user_authenticated else False
+        ),
     }

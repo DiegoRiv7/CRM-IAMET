@@ -114,6 +114,18 @@
 <script data-turbo-eval="false">
 // OJO: NO definir crmNav aquí — la global de turbo_bootstrap.js recibe URL
 // completa y sobrevive a las navegaciones de Turbo; redefinirla rompe el CRM.
+
+// Al SALIR de la bandeja, navegación completa (no Turbo): el CRM home
+// necesita sus bundles (kanban/tabs) que esta página no cargó — con visita
+// Turbo llegaban sin ejecutarse y el CRM se veía vacío. El guard por pathname
+// deja el listener inerte en cualquier otra página.
+document.addEventListener('turbo:before-visit', function (e) {
+  if (window.location.pathname.indexOf('/chat-web') !== -1) {
+    e.preventDefault();
+    window.location.href = e.detail.url;
+  }
+});
+
 (function () {
   const SITIO = '{{ sitio_web_url|default:"http://82.223.44.29" }}'.replace(/\/$/, '');
   let hiloActivo = null;

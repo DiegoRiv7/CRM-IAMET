@@ -18,14 +18,24 @@ import os
 import requests
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
-from .models import LeadWeb, LeadWebConfig
+from .models import LeadWeb, LeadWebConfig, UserProfile
+from .views_utils import is_supervisor
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT = 10
+
+
+def _tiene_permiso(user):
+    """Supervisores siempre; el resto necesita el flag puede_chat_web
+    (panel admin → Permisos → columna Chat Web)."""
+    if is_supervisor(user):
+        return True
+    profile = UserProfile.objects.filter(user=user).first()
+    return bool(profile and profile.puede_chat_web)
 
 
 def _sitio_base():
@@ -61,6 +71,8 @@ def _get_sitio(path, params=None):
 @login_required
 def chat_web(request):
     """Página de la bandeja (la lista y la conversación cargan por fetch)."""
+    if not _tiene_permiso(request.user):
+        return redirect('/app/home/')
     from datetime import datetime
     now = datetime.now()
     return render(request, 'chat_web.html', {
@@ -76,6 +88,8 @@ def chat_web(request):
 
 @login_required
 def chat_web_threads(request):
+    if not _tiene_permiso(request.user):
+        return JsonResponse({'error': 'Sin permiso para el Chat Web.'}, status=403)
     data, err = _get_sitio('/api/crm/chat/threads')
     if err:
         return JsonResponse({'error': err}, status=502)
@@ -84,6 +98,8 @@ def chat_web_threads(request):
 
 @login_required
 def chat_web_messages(request):
+    if not _tiene_permiso(request.user):
+        return JsonResponse({'error': 'Sin permiso para el Chat Web.'}, status=403)
     session_id = request.GET.get('sessionId', '')
     if not session_id.startswith('cuenta-'):
         return JsonResponse({'error': 'sessionId inválido'}, status=400)
@@ -95,6 +111,8 @@ def chat_web_messages(request):
 
 @login_required
 def chat_web_account(request):
+    if not _tiene_permiso(request.user):
+        return JsonResponse({'error': 'Sin permiso para el Chat Web.'}, status=403)
     """Ficha completa de la cuenta detrás de un hilo + su prospecto en el CRM."""
     session_id = request.GET.get('sessionId', '')
     if not session_id.startswith('cuenta-'):
@@ -123,6 +141,8 @@ def chat_web_account(request):
 @require_POST
 def chat_web_upload(request):
     """Adjunta un archivo/foto al hilo (se guarda en el sitio; el cliente lo ve)."""
+    if not _tiene_permiso(request.user):
+        return JsonResponse({'error': 'Sin permiso para el Chat Web.'}, status=403)
     try:
         body = json.loads(request.body.decode('utf-8'))
     except (ValueError, UnicodeDecodeError):
@@ -165,6 +185,8 @@ def chat_web_upload(request):
 @login_required
 @require_POST
 def chat_web_reply(request):
+    if not _tiene_permiso(request.user):
+        return JsonResponse({'error': 'Sin permiso para el Chat Web.'}, status=403)
     try:
         body = json.loads(request.body.decode('utf-8'))
     except (ValueError, UnicodeDecodeError):

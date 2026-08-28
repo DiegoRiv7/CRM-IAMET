@@ -78,6 +78,10 @@ class UserProfile(models.Model):
     # asignárselos a sí mismo o a miembros de su grupo. Se administra desde el
     # panel admin → Permisos. Supervisores y administradores pueden siempre.
     puede_crear_prospecto = models.BooleanField(default=False, verbose_name="Puede crear Prospectos")
+    # Permiso para ver la bandeja "Chat Web" (chats del sitio público con
+    # Cuenta IAMET). Supervisores siempre pueden; el resto necesita el flag.
+    # Se administra desde el panel admin → Permisos.
+    puede_chat_web = models.BooleanField(default=False, verbose_name="Puede ver el Chat Web")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")

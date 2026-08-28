@@ -264,9 +264,10 @@
         </button>
         {% endif %}
 
-        {% if sitio_web_url and es_supervisor %}
+        {% if sitio_web_url and puede_chat_web %}
         <!-- Chat Web: bandeja del chat directo de las Cuentas IAMET del sitio.
-             Solo donde SITIO_WEB_URL esté definida (pruebas). -->
+             Solo donde SITIO_WEB_URL esté definida, para supervisores o
+             usuarios con el permiso "Chat Web" del panel admin. -->
         <button type="button" class="crm-sb-btn{% if tab_activo == 'chatweb' %} active{% endif %}" id="btnChatWeb"
             onclick="window.location.href='{% url 'chat_web' %}'"
             data-tooltip="Chat Web (sitio)">
