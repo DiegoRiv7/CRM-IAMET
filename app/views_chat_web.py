@@ -61,10 +61,16 @@ def _get_sitio(path, params=None):
 @login_required
 def chat_web(request):
     """Página de la bandeja (la lista y la conversación cargan por fetch)."""
+    from datetime import datetime
+    now = datetime.now()
     return render(request, 'chat_web.html', {
         'agente_nombre': request.user.get_full_name() or request.user.username,
         'tab_activo': 'chatweb',  # el sidebar navega con crmNav y marca el botón
         'usuario': request.user,  # el sidebar lo usa (avatar/tooltip del perfil)
+        # El sidebar arma los links de CRM/Reportes con mes/anio; sin estos
+        # valores navegaba con mes=&anio= vacíos y el CRM caía en "Todos·Todos".
+        'mes_filter': str(now.month).zfill(2),
+        'anio_filter': str(now.year),
     })
 
 
