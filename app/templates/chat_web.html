@@ -112,9 +112,8 @@
 </div>
 
 <script data-turbo-eval="false">
-// Navegación del sidebar desde esta página (Tareas/Proyectos usan crmNav)
-function crmNav(q) { window.location.href = '/app/home/' + q; }
-
+// OJO: NO definir crmNav aquí — la global de turbo_bootstrap.js recibe URL
+// completa y sobrevive a las navegaciones de Turbo; redefinirla rompe el CRM.
 (function () {
   const SITIO = '{{ sitio_web_url|default:"http://82.223.44.29" }}'.replace(/\/$/, '');
   let hiloActivo = null;
