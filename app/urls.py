@@ -308,6 +308,8 @@ urlpatterns = [
     # Leads Web (integración con la página pública iamet-platform)
     path('api/leads/web/', views_leads_web.api_leads_web, name='api_leads_web'),
     path('api/admin/leads-web/', views_leads_web.api_admin_leads_web, name='api_admin_leads_web'),
+    # SSO Tienda: valida credenciales del CRM para el panel /admin/tienda del sitio
+    path('api/auth/validar/', views_leads_web.api_validar_credenciales, name='api_validar_credenciales'),
     # Chat Web — bandeja del chat directo de las Cuentas IAMET del sitio
     path('chat-web/', views_chat_web.chat_web, name='chat_web'),
     path('api/chat-web/threads/', views_chat_web.chat_web_threads, name='chat_web_threads'),

@@ -11,6 +11,7 @@ import json
 import logging
 import secrets
 
+from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -51,6 +52,65 @@ def _sitio_por_token(token):
         if cfg.token and constant_time_compare(token, cfg.token):
             return cfg
     return None
+
+
+@csrf_exempt
+def api_validar_credenciales(request):
+    """
+    SSO para el panel de la Tienda del sitio web (iamet-platform).
+
+    El staff administra la Tienda con su MISMA cuenta del CRM: el sitio envía aquí
+    las credenciales tecleadas y el CRM las valida con Django auth, devolviendo el
+    permiso `puede_editar_tienda`. NUNCA salen hashes — el CRM valida y responde.
+
+        POST /app/api/auth/validar/
+        Header:  Authorization: Bearer <token de servicio de LeadWebConfig>
+        Body:    {"username": "<usuario o email>", "password": "..."}
+        ->       {ok, username, nombre, email, es_supervisor, puede_editar_tienda}
+
+    Respuestas: 401 token inválido / credenciales inválidas, 405 método, 400 JSON.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST requerido'}, status=405)
+
+    # Mismo token de servicio máquina-a-máquina que los leads web.
+    LeadWebConfig.obtener()
+    cfg = _sitio_por_token(_token_del_request(request))
+    if not cfg:
+        return JsonResponse({'ok': False, 'error': 'Token inválido'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+
+    identificador = (data.get('username') or data.get('email') or '').strip()
+    password = data.get('password') or ''
+    if not identificador or not password:
+        return JsonResponse({'ok': False, 'error': 'Credenciales incompletas'}, status=400)
+
+    # Permitir iniciar sesión con email: resolver al username real.
+    username = identificador
+    if '@' in identificador:
+        u = User.objects.filter(email__iexact=identificador).order_by('id').first()
+        if u:
+            username = u.username
+
+    user = authenticate(username=username, password=password)
+    if user is None or not user.is_active:
+        return JsonResponse({'ok': False, 'error': 'Credenciales inválidas'}, status=401)
+
+    profile = getattr(user, 'userprofile', None)
+    # Supervisores siempre pueden; el resto necesita el flag (mismo criterio que Chat Web).
+    puede = is_supervisor(user) or bool(getattr(profile, 'puede_editar_tienda', False))
+    return JsonResponse({
+        'ok': True,
+        'username': user.username,
+        'nombre': (user.get_full_name() or user.username),
+        'email': user.email or '',
+        'es_supervisor': is_supervisor(user),
+        'puede_editar_tienda': puede,
+    })
 
 
 def _responsable_efectivo(cfg):

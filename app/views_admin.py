@@ -80,6 +80,7 @@ def api_admin_usuarios(request):
                 'puede_levantamiento': getattr(profile, 'puede_levantamiento', False) if profile else False,
                 'puede_crear_prospecto': getattr(profile, 'puede_crear_prospecto', False) if profile else False,
                 'puede_chat_web': getattr(profile, 'puede_chat_web', False) if profile else False,
+                'puede_editar_tienda': getattr(profile, 'puede_editar_tienda', False) if profile else False,
             })
         return JsonResponse({'usuarios': data})
 
@@ -414,6 +415,12 @@ def api_admin_permisos(request, user_id):
         profile.puede_chat_web = bool(data['puede_chat_web'])
         profile.save(update_fields=['puede_chat_web'])
         response_data['puede_chat_web'] = profile.puede_chat_web
+
+    if 'puede_editar_tienda' in data:
+        profile, _ = UserProfile.objects.get_or_create(user=usuario)
+        profile.puede_editar_tienda = bool(data['puede_editar_tienda'])
+        profile.save(update_fields=['puede_editar_tienda'])
+        response_data['puede_editar_tienda'] = profile.puede_editar_tienda
 
     return JsonResponse(response_data)
 
