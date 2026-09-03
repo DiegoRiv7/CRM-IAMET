@@ -979,7 +979,13 @@
 
         var thumbs = evs.map(function (ev) {
             var cap1 = ev.comentario || '';
-            return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
+            // Una foto marcada reemplaza a su original: la original se queda
+            // consultable pero atenuada, y es la marcada la que va al PDF.
+            var _r1 = lwEsReemplazada(ev.id);
+            return '<div class="lw-evid-thumb' + (_r1 ? ' is-reemplazada' : '') +
+                '" onclick="lwP2Lightbox(' + ev.id + ')">' +
+                (ev.es_marcada ? '<span class="lw-evid-marca is-editada">Marcada</span>'
+                               : (_r1 ? '<span class="lw-evid-marca">Original</span>' : '')) +
                 '<img src="' + esc(ev.url) + '" alt="">' +
                 '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
                 (cap1 ? '<div class="lw-evid-name" title="' + esc(cap1) + '">' + esc(cap1) + '</div>' : '') +
@@ -2118,7 +2124,11 @@
         zone.classList.toggle('lw-evid-empty', !hasPhotos);
 
         var thumbs = evs.map(function (ev) {
-            return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
+            var _r2 = lwEsReemplazada(ev.id);
+            return '<div class="lw-evid-thumb' + (_r2 ? ' is-reemplazada' : '') +
+                '" onclick="lwP2Lightbox(' + ev.id + ')">' +
+                (ev.es_marcada ? '<span class="lw-evid-marca is-editada">Marcada</span>'
+                               : (_r2 ? '<span class="lw-evid-marca">Original</span>' : '')) +
                 '<img src="' + esc(ev.url) + '" alt="">' +
                 '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
                 ((ev.comentario || ev.nombre_original) ? '<div class="lw-evid-name" title="' + esc(ev.comentario || ev.nombre_original) + '">' + esc(ev.comentario || ev.nombre_original) + '</div>' : '') +
@@ -2137,6 +2147,41 @@
 
         zone.innerHTML = thumbs + addCard;
     }
+    // ¿Esta foto ya tiene una version marcada? Entonces es la original: se ve
+    // atenuada y no va al PDF, para no repetir la misma imagen dos veces.
+    function lwEsReemplazada(id) {
+        return (state.lev.evidencias || []).some(function (e) { return e.original_id === id; });
+    }
+    window.lwEsReemplazada = lwEsReemplazada;
+
+    function lwCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function lwRefrescarMiniaturas() {
+        if (typeof lwF1RenderEvid === 'function') lwF1RenderEvid();
+        if (typeof window.renderPhase2Photos === 'function') window.renderPhase2Photos();
+    }
+
+    // Tras marcar una foto hay una fila NUEVA en el servidor: se vuelven a
+    // pedir las evidencias en vez de adivinar como quedo la lista.
+    function lwRecargarEvidencias() {
+        var id = state.lev && state.lev.id;
+        if (!id) return;
+        fetch('/app/api/iamet/levantamientos/' + id + '/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                var lev = (d && (d.levantamiento || d)) || null;
+                if (lev && lev.evidencias) {
+                    state.lev.evidencias = lev.evidencias;
+                    lwRefrescarMiniaturas();
+                }
+            })
+            .catch(function () {});
+    }
+    window.lwRecargarEvidencias = lwRecargarEvidencias;
+
     window.lwP2Lightbox = function (id) {
         var ev = (state.lev.evidencias || []).find(function (e) { return e.id === id; });
         if (!ev) return;
@@ -2146,7 +2191,48 @@
             cap.textContent = ev.comentario || '';
             cap.style.display = ev.comentario ? '' : 'none';
         }
-        $('lwLightbox').style.display = 'flex';
+
+        // Acciones del visor: marcar la foto y corregir su texto, que hasta
+        // ahora solo se podia escribir una vez, al tomarla en el sitio.
+        var lb = $('lwLightbox');
+        var barra = lb.querySelector('.lw-lb-acciones');
+        if (!barra) {
+            barra = document.createElement('div');
+            barra.className = 'lw-lb-acciones';
+            barra.addEventListener('click', function (e) { e.stopPropagation(); });
+            lb.appendChild(barra);
+        }
+        var reemplazada = lwEsReemplazada(ev.id);
+        barra.innerHTML =
+            '<button type="button" class="lw-lb-b" data-editar>' +
+              '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>' +
+              (ev.es_marcada ? 'Seguir marcando' : 'Marcar foto') + '</button>' +
+            '<button type="button" class="lw-lb-b" data-texto>Editar texto</button>' +
+            (reemplazada ? '<span class="lw-lb-nota">Reemplazada por una versión marcada · no sale en el PDF</span>' : '') +
+            (ev.es_marcada && ev.editada_por_nombre
+                ? '<span class="lw-lb-nota">Marcada por ' + esc(ev.editada_por_nombre) + '</span>' : '');
+
+        barra.querySelector('[data-editar]').onclick = function () {
+            if (!window.levFotoEditor) { alert('El editor no cargó. Recarga la página.'); return; }
+            window.levFotoEditor.abrir({
+                url: ev.url, evidenciaId: ev.id, comentario: ev.comentario || '',
+                alGuardar: function () { lb.style.display = 'none'; lwRecargarEvidencias(); },
+            });
+        };
+        barra.querySelector('[data-texto]').onclick = function () {
+            var txt = window.prompt('¿De qué es esta foto?', ev.comentario || '');
+            if (txt === null) return;
+            var fd = new FormData();
+            fd.append('comentario', txt.trim());
+            fetch('/app/api/iamet/evidencias/' + ev.id + '/comentario/', {
+                method: 'POST', body: fd, credentials: 'same-origin',
+                headers: { 'X-CSRFToken': lwCsrf() },
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (d && d.success) { ev.comentario = d.comentario; lwRefrescarMiniaturas(); lwP2Lightbox(ev.id); }
+            });
+        };
+
+        lb.style.display = 'flex';
     };
 
     // ── Diálogo foto + comentario (ANTES de subir) ──────────────────────
