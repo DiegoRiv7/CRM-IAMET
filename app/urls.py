@@ -644,6 +644,8 @@ urlpatterns = [
     path('api/iamet/levantamientos/<int:levantamiento_id>/reporte-pdf/', views_iamet.api_levantamiento_reporte_pdf, name='api_iamet_levantamiento_reporte_pdf'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/fragmento/', views_iamet.api_levantamiento_fragmento, name='api_iamet_levantamiento_fragmento'),
     path('api/iamet/evidencias/<int:evidencia_id>/eliminar/', views_iamet.api_levantamiento_evidencia_eliminar, name='api_iamet_evidencia_eliminar'),
+    path('api/iamet/evidencias/<int:evidencia_id>/marcar/', views_iamet.api_levantamiento_evidencia_marcar, name='api_iamet_evidencia_marcar'),
+    path('api/iamet/evidencias/<int:evidencia_id>/comentario/', views_iamet.api_levantamiento_evidencia_comentario, name='api_iamet_evidencia_comentario'),
     path('api/iamet/catalogo-productos/', views_iamet.api_catalogo_productos, name='api_iamet_catalogo_productos'),
 
     # Volumetrías (borradores múltiples por levantamiento) ──────

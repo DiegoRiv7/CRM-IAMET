@@ -5343,6 +5343,28 @@ class LevantamientoEvidencia(models.Model):
         help_text='UUID generado por el cliente para dedupe de sync offline.',
     )
 
+    # ── Marcado de la foto ──
+    # Al anotar una evidencia NO se pisa la original: la version marcada se
+    # guarda como una fila nueva que apunta a la de origen. Es evidencia de
+    # sitio, y una marca mal puesta no puede costar la foto.
+    #
+    # El PDF muestra solo lo vigente: la marcada aparece y su original NO,
+    # porque seria la misma foto dos veces. La original sigue consultable en
+    # el levantamiento, distinguida como reemplazada.
+    original = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='versiones_marcadas',
+        verbose_name='Foto original que esta version anota')
+    editada_en = models.DateTimeField(null=True, blank=True, verbose_name='Fecha del marcado')
+    editada_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='evidencias_marcadas', verbose_name='Quien la marco')
+
+    @property
+    def fue_reemplazada(self):
+        """¿Existe una version marcada de esta foto? Entonces no va al PDF."""
+        return self.versiones_marcadas.exists()
+
     class Meta:
         ordering = ['fecha_subida']
         verbose_name = 'Evidencia Fotográfica'

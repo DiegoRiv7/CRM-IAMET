@@ -3428,6 +3428,19 @@ def _lev_to_dict(lev, include_evidencias=False):
     return d
 
 
+def _evidencias_vigentes(lev):
+    """Las fotos que van al PDF: se omite la original de las que fueron marcadas.
+
+    Al anotar una foto se guarda una version nueva que apunta a la original.
+    Las dos siguen en el levantamiento —la original queda consultable— pero en
+    el PDF saldrian DUPLICADAS, la misma imagen con y sin marcas. Aqui se deja
+    solo la vigente.
+    """
+    todas = list(lev.evidencias.all())
+    con_marca = {e.original_id for e in todas if e.original_id}
+    return [e for e in todas if e.id not in con_marca]
+
+
 def _evidencia_to_dict(e):
     return {
         'id': e.id,
@@ -3441,6 +3454,15 @@ def _evidencia_to_dict(e):
             if e.subido_por else None
         ),
         'fecha_subida': _fmt(e.fecha_subida),
+        # Estado del marcado: el front distingue la original reemplazada de la
+        # version marcada, y sabe cual puede editar.
+        'original_id': e.original_id,
+        'es_marcada': bool(e.original_id),
+        'editada_en': _fmt(e.editada_en) if e.editada_en else None,
+        'editada_por_nombre': (
+            (e.editada_por.get_full_name() or e.editada_por.username)
+            if e.editada_por else None
+        ),
     }
 
 
@@ -4784,6 +4806,88 @@ def api_levantamiento_evidencia_eliminar(request, evidencia_id):
 
 
 @login_required
+@require_http_methods(["POST"])
+def api_levantamiento_evidencia_marcar(request, evidencia_id):
+    """Guarda la version MARCADA de una foto de evidencia.
+
+    No pisa la original: crea una fila nueva que apunta a ella. Es evidencia de
+    sitio, y una anotacion mal puesta no puede costar la foto. A partir de aqui
+    la original queda como reemplazada y deja de salir en los PDF, para que la
+    misma imagen no aparezca dos veces.
+
+    Volver a marcar una foto ya marcada actualiza esa version en vez de
+    encadenar copias: si no, cada retoque dejaria una fila mas.
+
+    POST multipart: imagen=<png>, comentario=<opcional>
+    """
+    from django.utils import timezone
+
+    try:
+        ev = LevantamientoEvidencia.objects.select_related('levantamiento__proyecto').get(id=evidencia_id)
+    except LevantamientoEvidencia.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Evidencia no encontrada'}, status=404)
+    if not _check_access(request.user, ev.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    imagen = request.FILES.get('imagen')
+    if not imagen:
+        return JsonResponse({'success': False, 'error': 'Falta la imagen'}, status=400)
+
+    comentario = (request.POST.get('comentario') or '').strip()[:255]
+    # Si se esta remarcando una version marcada, la original es la de aquella.
+    base = ev.original or ev
+    marcada = base.versiones_marcadas.first()
+
+    if marcada:
+        marcada.archivo.delete(save=False)
+        marcada.archivo = imagen
+        marcada.comentario = comentario or marcada.comentario
+        marcada.editada_en = timezone.now()
+        marcada.editada_por = request.user
+        marcada.save()
+    else:
+        marcada = LevantamientoEvidencia.objects.create(
+            levantamiento=base.levantamiento,
+            archivo=imagen,
+            nombre_original=base.nombre_original or '',
+            comentario=comentario or base.comentario,
+            producto_idx=base.producto_idx,
+            subido_por=base.subido_por,
+            original=base,
+            editada_en=timezone.now(),
+            editada_por=request.user,
+        )
+
+    return JsonResponse({'success': True, 'evidencia': {
+        'id': marcada.id,
+        'url': marcada.archivo.url if marcada.archivo else '',
+        'comentario': marcada.comentario or '',
+        'original_id': base.id,
+        'editada': True,
+    }})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_levantamiento_evidencia_comentario(request, evidencia_id):
+    """Cambia el texto de una foto ya subida.
+
+    Se pedia una sola vez, al tomarla, y quedaba fijo: desde la computadora no
+    habia forma de corregir un comentario escrito de prisa en el sitio.
+    """
+    try:
+        ev = LevantamientoEvidencia.objects.select_related('levantamiento__proyecto').get(id=evidencia_id)
+    except LevantamientoEvidencia.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Evidencia no encontrada'}, status=404)
+    if not _check_access(request.user, ev.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    ev.comentario = (request.POST.get('comentario') or '').strip()[:255]
+    ev.save(update_fields=['comentario'])
+    return JsonResponse({'success': True, 'comentario': ev.comentario})
+
+
+@login_required
 @require_http_methods(["GET"])
 def api_levantamiento_sitio_pdf(request, levantamiento_id):
     """Genera el PDF del Levantamiento en Sitio (Fase 1).
@@ -4878,7 +4982,7 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
     evidencias = [{
         'abs_url': _file_url_for_field(e.archivo),
         'comentario': e.comentario or '',
-    } for e in lev.evidencias.all()]
+    } for e in _evidencias_vigentes(lev)]
 
     ctx = {
         'lev':          lev,
@@ -5018,7 +5122,7 @@ def _propuesta_pdf_bytes(lev, request):
     _img_tmp_dir = tempfile.mkdtemp(prefix='propuesta_pdf_')
 
     evidencias = []
-    for e in lev.evidencias.all():
+    for e in _evidencias_vigentes(lev):
         abs_url = _file_url_for_field(e.archivo)
         try:
             src_path = e.archivo.path
