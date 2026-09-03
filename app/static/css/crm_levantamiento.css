@@ -5028,14 +5028,21 @@ button.lvc-export-item {
    no perder detalle al guardar. */
 .lfe-ov {
     position: fixed; inset: 0; z-index: 12000;
-    background: rgba(9, 14, 26, .88);
+    background: rgba(9, 14, 26, .72);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
+    backdrop-filter: saturate(140%) blur(14px);
     display: flex; align-items: center; justify-content: center; padding: 18px;
+    animation: lfe-fade .18s ease;
 }
+@keyframes lfe-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lfe-pop { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
 .lfe-box {
-    background: #12161F; border-radius: 16px; overflow: hidden;
+    background: #12161F; border-radius: 20px; overflow: hidden;
     display: flex; flex-direction: column;
     width: min(1100px, 96vw); max-height: 94vh;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+    border: 1px solid rgba(255, 255, 255, .07);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .4);
+    animation: lfe-pop .22s cubic-bezier(.22, 1, .36, 1);
 }
 .lfe-top {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -5043,12 +5050,14 @@ button.lvc-export-item {
 }
 .lfe-tools { display: flex; gap: 4px; }
 .lfe-t {
-    width: 34px; height: 34px; border-radius: 9px; border: none; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 10px; border: none; cursor: pointer;
     background: transparent; color: #A9B4C6;
     display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s ease, color .15s ease, transform .12s ease;
 }
 .lfe-t:hover { background: #262E3C; color: #fff; }
-.lfe-t.is-on { background: #2563EB; color: #fff; }
+.lfe-t:active { transform: scale(.94); }
+.lfe-t.is-on { background: #2563EB; color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, .35); }
 .lfe-colores { display: flex; gap: 5px; margin-left: 4px; }
 .lfe-c {
     width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
@@ -5067,17 +5076,36 @@ button.lvc-export-item {
 .lfe-b {
     border: 1px solid #333C4D; background: transparent; color: #C4CCDA;
     border-radius: 9px; padding: 6px 11px; font: inherit; font-size: 12.5px; cursor: pointer;
+    transition: background .15s ease, color .15s ease, transform .12s ease;
 }
 .lfe-b:hover { background: #262E3C; color: #fff; }
+.lfe-b:active { transform: scale(.96); }
 .lfe-x {
     width: 32px; height: 32px; border: none; background: transparent; color: #8C97A8;
     font-size: 24px; line-height: 1; cursor: pointer; border-radius: 8px;
 }
 .lfe-x:hover { background: #262E3C; color: #fff; }
 .lfe-lienzo {
+    position: relative;   /* ancla del campo de texto flotante */
     flex: 1; min-height: 0; overflow: auto; padding: 14px;
     display: flex; align-items: center; justify-content: center; background: #0C1016;
 }
+/* Campo de texto "en el lugar" (estilo Marcado de Mac). El color y el tamaño
+   se fijan por JS según la herramienta; aquí solo el chrome del campo. */
+.lfe-textin {
+    position: absolute; z-index: 5; margin: 0; padding: 1px 7px;
+    min-width: 64px; max-width: 78%;
+    background: rgba(6, 10, 18, .30);
+    border: 1.5px dashed rgba(255, 255, 255, .75);
+    border-radius: 9px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 700; line-height: 1.15; letter-spacing: .2px;
+    text-shadow: 0 0 3px rgba(0, 0, 0, .6), 0 1px 2px rgba(0, 0, 0, .55);
+    outline: none; caret-color: currentColor;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+    animation: lfe-fade .12s ease;
+}
+.lfe-textin::placeholder { color: rgba(255, 255, 255, .55); font-weight: 500; }
 .lfe-lienzo canvas {
     max-width: 100%; max-height: 72vh; width: auto; height: auto;
     cursor: crosshair; border-radius: 8px; background: #000;
@@ -5095,11 +5123,15 @@ button.lvc-export-item {
 .lfe-cap:focus { border-color: #2563EB; }
 .lfe-estado { font-size: 12px; color: #8C97A8; white-space: nowrap; }
 .lfe-cancel, .lfe-ok {
-    border: none; border-radius: 9px; padding: 9px 15px;
+    border: none; border-radius: 10px; padding: 9px 16px;
     font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: background .15s ease, transform .12s ease, box-shadow .15s ease;
 }
+.lfe-cancel:active, .lfe-ok:active { transform: scale(.96); }
 .lfe-cancel { background: #262E3C; color: #C4CCDA; }
-.lfe-ok { background: #2563EB; color: #fff; }
+.lfe-cancel:hover { background: #2E3745; }
+.lfe-ok { background: #2563EB; color: #fff; box-shadow: 0 4px 14px rgba(37, 99, 235, .35); }
+.lfe-ok:hover { background: #1D4FD7; }
 .lfe-ok:disabled { opacity: .55; cursor: default; }
 
 /* Distintivo de la foto original que ya tiene una versión marcada: sigue
