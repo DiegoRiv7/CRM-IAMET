@@ -110,6 +110,7 @@
             st.herramienta = b.getAttribute('data-h');
             ov.querySelectorAll('.lfe-t').forEach(function (x) { x.classList.remove('is-on'); });
             b.classList.add('is-on');
+            canvas.style.cursor = (st.herramienta === 'texto') ? 'text' : 'crosshair';
         });
 
         // ── La imagen ──
@@ -180,16 +181,70 @@
             };
         }
 
+        // ── Texto en el lugar (estilo "Marcado" de Mac) ──
+        // En vez de un prompt del navegador, se coloca un campo de texto justo
+        // sobre el punto tocado; se escribe en su sitio y al confirmar queda
+        // dibujado en la foto. Enter confirma, Esc cancela, y tocar fuera guarda.
+        var textoInput = null;
+        function abrirTexto(e, p) {
+            cerrarTextoAbierto();
+            var lr = lienzo.getBoundingClientRect();
+            var src = (e.touches && e.touches[0]) || e;
+            var sx = src.clientX - lr.left + lienzo.scrollLeft;
+            var sy = src.clientY - lr.top + lienzo.scrollTop;
+            var vista = canvas.getBoundingClientRect();
+            var escala = canvas.width ? (vista.width / canvas.width) : 1;
+            var px = Math.max(18, st.grosor * 6) * escala;   // tamaño visible ≈ el que quedará dibujado
+            var inp = el('input', 'lfe-textin');
+            inp.type = 'text';
+            inp.maxLength = 120;
+            inp.setAttribute('placeholder', 'Escribe…');
+            inp.style.left = sx + 'px';
+            inp.style.top = (sy - px * 0.7) + 'px';
+            inp.style.color = st.color;
+            inp.style.fontSize = px + 'px';
+            lienzo.appendChild(inp);
+            textoInput = { el: inp, p: p };
+            setTimeout(function () { inp.focus(); }, 10);
+            // Que el campo no dispare trazos del canvas.
+            ['mousedown', 'touchstart', 'mousemove', 'touchmove', 'mouseup', 'click'].forEach(function (evt) {
+                inp.addEventListener(evt, function (e2) { e2.stopPropagation(); });
+            });
+            inp.addEventListener('keydown', function (ke) {
+                if (ke.key === 'Enter') { ke.preventDefault(); commitTexto(); }
+                else if (ke.key === 'Escape') { ke.preventDefault(); ke.stopPropagation(); cancelarTexto(); }
+            });
+            inp.addEventListener('blur', function () { commitTexto(); });
+        }
+        function commitTexto() {
+            if (!textoInput) return;
+            var ref = textoInput; textoInput = null;   // primero, para que el blur no re-entre
+            var val = (ref.el.value || '').trim();
+            if (ref.el.parentNode) ref.el.parentNode.removeChild(ref.el);
+            if (val) {
+                st.trazos.push({ tipo: 'texto', texto: val, x1: ref.p.x, y1: ref.p.y,
+                                 color: st.color, grosor: st.grosor });
+                repintar();
+            }
+        }
+        function cancelarTexto() {
+            if (!textoInput) return;
+            var ref = textoInput; textoInput = null;
+            if (ref.el.parentNode) ref.el.parentNode.removeChild(ref.el);
+        }
+        function cerrarTextoAbierto() {
+            if (textoInput) { commitTexto(); return true; }
+            return false;
+        }
+
         function empezar(e) {
             if (!img.complete) return;
+            // Si había un campo de texto abierto, este toque lo confirma (no dibuja).
+            if (cerrarTextoAbierto()) { e.preventDefault(); return; }
             var p = punto(e);
             if (st.herramienta === 'texto') {
-                var txt = window.prompt('Texto sobre la foto:');
-                if (txt && txt.trim()) {
-                    st.trazos.push({ tipo: 'texto', texto: txt.trim(), x1: p.x, y1: p.y,
-                                     color: st.color, grosor: st.grosor });
-                    repintar();
-                }
+                e.preventDefault();
+                abrirTexto(e, p);
                 return;
             }
             e.preventDefault();
@@ -225,6 +280,7 @@
         ov.querySelector('[data-limpiar]').onclick = function () { st.trazos = []; repintar(); };
 
         function cerrar() {
+            cancelarTexto();
             window.removeEventListener('mouseup', soltar);
             document.removeEventListener('keydown', teclas);
             ov.remove();

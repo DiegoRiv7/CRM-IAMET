@@ -2213,22 +2213,35 @@
                 ? '<span class="lw-lb-nota">Marcada por ' + esc(ev.editada_por_nombre) + '</span>' : '');
 
         barra.querySelector('[data-editar]').onclick = function () {
-            if (!window.levFotoEditor) { alert('El editor no cargó. Recarga la página.'); return; }
+            if (!window.levFotoEditor) {
+                if (typeof lwToast === 'function') lwToast('El editor no cargó. Recarga la página.', 'error');
+                return;
+            }
             window.levFotoEditor.abrir({
                 url: ev.url, evidenciaId: ev.id, comentario: ev.comentario || '',
                 alGuardar: function () { lb.style.display = 'none'; lwRecargarEvidencias(); },
             });
         };
         barra.querySelector('[data-texto]').onclick = function () {
-            var txt = window.prompt('¿De qué es esta foto?', ev.comentario || '');
-            if (txt === null) return;
-            var fd = new FormData();
-            fd.append('comentario', txt.trim());
-            fetch('/app/api/iamet/evidencias/' + ev.id + '/comentario/', {
-                method: 'POST', body: fd, credentials: 'same-origin',
-                headers: { 'X-CSRFToken': lwCsrf() },
-            }).then(function (r) { return r.json(); }).then(function (d) {
-                if (d && d.success) { ev.comentario = d.comentario; lwRefrescarMiniaturas(); lwP2Lightbox(ev.id); }
+            var prev = ev.comentario || '';
+            var pedir = (typeof window.lwPrompt === 'function')
+                ? window.lwPrompt({
+                    title: '¿De qué es esta foto?',
+                    placeholder: 'Ej. Rack principal, Nave 3',
+                    defaultValue: prev,
+                    confirmLabel: 'Guardar',
+                })
+                : Promise.resolve(window.prompt('¿De qué es esta foto?', prev));
+            pedir.then(function (txt) {
+                if (txt === null) return;
+                var fd = new FormData();
+                fd.append('comentario', txt.trim());
+                fetch('/app/api/iamet/evidencias/' + ev.id + '/comentario/', {
+                    method: 'POST', body: fd, credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': lwCsrf() },
+                }).then(function (r) { return r.json(); }).then(function (d) {
+                    if (d && d.success) { ev.comentario = d.comentario; lwRefrescarMiniaturas(); lwP2Lightbox(ev.id); }
+                });
             });
         };
 
