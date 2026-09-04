@@ -42,7 +42,7 @@
         ov.innerHTML =
             '<div class="lfe-box">' +
               '<div class="lfe-top">' +
-                '<div class="lfe-tools" data-tools>' +
+                '<div class="lfe-seg lfe-tools" data-tools>' +
                   '<button type="button" class="lfe-t is-on" data-h="lapiz" title="Dibujar">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg></button>' +
                   '<button type="button" class="lfe-t" data-h="flecha" title="Flecha">' +
@@ -52,16 +52,27 @@
                   '<button type="button" class="lfe-t" data-h="texto" title="Escribir">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>' +
                 '</div>' +
+                '<span class="lfe-div"></span>' +
                 '<div class="lfe-colores" data-colores></div>' +
-                '<div class="lfe-grosores" data-grosores></div>' +
+                '<span class="lfe-div"></span>' +
+                '<div class="lfe-seg lfe-grosores" data-grosores></div>' +
                 '<div class="lfe-sep"></div>' +
-                '<button type="button" class="lfe-b" data-deshacer title="Deshacer">Deshacer</button>' +
-                '<button type="button" class="lfe-b" data-limpiar title="Quitar todas las marcas">Limpiar</button>' +
+                '<div class="lfe-actions">' +
+                  '<button type="button" class="lfe-b" data-deshacer title="Deshacer">' +
+                    '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/></svg>' +
+                    '<span>Deshacer</span></button>' +
+                  '<button type="button" class="lfe-b" data-limpiar title="Quitar todas las marcas">' +
+                    '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+                    '<span>Limpiar</span></button>' +
+                '</div>' +
                 '<button type="button" class="lfe-x" data-cerrar title="Cerrar">&times;</button>' +
               '</div>' +
               '<div class="lfe-lienzo" data-lienzo><canvas data-canvas></canvas></div>' +
               '<div class="lfe-pie">' +
-                '<input type="text" class="lfe-cap" data-cap maxlength="255" placeholder="¿De qué es esta foto?">' +
+                '<label class="lfe-capwrap">' +
+                  '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
+                  '<input type="text" class="lfe-cap" data-cap maxlength="255" placeholder="¿De qué es esta foto?">' +
+                '</label>' +
                 '<span class="lfe-estado" data-estado></span>' +
                 '<button type="button" class="lfe-cancel" data-cerrar>Cancelar</button>' +
                 '<button type="button" class="lfe-ok" data-guardar>Guardar marcado</button>' +
