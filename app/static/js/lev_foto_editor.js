@@ -38,6 +38,8 @@
             seleccionado: -1,  // indice de la marca seleccionada con la herramienta "mover"
             arrastrando: false,
             dragPrev: null,
+            redimensionando: false,  // arrastrando una manija de esquina
+            resizeCorner: -1, resizeO: null, resizeFixed: null, resizeSnap: null,
         };
 
         var ov = el('div', 'lfe-ov');
@@ -262,6 +264,49 @@
             else if (t.tipo === 'texto') { t.x1 += dx; t.y1 += dy; }
             else { t.x1 += dx; t.y1 += dy; t.x2 += dx; t.y2 += dy; }
         }
+        function clonar(o) { return JSON.parse(JSON.stringify(o)); }
+        // Las 4 esquinas del recuadro de selección (0=SI, 1=SD, 2=ID, 3=II).
+        function manijas(t) {
+            var b = cajaDe(t), m = 6 * escalaFoto();
+            var x1 = b.x - m, y1 = b.y - m, x2 = b.x + b.w + m, y2 = b.y + b.h + m;
+            return [{ c: 0, x: x1, y: y1 }, { c: 1, x: x2, y: y1 },
+                    { c: 2, x: x2, y: y2 }, { c: 3, x: x1, y: y2 }];
+        }
+        function manijaEn(t, p) {
+            var r = 12 * escalaFoto(), hs = manijas(t);
+            for (var i = 0; i < hs.length; i++) {
+                if (Math.abs(p.x - hs[i].x) <= r && Math.abs(p.y - hs[i].y) <= r) return hs[i].c;
+            }
+            return -1;
+        }
+        function iniciarResize(t, corner) {
+            st.redimensionando = true;
+            st.resizeCorner = corner;
+            var b = cajaDe(t);
+            st.resizeO = { x: b.x, y: b.y, w: b.w, h: b.h };
+            // La esquina opuesta a la que se agarra queda fija.
+            st.resizeFixed = {
+                x: (corner === 0 || corner === 3) ? b.x + b.w : b.x,
+                y: (corner === 0 || corner === 1) ? b.y + b.h : b.y,
+            };
+            st.resizeSnap = clonar(t);
+        }
+        // Reescala una copia de la marca desde la caja O (original) a la N (nueva).
+        function remapTrazo(snap, O, N) {
+            var t = clonar(snap);
+            var sx = O.w ? N.w / O.w : 0, sy = O.h ? N.h / O.h : 0;
+            function mx(x) { return N.x + (x - O.x) * sx; }
+            function my(y) { return N.y + (y - O.y) * sy; }
+            if (t.tipo === 'lapiz') {
+                t.pts = t.pts.map(function (pt) { return { x: mx(pt.x), y: my(pt.y) }; });
+            } else if (t.tipo === 'texto') {
+                t.x1 = mx(t.x1); t.y1 = my(t.y1);
+                t.grosor = Math.max(1, snap.grosor * (sy || sx || 1));   // el tamaño de letra sigue la altura
+            } else {
+                t.x1 = mx(t.x1); t.y1 = my(t.y1); t.x2 = mx(t.x2); t.y2 = my(t.y2);
+            }
+            return t;
+        }
         function pintarSeleccion(t) {
             var b = cajaDe(t), s = escalaFoto(), m = 6 * s;
             ctx.save();
@@ -269,6 +314,16 @@
             ctx.lineWidth = Math.max(1.5, 2 * s);
             ctx.setLineDash([7 * s, 5 * s]);
             ctx.strokeRect(b.x - m, b.y - m, b.w + m * 2, b.h + m * 2);
+            ctx.setLineDash([]);
+            // Manijas de esquina para redimensionar.
+            var r = 5 * s;
+            manijas(t).forEach(function (h) {
+                ctx.beginPath();
+                ctx.rect(h.x - r, h.y - r, r * 2, r * 2);
+                ctx.fillStyle = '#fff'; ctx.fill();
+                ctx.lineWidth = Math.max(1.5, 2 * s);
+                ctx.strokeStyle = 'rgba(37, 99, 235, .95)'; ctx.stroke();
+            });
             ctx.restore();
         }
 
@@ -372,6 +427,11 @@
             // Herramienta "mover": seleccionar la marca bajo el dedo y arrastrarla.
             if (st.herramienta === 'mover') {
                 e.preventDefault();
+                // ¿Se agarró una manija de esquina de la selección actual? → redimensionar.
+                if (st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                    var mc = manijaEn(st.trazos[st.seleccionado], p);
+                    if (mc >= 0) { iniciarResize(st.trazos[st.seleccionado], mc); repintar(); return; }
+                }
                 st.seleccionado = marcaEn(p);
                 st.arrastrando = st.seleccionado >= 0;
                 st.dragPrev = p;
@@ -392,6 +452,27 @@
                     color: st.color, grosor: st.grosor };
         }
         function mover(e) {
+            // Cursor de redimensionar/mover al pasar por encima (mover, sin arrastrar).
+            if (st.herramienta === 'mover' && !st.arrastrando && !st.redimensionando) {
+                if (st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                    var ph = punto(e);
+                    var mh = manijaEn(st.trazos[st.seleccionado], ph);
+                    if (mh >= 0) canvas.style.cursor = (mh === 0 || mh === 2) ? 'nwse-resize' : 'nesw-resize';
+                    else canvas.style.cursor = marcaEn(ph) >= 0 ? 'grab' : 'move';
+                }
+            }
+            // Redimensionando desde una manija.
+            if (st.redimensionando && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                e.preventDefault();
+                var pr = punto(e), O = st.resizeO, F = st.resizeFixed;
+                var N = { x: Math.min(F.x, pr.x), y: Math.min(F.y, pr.y),
+                          w: Math.abs(pr.x - F.x), h: Math.abs(pr.y - F.y) };
+                if (N.w < 6) N.w = 6;
+                if (N.h < 6) N.h = 6;
+                st.trazos[st.seleccionado] = remapTrazo(st.resizeSnap, O, N);
+                repintar();
+                return;
+            }
             // Arrastrando una marca seleccionada.
             if (st.arrastrando && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
                 e.preventDefault();
@@ -409,6 +490,12 @@
             repintar();
         }
         function soltar() {
+            if (st.redimensionando) {
+                st.redimensionando = false;
+                st.resizeSnap = null;
+                if (st.herramienta === 'mover') canvas.style.cursor = 'move';
+                return;
+            }
             if (st.arrastrando) {
                 st.arrastrando = false;
                 if (st.herramienta === 'mover') canvas.style.cursor = 'move';
