@@ -5037,6 +5037,7 @@ button.lvc-export-item {
 @keyframes lfe-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes lfe-pop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 .lfe-box {
+    position: relative;
     background: linear-gradient(180deg, #171B24 0%, #12151D 100%);
     border-radius: 22px; overflow: hidden;
     display: flex; flex-direction: column;
@@ -5192,6 +5193,20 @@ button.lvc-export-item {
 }
 .lfe-ok:hover { background: linear-gradient(180deg, #4A8CF7, #2E6BE0); }
 .lfe-ok:disabled { opacity: .55; cursor: default; box-shadow: none; }
+
+/* Barra flotante del modo recorte (aparece sobre el lienzo). */
+.lfe-cropbar {
+    position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%);
+    z-index: 6; display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px 9px 16px; border-radius: 14px;
+    background: rgba(20, 24, 32, .86);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, .1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
+    animation: lfe-pop .2s cubic-bezier(.22, 1, .36, 1);
+}
+.lfe-cropinfo { font-size: 12.5px; color: #C4CCDA; white-space: nowrap; }
+.lfe-cropbar .lfe-cancel, .lfe-cropbar .lfe-ok { padding: 8px 14px; }
 
 /* Distintivo de la foto original que ya tiene una versión marcada: sigue
    consultable, pero se ve que no es la vigente y no sale en los PDF. */

@@ -40,6 +40,10 @@
             dragPrev: null,
             redimensionando: false,  // arrastrando una manija de esquina
             resizeCorner: -1, resizeO: null, resizeFixed: null, resizeSnap: null,
+            resizeCenter: null, resizeRot: 0,
+            rotando: false, rotCentro: null,   // arrastrando la manija de rotación
+            crop: null, cropDrag: null,        // recorte de la foto
+            editadoBase: false,                // se recortó la foto (hay algo que guardar aunque no haya marcas)
         };
 
         var ov = el('div', 'lfe-ov');
@@ -67,6 +71,13 @@
                 '<div class="lfe-colores" data-colores></div>' +
                 '<span class="lfe-div"></span>' +
                 '<div class="lfe-seg lfe-grosores" data-grosores></div>' +
+                '<span class="lfe-div"></span>' +
+                '<div class="lfe-seg">' +
+                  '<button type="button" class="lfe-t" data-imagen title="Poner una imagen encima">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></button>' +
+                  '<button type="button" class="lfe-t" data-recortar title="Recortar la foto">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></button>' +
+                '</div>' +
                 '<div class="lfe-sep"></div>' +
                 '<div class="lfe-actions">' +
                   '<button type="button" class="lfe-b" data-deshacer title="Deshacer">' +
@@ -126,18 +137,122 @@
             cg.appendChild(b);
         });
 
+        function activarBoton(bEl) {
+            ov.querySelectorAll('.lfe-t').forEach(function (x) { x.classList.remove('is-on'); });
+            if (bEl) bEl.classList.add('is-on');
+        }
         ov.querySelector('[data-tools]').addEventListener('click', function (e) {
             var b = e.target.closest('[data-h]');
             if (!b) return;
+            if (st.crop) salirRecorte();   // cambiar de herramienta cancela el recorte en curso
             st.herramienta = b.getAttribute('data-h');
-            ov.querySelectorAll('.lfe-t').forEach(function (x) { x.classList.remove('is-on'); });
-            b.classList.add('is-on');
+            activarBoton(b);
             canvas.style.cursor = st.herramienta === 'texto' ? 'text'
                 : st.herramienta === 'mover' ? 'move' : 'crosshair';
             // La selección solo tiene sentido con la herramienta "mover".
             if (st.herramienta !== 'mover') st.seleccionado = -1;
             if (img.complete) repintar();
         });
+
+        // ── Poner una imagen encima ──
+        var imgCache = {};   // src(dataURL) → HTMLImageElement ya cargado
+        function obtenerImg(src) {
+            var im = imgCache[src];
+            if (!im) { im = new Image(); im.onload = function () { repintar(); }; im.src = src; imgCache[src] = im; }
+            return im;
+        }
+        var fileInput = el('input');
+        fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+        ov.appendChild(fileInput);
+        ov.querySelector('[data-imagen]').onclick = function () {
+            if (st.crop) salirRecorte();
+            fileInput.value = ''; fileInput.click();
+        };
+        fileInput.addEventListener('change', function () {
+            var f = fileInput.files && fileInput.files[0];
+            if (!f) return;
+            var rd = new FileReader();
+            rd.onload = function () { ponerImagen(rd.result); };
+            rd.readAsDataURL(f);
+        });
+        function ponerImagen(src) {
+            var im = new Image();
+            im.onload = function () {
+                imgCache[src] = im;
+                // Que quepa en ~45% de la foto respetando su proporción.
+                var w = im.naturalWidth, h = im.naturalHeight;
+                var r = Math.min(canvas.width * 0.45 / w, canvas.height * 0.45 / h, 1);
+                w *= r; h *= r;
+                var cx = canvas.width / 2, cy = canvas.height / 2;
+                st.trazos.push({ tipo: 'imagen', src: src, rot: 0,
+                                 x1: cx - w / 2, y1: cy - h / 2, x2: cx + w / 2, y2: cy + h / 2 });
+                st.herramienta = 'mover';
+                activarBoton(ov.querySelector('[data-h="mover"]'));
+                st.seleccionado = st.trazos.length - 1;
+                canvas.style.cursor = 'move';
+                repintar();
+            };
+            im.onerror = function () { estado.textContent = 'No se pudo cargar esa imagen.'; };
+            im.src = src;
+        }
+
+        // ── Recortar la foto ──
+        var barraCrop = el('div', 'lfe-cropbar');
+        barraCrop.innerHTML =
+            '<span class="lfe-cropinfo">Ajusta el marco y aplica el recorte</span>' +
+            '<button type="button" class="lfe-cancel" data-crop-cancel>Cancelar</button>' +
+            '<button type="button" class="lfe-ok" data-crop-ok>Aplicar recorte</button>';
+        barraCrop.style.display = 'none';
+        ov.querySelector('.lfe-box').appendChild(barraCrop);
+        ov.querySelector('[data-recortar]').onclick = function () {
+            if (!img.complete) return;
+            entrarRecorte();
+        };
+        barraCrop.querySelector('[data-crop-cancel]').onclick = function () { salirRecorte(); repintar(); };
+        barraCrop.querySelector('[data-crop-ok]').onclick = function () { aplicarRecorte(); };
+        function entrarRecorte() {
+            cerrarTextoAbierto();
+            st.seleccionado = -1;
+            var w = canvas.width * 0.8, h = canvas.height * 0.8;
+            st.crop = { x: (canvas.width - w) / 2, y: (canvas.height - h) / 2, w: w, h: h };
+            st.cropDrag = null;
+            st.herramienta = 'recortar';
+            activarBoton(ov.querySelector('[data-recortar]'));
+            barraCrop.style.display = 'flex';
+            canvas.style.cursor = 'crosshair';
+            repintar();
+        }
+        function salirRecorte() {
+            st.crop = null; st.cropDrag = null;
+            barraCrop.style.display = 'none';
+            st.herramienta = 'mover';
+            activarBoton(ov.querySelector('[data-h="mover"]'));
+            canvas.style.cursor = 'move';
+        }
+        function aplicarRecorte() {
+            if (!st.crop) return;
+            var cr = { x: Math.round(Math.max(0, st.crop.x)),
+                       y: Math.round(Math.max(0, st.crop.y)),
+                       w: Math.round(Math.min(st.crop.w, canvas.width - st.crop.x)),
+                       h: Math.round(Math.min(st.crop.h, canvas.height - st.crop.y)) };
+            if (cr.w < 8 || cr.h < 8) { salirRecorte(); repintar(); return; }
+            var off = document.createElement('canvas');
+            off.width = cr.w; off.height = cr.h;
+            off.getContext('2d').drawImage(img, cr.x, cr.y, cr.w, cr.h, 0, 0, cr.w, cr.h);
+            var durl;
+            try { durl = off.toDataURL('image/png'); }
+            catch (err) { estado.textContent = 'No se pudo recortar (imagen protegida).'; return; }
+            var nimg = new Image();
+            nimg.onload = function () {
+                img = nimg;                       // la base pasa a ser la recortada
+                canvas.width = cr.w; canvas.height = cr.h;
+                st.trazos.forEach(function (t) { moverTrazo(t, -cr.x, -cr.y); });  // reubicar marcas
+                st.editadoBase = true;
+                salirRecorte();
+                repintar();
+            };
+            nimg.src = durl;
+        }
 
         // ── La imagen ──
         // crossOrigin para que el canvas no quede "manchado" y toBlob funcione;
@@ -160,16 +275,27 @@
             if (st.herramienta === 'mover' && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
                 pintarSeleccion(st.trazos[st.seleccionado]);
             }
+            if (st.crop) pintarRecorte();
         }
 
         function pintarTrazo(t) {
             ctx.save();
-            ctx.strokeStyle = t.color;
-            ctx.fillStyle = t.color;
-            ctx.lineWidth = t.grosor;
+            // Rotación alrededor del centro de la marca (si la tiene).
+            if (t.rot) {
+                var cr = centroDe(t);
+                ctx.translate(cr.x, cr.y); ctx.rotate(t.rot); ctx.translate(-cr.x, -cr.y);
+            }
+            if (t.color) { ctx.strokeStyle = t.color; ctx.fillStyle = t.color; }
+            if (t.grosor) ctx.lineWidth = t.grosor;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            if (t.tipo === 'lapiz' && t.pts.length) {
+            if (t.tipo === 'imagen') {
+                var im = obtenerImg(t.src);
+                if (im.complete && im.naturalWidth) {
+                    var ix = Math.min(t.x1, t.x2), iy = Math.min(t.y1, t.y2);
+                    ctx.drawImage(im, ix, iy, Math.abs(t.x2 - t.x1), Math.abs(t.y2 - t.y1));
+                }
+            } else if (t.tipo === 'lapiz' && t.pts.length) {
                 ctx.beginPath();
                 ctx.moveTo(t.pts[0].x, t.pts[0].y);
                 t.pts.forEach(function (p) { ctx.lineTo(p.x, p.y); });
@@ -248,14 +374,23 @@
             var x = Math.min(t.x1, t.x2), y = Math.min(t.y1, t.y2);
             return { x: x, y: y, w: Math.abs(t.x2 - t.x1), h: Math.abs(t.y2 - t.y1) };
         }
+        function centroDe(t) { var b = cajaDe(t); return { x: b.x + b.w / 2, y: b.y + b.h / 2 }; }
+        // Puntero (mundo) → marco local de la marca (des-rotado alrededor de su centro).
+        function aLocal(t, p) {
+            var r = t.rot || 0;
+            if (!r) return p;
+            var c = centroDe(t), cos = Math.cos(-r), sin = Math.sin(-r);
+            var dx = p.x - c.x, dy = p.y - c.y;
+            return { x: c.x + dx * cos - dy * sin, y: c.y + dx * sin + dy * cos };
+        }
         // Índice de la marca bajo el punto p (de arriba hacia abajo), o -1.
         function marcaEn(p) {
             var pad = 10 * escalaFoto();   // ~10px de pantalla de margen para agarrar
             for (var i = st.trazos.length - 1; i >= 0; i--) {
                 if (st.trazos[i]._oculto) continue;
-                var b = cajaDe(st.trazos[i]);
-                if (p.x >= b.x - pad && p.x <= b.x + b.w + pad &&
-                    p.y >= b.y - pad && p.y <= b.y + b.h + pad) return i;
+                var b = cajaDe(st.trazos[i]), lp = aLocal(st.trazos[i], p);
+                if (lp.x >= b.x - pad && lp.x <= b.x + b.w + pad &&
+                    lp.y >= b.y - pad && lp.y <= b.y + b.h + pad) return i;
             }
             return -1;
         }
@@ -273,18 +408,29 @@
                     { c: 2, x: x2, y: y2 }, { c: 3, x: x1, y: y2 }];
         }
         function manijaEn(t, p) {
-            var r = 12 * escalaFoto(), hs = manijas(t);
+            var r = 12 * escalaFoto(), hs = manijas(t), lp = aLocal(t, p);
             for (var i = 0; i < hs.length; i++) {
-                if (Math.abs(p.x - hs[i].x) <= r && Math.abs(p.y - hs[i].y) <= r) return hs[i].c;
+                if (Math.abs(lp.x - hs[i].x) <= r && Math.abs(lp.y - hs[i].y) <= r) return hs[i].c;
             }
             return -1;
+        }
+        // Punto (local) de la manija de rotación, arriba del centro.
+        function puntoRot(t) {
+            var b = cajaDe(t), s = escalaFoto();
+            return { x: b.x + b.w / 2, y: b.y - 6 * s - 26 * s };
+        }
+        function enManijaRot(t, p) {
+            var lp = aLocal(t, p), h = puntoRot(t), r = 13 * escalaFoto();
+            return Math.abs(lp.x - h.x) <= r && Math.abs(lp.y - h.y) <= r;
         }
         function iniciarResize(t, corner) {
             st.redimensionando = true;
             st.resizeCorner = corner;
             var b = cajaDe(t);
             st.resizeO = { x: b.x, y: b.y, w: b.w, h: b.h };
-            // La esquina opuesta a la que se agarra queda fija.
+            st.resizeCenter = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+            st.resizeRot = t.rot || 0;
+            // La esquina opuesta a la que se agarra queda fija (caso sin rotar).
             st.resizeFixed = {
                 x: (corner === 0 || corner === 3) ? b.x + b.w : b.x,
                 y: (corner === 0 || corner === 1) ? b.y + b.h : b.y,
@@ -308,21 +454,74 @@
             return t;
         }
         function pintarSeleccion(t) {
-            var b = cajaDe(t), s = escalaFoto(), m = 6 * s;
+            var b = cajaDe(t), s = escalaFoto(), m = 6 * s, azul = 'rgba(37, 99, 235, .95)';
             ctx.save();
-            ctx.strokeStyle = 'rgba(37, 99, 235, .95)';
+            // Todo el chrome se dibuja en el marco (rotado) de la marca.
+            if (t.rot) {
+                var c = centroDe(t);
+                ctx.translate(c.x, c.y); ctx.rotate(t.rot); ctx.translate(-c.x, -c.y);
+            }
+            ctx.strokeStyle = azul;
             ctx.lineWidth = Math.max(1.5, 2 * s);
             ctx.setLineDash([7 * s, 5 * s]);
             ctx.strokeRect(b.x - m, b.y - m, b.w + m * 2, b.h + m * 2);
             ctx.setLineDash([]);
+            // Manija de rotación: línea al pomo de arriba.
+            var rp = puntoRot(t);
+            ctx.beginPath();
+            ctx.moveTo(b.x + b.w / 2, b.y - m); ctx.lineTo(rp.x, rp.y); ctx.stroke();
+            ctx.beginPath(); ctx.arc(rp.x, rp.y, 6 * s, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = azul; ctx.stroke();
             // Manijas de esquina para redimensionar.
             var r = 5 * s;
             manijas(t).forEach(function (h) {
                 ctx.beginPath();
                 ctx.rect(h.x - r, h.y - r, r * 2, r * 2);
                 ctx.fillStyle = '#fff'; ctx.fill();
-                ctx.lineWidth = Math.max(1.5, 2 * s);
-                ctx.strokeStyle = 'rgba(37, 99, 235, .95)'; ctx.stroke();
+                ctx.strokeStyle = azul; ctx.stroke();
+            });
+            ctx.restore();
+        }
+        // ── Overlay del recorte ──
+        function clamp(v, a, z) { return v < a ? a : (v > z ? z : v); }
+        function cropCorners() {
+            var cr = st.crop;
+            return [[cr.x, cr.y], [cr.x + cr.w, cr.y], [cr.x + cr.w, cr.y + cr.h], [cr.x, cr.y + cr.h]];
+        }
+        function cropManijaEn(p) {
+            var r = 14 * escalaFoto(), cs = cropCorners();
+            for (var i = 0; i < cs.length; i++) {
+                if (Math.abs(p.x - cs[i][0]) <= r && Math.abs(p.y - cs[i][1]) <= r) return i;
+            }
+            return -1;
+        }
+        function dentroCrop(p) {
+            var cr = st.crop;
+            return p.x >= cr.x && p.x <= cr.x + cr.w && p.y >= cr.y && p.y <= cr.y + cr.h;
+        }
+        function pintarRecorte() {
+            var s = escalaFoto(), cr = st.crop;
+            ctx.save();
+            // Oscurecer todo menos el recorte.
+            ctx.fillStyle = 'rgba(0, 0, 0, .55)';
+            ctx.beginPath();
+            ctx.rect(0, 0, canvas.width, canvas.height);
+            ctx.rect(cr.x, cr.y, cr.w, cr.h);
+            ctx.fill('evenodd');
+            // Marco y guías de tercios.
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, 2 * s);
+            ctx.strokeRect(cr.x, cr.y, cr.w, cr.h);
+            ctx.strokeStyle = 'rgba(255, 255, 255, .4)'; ctx.lineWidth = Math.max(1, s);
+            for (var i = 1; i < 3; i++) {
+                ctx.beginPath(); ctx.moveTo(cr.x + cr.w * i / 3, cr.y); ctx.lineTo(cr.x + cr.w * i / 3, cr.y + cr.h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cr.x, cr.y + cr.h * i / 3); ctx.lineTo(cr.x + cr.w, cr.y + cr.h * i / 3); ctx.stroke();
+            }
+            // Manijas de esquina.
+            var r = 6 * s;
+            cropCorners().forEach(function (c) {
+                ctx.beginPath(); ctx.rect(c[0] - r, c[1] - r, r * 2, r * 2);
+                ctx.fillStyle = '#fff'; ctx.fill();
+                ctx.strokeStyle = '#2563EB'; ctx.lineWidth = Math.max(1.5, 2 * s); ctx.stroke();
             });
             ctx.restore();
         }
@@ -424,13 +623,34 @@
             // Si había un campo de texto abierto, este toque lo confirma (no dibuja).
             if (cerrarTextoAbierto()) { e.preventDefault(); return; }
             var p = punto(e);
+            // Modo recorte: mover el marco o arrastrar una esquina.
+            if (st.crop) {
+                e.preventDefault();
+                var cc = cropManijaEn(p);
+                if (cc >= 0) {
+                    var cs = cropCorners();
+                    var opp = cs[(cc + 2) % 4];   // esquina opuesta, queda fija
+                    st.cropDrag = { tipo: 'corner', ox: opp[0], oy: opp[1] };
+                } else if (dentroCrop(p)) {
+                    st.cropDrag = { tipo: 'move', prev: p };
+                } else {
+                    st.cropDrag = null;
+                }
+                return;
+            }
             // Herramienta "mover": seleccionar la marca bajo el dedo y arrastrarla.
             if (st.herramienta === 'mover') {
                 e.preventDefault();
-                // ¿Se agarró una manija de esquina de la selección actual? → redimensionar.
                 if (st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
-                    var mc = manijaEn(st.trazos[st.seleccionado], p);
-                    if (mc >= 0) { iniciarResize(st.trazos[st.seleccionado], mc); repintar(); return; }
+                    var selT = st.trazos[st.seleccionado];
+                    // ¿Se agarró la manija de rotación? → rotar.
+                    if (enManijaRot(selT, p)) {
+                        st.rotando = true; st.rotCentro = centroDe(selT);
+                        canvas.style.cursor = 'grabbing'; repintar(); return;
+                    }
+                    // ¿Una manija de esquina? → redimensionar.
+                    var mc = manijaEn(selT, p);
+                    if (mc >= 0) { iniciarResize(selT, mc); repintar(); return; }
                 }
                 st.seleccionado = marcaEn(p);
                 st.arrastrando = st.seleccionado >= 0;
@@ -452,23 +672,63 @@
                     color: st.color, grosor: st.grosor };
         }
         function mover(e) {
-            // Cursor de redimensionar/mover al pasar por encima (mover, sin arrastrar).
-            if (st.herramienta === 'mover' && !st.arrastrando && !st.redimensionando) {
-                if (st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
-                    var ph = punto(e);
-                    var mh = manijaEn(st.trazos[st.seleccionado], ph);
-                    if (mh >= 0) canvas.style.cursor = (mh === 0 || mh === 2) ? 'nwse-resize' : 'nesw-resize';
-                    else canvas.style.cursor = marcaEn(ph) >= 0 ? 'grab' : 'move';
+            // Arrastre del marco de recorte.
+            if (st.crop && st.cropDrag) {
+                e.preventDefault();
+                var pc = punto(e), cr = st.crop;
+                if (st.cropDrag.tipo === 'move') {
+                    var ddx = pc.x - st.cropDrag.prev.x, ddy = pc.y - st.cropDrag.prev.y;
+                    cr.x = clamp(cr.x + ddx, 0, canvas.width - cr.w);
+                    cr.y = clamp(cr.y + ddy, 0, canvas.height - cr.h);
+                    st.cropDrag.prev = pc;
+                } else {   // arrastrando una esquina; la opuesta (ox,oy) queda fija
+                    var nx = clamp(pc.x, 0, canvas.width), ny = clamp(pc.y, 0, canvas.height);
+                    var x1 = Math.min(st.cropDrag.ox, nx), y1 = Math.min(st.cropDrag.oy, ny);
+                    cr.x = x1; cr.y = y1;
+                    cr.w = Math.max(8, Math.abs(nx - st.cropDrag.ox));
+                    cr.h = Math.max(8, Math.abs(ny - st.cropDrag.oy));
                 }
+                repintar();
+                return;
+            }
+            // Cursor de redimensionar/mover al pasar por encima (mover, sin arrastrar).
+            if (st.herramienta === 'mover' && !st.arrastrando && !st.redimensionando && !st.rotando) {
+                if (st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                    var selM = st.trazos[st.seleccionado], ph = punto(e);
+                    if (enManijaRot(selM, ph)) canvas.style.cursor = 'grab';
+                    else {
+                        var mh = manijaEn(selM, ph);
+                        if (mh >= 0) canvas.style.cursor = (mh === 0 || mh === 2) ? 'nwse-resize' : 'nesw-resize';
+                        else canvas.style.cursor = marcaEn(ph) >= 0 ? 'grab' : 'move';
+                    }
+                }
+            }
+            // Rotando la marca seleccionada.
+            if (st.rotando && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                e.preventDefault();
+                var pro = punto(e), cc2 = st.rotCentro;
+                st.trazos[st.seleccionado].rot = Math.atan2(pro.y - cc2.y, pro.x - cc2.x) + Math.PI / 2;
+                repintar();
+                return;
             }
             // Redimensionando desde una manija.
             if (st.redimensionando && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
                 e.preventDefault();
-                var pr = punto(e), O = st.resizeO, F = st.resizeFixed;
-                var N = { x: Math.min(F.x, pr.x), y: Math.min(F.y, pr.y),
+                var pr = punto(e), O = st.resizeO, N;
+                if (st.resizeRot) {
+                    // Rotada: se reescala centrada (el puntero se lleva al marco local).
+                    var c = st.resizeCenter, co = Math.cos(-st.resizeRot), si = Math.sin(-st.resizeRot);
+                    var dx = pr.x - c.x, dy = pr.y - c.y;
+                    var lx = c.x + dx * co - dy * si, ly = c.y + dx * si + dy * co;
+                    var hw = Math.max(3, Math.abs(lx - c.x)), hh = Math.max(3, Math.abs(ly - c.y));
+                    N = { x: c.x - hw, y: c.y - hh, w: hw * 2, h: hh * 2 };
+                } else {
+                    var F = st.resizeFixed;
+                    N = { x: Math.min(F.x, pr.x), y: Math.min(F.y, pr.y),
                           w: Math.abs(pr.x - F.x), h: Math.abs(pr.y - F.y) };
-                if (N.w < 6) N.w = 6;
-                if (N.h < 6) N.h = 6;
+                    if (N.w < 6) N.w = 6;
+                    if (N.h < 6) N.h = 6;
+                }
                 st.trazos[st.seleccionado] = remapTrazo(st.resizeSnap, O, N);
                 repintar();
                 return;
@@ -490,6 +750,12 @@
             repintar();
         }
         function soltar() {
+            if (st.crop) { st.cropDrag = null; return; }
+            if (st.rotando) {
+                st.rotando = false;
+                if (st.herramienta === 'mover') canvas.style.cursor = 'move';
+                return;
+            }
             if (st.redimensionando) {
                 st.redimensionando = false;
                 st.resizeSnap = null;
@@ -532,7 +798,10 @@
         function teclas(e) {
             var tag = (e.target && e.target.tagName || '').toLowerCase();
             var escribiendo = (tag === 'input' || tag === 'textarea');
-            if (e.key === 'Escape') { cerrar(); return; }
+            if (e.key === 'Escape') {
+                if (st.crop) { salirRecorte(); repintar(); return; }
+                cerrar(); return;
+            }
             if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
                 e.preventDefault(); st.trazos.pop(); st.seleccionado = -1; repintar(); return;
             }
@@ -552,10 +821,12 @@
 
         ov.querySelector('[data-guardar]').onclick = function () {
             var btn = this;
-            if (!st.trazos.length && cap.value === (opts.comentario || '')) {
+            if (!st.trazos.length && !st.editadoBase && cap.value === (opts.comentario || '')) {
                 estado.textContent = 'No hay nada que guardar.';
                 return;
             }
+            // Si quedó un recorte sin aplicar, se ignora al guardar (se exporta la foto completa).
+            if (st.crop) { salirRecorte(); }
             btn.disabled = true;
             estado.textContent = 'Guardando…';
             canvas.toBlob(function (blob) {
