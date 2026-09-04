@@ -35,6 +35,9 @@
             trazos: [],        // cada entrada es una accion completa: deshacer = quitar la ultima
             dibujando: false,
             actual: null,
+            seleccionado: -1,  // indice de la marca seleccionada con la herramienta "mover"
+            arrastrando: false,
+            dragPrev: null,
         };
 
         var ov = el('div', 'lfe-ov');
@@ -43,12 +46,18 @@
             '<div class="lfe-box">' +
               '<div class="lfe-top">' +
                 '<div class="lfe-seg lfe-tools" data-tools>' +
+                  '<button type="button" class="lfe-t" data-h="mover" title="Seleccionar / mover">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.12 1.58a2 2 0 0 0-1.44 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/></svg></button>' +
                   '<button type="button" class="lfe-t is-on" data-h="lapiz" title="Dibujar">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg></button>' +
+                  '<button type="button" class="lfe-t" data-h="linea" title="Línea">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/></svg></button>' +
                   '<button type="button" class="lfe-t" data-h="flecha" title="Flecha">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="12 5 19 5 19 12"/></svg></button>' +
                   '<button type="button" class="lfe-t" data-h="rect" title="Rectángulo">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>' +
+                  '<button type="button" class="lfe-t" data-h="elipse" title="Elipse / círculo">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg></button>' +
                   '<button type="button" class="lfe-t" data-h="texto" title="Escribir">' +
                     '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>' +
                 '</div>' +
@@ -121,7 +130,11 @@
             st.herramienta = b.getAttribute('data-h');
             ov.querySelectorAll('.lfe-t').forEach(function (x) { x.classList.remove('is-on'); });
             b.classList.add('is-on');
-            canvas.style.cursor = (st.herramienta === 'texto') ? 'text' : 'crosshair';
+            canvas.style.cursor = st.herramienta === 'texto' ? 'text'
+                : st.herramienta === 'mover' ? 'move' : 'crosshair';
+            // La selección solo tiene sentido con la herramienta "mover".
+            if (st.herramienta !== 'mover') st.seleccionado = -1;
+            if (img.complete) repintar();
         });
 
         // ── La imagen ──
@@ -140,8 +153,11 @@
         function repintar() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            st.trazos.forEach(pintarTrazo);
+            st.trazos.forEach(function (t) { if (!t._oculto) pintarTrazo(t); });
             if (st.actual) pintarTrazo(st.actual);
+            if (st.herramienta === 'mover' && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                pintarSeleccion(st.trazos[st.seleccionado]);
+            }
         }
 
         function pintarTrazo(t) {
@@ -158,6 +174,15 @@
                 ctx.stroke();
             } else if (t.tipo === 'rect') {
                 ctx.strokeRect(t.x1, t.y1, t.x2 - t.x1, t.y2 - t.y1);
+            } else if (t.tipo === 'linea') {
+                ctx.beginPath();
+                ctx.moveTo(t.x1, t.y1); ctx.lineTo(t.x2, t.y2); ctx.stroke();
+            } else if (t.tipo === 'elipse') {
+                var ecx = (t.x1 + t.x2) / 2, ecy = (t.y1 + t.y2) / 2;
+                var erx = Math.abs(t.x2 - t.x1) / 2, ery = Math.abs(t.y2 - t.y1) / 2;
+                ctx.beginPath();
+                ctx.ellipse(ecx, ecy, erx, ery, 0, 0, Math.PI * 2);
+                ctx.stroke();
             } else if (t.tipo === 'flecha') {
                 var dx = t.x2 - t.x1, dy = t.y2 - t.y1;
                 var ang = Math.atan2(dy, dx);
@@ -192,33 +217,104 @@
             };
         }
 
+        // ── Selección y movimiento de marcas ya puestas ──
+        // Cuántos px reales de la foto equivalen a 1 px de pantalla (para que el
+        // grosor del recuadro y el margen de agarre se vean constantes).
+        function escalaFoto() {
+            var r = canvas.getBoundingClientRect();
+            return r.width ? (canvas.width / r.width) : 1;
+        }
+        // Caja envolvente de una marca, en coordenadas de la foto.
+        function cajaDe(t) {
+            if (t.tipo === 'lapiz') {
+                var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+                t.pts.forEach(function (p) {
+                    if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x;
+                    if (p.y < miny) miny = p.y; if (p.y > maxy) maxy = p.y;
+                });
+                return { x: minx, y: miny, w: maxx - minx, h: maxy - miny };
+            }
+            if (t.tipo === 'texto') {
+                var px = Math.max(18, t.grosor * 6);
+                ctx.save();
+                ctx.font = '700 ' + px + 'px system-ui, -apple-system, sans-serif';
+                var w = ctx.measureText(t.texto || '').width;
+                ctx.restore();
+                return { x: t.x1, y: t.y1, w: w, h: px * 1.2 };
+            }
+            // rect, linea, flecha, elipse → definidos por dos esquinas
+            var x = Math.min(t.x1, t.x2), y = Math.min(t.y1, t.y2);
+            return { x: x, y: y, w: Math.abs(t.x2 - t.x1), h: Math.abs(t.y2 - t.y1) };
+        }
+        // Índice de la marca bajo el punto p (de arriba hacia abajo), o -1.
+        function marcaEn(p) {
+            var pad = 10 * escalaFoto();   // ~10px de pantalla de margen para agarrar
+            for (var i = st.trazos.length - 1; i >= 0; i--) {
+                if (st.trazos[i]._oculto) continue;
+                var b = cajaDe(st.trazos[i]);
+                if (p.x >= b.x - pad && p.x <= b.x + b.w + pad &&
+                    p.y >= b.y - pad && p.y <= b.y + b.h + pad) return i;
+            }
+            return -1;
+        }
+        function moverTrazo(t, dx, dy) {
+            if (t.tipo === 'lapiz') t.pts.forEach(function (p) { p.x += dx; p.y += dy; });
+            else if (t.tipo === 'texto') { t.x1 += dx; t.y1 += dy; }
+            else { t.x1 += dx; t.y1 += dy; t.x2 += dx; t.y2 += dy; }
+        }
+        function pintarSeleccion(t) {
+            var b = cajaDe(t), s = escalaFoto(), m = 6 * s;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(37, 99, 235, .95)';
+            ctx.lineWidth = Math.max(1.5, 2 * s);
+            ctx.setLineDash([7 * s, 5 * s]);
+            ctx.strokeRect(b.x - m, b.y - m, b.w + m * 2, b.h + m * 2);
+            ctx.restore();
+        }
+
         // ── Texto en el lugar (estilo "Marcado" de Mac) ──
         // En vez de un prompt del navegador, se coloca un campo de texto justo
         // sobre el punto tocado; se escribe en su sitio y al confirmar queda
         // dibujado en la foto. Enter confirma, Esc cancela, y tocar fuera guarda.
         var textoInput = null;
-        function abrirTexto(e, p) {
+        // opts (opcional) para re-editar un texto existente:
+        //   { valor, color, grosor, reemplazar: <indice> }.
+        // Si no viene, se crea un texto nuevo con el color/grosor activos.
+        function abrirTexto(e, p, opts) {
             cerrarTextoAbierto();
+            opts = opts || {};
+            var editando = (opts.reemplazar != null && opts.reemplazar >= 0);
+            var colorTxt = opts.color || st.color;
+            var grosorTxt = opts.grosor || st.grosor;
             var lr = lienzo.getBoundingClientRect();
-            var src = (e.touches && e.touches[0]) || e;
-            var sx = src.clientX - lr.left + lienzo.scrollLeft;
-            var sy = src.clientY - lr.top + lienzo.scrollTop;
             var vista = canvas.getBoundingClientRect();
             var escala = canvas.width ? (vista.width / canvas.width) : 1;
-            var px = Math.max(18, st.grosor * 6) * escala;   // tamaño visible ≈ el que quedará dibujado
+            var px = Math.max(18, grosorTxt * 6) * escala;   // tamaño visible ≈ el que quedará dibujado
+            var sx, sy;
+            if (editando) {
+                // Colocar el campo justo sobre el texto que se edita.
+                sx = (vista.left - lr.left + lienzo.scrollLeft) + p.x * escala;
+                sy = (vista.top - lr.top + lienzo.scrollTop) + p.y * escala;
+            } else {
+                var src = (e.touches && e.touches[0]) || e;
+                sx = src.clientX - lr.left + lienzo.scrollLeft;
+                sy = src.clientY - lr.top + lienzo.scrollTop;
+            }
             var inp = el('input', 'lfe-textin');
             inp.type = 'text';
             inp.maxLength = 120;
             inp.setAttribute('placeholder', 'Escribe…');
+            inp.value = opts.valor || '';
             inp.style.left = sx + 'px';
             inp.style.top = (sy - px * 0.7) + 'px';
-            inp.style.color = st.color;
+            inp.style.color = colorTxt;
             inp.style.fontSize = px + 'px';
             lienzo.appendChild(inp);
-            textoInput = { el: inp, p: p };
-            setTimeout(function () { inp.focus(); }, 10);
+            textoInput = { el: inp, p: p, color: colorTxt, grosor: grosorTxt,
+                           reemplazar: editando ? opts.reemplazar : -1 };
+            setTimeout(function () { inp.focus(); if (inp.select) inp.select(); }, 10);
             // Que el campo no dispare trazos del canvas.
-            ['mousedown', 'touchstart', 'mousemove', 'touchmove', 'mouseup', 'click'].forEach(function (evt) {
+            ['mousedown', 'touchstart', 'mousemove', 'touchmove', 'mouseup', 'click', 'dblclick'].forEach(function (evt) {
                 inp.addEventListener(evt, function (e2) { e2.stopPropagation(); });
             });
             inp.addEventListener('keydown', function (ke) {
@@ -233,15 +329,35 @@
             var val = (ref.el.value || '').trim();
             if (ref.el.parentNode) ref.el.parentNode.removeChild(ref.el);
             if (val) {
-                st.trazos.push({ tipo: 'texto', texto: val, x1: ref.p.x, y1: ref.p.y,
-                                 color: st.color, grosor: st.grosor });
-                repintar();
+                var nuevo = { tipo: 'texto', texto: val, x1: ref.p.x, y1: ref.p.y,
+                              color: ref.color, grosor: ref.grosor };
+                if (ref.reemplazar >= 0 && st.trazos[ref.reemplazar]) st.trazos[ref.reemplazar] = nuevo;
+                else st.trazos.push(nuevo);
+            } else if (ref.reemplazar >= 0 && st.trazos[ref.reemplazar]) {
+                // Editar y dejar vacío = borrar ese texto.
+                st.trazos.splice(ref.reemplazar, 1);
             }
+            st.seleccionado = -1;
+            repintar();
         }
         function cancelarTexto() {
             if (!textoInput) return;
             var ref = textoInput; textoInput = null;
             if (ref.el.parentNode) ref.el.parentNode.removeChild(ref.el);
+            // Si se cancela una edición, volver a mostrar el texto original.
+            if (ref.reemplazar >= 0 && st.trazos[ref.reemplazar]) {
+                delete st.trazos[ref.reemplazar]._oculto;
+                repintar();
+            }
+        }
+        // Re-editar el texto en el índice dado (doble clic con la herramienta mover).
+        function editarTexto(idx) {
+            var t = st.trazos[idx];
+            if (!t || t.tipo !== 'texto') return;
+            t._oculto = true;   // se oculta el original mientras se edita
+            repintar();
+            abrirTexto(null, { x: t.x1, y: t.y1 },
+                       { valor: t.texto, color: t.color, grosor: t.grosor, reemplazar: idx });
         }
         function cerrarTextoAbierto() {
             if (textoInput) { commitTexto(); return true; }
@@ -253,6 +369,16 @@
             // Si había un campo de texto abierto, este toque lo confirma (no dibuja).
             if (cerrarTextoAbierto()) { e.preventDefault(); return; }
             var p = punto(e);
+            // Herramienta "mover": seleccionar la marca bajo el dedo y arrastrarla.
+            if (st.herramienta === 'mover') {
+                e.preventDefault();
+                st.seleccionado = marcaEn(p);
+                st.arrastrando = st.seleccionado >= 0;
+                st.dragPrev = p;
+                canvas.style.cursor = st.arrastrando ? 'grabbing' : 'move';
+                repintar();
+                return;
+            }
             if (st.herramienta === 'texto') {
                 e.preventDefault();
                 abrirTexto(e, p);
@@ -266,6 +392,15 @@
                     color: st.color, grosor: st.grosor };
         }
         function mover(e) {
+            // Arrastrando una marca seleccionada.
+            if (st.arrastrando && st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                e.preventDefault();
+                var pd = punto(e);
+                moverTrazo(st.trazos[st.seleccionado], pd.x - st.dragPrev.x, pd.y - st.dragPrev.y);
+                st.dragPrev = pd;
+                repintar();
+                return;
+            }
             if (!st.dibujando || !st.actual) return;
             e.preventDefault();
             var p = punto(e);
@@ -274,6 +409,11 @@
             repintar();
         }
         function soltar() {
+            if (st.arrastrando) {
+                st.arrastrando = false;
+                if (st.herramienta === 'mover') canvas.style.cursor = 'move';
+                return;
+            }
             if (!st.dibujando) return;
             st.dibujando = false;
             if (st.actual) { st.trazos.push(st.actual); st.actual = null; }
@@ -286,9 +426,15 @@
         canvas.addEventListener('touchstart', empezar, { passive: false });
         canvas.addEventListener('touchmove', mover, { passive: false });
         canvas.addEventListener('touchend', soltar);
+        // Doble clic con "mover" sobre un texto → re-editarlo en su sitio.
+        canvas.addEventListener('dblclick', function (e) {
+            if (st.herramienta !== 'mover') return;
+            var idx = marcaEn(punto(e));
+            if (idx >= 0 && st.trazos[idx].tipo === 'texto') { e.preventDefault(); editarTexto(idx); }
+        });
 
-        ov.querySelector('[data-deshacer]').onclick = function () { st.trazos.pop(); repintar(); };
-        ov.querySelector('[data-limpiar]').onclick = function () { st.trazos = []; repintar(); };
+        ov.querySelector('[data-deshacer]').onclick = function () { st.trazos.pop(); st.seleccionado = -1; repintar(); };
+        ov.querySelector('[data-limpiar]').onclick = function () { st.trazos = []; st.seleccionado = -1; repintar(); };
 
         function cerrar() {
             cancelarTexto();
@@ -297,8 +443,20 @@
             ov.remove();
         }
         function teclas(e) {
-            if (e.key === 'Escape') cerrar();
-            if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); st.trazos.pop(); repintar(); }
+            var tag = (e.target && e.target.tagName || '').toLowerCase();
+            var escribiendo = (tag === 'input' || tag === 'textarea');
+            if (e.key === 'Escape') { cerrar(); return; }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                e.preventDefault(); st.trazos.pop(); st.seleccionado = -1; repintar(); return;
+            }
+            // Borrar la marca seleccionada (solo si no se está escribiendo en un campo).
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !escribiendo &&
+                st.seleccionado >= 0 && st.trazos[st.seleccionado]) {
+                e.preventDefault();
+                st.trazos.splice(st.seleccionado, 1);
+                st.seleccionado = -1;
+                repintar();
+            }
         }
         document.addEventListener('keydown', teclas);
         ov.addEventListener('click', function (e) {
