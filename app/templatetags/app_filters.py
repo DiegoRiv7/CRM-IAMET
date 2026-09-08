@@ -198,3 +198,25 @@ def user_avatar(user, size="40"):
                  font-size: {int(size)//2.5}px;">{initials}</div>
         ''')
 
+
+# ── MULTIEMPRESA: columnas de producto de la tabla del CRM ──────────────
+@register.filter
+def monto_en_columna(item, col):
+    """Monto de la oportunidad si su producto cae en la columna `col`
+    (dict de app.empresa.columnas_producto), si no None."""
+    try:
+        if (getattr(item, 'producto', '') or '').upper() in col['valores']:
+            return item.monto
+    except Exception:
+        pass
+    return None
+
+
+@register.filter
+def producto_es_otro(item, columnas):
+    """True si el producto de la oportunidad no tiene columna propia ("Otros")."""
+    prod = (getattr(item, 'producto', '') or '').upper()
+    for col in columnas or []:
+        if prod in col['valores']:
+            return False
+    return True

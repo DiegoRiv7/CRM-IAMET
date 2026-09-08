@@ -4201,7 +4201,8 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
             + (' - ' + vol.nombre.strip() if vol.nombre else '')
         )[:255]
 
-    marcas_validas = {m for m, _ in DetalleCotizacion.MARCA_CHOICES}
+    from .empresa import valores_validos
+    marcas_validas = valores_validos('marca')
 
     # ── Recolectar filas (títulos + items) en una lista plana ──────
     # Se construye ANTES de tocar la BD para poder: (a) responder el

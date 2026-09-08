@@ -14,6 +14,7 @@ from decimal import Decimal
 
 from .views_utils import is_supervisor, is_administrador, siguiente_horario_habil
 from .views_grupos import get_usuarios_visibles_ids
+from .empresa import choices_catalogo, valores_validos
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
@@ -626,7 +627,7 @@ def api_prospecto_detalle(request, prospecto_id):
         # sigue ahí al cerrarlo y volver a abrirlo.
         'oportunidades': _opps_del_prospecto(p),
         # Catálogos para la edición inline del widget (clic en un dato = editar).
-        'productos_choices': [c[0] for c in TodoItem.PRODUCTO_CHOICES],
+        'productos_choices': [c[0] for c in choices_catalogo('producto')],
         'contactos_cliente': ([
             {'id': c.id, 'nombre': (f'{c.nombre} {c.apellido or ""}').strip()}
             for c in Contacto.objects.filter(cliente_id=p.cliente_id).order_by('nombre')[:50]
@@ -659,8 +660,8 @@ def api_prospecto_editar(request, prospecto_id):
         cambios.append('nombre')
     if 'producto' in data:
         producto = (data.get('producto') or '').strip()
-        validos = {c[0] for c in TodoItem.PRODUCTO_CHOICES}
-        if producto and producto not in validos:
+        validos = valores_validos('producto')
+        if producto and producto.upper() not in validos:
             return JsonResponse({'success': False, 'error': 'Producto inválido'}, status=400)
         p.producto = producto
         cambios.append('producto')

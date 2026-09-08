@@ -2,11 +2,11 @@
 <!-- ═══ CRM SIDEBAR VERTICAL IZQUIERDO ═══ -->
 <aside class="crm-sidebar" id="crmSidebar">
 
-    <!-- Logo IAMET — abre el asistente AI (click) o navega home (shift+click) -->
+    <!-- Logo de la empresa (EMPRESA = EmpresaConfig) — abre el asistente AI (click) o navega home (shift+click) -->
     <a href="/app/todos/" class="crm-sb-logo" title="Abre el asistente AI (Shift+Click para ir a Home)"
         onclick="if(!event.shiftKey){event.preventDefault();if(typeof window.asistenteAbrir==='function')window.asistenteAbrir();}">
-        <img class="crm-sb-logo-chip" src="{% static 'images/iamet-logo.png' %}" alt="IAMET">
-        <span class="crm-sb-logo-text">IAMET</span>
+        {% if EMPRESA.logo_url %}<img class="crm-sb-logo-chip" src="{{ EMPRESA.logo_url }}" alt="{{ EMPRESA.nombre_visible }}">{% else %}<span class="crm-sb-logo-chip crm-sb-logo-iniciales">{{ EMPRESA.iniciales }}</span>{% endif %}
+        <span class="crm-sb-logo-text">{{ EMPRESA.nombre_visible }}</span>
     </a>
 
     <!-- Top nav -->
@@ -91,13 +91,13 @@
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}</span>
         </a>
 
-        <!-- Muro -->
+        {% if MODULOS.muro %}<!-- Muro -->
         <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
-        </button>
+        </button>{% endif %}
 
         {% if mis_grupos %}
         <!-- Grupo -->
@@ -200,13 +200,13 @@
         </button>
 
         {% if es_ingeniero %}
-        <!-- Muro (ingeniero: antes de Calendario/Correo) -->
+        {% if MODULOS.muro %}<!-- Muro (ingeniero: antes de Calendario/Correo) -->
         <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
-        </button>
+        </button>{% endif %}
         {% endif %}
 
         <!-- Calendario -->
@@ -226,13 +226,13 @@
         </a>
 
         {% if not es_ingeniero %}
-        <!-- Muro (vendedor: después de Correo) -->
+        {% if MODULOS.muro %}<!-- Muro (vendedor: después de Correo) -->
         <button type="button" class="crm-sb-btn" id="btnMuro" onclick="muroAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Wall{% else %}Muro{% endif %}</span>
-        </button>
+        </button>{% endif %}
         {% endif %}
 
         {% if mis_grupos and not es_ingeniero %}

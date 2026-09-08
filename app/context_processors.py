@@ -1,3 +1,4 @@
+import json
 import os
 
 from .views import is_supervisor, is_engineer
@@ -26,15 +27,30 @@ def supervisor_flag(request):
     else:
         profile = None
 
+    # ── MULTIEMPRESA: identidad, módulos y catálogos de esta instancia ──
+    from .empresa import (
+        catalogo, choices_catalogo, columnas_producto, empresa_config, modulos,
+    )
+    empresa = empresa_config()
+    mods = modulos()
+
     return {
+        'EMPRESA': empresa,
+        'MODULOS': mods,
+        'MODULOS_JSON': json.dumps(mods),
+        'CATALOGO_PRODUCTOS': choices_catalogo('producto'),
+        'CATALOGO_AREAS': choices_catalogo('area'),
+        'CATALOGO_MARCAS': choices_catalogo('marca'),
+        'COLUMNAS_PRODUCTO': columnas_producto(),
         'is_supervisor': is_supervisor(request.user) if user_authenticated else False,
         'is_engineer': is_engineer(request.user) if user_authenticated else False,
         'user_profile': profile,
-        'resumen_habilitado': RESUMEN_HABILITADO,
+        'resumen_habilitado': RESUMEN_HABILITADO and mods.get('asistente_ia', True),
         'sitio_web_url': SITIO_WEB_URL,
         # Bandeja Chat Web del sitio: supervisores siempre; el resto por flag.
         'puede_chat_web': (
-            (is_supervisor(request.user) or bool(getattr(profile, 'puede_chat_web', False)))
+            mods.get('chat_web', False)
+            and (is_supervisor(request.user) or bool(getattr(profile, 'puede_chat_web', False)))
             if user_authenticated else False
         ),
     }

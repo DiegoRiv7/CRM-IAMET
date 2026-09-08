@@ -8,6 +8,7 @@
 # DELETE es soft-delete: marca `visible=False` para preservar historial.
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 
@@ -94,6 +95,7 @@ _TIPO_VALUES = {t for t, _ in RecursoMarketing.TIPO_CHOICES}
 
 # ── Endpoints ────────────────────────────────────────────────────────────
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(["GET", "POST"])
 def api_marketing_recursos_list(request):
@@ -186,6 +188,7 @@ def api_marketing_recursos_list(request):
     })
 
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(["PATCH", "DELETE"])
 def api_marketing_recurso_detalle(request, rid):
@@ -350,6 +353,7 @@ def _marca_to_dict(m: MarcaMarketing) -> dict:
     }
 
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(['GET', 'POST'])
 def api_marketing_marcas_list(request):
@@ -407,6 +411,7 @@ def api_marketing_marcas_list(request):
     })
 
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(['PATCH', 'DELETE'])
 def api_marketing_marca_detalle(request, mid):
@@ -497,6 +502,7 @@ def api_marketing_marca_detalle(request, mid):
     })
 
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(['DELETE', 'POST'])
 def api_marketing_marca_eliminar(request, mid):
@@ -522,6 +528,7 @@ def api_marketing_marca_eliminar(request, mid):
     return JsonResponse({'ok': True})
 
 
+@modulo_activo('marketing_hub')
 @login_required
 @require_http_methods(['POST'])
 def api_marketing_marca_logo(request, mid):

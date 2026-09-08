@@ -2,7 +2,9 @@
 # views_admin.py — Admin panel, supervisores, Bitrix24 integration.
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
+import re
 import logging
 import requests
 import mimetypes
@@ -1571,6 +1573,7 @@ def actualizar_avatar(request):
         })
 
 
+@modulo_activo('fondo_mundial')
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def fondo_mundial_admin(request):
@@ -2701,3 +2704,194 @@ def api_admin_uso_asistente(request):
         'usuarios': filas,
         'bitacora': bitacora,
     })
+
+
+# ══════════════════════════════════════════════════════════════════════
+# MULTIEMPRESA — Administración → Empresa (datos, logo, módulos) y Catálogos
+# ══════════════════════════════════════════════════════════════════════
+_EMPRESA_CAMPOS_TEXTO = (
+    'slug', 'nombre', 'nombre_corto', 'razon_social', 'direccion', 'telefono',
+    'correo_contacto', 'correo_ventas', 'sitio_web', 'dominio_correo',
+    'color_primario', 'color_secundario', 'moneda', 'zona_horaria',
+)
+
+
+def _empresa_a_dict(cfg):
+    return {
+        **{c: getattr(cfg, c) for c in _EMPRESA_CAMPOS_TEXTO},
+        'logo_url': cfg.logo_url,
+        'tiene_logo': bool(cfg.logo),
+        'es_iamet': cfg.es_iamet,
+        'titulo': cfg.titulo,
+        'modulos': cfg.modulos(),
+        'modulos_etiquetas': {
+            m: cfg._meta.get_field(f'mod_{m}').verbose_name for m in cfg.MODULOS
+        },
+    }
+
+
+@login_required
+def api_admin_empresa(request):
+    """GET: configuración de la empresa. POST (multipart o JSON): actualizarla.
+    Solo supervisores. Campos: los de _EMPRESA_CAMPOS_TEXTO, `mod_<modulo>`
+    ('1'/'0'), `logo` (archivo) y `quitar_logo` ('1')."""
+    from .empresa import empresa_config, invalidar_cache
+    from .models import EmpresaConfig
+
+    if not is_supervisor(request.user):
+        return JsonResponse({'ok': False, 'error': 'No autorizado'}, status=403)
+
+    if request.method == 'GET':
+        return JsonResponse({'ok': True, 'empresa': _empresa_a_dict(empresa_config())})
+
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+    cfg = EmpresaConfig.get_singleton()
+    if request.content_type and request.content_type.startswith('application/json'):
+        data = json.loads(request.body or '{}')
+        archivos = {}
+    else:
+        data = request.POST
+        archivos = request.FILES
+
+    for campo in _EMPRESA_CAMPOS_TEXTO:
+        if campo in data:
+            valor = (data.get(campo) or '').strip()
+            if campo == 'slug':
+                valor = re.sub(r'[^a-z0-9_-]', '', valor.lower()) or cfg.slug
+            if campo in ('color_primario', 'color_secundario') and valor and not re.match(r'^#[0-9A-Fa-f]{6}$', valor):
+                return JsonResponse({'ok': False, 'error': f'Color inválido en {campo}'}, status=400)
+            setattr(cfg, campo, valor[:cfg._meta.get_field(campo).max_length])
+    if not cfg.nombre:
+        return JsonResponse({'ok': False, 'error': 'El nombre de la empresa es obligatorio'}, status=400)
+
+    for m in cfg.MODULOS:
+        clave = f'mod_{m}'
+        if clave in data:
+            setattr(cfg, clave, str(data.get(clave)).lower() in ('1', 'true', 'on', 'si', 'sí'))
+
+    if str(data.get('quitar_logo', '')).lower() in ('1', 'true'):
+        if cfg.logo:
+            cfg.logo.delete(save=False)
+        cfg.logo = None
+    logo = archivos.get('logo') if archivos else None
+    if logo:
+        if logo.size > 2 * 1024 * 1024:
+            return JsonResponse({'ok': False, 'error': 'El logo debe pesar menos de 2 MB'}, status=400)
+        if not (logo.content_type or '').startswith('image/'):
+            return JsonResponse({'ok': False, 'error': 'El logo debe ser una imagen'}, status=400)
+        cfg.logo = logo
+
+    cfg.save()
+    invalidar_cache()
+    logger.info('EmpresaConfig actualizada por %s', request.user.username)
+    return JsonResponse({'ok': True, 'empresa': _empresa_a_dict(empresa_config())})
+
+
+@login_required
+def api_admin_catalogo(request):
+    """Catálogos editables (producto / área / marca).
+    GET ?tipo=producto → opciones (incluye inactivas).
+    POST JSON {action: create|update|delete|reorder, ...}."""
+    from .empresa import invalidar_cache
+    from .models import OpcionCatalogo
+
+    if not is_supervisor(request.user):
+        return JsonResponse({'ok': False, 'error': 'No autorizado'}, status=403)
+
+    tipos_validos = {t for t, _ in OpcionCatalogo.TIPO_CHOICES}
+
+    def _a_dict(o):
+        return {
+            'id': o.id, 'tipo': o.tipo, 'valor': o.valor, 'etiqueta': o.etiqueta,
+            'etiqueta_corta': o.etiqueta_corta, 'alias': o.alias, 'es_columna': o.es_columna,
+            'es_default': o.es_default, 'color': o.color, 'orden': o.orden, 'activo': o.activo,
+        }
+
+    if request.method == 'GET':
+        tipo = request.GET.get('tipo', 'producto')
+        if tipo not in tipos_validos:
+            return JsonResponse({'ok': False, 'error': 'Tipo inválido'}, status=400)
+        ops = OpcionCatalogo.objects.filter(tipo=tipo).order_by('orden', 'etiqueta')
+        return JsonResponse({
+            'ok': True, 'tipo': tipo,
+            'tipos': [{'id': t, 'nombre': n} for t, n in OpcionCatalogo.TIPO_CHOICES],
+            'opciones': [_a_dict(o) for o in ops],
+        })
+
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+    data = json.loads(request.body or '{}')
+    action = data.get('action', 'create')
+    campos = ('valor', 'etiqueta', 'etiqueta_corta', 'alias', 'color')
+
+    if action == 'create':
+        tipo = data.get('tipo')
+        valor = (data.get('valor') or '').strip()
+        etiqueta = (data.get('etiqueta') or valor).strip()
+        if tipo not in tipos_validos or not valor:
+            return JsonResponse({'ok': False, 'error': 'Tipo y valor son obligatorios'}, status=400)
+        if OpcionCatalogo.objects.filter(tipo=tipo, valor__iexact=valor).exists():
+            return JsonResponse({'ok': False, 'error': 'Ya existe una opción con ese valor'}, status=400)
+        ultimo = OpcionCatalogo.objects.filter(tipo=tipo).order_by('-orden').values_list('orden', flat=True).first() or 0
+        o = OpcionCatalogo.objects.create(
+            tipo=tipo, valor=valor[:100], etiqueta=etiqueta[:120],
+            etiqueta_corta=(data.get('etiqueta_corta') or '')[:20],
+            alias=(data.get('alias') or '')[:200], color=(data.get('color') or '')[:7],
+            es_columna=bool(data.get('es_columna', False)), es_default=bool(data.get('es_default', False)),
+            orden=ultimo + 10, activo=True,
+        )
+        if o.es_default:
+            OpcionCatalogo.objects.filter(tipo=tipo).exclude(pk=o.pk).update(es_default=False)
+        invalidar_cache()
+        return JsonResponse({'ok': True, 'opcion': _a_dict(o)})
+
+    try:
+        o = OpcionCatalogo.objects.get(pk=data.get('id'))
+    except (OpcionCatalogo.DoesNotExist, ValueError, TypeError):
+        if action == 'reorder':
+            for item in data.get('items', []):
+                OpcionCatalogo.objects.filter(pk=item.get('id')).update(orden=int(item.get('orden', 0)))
+            invalidar_cache()
+            return JsonResponse({'ok': True})
+        return JsonResponse({'ok': False, 'error': 'Opción no encontrada'}, status=404)
+
+    if action == 'update':
+        for c in campos:
+            if c in data:
+                setattr(o, c, (data.get(c) or '').strip()[:o._meta.get_field(c).max_length])
+        for c in ('es_columna', 'es_default', 'activo'):
+            if c in data:
+                setattr(o, c, bool(data.get(c)))
+        if 'orden' in data:
+            o.orden = int(data.get('orden') or 0)
+        if not o.valor:
+            return JsonResponse({'ok': False, 'error': 'El valor no puede quedar vacío'}, status=400)
+        o.save()
+        if o.es_default:
+            OpcionCatalogo.objects.filter(tipo=o.tipo).exclude(pk=o.pk).update(es_default=False)
+        invalidar_cache()
+        return JsonResponse({'ok': True, 'opcion': _a_dict(o)})
+
+    if action == 'delete':
+        # No se borra si hay registros que usan el valor: se desactiva.
+        en_uso = False
+        if o.tipo == 'producto':
+            en_uso = TodoItem.objects.filter(producto__iexact=o.valor).exists()
+        elif o.tipo == 'area':
+            en_uso = TodoItem.objects.filter(area__iexact=o.valor).exists()
+        elif o.tipo == 'marca':
+            en_uso = DetalleCotizacion.objects.filter(marca__iexact=o.valor).exists()
+        if en_uso:
+            o.activo = False
+            o.save(update_fields=['activo'])
+            invalidar_cache()
+            return JsonResponse({'ok': True, 'desactivada': True,
+                                 'mensaje': 'Hay registros con ese valor: la opción se desactivó en vez de borrarse.'})
+        o.delete()
+        invalidar_cache()
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'ok': False, 'error': 'Acción desconocida'}, status=400)

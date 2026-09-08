@@ -445,3 +445,24 @@ class PerfEventAdmin(admin.ModelAdmin):
     date_hierarchy = 'ts'
     ordering = ('-ts',)
     readonly_fields = ('ts',)
+
+
+# ── MULTIEMPRESA ──────────────────────────────────────────────────────
+from .models import EmpresaConfig, OpcionCatalogo
+
+
+@admin.register(EmpresaConfig)
+class EmpresaConfigAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'slug', 'correo_ventas', 'fecha_actualizacion')
+
+    def has_add_permission(self, request):
+        return not EmpresaConfig.objects.exists()
+
+
+@admin.register(OpcionCatalogo)
+class OpcionCatalogoAdmin(admin.ModelAdmin):
+    list_display = ('tipo', 'valor', 'etiqueta', 'etiqueta_corta', 'es_columna', 'es_default', 'orden', 'activo')
+    list_filter = ('tipo', 'activo', 'es_columna')
+    list_editable = ('etiqueta', 'etiqueta_corta', 'es_columna', 'es_default', 'orden', 'activo')
+    search_fields = ('valor', 'etiqueta', 'alias')
+    ordering = ('tipo', 'orden')

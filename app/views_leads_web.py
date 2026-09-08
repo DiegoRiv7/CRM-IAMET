@@ -7,6 +7,7 @@
 # igual que el responsable al que se asignan los prospectos creados.
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 import secrets
@@ -54,6 +55,7 @@ def _sitio_por_token(token):
     return None
 
 
+@modulo_activo('sso_tienda')
 @csrf_exempt
 def api_validar_credenciales(request):
     """
@@ -184,6 +186,7 @@ def _comentarios_prospecto(data, sitio_nombre='iamet.mx'):
     return '\n'.join(lineas)
 
 
+@modulo_activo('leads_web')
 @csrf_exempt
 def api_leads_web(request):
     """Recibe un lead desde la página web y lo convierte en Prospecto."""
@@ -327,6 +330,7 @@ def _notificar_lead_nuevo(cfg, responsable, lead):
             logger.warning(f'[leads-web] No se pudo notificar a {u}: {e}')
 
 
+@modulo_activo('leads_web')
 @login_required
 def api_admin_leads_web(request):
     """Panel de Administración → Leads Web: sitios conectados + últimos leads."""

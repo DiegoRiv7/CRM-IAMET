@@ -34,6 +34,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
+from .empresa import etiqueta_catalogo
 from .models import TodoItem, Cliente, ClientePotencial, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, ArchivoCobrado, AliasCliente, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, NovedadesConfig, EtapaPipeline
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
@@ -3795,8 +3796,9 @@ def producto_dashboard_detail(request, producto_val):
     logger.debug(f"DEBUG: producto_dashboard_detail - producto_val_upper: {producto_val_upper}")
     logger.debug(f"DEBUG: Keys de PRODUCTO_CHOICES: {list(dict(TodoItem.PRODUCTO_CHOICES).keys())}")
 
-    # Verificar si el producto_val_upper es una clave válida en PRODUCTO_CHOICES
-    if producto_val_upper not in dict(TodoItem.PRODUCTO_CHOICES):
+    # MULTIEMPRESA: validar contra el catálogo editable (clave o alias)
+    from .empresa import valores_validos
+    if producto_val_upper not in valores_validos('producto'):
         return redirect('dashboard')
 
     if is_supervisor(request.user):
@@ -3850,7 +3852,7 @@ def producto_dashboard_detail(request, producto_val):
         meses_display.append(dict(TodoItem.MES_CHOICES).get(mes_key, mes_key))
     context = {
         'producto_val': producto_val_upper, # Aseguramos que la clave pasada sea la que usará el template
-        'producto_display': dict(TodoItem.PRODUCTO_CHOICES).get(producto_val_upper, producto_val_upper),
+        'producto_display': etiqueta_catalogo('producto', producto_val_upper),
         'total_vendido_cerrado': total_vendido_cerrado,
         'total_vendido_cerrado_count': total_vendido_cerrado_count, # AÑADIDO
         'total_monto_vigente': total_monto_vigente, # Nuevo: Monto oportunidades vigentes
@@ -3895,7 +3897,7 @@ def mes_dashboard_detail(request, mes_val):
     graph_data_with_display = []
     for item in graph_data_raw:
         item_copy = item.copy()
-        item_copy['get_producto_display'] = dict(TodoItem.PRODUCTO_CHOICES).get(item_copy['producto'], item_copy['producto'])
+        item_copy['get_producto_display'] = etiqueta_catalogo('producto', item_copy['producto'])
         graph_data_with_display.append(item_copy)
 
     context = {
@@ -4029,6 +4031,9 @@ def exportar_oportunidades_csv(request):
             items = items.order_by('-probabilidad_cierre')
 
     # 4. Create report based on available libraries
+    # MULTIEMPRESA: columnas de producto del catálogo (una por marca/producto "columna")
+    from .empresa import columnas_producto as _columnas_producto
+    _cols_export = _columnas_producto()
     if OPENPYXL_AVAILABLE:
         # Create Excel workbook
         wb = Workbook()
@@ -4131,12 +4136,13 @@ def exportar_oportunidades_csv(request):
             bottom=Side(style='thin')
         )
         
-        # Define all headers (brands + months)
-        all_headers = [
-            'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
-            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO'
-        ]
+        # Define all headers (brands + months) — MULTIEMPRESA: una columna por
+        # producto del catálogo (Administración → Catálogos), no lista fija.
+        all_headers = (
+            ['OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO']
+            + [c['etiqueta'].upper() for c in _cols_export]
+            + ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO']
+        )
         
         # Write all headers in a single row (starting at row 5)
         header_row_num = 5
@@ -4148,11 +4154,11 @@ def exportar_oportunidades_csv(request):
             cell.border = border
     else:
         # Fallback to CSV - simplified structure
-        headers = [
-            'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
-            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO'
-        ]
+        headers = (
+            ['OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO']
+            + [c['etiqueta'].upper() for c in _cols_export]
+            + ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO']
+        )
         
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="reporte_cotizaciones_oportunidades.csv"'
@@ -4161,12 +4167,9 @@ def exportar_oportunidades_csv(request):
         writer = csv.writer(response)
         writer.writerow(headers)
         
-    # Brand columns mapping - usar las marcas reales de PRODUCTO_CHOICES
-    brand_columns = {
-        'ZEBRA': 5, 'PANDUIT': 6, 'APC': 7, 'AVIGILON': 8,
-        'GENETEC': 9, 'AXIS': 10, 'SOFTWARE': 11, 'RUNRATE': 12, 
-        'PÓLIZA': 13, 'CISCO': 14
-    }
+    # Brand columns mapping — MULTIEMPRESA: índice de columna por producto del catálogo
+    brand_columns = {c['valor']: 5 + i for i, c in enumerate(_cols_export)}
+    _valores_col = {v: c['valor'] for c in _cols_export for v in c['valores']}
         
     # Write data rows (start at row 6 for Excel since we now have metadata headers)
     row = 6
@@ -4179,15 +4182,16 @@ def exportar_oportunidades_csv(request):
         # No en las cotizaciones, sino en el producto/área de la oportunidad misma
         oportunidad_producto = item.get_producto_display() if hasattr(item, 'get_producto_display') else ''
         oportunidad_monto = float(item.monto) if item.monto else 0
+        _prod_clave = (item.producto or '').upper()
         
         # Mapear el producto de la oportunidad a las marcas disponibles
         brand_totals = {}
         if oportunidad_producto and oportunidad_monto > 0:
             # Detectar marca por el producto de la oportunidad
             producto_upper = oportunidad_producto.upper()
-            marca_detectada = None
+            marca_detectada = _valores_col.get(_prod_clave)  # 1) clave/alias exacto del catálogo
             
-            for brand in brand_columns.keys():
+            for brand in ([] if marca_detectada else brand_columns.keys()):
                 if brand.upper() in producto_upper:
                     marca_detectada = brand
                     break
@@ -4225,7 +4229,7 @@ def exportar_oportunidades_csv(request):
         ]
         
         # Add brand amounts - usar las marcas correctas
-        for brand in ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO']:
+        for brand in [c['valor'] for c in _cols_export]:
             amount = brand_totals.get(brand, 0)
             row_data.append(f"${amount:,.2f}" if amount > 0 else '')
         

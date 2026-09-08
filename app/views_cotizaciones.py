@@ -24,6 +24,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
+from .empresa import choices_catalogo, empresa_config
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProveedorCRM
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
@@ -46,6 +47,30 @@ from .views_utils import *
 
 # ── Tipo de cambio USD→MXN en tiempo real (cache 1 hora) ──
 _tc_cache = {'rate': None, 'ts': 0}
+
+
+def _logo_empresa_data_uri(emp):
+    """Logo de la empresa como data: URI para el PDF (WeasyPrint no resuelve
+    /media relativo). Sin logo subido: IAMET usa su logo estático; otras
+    empresas, nada."""
+    import base64
+    import mimetypes
+    import os
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+    ruta = None
+    try:
+        if emp.logo and getattr(emp.logo, 'path', None) and os.path.exists(emp.logo.path):
+            ruta = emp.logo.path
+        elif emp.es_iamet:
+            ruta = finders.find('images/iamet-logo.png') or os.path.join(settings.STATIC_ROOT or '', 'images', 'iamet-logo.png')
+        if ruta and os.path.exists(ruta):
+            mime = mimetypes.guess_type(ruta)[0] or 'image/png'
+            with open(ruta, 'rb') as f:
+                return f'data:{mime};base64,' + base64.b64encode(f.read()).decode('ascii')
+    except Exception:
+        pass
+    return ''
 
 def get_tipo_cambio_usd_mxn():
     """Obtiene tipo de cambio USD→MXN. Cache de 1 hora, fallback a settings."""
@@ -283,14 +308,20 @@ def view_cotizacion_pdf(request, cotizacion_id):
     company_address = ""
     company_phone = ""
     company_email = ""
+    company_web = ""
+    company_logo_url = ""
     template_name = 'cotizacion_pdf_template.html' # Default template
 
     if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
+        # MULTIEMPRESA: el formato "iamet" es el formato de LA EMPRESA de esta instancia.
         template_name = 'iamet_cotizacion_pdf_template.html'
-        company_name = 'IAMET S.A. de C.V.'
-        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
-        company_phone = '+52 33 9876 5432'
-        company_email = 'contacto@iamet.com'
+        _emp = empresa_config()
+        company_name = _emp.razon_social or _emp.nombre
+        company_address = _emp.direccion
+        company_phone = _emp.telefono
+        company_email = _emp.correo_contacto or _emp.correo_ventas
+        company_web = _emp.sitio_web
+        company_logo_url = _logo_empresa_data_uri(_emp)
     elif tipo_cotizacion and tipo_cotizacion.lower() == 'bajanet':
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
@@ -331,6 +362,8 @@ def view_cotizacion_pdf(request, cotizacion_id):
         'company_address': company_address,
         'company_phone': company_phone,
         'company_email': company_email,
+        'company_web': company_web,
+        'company_logo_url': company_logo_url,
         'logo_base64': logo_base64,
         'iva_rate_percentage': iva_rate_percentage,
     }
@@ -949,8 +982,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             'cliente_id_inicial': cliente_id,
             'oportunidad_id_inicial': oportunidad_id,
             'form_action_url': form_action_url,
-            'producto_choices': TodoItem.PRODUCTO_CHOICES,
-            'area_choices': TodoItem.AREA_CHOICES,
+            'producto_choices': choices_catalogo('producto'),
+            'area_choices': choices_catalogo('area'),
             'probabilidad_choices_list': [i for i in range(0, 101, 10)],
             # Crown Jewel Feature: Auto-fill data from opportunity detection
             'is_auto_filled': is_auto_filled,
@@ -1122,12 +1155,18 @@ def _build_cotizacion_pdf_payload(cotizacion, request_user=None):
 
     tipo_cotizacion = (cotizacion.tipo_cotizacion or '').lower()
     logo_base64 = ""
+    company_web = ""
+    company_logo_url = ""
     if tipo_cotizacion == 'iamet':
+        # MULTIEMPRESA: el formato "iamet" es el formato de LA EMPRESA de esta instancia.
         template_name = 'iamet_cotizacion_pdf_template.html'
-        company_name = 'IAMET S.A. de C.V.'
-        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
-        company_phone = '+52 33 9876 5432'
-        company_email = 'contacto@iamet.com'
+        _emp = empresa_config()
+        company_name = _emp.razon_social or _emp.nombre
+        company_address = _emp.direccion
+        company_phone = _emp.telefono
+        company_email = _emp.correo_contacto or _emp.correo_ventas
+        company_web = _emp.sitio_web
+        company_logo_url = _logo_empresa_data_uri(_emp)
     else:  # 'bajanet' o cualquier otro → fallback Bajanet
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
@@ -1153,6 +1192,8 @@ def _build_cotizacion_pdf_payload(cotizacion, request_user=None):
         'company_address': company_address,
         'company_phone': company_phone,
         'company_email': company_email,
+        'company_web': company_web,
+        'company_logo_url': company_logo_url,
         'logo_base64': logo_base64,
         'iva_rate_percentage': iva_rate_percentage,
     }

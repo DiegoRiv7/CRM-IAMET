@@ -2,6 +2,7 @@
 # views_api.py — Muro empresarial, jornadas, chat, notificaciones, navidad.
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 
@@ -907,6 +908,7 @@ def api_chat_media_file(request, msg_id):
     return response
 
 
+@modulo_activo('intercambio_navidad')
 @login_required
 def intercambio_navidad(request):
     """Vista principal del intercambio navideño"""
@@ -945,6 +947,7 @@ def intercambio_navidad(request):
     return render(request, 'intercambio_navidad.html', context)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 @login_required
 def realizar_sorteo_navidad(request):
@@ -1048,6 +1051,7 @@ def realizar_sorteo_navidad(request):
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 def agregar_participante_navidad(request):
     """Agregar participante al intercambio navideño"""
@@ -1110,6 +1114,7 @@ def agregar_participante_navidad(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 def eliminar_participante_navidad(request):
     """Eliminar participante del intercambio navideño"""
@@ -1141,6 +1146,7 @@ def eliminar_participante_navidad(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 def listar_participantes_navidad(request):
     """Listar participantes del intercambio navideño"""
@@ -1187,6 +1193,7 @@ def listar_participantes_navidad(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 def actualizar_evento_navidad(request):
     """Actualizar configuración del evento navideño"""
@@ -1252,6 +1259,7 @@ def actualizar_evento_navidad(request):
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
 
+@modulo_activo('intercambio_navidad')
 @csrf_exempt
 def estado_usuario_navidad(request):
     """Obtener estado del usuario en el intercambio navideño"""

@@ -1401,8 +1401,9 @@ def _opciones_para_entidad(entidad, user):
             etapas.append(nombre)
     etapas_dict = [{'id': n, 'nombre': n} for n in etapas]
 
-    productos = [{'id': p[0], 'nombre': p[1]} for p in TodoItem.PRODUCTO_CHOICES]
-    areas = [{'id': a[0], 'nombre': a[1]} for a in TodoItem.AREA_CHOICES]
+    from .empresa import choices_catalogo
+    productos = [{'id': p[0], 'nombre': p[1]} for p in choices_catalogo('producto')]
+    areas = [{'id': a[0], 'nombre': a[1]} for a in choices_catalogo('area')]
 
     return {
         'vendedores': vendedores,

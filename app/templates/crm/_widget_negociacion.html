@@ -144,17 +144,8 @@
                                 <div class="wn-ctw-pop-title">Producto</div>
                                 <select class="wn-ctw-pop-input" id="wfProducto">
                                     <option value="">Selecciona un producto</option>
-                                    <option value="ZEBRA">Zebra</option>
-                                    <option value="PANDUIT">Panduit</option>
-                                    <option value="APC">APC</option>
-                                    <option value="AVIGILION">Avigilon</option>
-                                    <option value="GENETEC">Genetec</option>
-                                    <option value="AXIS">Axis</option>
-                                    <option value="SOFTWARE">Software</option>
-                                    <option value="RUNRATE">Runrate</option>
-                                    <option value="PÓLIZA">Póliza</option>
-                                    <option value="CISCO">Cisco</option>
-                                    <option value="SERVICIO">Servicio</option>
+                                    {% for v, e in CATALOGO_PRODUCTOS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                                 </select>
                             </div>
                         </div>
@@ -169,12 +160,8 @@
                                 <div class="wn-ctw-pop-title">Área</div>
                                 <select class="wn-ctw-pop-input" id="wfArea">
                                     <option value="">Selecciona un área</option>
-                                    <option value="SISTEMAS">Sistemas</option>
-                                    <option value="Recursos Humanos">Recursos Humanos</option>
-                                    <option value="Compras">Compras</option>
-                                    <option value="Seguridad">Seguridad</option>
-                                    <option value="Mantenimiento">Mantenimiento</option>
-                                    <option value="Almacén">Almacén</option>
+                                    {% for v, e in CATALOGO_AREAS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                                 </select>
                             </div>
                         </div>

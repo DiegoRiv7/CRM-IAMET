@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM IAMET - Iniciar Sesión</title>
+    <title>{{ EMPRESA.titulo }} - Iniciar Sesión</title>
     <style>
         /* ════════════════════════════════════════════════════════════════
            LOGIN — TEMA TEMPORADA · VERANO "California Sunset"
@@ -195,7 +195,7 @@
 <body data-fase="pleno">
     <div class="branding-section">
         <div class="branding-content">
-            <div class="kicker anim-stagger-1">IAMET &middot; Sistema de Gesti&oacute;n</div>
+            <div class="kicker anim-stagger-1">{{ EMPRESA.nombre }} &middot; Sistema de Gesti&oacute;n</div>
             <h1 class="anim-stagger-1">Bienvenido a tu CRM.</h1>
             <p class="anim-stagger-2">El núcleo operativo central para optimizar tus procesos empresariales, desde la prospección hasta la ingeniería y facturación.</p>
             <div class="feature-list">
@@ -218,7 +218,7 @@
     <div class="login-section">
         <div class="login-box">
             <div class="anim-stagger-1" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                <span class="logo" style="margin-bottom:0;">CRM IAMET</span>
+                <span class="logo" style="margin-bottom:0;">{{ EMPRESA.titulo }}</span>
                 <svg class="logo-palma" width="46" height="46" viewBox="-18 -8 136 110">
                     <defs>
                         <linearGradient id="palmaG" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -258,7 +258,7 @@
                 <div class="input-group">
                     <label for="username">Usuario o Correo</label>
                     <input type="text" id="username" name="username"
-                           placeholder="ej. diego.rivera o correo@iamet.mx"
+                           placeholder="ej. nombre.apellido o {{ EMPRESA.placeholder_correo }}"
                            value="{{ form.username.value|default:'' }}"
                            {% if form.errors %}class="input-error"{% endif %}
                            required>

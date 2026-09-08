@@ -312,6 +312,15 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
           Alias Clientes
         </button>
+        <p class="admin-section-label" style="margin-top:8px;">Empresa</p>
+        <button class="admin-nav-item" id="admNav-empresa" onclick="adminNavClick(this,'empresa')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+          Datos y m&oacute;dulos
+        </button>
+        <button class="admin-nav-item" id="admNav-catalogos" onclick="adminNavClick(this,'catalogos')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Cat&aacute;logos
+        </button>
         <p class="admin-section-label" style="margin-top:8px;">Sistema</p>
         <button class="admin-nav-item" id="admNav-usoia" onclick="adminNavClick(this,'usoia')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 3 3v1a3 3 0 0 0 6 0v-1a3 3 0 0 0 3-3v-1a3 3 0 0 0 0-6V9a3 3 0 0 0-3-3V5a3 3 0 0 0-3-3z"/></svg>
@@ -443,6 +452,8 @@ window.loadAdminSection = function(section){
   else if(section==='alias')    loadAlias();
   else if(section==='usoia')     loadUsoIA();
   else if(section==='rendimiento') loadRendimiento();
+  else if(section==='empresa')   loadEmpresa();
+  else if(section==='catalogos') loadCatalogos();
 };
 
 /* ── Usuarios ────────────────────────────────────────── */
@@ -1959,6 +1970,139 @@ function _esc(s){
     }, 80);
   });
 })();
+
+
+/* ── MULTIEMPRESA: Empresa (datos, logo, módulos) ─────────────────── */
+function _esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+window.loadEmpresa = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/empresa/', {credentials:'same-origin'}).then(function(r){ return r.json(); }).then(function(res){
+    if(!res.ok){ ac.innerHTML = '<div class="admin-help">'+_esc(res.error||'Error')+'</div>'; return; }
+    var e = res.empresa;
+    function inp(id, label, val, ph, type){
+      return '<div style="flex:1;min-width:200px;"><label class="admin-help" style="display:block;margin-bottom:4px;">'+label+'</label>'
+        +'<input class="admin-input" id="emp_'+id+'" type="'+(type||'text')+'" value="'+_esc(val)+'" placeholder="'+_esc(ph||'')+'" style="width:100%;"></div>';
+    }
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Empresa: '+_esc(e.titulo)+'</span>'
+       + '<button class="admin-btn admin-btn-primary" onclick="admGuardarEmpresa()">Guardar cambios</button></div>';
+    h += '<p class="admin-help">Estos datos aparecen en el men&uacute;, el inicio de sesi&oacute;n, las cotizaciones en PDF y los documentos. Cada empresa configura los suyos.</p>';
+    /* Identidad */
+    h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:10px 0 8px;">Identidad</div>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:10px;">'+inp('nombre','Nombre de la empresa *',e.nombre,'Acme S.A.')+inp('nombre_corto','Nombre corto (men&uacute; lateral)',e.nombre_corto,'Acme')+inp('slug','Identificador (sin espacios)',e.slug,'acme')+'</div>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:10px;margin-top:8px;">'+inp('razon_social','Raz&oacute;n social (PDF)',e.razon_social,'Acme S.A. de C.V.')+inp('direccion','Direcci&oacute;n (PDF)',e.direccion,'')+'</div>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:10px;margin-top:8px;">'+inp('telefono','Tel&eacute;fono',e.telefono,'+52 ...')+inp('sitio_web','Sitio web',e.sitio_web,'https://...')+inp('dominio_correo','Dominio de correo del equipo',e.dominio_correo,'empresa.com')+'</div>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:10px;margin-top:8px;">'+inp('correo_contacto','Correo de contacto (PDF)',e.correo_contacto,'contacto@empresa.com','email')+inp('correo_ventas','Correo de ventas',e.correo_ventas,'ventas@empresa.com','email')+'</div>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:10px;margin-top:8px;">'+inp('color_primario','Color primario',e.color_primario,'#2C5080','color')+inp('color_secundario','Color secundario',e.color_secundario,'#4A6E9C','color')+inp('moneda','Moneda',e.moneda,'MXN')+inp('zona_horaria','Zona horaria',e.zona_horaria,'America/Tijuana')+'</div>';
+    /* Logo */
+    h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:16px 0 8px;">Logo</div>';
+    h += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">';
+    h += '<div id="empLogoPrev" style="width:64px;height:64px;border-radius:12px;background:#F2F2F7;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
+       + (e.logo_url ? '<img src="'+_esc(e.logo_url)+'" style="max-width:100%;max-height:100%;object-fit:contain;">' : '<span style="font-weight:800;color:#8E8E93;">'+_esc((e.nombre_corto||e.nombre||'CR').split(' ').map(function(p){return p[0]||'';}).join('').slice(0,2).toUpperCase())+'</span>')+'</div>';
+    h += '<input type="file" id="emp_logo" accept="image/*" class="admin-input" style="max-width:280px;">';
+    if(e.tiene_logo) h += '<button class="admin-btn" onclick="admQuitarLogoEmpresa()">Quitar logo</button>';
+    h += '<span class="admin-help" style="margin:0;">PNG o SVG con fondo transparente, m&aacute;ximo 2 MB.</span></div>';
+    /* Módulos */
+    h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:18px 0 4px;">M&oacute;dulos activos</div>';
+    h += '<p class="admin-help">Apaga lo que esta empresa no usa: desaparece del men&uacute; y sus rutas dejan de responder.</p>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 18px;">';
+    var mods = e.modulos || {}, etq = e.modulos_etiquetas || {};
+    Object.keys(mods).forEach(function(m){
+      h += '<label style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:0.8rem;color:#3A3A3C;padding:6px 0;border-bottom:1px solid #F2F2F7;">'
+         + '<span>'+_esc(etq[m]||m)+'</span>'
+         + '<span class="admin-toggle"><input type="checkbox" id="emp_mod_'+m+'" '+(mods[m]?'checked':'')+'><span class="admin-toggle-slider"></span></span></label>';
+    });
+    h += '</div>';
+    h += '<div style="margin-top:16px;"><button class="admin-btn admin-btn-primary" onclick="admGuardarEmpresa()">Guardar cambios</button></div>';
+    h += '</div>';
+    ac.innerHTML = h;
+  }).catch(function(){ _showAdminToast('Error de red', false); });
+};
+
+window.admGuardarEmpresa = function(){
+  var fd = new FormData();
+  ['slug','nombre','nombre_corto','razon_social','direccion','telefono','correo_contacto','correo_ventas','sitio_web','dominio_correo','color_primario','color_secundario','moneda','zona_horaria'].forEach(function(c){
+    var el = document.getElementById('emp_'+c); if(el) fd.append(c, el.value);
+  });
+  document.querySelectorAll('[id^="emp_mod_"]').forEach(function(chk){ fd.append(chk.id.replace('emp_',''), chk.checked ? '1' : '0'); });
+  var logo = document.getElementById('emp_logo');
+  if(logo && logo.files && logo.files[0]) fd.append('logo', logo.files[0]);
+  fetch('/app/api/admin/empresa/', {method:'POST', credentials:'same-origin', headers:{'X-CSRFToken':getCsrf()}, body: fd})
+  .then(function(r){ return r.json(); }).then(function(res){
+    if(res.ok){ _showAdminToast('Empresa actualizada. Recarga la página para ver el menú.'); loadEmpresa(); }
+    else _showAdminToast(res.error||'Error', false);
+  }).catch(function(){ _showAdminToast('Error de red', false); });
+};
+
+window.admQuitarLogoEmpresa = function(){
+  var fd = new FormData(); fd.append('quitar_logo','1');
+  fetch('/app/api/admin/empresa/', {method:'POST', credentials:'same-origin', headers:{'X-CSRFToken':getCsrf()}, body: fd})
+  .then(function(r){ return r.json(); }).then(function(res){ if(res.ok){ _showAdminToast('Logo eliminado'); loadEmpresa(); } else _showAdminToast(res.error||'Error', false); });
+};
+
+/* ── MULTIEMPRESA: Catálogos (producto / área / marca) ──────────────── */
+var _catTipo = 'producto';
+window.loadCatalogos = function(tipo){
+  if(tipo) _catTipo = tipo;
+  var ac = getAC();
+  fetch('/app/api/admin/catalogo/?tipo='+encodeURIComponent(_catTipo), {credentials:'same-origin'}).then(function(r){ return r.json(); }).then(function(res){
+    if(!res.ok){ ac.innerHTML = '<div class="admin-help">'+_esc(res.error||'Error')+'</div>'; return; }
+    var esProd = _catTipo === 'producto';
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Cat&aacute;logos</span><div style="display:flex;gap:6px;">';
+    (res.tipos||[]).forEach(function(t){ h += '<button class="admin-btn'+(t.id===_catTipo?' admin-btn-primary':'')+'" onclick="loadCatalogos(\''+t.id+'\')">'+_esc(t.nombre)+'</button>'; });
+    h += '</div></div>';
+    h += '<p class="admin-help">Estas opciones llenan los men&uacute;s desplegables del CRM. El <strong>valor</strong> es lo que se guarda en los registros (no lo cambies si ya hay datos); la <strong>etiqueta</strong> es lo que ve el usuario.'
+       + (esProd ? ' Marca <strong>Columna</strong> en los productos que quieras ver como columna en la tabla de oportunidades; el resto cae en "Otros".' : '')+'</p>';
+    h += '<div class="admin-form-row" style="flex-wrap:wrap;gap:8px;">';
+    h += '<input class="admin-input" id="catValor" placeholder="Valor (ej. ZEBRA)" style="flex:1;min-width:140px;">';
+    h += '<input class="admin-input" id="catEtiqueta" placeholder="Etiqueta (ej. Zebra)" style="flex:1;min-width:140px;">';
+    if(esProd) h += '<input class="admin-input" id="catCorta" placeholder="Cabecera corta" style="max-width:130px;">';
+    h += '<input class="admin-input" id="catAlias" placeholder="Alias (valores viejos, coma)" style="flex:1;min-width:160px;">';
+    if(esProd) h += '<label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;"><input type="checkbox" id="catColumna"> Columna</label>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admCatCrear()">Agregar</button></div>';
+    h += '<table class="admin-table"><thead><tr><th style="width:40px;">Orden</th><th>Valor</th><th>Etiqueta</th>'+(esProd?'<th>Cabecera</th>':'')+'<th>Alias</th>'+(esProd?'<th>Columna</th>':'')+'<th>Por defecto</th><th>Activo</th><th></th></tr></thead><tbody>';
+    if(!(res.opciones||[]).length) h += '<tr><td colspan="9" style="text-align:center;color:#8E8E93;padding:20px;">Sin opciones. Agrega la primera arriba.</td></tr>';
+    (res.opciones||[]).forEach(function(o){
+      var id = o.id;
+      h += '<tr'+(o.activo?'':' style="opacity:0.55;"')+'>';
+      h += '<td><input class="admin-input" style="width:56px;padding:4px 6px;" type="number" value="'+o.orden+'" onchange="admCatUpd('+id+',{orden:this.value})"></td>';
+      h += '<td><strong>'+_esc(o.valor)+'</strong></td>';
+      h += '<td><input class="admin-input" style="padding:4px 6px;" value="'+_esc(o.etiqueta)+'" onchange="admCatUpd('+id+',{etiqueta:this.value})"></td>';
+      if(esProd) h += '<td><input class="admin-input" style="width:90px;padding:4px 6px;" value="'+_esc(o.etiqueta_corta)+'" onchange="admCatUpd('+id+',{etiqueta_corta:this.value})"></td>';
+      h += '<td><input class="admin-input" style="padding:4px 6px;" value="'+_esc(o.alias)+'" onchange="admCatUpd('+id+',{alias:this.value})"></td>';
+      if(esProd) h += '<td><label class="admin-toggle"><input type="checkbox" '+(o.es_columna?'checked':'')+' onchange="admCatUpd('+id+',{es_columna:this.checked})"><span class="admin-toggle-slider"></span></label></td>';
+      h += '<td><input type="radio" name="catDefault" '+(o.es_default?'checked':'')+' onchange="admCatUpd('+id+',{es_default:true})"></td>';
+      h += '<td><label class="admin-toggle"><input type="checkbox" '+(o.activo?'checked':'')+' onchange="admCatUpd('+id+',{activo:this.checked})"><span class="admin-toggle-slider"></span></label></td>';
+      h += '<td><button class="admin-btn-icon" title="Eliminar" onclick="admCatEliminar('+id+')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    ac.innerHTML = h;
+  }).catch(function(){ _showAdminToast('Error de red', false); });
+};
+
+function _catPost(body, cb){
+  fetch('/app/api/admin/catalogo/', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()}, body: JSON.stringify(body)})
+  .then(function(r){ return r.json(); }).then(cb).catch(function(){ _showAdminToast('Error de red', false); });
+}
+window.admCatCrear = function(){
+  var v = (document.getElementById('catValor')||{}).value||'', e = (document.getElementById('catEtiqueta')||{}).value||'';
+  if(!v.trim()){ _showAdminToast('Escribe el valor', false); return; }
+  _catPost({action:'create', tipo:_catTipo, valor:v.trim(), etiqueta:(e||v).trim(),
+            etiqueta_corta:((document.getElementById('catCorta')||{}).value||''), alias:((document.getElementById('catAlias')||{}).value||''),
+            es_columna: !!((document.getElementById('catColumna')||{}).checked)},
+    function(res){ if(res.ok){ _showAdminToast('Opción agregada'); loadCatalogos(); } else _showAdminToast(res.error||'Error', false); });
+};
+window.admCatUpd = function(id, cambios){
+  var body = Object.assign({action:'update', id:id}, cambios);
+  _catPost(body, function(res){ if(res.ok){ _showAdminToast('Guardado'); if('es_default' in cambios || 'activo' in cambios) loadCatalogos(); } else { _showAdminToast(res.error||'Error', false); loadCatalogos(); } });
+};
+window.admCatEliminar = function(id){
+  if(!confirm('¿Eliminar esta opción? Si hay registros que la usan, solo se desactivará.')) return;
+  _catPost({action:'delete', id:id}, function(res){ if(res.ok){ _showAdminToast(res.mensaje||'Eliminada'); loadCatalogos(); } else _showAdminToast(res.error||'Error', false); });
+};
 
 /* Expose helpers */
 window._showAdminToast  = _showAdminToast;

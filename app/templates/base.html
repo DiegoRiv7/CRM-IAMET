@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
         {% block title %}
-        Administración de Ventas
+        {{ EMPRESA.titulo }}
         {% endblock %}
     </title>
 
@@ -300,7 +300,7 @@
                         </svg>
                     </div>
                     <div>
-                        <div style="font-size:0.95rem;font-weight:700;letter-spacing:-0.01em;">Asistente IAMET</div>
+                        <div style="font-size:0.95rem;font-weight:700;letter-spacing:-0.01em;">Asistente {{ EMPRESA.nombre_visible }}</div>
                         <div
                             style="font-size:0.65rem;font-weight:500;color:#34C759;display:flex;align-items:center;gap:4px;">
                             <span

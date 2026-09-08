@@ -1082,28 +1082,15 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     <div>
                         <label for="opportunity-area" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Área</label>
                         <select id="opportunity-area" name="area" class="input-field" required>
-                            <option value="SISTEMAS">Sistemas</option>
-                            <option value="Recursos Humanos">Recursos Humanos</option>
-                            <option value="Compras">Compras</option>
-                            <option value="Seguridad">Seguridad</option>
-                            <option value="Mantenimiento">Mantenimiento</option>
-                            <option value="Almacén">Almacén</option>
+                            {% for v, e in CATALOGO_AREAS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                         </select>
                     </div>
                     <div>
                         <label for="opportunity-producto" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Producto</label>
                         <select id="opportunity-producto" name="producto" class="input-field" required>
-                            <option value="ZEBRA">ZEBRA</option>
-                            <option value="PANDUIT">PANDUIT</option>
-                            <option value="APC">APC</option>
-                            <option value="AVIGILION">AVIGILION</option>
-                            <option value="GENETEC">GENETEC</option>
-                            <option value="AXIS">AXIS</option>
-                            <option value="SOFTWARE">SOFTWARE</option>
-                            <option value="RUNRATE">RUNRATE</option>
-                            <option value="PÓLIZA">PÓLIZA</option>
-                            <option value="CISCO">CISCO</option>
-                            <option value="SERVICIO">Servicio</option>
+                            {% for v, e in CATALOGO_PRODUCTOS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                         </select>
                     </div>
                     <div>

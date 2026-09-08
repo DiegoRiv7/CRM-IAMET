@@ -273,11 +273,11 @@
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs" id="crmTopTabs">
-                <a href="?tab=ideas"
+                {% if MODULOS.ideas %}<a href="?tab=ideas"
                     data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'ideas' %}active{% endif %}">
                     Ideas
-                </a>
+                </a>{% endif %}
                 <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
@@ -297,11 +297,11 @@
                     style="display:none;">
                     Recursos
                 </a>
-                <a href="?tab=marketing&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                {% if MODULOS.marketing_hub %}<a href="?tab=marketing&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'marketing' %}active{% endif %}">
                     Marketing
-                </a>
+                </a>{% endif %}
                 {% endif %}
             </div>
             {% endif %}
@@ -404,12 +404,8 @@
                         <label>Área</label>
                         <select id="filterArea">
                             <option value="">Todas</option>
-                            <option value="SISTEMAS">Sistemas</option>
-                            <option value="Recursos Humanos">RR.HH.</option>
-                            <option value="Compras">Compras</option>
-                            <option value="Seguridad">Seguridad</option>
-                            <option value="Mantenimiento">Mantenim.</option>
-                            <option value="Almacén">Almacén</option>
+                            {% for v, e in CATALOGO_AREAS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                         </select>
                     </div>
                     <div class="crm-filter-item">
@@ -420,15 +416,8 @@
                         <label>Producto</label>
                         <select id="filterProducto">
                             <option value="">Todos</option>
-                            <option value="ZEBRA">Zebra</option>
-                            <option value="PANDUIT">Panduit</option>
-                            <option value="APC">APC</option>
-                            <option value="AVIGILON">Avigilon</option>
-                            <option value="GENETEC">Genetec</option>
-                            <option value="AXIS">Axis</option>
-                            <option value="SOFTWARE">Software</option>
-                            <option value="RUNRATE">Runrate</option>
-                            <option value="PÓLIZA">Póliza</option>
+                            {% for v, e in CATALOGO_PRODUCTOS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                         </select>
                     </div>
                     <div class="crm-filter-item">
@@ -709,23 +698,16 @@
         <table class="w-full crm-table">
             <colgroup>
                 <col style="width:20%"><col style="width:8%"><col style="width:6%">
-                <col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:6%">
+                {% for col in COLUMNAS_PRODUCTO %}<col style="width:6%">{% endfor %}<col style="width:6%"><col style="width:6%">
             </colgroup>
             <thead class="bg-gray-50/80">
                 <tr class="text-[9px] text-gray-400 uppercase tracking-widest border-b border-gray-100">
                     <th class="px-2 py-3 text-left font-black">Oportunidad</th>
                     <th class="px-2 py-3 text-left font-black">Contacto</th>
                     <th class="px-2 py-3 text-left font-black">Area</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Zebra</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Panduit</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">APC</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Avig.</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Genet.</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Axis</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Soft.</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">RR</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Pol.</th>
-                    <th class="py-3 pr-2 text-right font-black text-blue-500">Otros</th>
+                    {% comment %}MULTIEMPRESA: una columna por producto del catálogo marcado "columna" (Administración → Catálogos).{% endcomment %}
+                    {% for col in COLUMNAS_PRODUCTO %}<th class="py-3 pr-2 text-right font-black text-blue-500 crm-th-producto" data-producto="{{ col.valor }}" title="{{ col.etiqueta }}">{{ col.corta }}</th>
+                    {% endfor %}<th class="py-3 pr-2 text-right font-black text-blue-500 crm-th-producto" data-producto="OTROS">Otros</th>
                     <th class="py-3 pr-2 text-right font-black text-gray-800 border-l border-gray-100">Total</th>
                 </tr>
             </thead>
@@ -739,20 +721,12 @@
                     </td>
                     <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'PANDUIT' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'APC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'AVIGILON' or item.producto == 'AVIGILION' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'GENETEC' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'AXIS' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'SOFTWARE' or item.producto == 'Desarrollo' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'RUNRATE' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto == 'POLIZA' or item.producto == 'PÓLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
-                    <td class="px-2 py-4 text-right">{% if item.producto != 'ZEBRA' and item.producto != 'PANDUIT' and item.producto != 'APC' and item.producto != 'AVIGILON' and item.producto != 'AVIGILION' and item.producto != 'GENETEC' and item.producto != 'AXIS' and item.producto != 'SOFTWARE' and item.producto != 'Desarrollo' and item.producto != 'RUNRATE' and item.producto != 'PÓLIZA' and item.producto != 'POLIZA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
+                    {% for col in COLUMNAS_PRODUCTO %}<td class="px-2 py-4 text-right">{% with m=item|monto_en_columna:col %}{% if m is not None %}<span class="text-blue-600 font-bold">${{ m|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}{% endwith %}</td>
+                    {% endfor %}<td class="px-2 py-4 text-right">{% if item|producto_es_otro:COLUMNAS_PRODUCTO %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>
                     <td class="px-2 py-4 text-right font-black text-gray-900 border-l border-gray-100 bg-gray-50/20">${{ item.monto|format_currency_es }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">No hay datos disponibles.</td></tr>
+                <tr><td colspan="{{ COLUMNAS_PRODUCTO|length|add:5 }}" class="text-center py-20 text-gray-400 italic">No hay datos disponibles.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -14,6 +14,7 @@
 #   POST /app/api/ideas/<id>/asistente/reset/      → borra el hilo
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 
@@ -426,6 +427,7 @@ def _msg_to_dict(m: IdeaAsistenteMensaje) -> dict:
 # ─── Endpoints ─────────────────────────────────────────────────────────
 
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['GET'])
 def api_idea_asistente_mensajes(request, idea_id: int):
@@ -442,6 +444,7 @@ def api_idea_asistente_mensajes(request, idea_id: int):
     return JsonResponse({'ok': True, 'mensajes': [_msg_to_dict(m) for m in msgs]})
 
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_asistente_mensaje(request, idea_id: int):
@@ -659,6 +662,7 @@ def _generar_resumen_llm(idea: Idea, msgs, cfg: AsistenteConfig) -> tuple[str, s
     return (resumen, '')
 
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_asistente_resumen(request, idea_id: int):
@@ -700,6 +704,7 @@ def api_idea_asistente_resumen(request, idea_id: int):
     })
 
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_asistente_reset(request, idea_id: int):

@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Cotización IAMET - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
+  <title>Cotización {{ company_name }} - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
   <style>
     @page {
         margin: 12mm; /* Margen igual a Bajanet */
@@ -173,12 +173,14 @@
     <table class="header-table">
         <tr>
             <td style="vertical-align: top;">
-                <img src="https://discoverbusiness.net/wp-content/uploads/2024/06/20230525180241logo_iamet.jpg" alt="Logo IAMET" style="max-height: 70px; background: #fff; padding: 6px; border: 1px solid #ccc;">
+                {% if company_logo_url %}<img src="{{ company_logo_url }}" alt="Logo {{ company_name }}" style="max-height: 70px; background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 6px;">{% endif %}
             </td>
             <td style="vertical-align: top;" class="company-details">
-                <strong style="font-size: 18px; letter-spacing: 1px;">IAMET S. de R.L. de C.V.</strong><br>
-                <p>📞 +52 664 380 8935</p>
-                <p>🌐 https://iamet.mx</p>
+                <strong style="font-size: 18px; letter-spacing: 1px;">{{ company_name }}</strong><br>
+                {% if company_address %}<p>📍 {{ company_address }}</p>{% endif %}
+                {% if company_phone %}<p>📞 {{ company_phone }}</p>{% endif %}
+                {% if company_web %}<p>🌐 {{ company_web }}</p>{% endif %}
+                {% if company_email %}<p>✉️ {{ company_email }}</p>{% endif %}
             </td>
         </tr>
     </table>

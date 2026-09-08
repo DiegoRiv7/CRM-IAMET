@@ -8,6 +8,7 @@
 # ven todas las del equipo (mismo criterio que prospectos/oportunidades).
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 from decimal import Decimal, InvalidOperation
@@ -107,6 +108,7 @@ def _idea_to_dict(idea, include_descripcion=True):
 
 # ─── API Lista (kanban) ───────────────────────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['GET'])
 def api_ideas_lista(request):
@@ -138,6 +140,7 @@ def api_ideas_lista(request):
 
 # ─── API Crear ────────────────────────────────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_crear(request):
@@ -204,6 +207,7 @@ def api_idea_crear(request):
 
 # ─── API Detalle / actualizar / eliminar ──────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['GET', 'PATCH', 'DELETE'])
 def api_idea_detalle(request, idea_id):
@@ -302,6 +306,7 @@ def api_idea_detalle(request, idea_id):
 
 # ─── API Mover etapa (drag & drop kanban) ─────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_mover_etapa(request, idea_id):
@@ -328,6 +333,7 @@ def api_idea_mover_etapa(request, idea_id):
 
 # ─── API Comentarios ──────────────────────────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_comentar(request, idea_id):
@@ -357,6 +363,7 @@ def api_idea_comentar(request, idea_id):
     }, status=201)
 
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['PATCH', 'PUT', 'DELETE'])
 def api_idea_comentario_detalle(request, comentario_id):
@@ -399,6 +406,7 @@ def api_idea_comentario_detalle(request, comentario_id):
 
 # ─── API Convertir idea → prospección ─────────────────────────────────
 
+@modulo_activo('ideas')
 @login_required
 @require_http_methods(['POST'])
 def api_idea_convertir(request, idea_id):

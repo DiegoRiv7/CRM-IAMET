@@ -117,26 +117,13 @@ body.cotizador-open #crmWidgetBreadcrumb {
             <div id="clienteOppFiltersOpp" style="display:flex;gap:8px;align-items:center;">
                 <select id="clienteOppFilterArea" class="wco-select">
                     <option value="">Todas las areas</option>
-                    <option value="SISTEMAS">Sistemas</option>
-                    <option value="Recursos Humanos">Recursos Humanos</option>
-                    <option value="Compras">Compras</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Mantenimiento">Mantenimiento</option>
-                    <option value="Almacén">Almacen</option>
+                    {% for v, e in CATALOGO_AREAS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                 </select>
                 <select id="clienteOppFilterProducto" class="wco-select">
                     <option value="">Todos los productos</option>
-                    <option value="ZEBRA">Zebra</option>
-                    <option value="PANDUIT">Panduit</option>
-                    <option value="APC">APC</option>
-                    <option value="AVIGILON">Avigilon</option>
-                    <option value="GENETEC">Genetec</option>
-                    <option value="AXIS">Axis</option>
-                    <option value="SOFTWARE">Software</option>
-                    <option value="RUNRATE">Runrate</option>
-                    <option value="PÓLIZA">Poliza</option>
-                    <option value="CISCO">Cisco</option>
-                    <option value="SERVICIO">Servicio</option>
+                    {% for v, e in CATALOGO_PRODUCTOS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                 </select>
             </div>
             <button id="clienteOppClearFilters" class="wco-btn-clear">Limpiar</button>

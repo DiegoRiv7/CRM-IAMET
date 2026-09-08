@@ -601,17 +601,8 @@ sin tocar la etapa (antes ambos hacían lo mismo y no se sabía cuál era cuál)
                         <div>
                             <label class="wco-lbl" for="wcoProducto">Producto</label>
                             <select id="wcoProducto" class="wco-sel">
-                                <option value="ZEBRA">Zebra</option>
-                                <option value="PANDUIT">Panduit</option>
-                                <option value="APC">APC</option>
-                                <option value="AVIGILION">Avigilon</option>
-                                <option value="GENETEC">Genetec</option>
-                                <option value="AXIS">Axis</option>
-                                <option value="SOFTWARE">Software</option>
-                                <option value="RUNRATE">Runrate</option>
-                                <option value="PÓLIZA">Póliza</option>
-                                <option value="CISCO">Cisco</option>
-                                <option value="SERVICIO">Servicio</option>
+                                {% for v, e in CATALOGO_PRODUCTOS %}<option value="{{ v }}">{{ e }}</option>{% endfor %}
+
                             </select>
                         </div>
                         <div>

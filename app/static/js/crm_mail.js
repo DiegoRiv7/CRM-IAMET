@@ -1494,7 +1494,7 @@
                 if (smtpSrv) smtpSrv.value = 'mail.iamet.mx';
                 if (smtpPort) smtpPort.value = '465';
                 if (!noClear && emailInput && !emailInput.value.includes('@iamet.mx')) emailInput.value = '';
-                if (emailInput && !emailInput.value) emailInput.placeholder = 'tu@iamet.mx';
+                if (emailInput && !emailInput.value) emailInput.placeholder = (window._CRM_EMPRESA && window._CRM_EMPRESA.placeholderCorreo) || 'tu@empresa.com';
             } else if (type === 'bajanet') {
                 // UI
                 if (btnBajanet) { btnBajanet.style.border = '1px solid #007AFF'; btnBajanet.style.background = 'rgba(0,122,255,0.1)'; btnBajanet.style.color = '#007AFF'; }

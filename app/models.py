@@ -390,12 +390,14 @@ class TodoItem(models.Model):
         related_name='oportunidades', 
         verbose_name="Contacto del Cliente"
     )
-    producto = models.CharField(max_length=100, choices=PRODUCTO_CHOICES, verbose_name="Producto / Servicio", default='ZEBRA')
+    # MULTIEMPRESA: sin `choices` fijos — las opciones vienen de OpcionCatalogo
+    # (tipo 'producto'); PRODUCTO_CHOICES queda solo como semilla/respaldo.
+    producto = models.CharField(max_length=100, verbose_name="Producto / Servicio", default='', blank=True)
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de la Oportunidad", default=Decimal('0.00'))
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)", default=5)
     mes_cierre = models.CharField(max_length=50, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado", default='01')
     anio_cierre = models.IntegerField(verbose_name="Año de Cierre", default=2025)
-    area = models.CharField(max_length=50, choices=AREA_CHOICES, verbose_name="Área")
+    area = models.CharField(max_length=50, verbose_name="Área", blank=True, default='')
     tipo_negociacion = models.CharField(max_length=20, choices=TIPO_NEGOCIACION_CHOICES, verbose_name="Tipo de Negociación", default='runrate')
     etapa_corta = models.CharField(max_length=50, blank=True, null=True, verbose_name="Etapa (Corta)")
     etapa_completa = models.CharField(max_length=200, blank=True, null=True, verbose_name="Etapa (Completa)")
@@ -445,6 +447,22 @@ class TodoItem(models.Model):
         verbose_name_plural = "Oportunidades de Venta"
         ordering = ['-fecha_creacion'] # Ordena por fecha de creación descendente
 
+    # ── MULTIEMPRESA: etiquetas desde el catálogo editable ──────────────
+    def get_producto_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('producto', self.producto)
+
+    def get_area_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('area', self.area)
+
+    def save(self, *args, **kwargs):
+        # Producto por defecto de la empresa (antes era 'ZEBRA' fijo en el modelo).
+        if not self.producto:
+            from .empresa import valor_default_catalogo
+            self.producto = valor_default_catalogo('producto')
+        super().save(*args, **kwargs)
+
     def __str__(self):
         """
         Representación en cadena del objeto TodoItem.
@@ -456,12 +474,16 @@ class ProductoOportunidad(models.Model):
     oportunidad = models.ForeignKey(
         TodoItem, on_delete=models.CASCADE, related_name='productos_adicionales'
     )
-    producto = models.CharField(max_length=100, choices=TodoItem.PRODUCTO_CHOICES)
+    producto = models.CharField(max_length=100)  # valor del catálogo 'producto'
     notas = models.CharField(max_length=255, blank=True, default='')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['id']
+
+    def get_producto_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('producto', self.producto)
 
     def __str__(self):
         return f"{self.oportunidad} – {self.producto}"
@@ -632,7 +654,7 @@ class DetalleCotizacion(models.Model):
     descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento (%)")
     precio_con_descuento = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Precio con Descuento")
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total por Ítem")
-    marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca")
+    marca = models.CharField(max_length=50, blank=True, null=True, verbose_name="Marca")  # catálogo 'marca'
     no_parte = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número de Parte")
     orden = models.PositiveIntegerField(default=0, verbose_name="Orden") # Nuevo campo para el orden
     
@@ -676,6 +698,10 @@ class DetalleCotizacion(models.Model):
         verbose_name_plural = "Detalles de Cotización"
         # Puedes añadir un unique_together si un producto no debe repetirse en la misma cotización
         # unique_together = (('cotizacion', 'nombre_producto'),)
+
+    def get_marca_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('marca', self.marca or '')
 
     def get_total_item(self):
         """Calcula el total para este ítem de la cotización aplicando el descuento y redondeando a 2 decimales."""
@@ -4520,8 +4546,8 @@ class Prospecto(models.Model):
     nombre = models.CharField(max_length=200, verbose_name="Nombre del Prospecto")
     cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='prospectos')
     contacto = models.ForeignKey('Contacto', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospectos')
-    producto = models.CharField(max_length=100, choices=TodoItem.PRODUCTO_CHOICES, default='ZEBRA')
-    area = models.CharField(max_length=50, choices=TodoItem.AREA_CHOICES, default='SISTEMAS')
+    producto = models.CharField(max_length=100, default='', blank=True)  # catálogo 'producto'
+    area = models.CharField(max_length=50, default='', blank=True)      # catálogo 'area'
     tipo_pipeline = models.CharField(max_length=20, choices=TIPO_PIPELINE_CHOICES, default='runrate', verbose_name="Pipeline (Runrate/Proyecto)")
     comentarios = models.TextField(blank=True, default='')
     etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, default='identificado')
@@ -4541,6 +4567,23 @@ class Prospecto(models.Model):
         verbose_name = "Prospecto"
         verbose_name_plural = "Prospectos"
         ordering = ['-fecha_actualizacion']
+
+    # ── MULTIEMPRESA: etiquetas y defaults desde el catálogo editable ──
+    def get_producto_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('producto', self.producto)
+
+    def get_area_display(self):
+        from .empresa import etiqueta_catalogo
+        return etiqueta_catalogo('area', self.area)
+
+    def save(self, *args, **kwargs):
+        from .empresa import valor_default_catalogo
+        if not self.producto:
+            self.producto = valor_default_catalogo('producto')
+        if not self.area:
+            self.area = valor_default_catalogo('area')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -7112,3 +7155,150 @@ class LeadWeb(models.Model):
 
     def __str__(self):
         return f'{self.empresa or self.email or "Lead"} ({self.get_fuente_display()})'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# MULTIEMPRESA (Fase 1 — 2026-09-07). Ver PLAN_MULTIEMPRESA.md.
+# Cada empresa corre en su propia base de datos, así que la identidad de
+# la empresa es un singleton y los catálogos son tablas editables (antes
+# eran listas fijas con las marcas de IAMET escritas en el código).
+# ══════════════════════════════════════════════════════════════════════
+class EmpresaConfig(models.Model):
+    """Identidad, datos fiscales y módulos activos de la empresa dueña de
+    ESTA instancia. Singleton (pk=1). Se edita desde Administración →
+    Empresa. Los helpers cacheados viven en app/empresa.py."""
+    slug = models.SlugField(
+        max_length=40, default='empresa',
+        help_text='Identificador corto de la instancia (sin espacios). "iamet" = la instancia de IAMET.'
+    )
+    nombre = models.CharField(max_length=120, default='Mi Empresa', verbose_name='Nombre de la empresa')
+    nombre_corto = models.CharField(
+        max_length=40, blank=True, default='',
+        help_text='Cómo se muestra en el menú lateral (si se deja vacío se usa el nombre).'
+    )
+    razon_social = models.CharField(max_length=200, blank=True, default='')
+    direccion = models.CharField(max_length=255, blank=True, default='')
+    telefono = models.CharField(max_length=40, blank=True, default='')
+    correo_contacto = models.EmailField(blank=True, default='', help_text='Aparece en cotizaciones y documentos.')
+    correo_ventas = models.EmailField(blank=True, default='', help_text='Remitente/firma por defecto del área de ventas.')
+    sitio_web = models.URLField(blank=True, default='')
+    dominio_correo = models.CharField(
+        max_length=80, blank=True, default='',
+        help_text='Dominio de los correos del equipo, p. ej. "iamet.mx" (solo para ejemplos/placeholders).'
+    )
+    logo = models.ImageField(upload_to='empresa/', null=True, blank=True)
+    color_primario = models.CharField(max_length=7, default='#2C5080')
+    color_secundario = models.CharField(max_length=7, default='#4A6E9C')
+    moneda = models.CharField(max_length=3, default='MXN')
+    zona_horaria = models.CharField(max_length=60, default='America/Tijuana')
+
+    # ── Módulos activables por empresa ──────────────────────────────
+    # Los defaults son los de una empresa NUEVA (todo lo "muy IAMET" apagado).
+    # La migración 0224 enciende los de IAMET en las bases que ya existen.
+    mod_asistente_ia = models.BooleanField(default=True, verbose_name='Asistente con IA (Mi día)')
+    mod_muro = models.BooleanField(default=True, verbose_name='Muro empresarial')
+    mod_ideas = models.BooleanField(default=False, verbose_name='Ideas')
+    mod_marketing_hub = models.BooleanField(default=False, verbose_name='Marketing Hub')
+    mod_chat_web = models.BooleanField(default=False, verbose_name='Chat Web del sitio')
+    mod_leads_web = models.BooleanField(default=False, verbose_name='Leads del sitio web')
+    mod_sso_tienda = models.BooleanField(default=False, verbose_name='Acceso al panel de la Tienda')
+    mod_proyectos_iamet = models.BooleanField(default=False, verbose_name='Proyectos IAMET (levantamientos, volumetría)')
+    mod_intercambio_navidad = models.BooleanField(default=False, verbose_name='Intercambio navideño')
+    mod_fondo_mundial = models.BooleanField(default=False, verbose_name='Fondo del Mundial')
+    mod_temas_temporada = models.BooleanField(default=False, verbose_name='Temas de temporada')
+    mod_bitrix = models.BooleanField(default=False, verbose_name='Integración Bitrix24')
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    MODULOS = (
+        'asistente_ia', 'muro', 'ideas', 'marketing_hub', 'chat_web', 'leads_web',
+        'sso_tienda', 'proyectos_iamet', 'intercambio_navidad', 'fondo_mundial',
+        'temas_temporada', 'bitrix',
+    )
+
+    class Meta:
+        verbose_name = 'Configuración de la Empresa'
+        verbose_name_plural = 'Configuración de la Empresa'
+
+    def __str__(self):
+        return self.nombre
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    # ── Propiedades para plantillas ──────────────────────────────────
+    @property
+    def es_iamet(self):
+        return self.slug == 'iamet'
+
+    @property
+    def nombre_visible(self):
+        return self.nombre_corto or self.nombre
+
+    @property
+    def titulo(self):
+        """Título del producto: "CRM IAMET" para IAMET, "IAMET · Empresa" para clientes."""
+        return 'CRM IAMET' if self.es_iamet else f'IAMET · {self.nombre}'
+
+    @property
+    def logo_url(self):
+        if self.logo:
+            try:
+                return self.logo.url
+            except Exception:
+                pass
+        if self.es_iamet:
+            from django.templatetags.static import static
+            return static('images/iamet-logo.png')
+        return ''
+
+    @property
+    def iniciales(self):
+        partes = [p for p in (self.nombre_visible or '').split() if p]
+        return ''.join(p[0] for p in partes[:2]).upper() or 'CR'
+
+    @property
+    def placeholder_correo(self):
+        return f'tu@{self.dominio_correo}' if self.dominio_correo else 'tu@empresa.com'
+
+    def modulos(self):
+        return {m: bool(getattr(self, f'mod_{m}', False)) for m in self.MODULOS}
+
+
+class OpcionCatalogo(models.Model):
+    """Opción editable de un catálogo (producto / área / marca). Sustituye a
+    las listas fijas PRODUCTO_CHOICES, AREA_CHOICES y MARCA_CHOICES."""
+    TIPO_CHOICES = [
+        ('producto', 'Producto / Servicio'),
+        ('area', 'Área del cliente'),
+        ('marca', 'Marca (partidas de cotización)'),
+    ]
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
+    valor = models.CharField(max_length=100, help_text='Clave que se guarda en los registros (p. ej. ZEBRA).')
+    etiqueta = models.CharField(max_length=120, help_text='Texto que ve el usuario.')
+    etiqueta_corta = models.CharField(max_length=20, blank=True, default='', help_text='Cabecera de columna en la tabla del CRM.')
+    alias = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='Otros valores ya guardados que cuentan como esta opción, separados por coma (p. ej. AVIGILION).'
+    )
+    es_columna = models.BooleanField(default=False, help_text='Producto: tiene columna propia en la tabla del CRM.')
+    es_default = models.BooleanField(default=False, help_text='Valor que se usa cuando no se captura ninguno.')
+    color = models.CharField(max_length=7, blank=True, default='')
+    orden = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = [('tipo', 'valor')]
+        ordering = ['tipo', 'orden', 'etiqueta']
+        verbose_name = 'Opción de catálogo'
+        verbose_name_plural = 'Catálogos'
+
+    def __str__(self):
+        return f'{self.get_tipo_display()}: {self.etiqueta}'
+
+    @property
+    def valores(self):
+        """Clave principal + alias (mayúsculas) — para comparar registros viejos."""
+        vals = [self.valor] + [a.strip() for a in self.alias.split(',') if a.strip()]
+        return [v for v in vals if v]

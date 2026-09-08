@@ -14,6 +14,15 @@ var _CRM_CONFIG = {
     esIngeniero:      "{{ es_ingeniero|yesno:'true,false' }}" === "true",
     etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
+/* MULTIEMPRESA: identidad de la empresa (EmpresaConfig) para el JS. */
+var _CRM_EMPRESA = {
+    slug:              '{{ EMPRESA.slug|escapejs }}',
+    nombre:            '{{ EMPRESA.nombre|escapejs }}',
+    nombreVisible:     '{{ EMPRESA.nombre_visible|escapejs }}',
+    titulo:            '{{ EMPRESA.titulo|escapejs }}',
+    placeholderCorreo: '{{ EMPRESA.placeholder_correo|escapejs }}',
+    modulos:           {{ MODULOS_JSON|safe }}
+};
 </script>
 {% comment %}
 data-turbo-eval="false" en scripts que registran globals + listeners.
@@ -33,7 +42,7 @@ forzar full reload al volver al CRM evita estados parciales raros.
 <script src="{% static 'js/widget_data_bus.js' %}?v=20260603-data-bus-v1" data-turbo-eval="false"></script>
 <script src="{% static 'js/widget_url_sync.js' %}?v=20260603-url-sync-v1" data-turbo-eval="false"></script>
 <script src="{% static 'js/widget_window.js' %}?v=20260615-ww-max3" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_main.js' %}?v=20260804-tarea-v4" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_main.js' %}?v=20260907-multiempresa" data-turbo-eval="false"></script>
 {% comment %}
 oportunidad_widget_v2.js DEBE cargar DESPUÉS de crm_main.js: reasigna
 window.openDetalle (takeover del widget instanciable, Refactor Etapa 1).

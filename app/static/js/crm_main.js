@@ -6185,7 +6185,9 @@
                 }
 
                 // Productos: cols 3+ check for amounts > 0
-                var prodNames = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'OTROS'];
+                // MULTIEMPRESA: las columnas de producto salen del catálogo (th[data-producto]).
+                var prodNames = Array.prototype.map.call(document.querySelectorAll('#crmViewTable th.crm-th-producto'), function (th) { return th.dataset.producto; });
+                if (!prodNames.length) prodNames = ['OTROS'];
                 for (var i = 3; i < cells.length - 2 && i - 3 < prodNames.length; i++) {
                     var val = cells[i].textContent.replace(/[$,\s]/g, '');
                     if (parseFloat(val) > 0) {

@@ -11,6 +11,7 @@
 # al sitio de pruebas que corre junto a este CRM.
 # ----------------------------------------------------------------------
 
+from .empresa import modulo_activo
 import json
 import logging
 import os
@@ -68,6 +69,7 @@ def _get_sitio(path, params=None):
         return None, 'No se pudo contactar al sitio web.'
 
 
+@modulo_activo('chat_web')
 @login_required
 def chat_web(request):
     """Página de la bandeja (la lista y la conversación cargan por fetch)."""
@@ -86,6 +88,7 @@ def chat_web(request):
     })
 
 
+@modulo_activo('chat_web')
 @login_required
 def chat_web_threads(request):
     if not _tiene_permiso(request.user):
@@ -96,6 +99,7 @@ def chat_web_threads(request):
     return JsonResponse(data)
 
 
+@modulo_activo('chat_web')
 @login_required
 def chat_web_messages(request):
     if not _tiene_permiso(request.user):
@@ -109,6 +113,7 @@ def chat_web_messages(request):
     return JsonResponse(data)
 
 
+@modulo_activo('chat_web')
 @login_required
 def chat_web_account(request):
     if not _tiene_permiso(request.user):
@@ -137,6 +142,7 @@ def chat_web_account(request):
     return JsonResponse(data)
 
 
+@modulo_activo('chat_web')
 @login_required
 @require_POST
 def chat_web_upload(request):
@@ -182,6 +188,7 @@ def chat_web_upload(request):
         return JsonResponse({'error': 'No se pudo contactar al sitio web.'}, status=502)
 
 
+@modulo_activo('chat_web')
 @login_required
 @require_POST
 def chat_web_reply(request):

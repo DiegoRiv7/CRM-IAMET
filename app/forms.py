@@ -1,10 +1,27 @@
 from django import forms
+from .empresa import choices_catalogo
 from django.db.models import Q
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, Contacto, CatalogoCableado, CableadoNodoRed # Importa Contacto
 from django.contrib.auth.models import User
 from .models import UserProfile # Import UserProfile
 from datetime import date
 
+
+
+def _catalogos_en_form(form):
+    """MULTIEMPRESA: los campos producto/área/marca de los ModelForms ya no
+    tienen `choices` en el modelo; aquí se vuelven <select> con el catálogo
+    editable de la empresa (conservando el widget/atributos declarados)."""
+    for campo, tipo in (('producto', 'producto'), ('area', 'area'), ('marca', 'marca')):
+        if campo in form.fields:
+            viejo = form.fields[campo]
+            attrs = getattr(viejo.widget, 'attrs', {}) or {}
+            vacio = '' if viejo.required else '— Sin especificar —'
+            form.fields[campo] = forms.ChoiceField(
+                choices=choices_catalogo(tipo, incluir_vacio=(None if viejo.required else vacio)),
+                required=viejo.required, label=viejo.label,
+                widget=forms.Select(attrs=attrs),
+            )
 
 class ClienteForm(forms.ModelForm):
     class Meta:
@@ -16,6 +33,10 @@ class OportunidadModalForm(forms.ModelForm):
     class Meta:
         model = TodoItem
         fields = ['area', 'producto', 'probabilidad_cierre', 'mes_cierre', 'monto']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _catalogos_en_form(self)
 
 
 class VentaForm(forms.ModelForm):
@@ -68,6 +89,7 @@ class VentaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        _catalogos_en_form(self)
 
         if 'cliente' in self.fields:
             del self.fields['cliente']
@@ -189,8 +211,8 @@ class VentaFilterForm(forms.Form):
     """
     Formulario para filtrar oportunidades de venta.
     """
-    AREA_CHOICES = [('', 'Todas las Áreas')] + list(TodoItem.AREA_CHOICES)
-    PRODUCTO_CHOICES = [('', 'Todos los Productos')] + list(TodoItem.PRODUCTO_CHOICES)
+    AREA_CHOICES = [('', 'Todas las Áreas')]        # se llenan en __init__ (catálogo)
+    PRODUCTO_CHOICES = [('', 'Todos los Productos')]
     MES_CHOICES = [('', 'Todos los Meses')] + list(TodoItem.MES_CHOICES)
     TIPO_NEGOCIACION_CHOICES = [('', 'Todos los Tipos')] + list(TodoItem.TIPO_NEGOCIACION_CHOICES)
     ETAPA_CHOICES = [
@@ -219,6 +241,8 @@ class VentaFilterForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['area'].choices = choices_catalogo('area', incluir_vacio='Todas las Áreas')
+        self.fields['producto'].choices = choices_catalogo('producto', incluir_vacio='Todos los Productos')
         # Añadir clases de Tailwind a todos los campos
         for field_name, field in self.fields.items():
             if isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Textarea, forms.Select, forms.DateInput)):
@@ -281,18 +305,8 @@ class DetalleCotizacionForm(forms.ModelForm):
     """
     Formulario para cada línea de producto/servicio en una cotización.
     """
-    MARCA_CHOICES = [
-        ('', 'Seleccionar Marca'),
-        ('ZEBRA', 'ZEBRA'),
-        ('PANDUIT', 'PANDUIT'),
-        ('APC', 'APC'),
-        ('AVIGILION', 'AVIGILION'),
-        ('GENETEC', 'GENETEC'),
-        ('AXIS', 'AXIS'),
-        ('CISCO', 'CISCO'),
-    ]
-
-    marca = forms.ChoiceField(choices=MARCA_CHOICES, required=False, widget=forms.Select(attrs={'class': 'input-field'}))
+    # MULTIEMPRESA: las marcas vienen del catálogo (se cargan en __init__).
+    marca = forms.ChoiceField(choices=[('', 'Seleccionar Marca')], required=False, widget=forms.Select(attrs={'class': 'input-field'}))
 
     class Meta:
         model = DetalleCotizacion
@@ -313,6 +327,9 @@ class DetalleCotizacionForm(forms.ModelForm):
             'marca': 'Marca',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['marca'].choices = choices_catalogo('marca', incluir_vacio='Seleccionar Marca')
 
 class NuevaOportunidadForm(forms.ModelForm):
     """
@@ -407,6 +424,7 @@ class NuevaOportunidadForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        _catalogos_en_form(self)
         
         # Configurar mes de cierre automático (mes actual + 1)
         if not self.initial.get('mes_cierre'):
