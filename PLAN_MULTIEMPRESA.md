@@ -1,6 +1,6 @@
 # PLAN MULTIEMPRESA — CRM IAMET como producto para otras empresas
 
-**Fecha del plan:** 2026-09-07 · **Estado:** aprobado, sin arrancar
+**Fecha del plan:** 2026-09-07 · **Estado:** Fase 1 HECHA y desplegada en pruebas (2026-09-07); sigue Fase 2
 **Responsable:** Jafet · **Ejecuta:** Jafet + agentes Claude (rama `pruebas`)
 **Documento para jefes:** `reports/Plan_CRM_Multiempresa_07_Septiembre_2026.html`
 
@@ -64,7 +64,33 @@ empresa solo cabrían 2. La imagen se construye **una sola vez** (build acotado
 
 ## 3. Fases
 
-### Fase 1 — Preparar el CRM para cualquier empresa (2 días · días 1–2)
+### Fase 1 — Preparar el CRM para cualquier empresa (2 días · días 1–2) — ✅ HECHA 2026-09-07
+
+**Entregado (commits b31e41d1, 30d5eb2b, cdf9857b en `pruebas`; desplegado por parche
+en crm-pruebas, migración 0224 aplicada):** `EmpresaConfig` + `OpcionCatalogo` +
+`app/empresa.py` + context processor (`EMPRESA`, `MODULOS`, `CATALOGO_*`,
+`COLUMNAS_PRODUCTO`); marca fuera del código (login, sidebar, títulos, PDF, PWA,
+placeholders); catálogos editables en selects/filtros/forms/reportes/export y tabla
+del CRM con columnas por producto; módulos apagables (chat web, leads web, SSO
+tienda, marketing hub, ideas, muro, navidad, fondo mundial) con 404 en vistas;
+Administración → Empresa ("Datos y módulos" + "Catálogos"); `seed_empresa`.
+Verificado en pruebas: IAMET idéntico (10 columnas, logo, módulos) y prueba "Acme"
+sin rastros de IAMET, módulos apagados → 404, config revertida.
+
+**Pendientes menores de la Fase 1 (no bloquean la demo):**
+- `importar_oportunidades.html` (pegado desde Excel) sigue con cabeceras ZEBRA/PANDUIT
+  fijas; `gestion_productos.html` (`marcasValidas`), chips de marca en
+  `_widget_evento_form.html` / `_widget_campana.html` (módulos de IAMET).
+- `mod_proyectos_iamet`, `mod_temas_temporada`, `mod_intercambio_navidad` (sidebar),
+  `mod_bitrix`: la bandera existe pero aún no oculta nada en la UI (navidad/fondo
+  mundial sí devuelven 404). Colores de la empresa guardados pero todavía no se aplican
+  al tema.
+- `AsistenteConfig.nombre` ("IAMET AI") lo cambia `seed_empresa`; en el panel del
+  asistente el nombre viene de ahí.
+- El Action de deploy sigue sin autenticar: se desplegó por parche (árbol del server
+  con cambios sin commitear = commits b31e41d1..cdf9857b). Respaldo de los parches
+  previos: `/home/iamet2026/server_parches_20260907.diff`.
+
 
 Sacar de código todo lo que hoy es IAMET y volverlo configuración por empresa.
 Inventario medido: **1,124 menciones a "iamet" en 123 archivos**; las visibles
