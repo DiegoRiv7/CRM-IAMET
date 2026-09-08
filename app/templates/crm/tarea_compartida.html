@@ -11,9 +11,9 @@
          Forzamos https:// en og:url / og:image porque request.scheme detrás del
          proxy nginx puede devolver http y los crawlers descartan imágenes inseguras. -->
     <meta property="og:title" content="{{ tarea.titulo }}">
-    <meta property="og:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% if responsable_nombre %} · Asignada a {{ responsable_nombre }}{% endif %}{% if tarea.fecha_limite %} · Vence {{ tarea.fecha_limite|date:'d M, H:i' }}{% endif %}{% endif %}">
+    <meta property="og:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea {{ EMPRESA.titulo }}{% if responsable_nombre %} · Asignada a {{ responsable_nombre }}{% endif %}{% if tarea.fecha_limite %} · Vence {{ tarea.fecha_limite|date:'d M, H:i' }}{% endif %}{% endif %}">
     <meta property="og:type" content="article">
-    <meta property="og:site_name" content="CRM IAMET">
+    <meta property="og:site_name" content="{{ EMPRESA.titulo }}">
     <meta property="og:url" content="https://{{ request.get_host }}{{ request.path }}">
     <meta property="og:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
     <meta property="og:image:width" content="1200">
@@ -22,7 +22,7 @@
     <meta property="og:image:alt" content="{{ tarea.titulo }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ tarea.titulo }}">
-    <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
+    <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea {{ EMPRESA.titulo }}{% endif %}">
     <meta name="twitter:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
 
     {% comment %}

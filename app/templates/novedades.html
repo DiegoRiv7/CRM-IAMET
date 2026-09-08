@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Novedades — CRM IAMET{% endblock %}
+{% block title %}Novedades — {{ EMPRESA.titulo }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -297,7 +297,7 @@ body { background:#F5F5F7 !important; }
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
         </div>
-        <div class="nov-hero-eyebrow">CRM IAMET</div>
+        <div class="nov-hero-eyebrow">{{ EMPRESA.titulo }}</div>
         <h1 class="nov-hero-title">Novedades</h1>
         <p class="nov-hero-sub">Historial completo de cambios, mejoras y correcciones del sistema.</p>
         <div class="nov-chip" id="novChip">
