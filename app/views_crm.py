@@ -69,6 +69,21 @@ def _get_etapas_pipeline_json():
     return _json.dumps(result, ensure_ascii=False)
 
 
+def _cotizado_total_mxn(cot_qs):
+    """Suma cot.total normalizando USD→MXN.
+
+    Las cotizaciones guardan subtotal/total EN SU MONEDA cruda (por defecto USD),
+    así que sumarlas directo mezcla pesos y dólares y subestima. Aquí los montos
+    en USD se convierten con el mismo tipo de cambio que usan las oportunidades.
+    """
+    from .views_cotizaciones import get_tipo_cambio_usd_mxn
+    _z = Value(Decimal('0'), output_field=models.DecimalField(max_digits=14, decimal_places=2))
+    usd = cot_qs.filter(moneda__iexact='USD').aggregate(t=Coalesce(Sum('total'), _z))['t'] or Decimal('0')
+    otros = cot_qs.exclude(moneda__iexact='USD').aggregate(t=Coalesce(Sum('total'), _z))['t'] or Decimal('0')
+    tc = Decimal(str(get_tipo_cambio_usd_mxn()))
+    return otros + (usd * tc)
+
+
 @login_required
 def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
@@ -594,7 +609,7 @@ def crm_home(request):
     if tab_activo == 'cotizado':
         num_cotizaciones = cotizaciones_qs.count()
         num_oportunidades_cotizadas = cotizaciones_qs.exclude(oportunidad__isnull=True).values('oportunidad').distinct().count()
-        total_cotizado = cotizaciones_qs.aggregate(t=Coalesce(Sum('total'), Value(Decimal('0'))))['t']
+        total_cotizado = _cotizado_total_mxn(cotizaciones_qs)
 
     # ── Widget Logic ──
     widget_label = 'Total Facturado'
@@ -1758,7 +1773,7 @@ def api_crm_table_data(request):
             })
         num_cotizaciones = cotizaciones_qs.count()
         num_oportunidades_cotizadas = cotizaciones_qs.exclude(oportunidad__isnull=True).values('oportunidad').distinct().count()
-        total_cotizado = cotizaciones_qs.aggregate(t=Coalesce(Sum('total'), Value(Decimal('0'))))['t']
+        total_cotizado = _cotizado_total_mxn(cotizaciones_qs)
         api_progreso_cot = int((total_cotizado / api_meta * 100)) if api_meta > 0 else 0
         return JsonResponse({
             'tab': 'cotizado',
@@ -2217,6 +2232,9 @@ def api_crm_table_data(request):
             total_by_id = {}
             count_by_id = {}
             prod_dict_raw = {}
+            # Tipo de cambio para normalizar cotizaciones en USD a MXN (cacheado 1h).
+            from .views_cotizaciones import get_tipo_cambio_usd_mxn
+            _tc_cot = Decimal(str(get_tipo_cambio_usd_mxn()))
             PRODS = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA']
             PROD_KEYS = ['zebra', 'panduit', 'apc', 'avigilon', 'genetec', 'axis', 'software', 'runrate', 'poliza']
             for cot in cot_qs:
@@ -2224,6 +2242,8 @@ def api_crm_table_data(request):
                     continue
                 cid = cot.cliente_id
                 t = cot.total or Decimal('0')
+                if (cot.moneda or '').upper() == 'USD':
+                    t = t * _tc_cot   # USD → MXN
                 total_by_id[cid] = total_by_id.get(cid, Decimal('0')) + t
                 count_by_id[cid] = count_by_id.get(cid, 0) + 1
                 prod = (cot.oportunidad.producto if cot.oportunidad else '') or ''
@@ -2257,7 +2277,7 @@ def api_crm_table_data(request):
                         Q(oportunidad_id__in=_prev_opp_ids) |
                         Q(oportunidad__isnull=True, fecha_creacion__year=_pa, fecha_creacion__month=int(_pm))
                     )
-                    _prev_sum = _prev_cot_qs.aggregate(t=Coalesce(Sum('total'), _zero))['t'] or _zero
+                    _prev_sum = _cotizado_total_mxn(_prev_cot_qs)
                 except Exception:
                     pass
         elif vista == 'prospeccion':
