@@ -2000,7 +2000,10 @@ window.loadEmpresa = function(){
     h += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">';
     h += '<div id="empLogoPrev" style="width:64px;height:64px;border-radius:12px;background:#F2F2F7;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
        + (e.logo_url ? '<img src="'+_esc(e.logo_url)+'" style="max-width:100%;max-height:100%;object-fit:contain;">' : '<span style="font-weight:800;color:#8E8E93;">'+_esc((e.nombre_corto||e.nombre||'CR').split(' ').map(function(p){return p[0]||'';}).join('').slice(0,2).toUpperCase())+'</span>')+'</div>';
-    h += '<input type="file" id="emp_logo" accept="image/*" class="admin-input" style="max-width:280px;">';
+    /* input[type=file] va oculto (el CSS global lo esconde): botón visible que lo dispara + nombre del archivo */
+    h += '<input type="file" id="emp_logo" accept="image/*" style="display:none;" onchange="admEmpresaLogoElegido(this)">';
+    h += '<button type="button" class="admin-btn admin-btn-primary" onclick="document.getElementById(\'emp_logo\').click()">Elegir logo…</button>';
+    h += '<span id="empLogoNombre" class="admin-help" style="margin:0;"></span>';
     if(e.tiene_logo) h += '<button class="admin-btn" onclick="admQuitarLogoEmpresa()">Quitar logo</button>';
     h += '<span class="admin-help" style="margin:0;">PNG o SVG con fondo transparente, m&aacute;ximo 2 MB.</span></div>';
     /* Módulos */
@@ -2033,6 +2036,12 @@ window.admGuardarEmpresa = function(){
     if(res.ok){ _showAdminToast('Empresa actualizada. Recarga la página para ver el menú.'); loadEmpresa(); }
     else _showAdminToast(res.error||'Error', false);
   }).catch(function(){ _showAdminToast('Error de red', false); });
+};
+
+window.admEmpresaLogoElegido = function(inp){
+  var f = inp.files && inp.files[0]; var lbl = document.getElementById('empLogoNombre'); if(!f){ if(lbl) lbl.textContent=''; return; }
+  if(lbl) lbl.textContent = f.name + ' — pulsa "Guardar cambios"';
+  var prev = document.getElementById('empLogoPrev'); if(prev){ var rd = new FileReader(); rd.onload = function(e){ prev.innerHTML = '<img src="'+e.target.result+'" style="max-width:100%;max-height:100%;object-fit:contain;">'; }; rd.readAsDataURL(f); }
 };
 
 window.admQuitarLogoEmpresa = function(){
