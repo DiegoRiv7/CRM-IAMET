@@ -155,7 +155,7 @@ SEG=$(( $(date +%s) - INICIO ))
 echo
 printf '\033[1;32m══════ Empresa "%s" lista en %d s ══════\033[0m\n' "$NOMBRE" "$SEG"
 echo "  slug:          $SLUG"
-echo "  URL por IP:    http://$IP_PUBLICA:$PUERTO/app/login/"
+echo "  Puerto local:  127.0.0.1:$PUERTO (solo vía nginx; el firewall no expone puertos altos)"
 echo "  URL nip.io:    http://$NIP/app/login/"
 [[ -n "$DOMINIO" ]] && echo "  URL dominio:   http$([[ $HTTPS -eq 1 ]] && echo s)://$DOMINIO/app/login/"
 echo "  Administrador: $ADMIN_EMAIL"
