@@ -1,6 +1,6 @@
 # PLAN MULTIEMPRESA — CRM IAMET como producto para otras empresas
 
-**Fecha del plan:** 2026-09-07 · **Estado:** Fases 1 y 2 HECHAS (2026-09-14); demo viva en `demo.82-223-44-29.nip.io`; sigue Fase 3
+**Fecha del plan:** 2026-09-07 · **Estado:** Fases 1, 2 y 3 HECHAS (2026-09-14); demo con datos en `https://demo.82-223-44-29.nip.io`; sigue Fase 4
 **Responsable:** Jafet · **Ejecuta:** Jafet + agentes Claude (rama `pruebas`)
 **Documento para jefes:** `reports/Plan_CRM_Multiempresa_07_Septiembre_2026.html`
 
@@ -201,7 +201,33 @@ parchado en cdf9857b (no se le llevaron 25315c0f..f1b9c13c; no afectan a IAMET).
 - Un usuario de la empresa A no puede conectarse a la base de la empresa B
   (probar con `mysql -u u_a` contra `crm_b`).
 
-### Fase 3 — Demostración lista (1 día · días 4–5)
+### Fase 3 — Demostración lista (1 día · días 4–5) — ✅ HECHA 2026-09-14
+
+**Entregado (commits b3953473..b4722acd):** `manage.py seed_demo` (4 usuarios por rol, 15
+clientes con contacto, 30 oportunidades en todas las etapas, conversación, 4 cotizaciones
+con partidas, 17 actividades, 2 proyectos, 6 tareas, 5 prospectos, 6 correos simulados
+analizados con IA; buzón simulado que el worker ignora; `--reset`; se niega en IAMET),
+etapas por defecto compatibles con el código (Pagado/Perdido), **HTTPS en la demo** (con
+`DJANGO_DEBUG=False` las cookies son Secure: sin HTTPS el login no funciona → `nueva_empresa.sh
+--https` también para nip.io, idempotente con certbot), guion `deploy/empresas/GUION_DEMO.md`.
+Rastros de IAMET eliminados: "IAMET AI" → AsistenteConfig.nombre, presets de correo, palma del
+login, "Participantes IAMET", Leads Web del panel admin, modo Instalaciones/Técnicos del
+calendario, comentarios internos. Selector de logo visible con vista previa (el input de
+archivo lo oculta el CSS global).
+
+**Verificado:** con navegador real (Brave headless + puppeteer) como Laura y Gerardo: login,
+home (toast de Mi día con IA), Mi día (recomendaciones + feed 5 correos / 2 opps), tabla por
+productos del catálogo, correo (6 en bandeja con chips de oportunidad), calendario,
+prospección, panel Empresa/Catálogos, subida de logo (se ve en sidebar y /media por nginx),
+PDF de cotización con datos de la empresa; consola limpia salvo `/favicon.ico`. Grep de
+"iamet" en el HTML de todas las pantallas: solo el prefijo "IAMET ·" y el nombre interno
+`proyectos_iamet` del JSON de módulos. Demo: `laura.mendoza` / `gerardo.ruiz`, contraseña
+`Demo2026*`.
+
+**Pendientes menores:** cabecera "Marca" de la columna producto (término de IAMET) en
+tablas/kanban; `/favicon.ico` en la raíz; el recordatorio de jornada aparece al entrar
+(es funcionalidad, no marca); el toggle Tabla/Kanban vive en el menú ☰.
+
 
 **Tareas**
 1. Comando `seed_demo`: empresa ficticia (p. ej. "Aceros del Norte", ya usada
