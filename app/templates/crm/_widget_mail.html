@@ -845,12 +845,12 @@
                 <div>
                     <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Contraseña</div>
                     <input type="password" class="wf-input" id="mailCfgPass" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
-                    <div id="mailCfgInfoBajanetPass" style="display:none;font-size:0.71rem;color:#6B7280;margin-top:3px;">Para Baja-Net: pega la Contraseña de Aplicación de 16 caracteres.</div>
+                    {% if EMPRESA.es_iamet %}<div id="mailCfgInfoBajanetPass" style="display:none;font-size:0.71rem;color:#6B7280;margin-top:3px;">Para Baja-Net: pega la Contraseña de Aplicación de 16 caracteres.</div>{% endif %}
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
                     <div>
                         <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Servidor IMAP</div>
-                        <input type="text" class="wf-input" id="mailCfgImapSrv" value="mail.iamet.mx" style="width:100%;box-sizing:border-box;">
+                        <input type="text" class="wf-input" id="mailCfgImapSrv" value="{% if EMPRESA.es_iamet %}mail.iamet.mx{% endif %}" style="width:100%;box-sizing:border-box;">
                     </div>
                     <div>
                         <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Puerto</div>
@@ -860,7 +860,7 @@
                 <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
                     <div>
                         <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Servidor SMTP</div>
-                        <input type="text" class="wf-input" id="mailCfgSmtpSrv" value="mail.iamet.mx" style="width:100%;box-sizing:border-box;">
+                        <input type="text" class="wf-input" id="mailCfgSmtpSrv" value="{% if EMPRESA.es_iamet %}mail.iamet.mx{% endif %}" style="width:100%;box-sizing:border-box;">
                     </div>
                     <div>
                         <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Puerto</div>
