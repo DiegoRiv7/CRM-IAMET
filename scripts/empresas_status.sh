@@ -9,7 +9,7 @@ python3 -c "import yaml;[print(e['slug'],'|',e['nombre'],'|',e['puerto'],'|',e.g
   slug="$(echo $slug)"; puerto="$(echo $puerto)"; imagen="$(echo $imagen)"; dominio="$(echo $dominio)"
   web="$(docker inspect -f '{{.State.Status}}' "crm-$slug-web" 2>/dev/null || echo '-')"
   ms="$(docker inspect -f '{{.State.Status}}' "crm-$slug-mailsync" 2>/dev/null || echo '-')"
-  migr='-'; [[ "$web" == "running" ]] && migr="$(docker exec "crm-$slug-web" python manage.py showmigrations --plan 2>/dev/null | grep -c '\[ \]' || echo '?')"
+  migr='-'; [[ "$web" == "running" ]] && { migr="$(docker exec "crm-$slug-web" python manage.py showmigrations --plan 2>/dev/null | grep -c '\[ \]' || true)"; [[ -z "$migr" ]] && migr='?'; }
   url="https://${dominio:-$slug.$(tr . - <<<"$IP_PUBLICA").nip.io}/app/login/"
   [[ "$(echo $activa)" == "no" ]] && web="(baja)"
   printf '%-12s %-26s %-6s %-24s %-9s %-9s %-5s %s\n' "$slug" "$(echo $nombre | cut -c1-26)" "$puerto" "${imagen#crm-producto:}" "$web" "$ms" "$migr" "$url"

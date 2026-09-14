@@ -1,6 +1,6 @@
 # PLAN MULTIEMPRESA — CRM IAMET como producto para otras empresas
 
-**Fecha del plan:** 2026-09-07 · **Estado:** Fases 1, 2 y 3 HECHAS (2026-09-14); demo con datos en `https://demo.82-223-44-29.nip.io`; sigue Fase 4
+**Fecha del plan:** 2026-09-07 · **Estado:** LAS 4 FASES HECHAS (2026-09-14). Demo con datos en `https://demo.82-223-44-29.nip.io`. Falta: tu revisión de la demo, y el merge a `principal` cuando lo ordenes
 **Responsable:** Jafet · **Ejecuta:** Jafet + agentes Claude (rama `pruebas`)
 **Documento para jefes:** `reports/Plan_CRM_Multiempresa_07_Septiembre_2026.html`
 
@@ -248,7 +248,26 @@ tablas/kanban; `/favicon.ico` en la raíz; el recordatorio de jornada aparece al
 **Criterio de hecho:** la demo se recorre de punta a punta sin mostrar datos ni
 marca de IAMET, y el alta en vivo tarda menos de 10 minutos.
 
-### Fase 4 — Operación, dos líneas de código y respaldos (½ día · día 5)
+### Fase 4 — Operación, dos líneas de código y respaldos (½ día · día 5) — ✅ HECHA 2026-09-14
+
+**Entregado (commit 655e7693 + ajuste):** rama **`producto`** creada y publicada (hoy =
+`pruebas` verificado; tras el merge del multiempresa a `principal` se avanza con
+`git merge --ff-only principal`); en el server el worktree `/home/iamet2026/crm-producto`
+está en la rama `producto`. `scripts/deploy_all.sh` (construye una vez y actualiza todas las
+empresas activas: IMAGEN en .env → up -d → espera → sin migraciones pendientes → inventario;
+rollback y alto si una falla; `--ref`, `--imagen`, `--solo`, `--continuar`).
+`scripts/backup_empresas.sh` (todas las bases crm_* + .env + media los domingos o `--media`,
+retención 14/60/30 días, núcleo `.env.core`+`empresas.yml`) en cron de root a las 03:30.
+`scripts/empresas_status.sh` (inventario vivo). README de operación actualizado.
+
+**Verificado:** deploy_all demo (36 s), alta prueba4 desde cero (63 s), deploy_all con dos
+empresas (5 s, ambas 200 y 0 migraciones pendientes), backup con archivos por empresa
+(db/media/env) y del núcleo, cron instalado, baja prueba4 con purga.
+
+**Pendiente humano:** autorizar la llave del server como Deploy key de solo lectura en
+GitHub (Settings → Deploy keys) y cambiar el remoto a SSH; mientras, el código viaja por
+bundle (README §"Cómo llega el código al servidor").
+
 
 **Tareas**
 1. **Rama `producto`** creada desde `principal`. Imagen `crm-producto:vN`
