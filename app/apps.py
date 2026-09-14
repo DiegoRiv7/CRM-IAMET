@@ -11,7 +11,7 @@ class AppConfig(AppConfig):
         # MULTIEMPRESA: invalidar el cache de EmpresaConfig/OpcionCatalogo al guardar.
         from django.db.models.signals import post_delete, post_save
         from .empresa import invalidar_cache
-        from .models import EmpresaConfig, OpcionCatalogo
-        for m in (EmpresaConfig, OpcionCatalogo):
+        from .models import AsistenteConfig, EmpresaConfig, OpcionCatalogo
+        for m in (EmpresaConfig, OpcionCatalogo, AsistenteConfig):
             post_save.connect(lambda **kw: invalidar_cache(), sender=m, weak=False)
             post_delete.connect(lambda **kw: invalidar_cache(), sender=m, weak=False)

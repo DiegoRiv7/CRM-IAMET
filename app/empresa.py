@@ -205,3 +205,16 @@ def valores_en_columnas():
     for c in columnas_producto():
         vals.update(c['valores'])
     return vals
+
+
+# ── Asistente ────────────────────────────────────────────────────────────
+def nombre_asistente():
+    """Nombre configurado del asistente (AsistenteConfig.nombre), cacheado."""
+    from .models import AsistenteConfig
+
+    def loader():
+        try:
+            return AsistenteConfig.get_singleton().nombre or 'Asistente'
+        except (OperationalError, ProgrammingError):
+            return 'Asistente'
+    return _get('asistente:nombre', loader)

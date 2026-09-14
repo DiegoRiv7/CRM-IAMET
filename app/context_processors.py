@@ -30,6 +30,7 @@ def supervisor_flag(request):
     # ── MULTIEMPRESA: identidad, módulos y catálogos de esta instancia ──
     from .empresa import (
         catalogo, choices_catalogo, columnas_producto, empresa_config, modulos,
+        nombre_asistente,
     )
     empresa = empresa_config()
     mods = modulos()
@@ -38,6 +39,7 @@ def supervisor_flag(request):
         'EMPRESA': empresa,
         'MODULOS': mods,
         'MODULOS_JSON': json.dumps(mods),
+        'ASISTENTE_NOMBRE': nombre_asistente(),
         'CATALOGO_PRODUCTOS': choices_catalogo('producto'),
         'CATALOGO_AREAS': choices_catalogo('area'),
         'CATALOGO_MARCAS': choices_catalogo('marca'),

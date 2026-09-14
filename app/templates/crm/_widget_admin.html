@@ -299,10 +299,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Oportunidades
         </button>
-        <button class="admin-nav-item" id="admNav-leadsweb" onclick="adminNavClick(this,'leadsweb')">
+        {% if MODULOS.leads_web %}<button class="admin-nav-item" id="admNav-leadsweb" onclick="adminNavClick(this,'leadsweb')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           Leads Web
-        </button>
+        </button>{% endif %}
         <p class="admin-section-label" style="margin-top:8px;">Acceso</p>
         <button class="admin-nav-item" id="admNav-permisos" onclick="adminNavClick(this,'permisos')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1545,7 +1545,7 @@ window._admPipelineDelete = function(nombre){
   });
 };
 
-/* ── Leads Web (página pública iamet.mx) ────────────── */
+/* ── Leads Web (página pública de la empresa) ────────── */
 window.loadLeadsWeb = function(){
   var ac = getAC();
   fetch('/app/api/admin/leads-web/', { credentials:'same-origin' })
@@ -1556,7 +1556,7 @@ window.loadLeadsWeb = function(){
     var h = '<div class="admin-card-inner">';
     h += '<div class="admin-content-header"><span class="admin-content-title">Leads de P&aacute;ginas Web</span>';
     h += '<button class="admin-btn admin-btn-primary" onclick="admLWNuevoSitio()">+ Agregar sitio</button></div>';
-    h += '<div style="font-size:0.78rem;color:#6E6E73;margin:-6px 0 14px;">Cada sitio conectado (iamet.mx, bajanet, ...) tiene su propio token y su responsable. Quien llena un formulario entra como prospecto en la etapa Identificado.</div>';
+    h += '<div style="font-size:0.78rem;color:#6E6E73;margin:-6px 0 14px;">Cada sitio conectado (sitio web, landing, ...) tiene su propio token y su responsable. Quien llena un formulario entra como prospecto en la etapa Identificado.</div>';
     h += '<div style="font-size:0.72rem;color:#8E8E93;margin-bottom:12px;">Endpoint com&uacute;n: <code style="background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:6px;">'+data.endpoint+'</code></div>';
 
     (data.sitios||[]).forEach(function(st){
