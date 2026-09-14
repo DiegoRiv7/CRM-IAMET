@@ -25,7 +25,7 @@ from django.utils import timezone
 
 from app.models import (
     Actividad, AsistenteEstado, Cliente, Contacto, Cotizacion, DetalleCotizacion,
-    EmpresaConfig, EtapaPipeline, MailCorreo, MensajeOportunidad, OpcionCatalogo,
+    EmpresaConfig, EtapaPipeline, MailConexion, MailCorreo, MensajeOportunidad, OpcionCatalogo,
     Prospecto, Proyecto, Tarea, TodoItem, UserProfile,
 )
 
@@ -66,20 +66,20 @@ OPORTUNIDADES = [
     ('Estructura metálica nave 3',              1, 1, 'proyecto', 'Cotizando',    'PROYECTO', 'Operaciones', 1250000, 40, 1),
     ('Suministro de perfiles IPR Q4',           0, 1, 'runrate',  'Enviada',      'PRODUCTO', 'Compras',      380000, 60, 0),
     ('Mantenimiento de grúas viajeras',         2, 2, 'runrate',  'Seguimiento',  'SERVICIO', 'Operaciones',  145000, 70, 0),
-    ('Software de control de inventario',       4, 3, 'runrate',  'Cotizando',    'SOFTWARE', 'Sistemas',     210000, 35, 1),
+    ('Software de control de inventario',       4, 3, 'runrate',  'Cotizando',    'SOFTWARE', 'Sistemas',     210000, 35, 0),
     ('Póliza de mantenimiento anual',           5, 2, 'runrate',  'Vendido c/PO', 'POLIZA',   'Dirección',     96000, 90, 0),
-    ('Racks para almacén de refacciones',       3, 1, 'runrate',  'En Solicitud', 'PRODUCTO', 'Compras',       68000, 15, 1),
+    ('Racks para almacén de refacciones',       3, 1, 'runrate',  'En Solicitud', 'PRODUCTO', 'Compras',       68000, 15, 0),
     ('Tanques de acero inoxidable',             5, 3, 'proyecto', 'Levantamiento','PROYECTO', 'Operaciones',  540000, 25, 2),
     ('Curso de soldadura certificada',          7, 2, 'runrate',  'Enviada',      'CURSO',    'Recursos Humanos', 42000, 55, 0),
     ('Escaleras y barandales planta B',         4, 1, 'runrate',  'Seguimiento',  'PRODUCTO', 'Operaciones',  175000, 65, 0),
     ('Reforzamiento de estructura bodega',      10, 3, 'proyecto', 'Enviada',     'PROYECTO', 'Dirección',    830000, 50, 1),
-    ('Puertas industriales seccionales',        8, 2, 'runrate',  'Cotizando',    'PRODUCTO', 'Compras',      122000, 40, 1),
+    ('Puertas industriales seccionales',        8, 2, 'runrate',  'Cotizando',    'PRODUCTO', 'Compras',      122000, 40, 0),
     ('Módulo de reportes para ERP',             11, 3, 'runrate', 'Seguimiento',  'SOFTWARE', 'Sistemas',     185000, 60, 0),
     ('Suministro de lámina galvanizada',        0, 1, 'runrate',  'Entregado',    'PRODUCTO', 'Compras',      264000, 95, 0),
     ('Techumbre para patio de maniobras',       12, 2, 'proyecto', 'Seguimiento', 'PROYECTO', 'Operaciones',  690000, 45, 1),
     ('Mesas de trabajo acero inoxidable',       6, 3, 'runrate',  'En Solicitud', 'PRODUCTO', 'Otra',          58000, 20, 1),
     ('Mantenimiento de compresores',            9, 2, 'runrate',  'Enviada',      'SERVICIO', 'Operaciones',   47000, 50, 0),
-    ('Cercado perimetral',                      13, 1, 'runrate', 'Cotizando',    'PRODUCTO', 'Dirección',    134000, 35, 1),
+    ('Cercado perimetral',                      13, 1, 'runrate', 'Cotizando',    'PRODUCTO', 'Dirección',    134000, 35, 0),
     ('Capacitación en seguridad industrial',    14, 3, 'runrate', 'Vendido c/PO', 'CURSO',    'Recursos Humanos', 36000, 90, 0),
     ('Sistema de monitoreo de energía',         4, 3, 'runrate',  'Facturado',    'SOFTWARE', 'Sistemas',     156000, 100, -1),
     ('Plataformas de acceso a silos',           11, 2, 'proyecto', 'Vendido c/PO','PROYECTO', 'Operaciones',  410000, 85, 0),
@@ -91,7 +91,7 @@ OPORTUNIDADES = [
     ('Automatización de báscula',               13, 3, 'runrate', 'Perdido',      'SOFTWARE', 'Sistemas',     120000, 0, -2),
     ('Contenedores metálicos de reciclaje',     3, 1, 'runrate',  'Seguimiento',  'PRODUCTO', 'Operaciones',   61000, 60, 0),
     ('Rehabilitación de andenes de carga',      1, 2, 'proyecto', 'Cotizando',    'PROYECTO', 'Operaciones',  460000, 30, 2),
-    ('Licencias de software de diseño',         14, 3, 'runrate', 'En Solicitud', 'SOFTWARE', 'Sistemas',      33000, 15, 1),
+    ('Licencias de software de diseño',         14, 3, 'runrate', 'En Solicitud', 'SOFTWARE', 'Sistemas',      33000, 15, 0),
     ('Mantenimiento preventivo trimestral',     10, 1, 'runrate', 'Seguimiento',  'SERVICIO', 'Operaciones',   88000, 70, 0),
 ]
 
@@ -145,6 +145,7 @@ class Command(BaseCommand):
     def _borrar(self):
         users = list(User.objects.filter(username__in=[u[0] for u in USUARIOS]))
         MailCorreo.objects.filter(usuario__in=users).delete()
+        MailConexion.objects.filter(usuario__in=users).delete()
         Actividad.objects.filter(creado_por__in=users).delete()
         Tarea.objects.filter(creado_por__in=users).delete()
         Proyecto.objects.filter(creado_por__in=users).delete()
@@ -363,6 +364,12 @@ class Command(BaseCommand):
         # 8) Correos simulados para Laura (Mi día / asistente)
         laura = users[1]
         AsistenteEstado.objects.get_or_create(usuario=laura)
+        # Buzón simulado: el feed de Mi día exige un buzón activo; el worker de correo
+        # ignora los servidores 'simulacion.iamet' (no hay IMAP real que consultar).
+        MailConexion.objects.get_or_create(
+            usuario=laura, correo_electronico=laura.email,
+            defaults={'imap_servidor': SIM_DOM, 'smtp_servidor': SIM_DOM, 'activo': True, 'password_encriptado': ''},
+        )
         for ci, mins, asunto, cuerpo, oi in CORREOS:
             ct = contactos[ci]
             fecha = ahora - timedelta(minutes=mins)

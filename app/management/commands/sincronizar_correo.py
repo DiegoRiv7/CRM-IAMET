@@ -46,6 +46,9 @@ class Command(BaseCommand):
             if opts['usuario']:
                 qs = qs.filter(usuario__username=opts['usuario'])
             for conexion in qs:
+                # Buzones simulados (instancias demo, seed_demo): no hay IMAP real.
+                if 'simulacion.iamet' in (conexion.imap_servidor or '').lower():
+                    continue
                 try:
                     imap = _get_imap(conexion)
                 except Exception as e:
