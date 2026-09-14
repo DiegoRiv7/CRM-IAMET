@@ -219,6 +219,7 @@
         <div class="login-box">
             <div class="anim-stagger-1" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                 <span class="logo" style="margin-bottom:0;">{{ EMPRESA.titulo }}</span>
+{% if EMPRESA.es_iamet %}
                 <svg class="logo-palma" width="46" height="46" viewBox="-18 -8 136 110">
                     <defs>
                         <linearGradient id="palmaG" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -242,6 +243,7 @@
                         <circle cx="51" cy="43" r="4" fill="#3E608E"/>
                     </g>
                 </svg>
+{% elif EMPRESA.logo_url %}<img src="{{ EMPRESA.logo_url }}" alt="{{ EMPRESA.nombre_visible }}" style="height:46px;max-width:120px;object-fit:contain;">{% endif %}
             </div>
             <p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>
 

@@ -5,7 +5,7 @@
 #
 #   --nombre "..."         Nombre de la empresa (obligatorio la primera vez)
 #   --dominio acme.crm.iamet.mx   Dominio propio (requiere DNS apuntando al server)
-#   --https                Pedir certificado con certbot para --dominio
+#   --https                Certificado Let's Encrypt (para --dominio, o para el nombre nip.io). RECOMENDADO: sin HTTPS el login no funciona
 #   --puerto 8010          Puerto en el host (default: el siguiente libre desde 8010)
 #   --admin-email x        Correo del superusuario inicial (default: admin@<slug>.local)
 #   --admin-password y     Contraseña del superusuario (default: aleatoria, se imprime)
@@ -99,7 +99,7 @@ ok "base y usuario listos (permisos solo sobre crm_$SLUG)"
 
 # ── 4. .env de la empresa ────────────────────────────────────────────────
 HOSTS="127.0.0.1,localhost,$IP_PUBLICA,$NIP,crm-$SLUG-web"
-ORIGENES="http://$IP_PUBLICA:$PUERTO,http://$NIP"
+ORIGENES="http://$IP_PUBLICA:$PUERTO,http://$NIP,https://$NIP"
 if [[ -n "$DOMINIO" ]]; then HOSTS="$HOSTS,$DOMINIO"; ORIGENES="$ORIGENES,http://$DOMINIO,https://$DOMINIO"; fi
 if [[ ! -f "$ENV_FILE" ]]; then
   log "Generando $ENV_FILE (SECRET_KEY y llave de correo nuevas)"
@@ -135,12 +135,20 @@ docker exec "crm-$SLUG-web" python manage.py seed_empresa "${ARGS_SEED[@]}" | se
 if [[ $SIN_NGINX -eq 0 && -d "$NGINX_AVAIL" ]] && command -v nginx >/dev/null; then
   NAMES="$NIP"; [[ -n "$DOMINIO" ]] && NAMES="$DOMINIO $NIP"
   CONF="$NGINX_AVAIL/crm-$SLUG.conf"
-  sed -e "s|__SLUG__|$SLUG|g" -e "s|__FECHA__|$(date +%F)|" -e "s|__PUERTO__|$PUERTO|" -e "s|__SERVER_NAMES__|$NAMES|" "$DEPLOY_DIR/nginx-tenant.conf.tmpl" > "$CONF"
+  if [[ -f "$CONF" ]] && grep -q "managed by Certbot" "$CONF"; then
+    ok "nginx: vhost existente con HTTPS (certbot) — se conserva"
+  else
+    sed -e "s|__SLUG__|$SLUG|g" -e "s|__FECHA__|$(date +%F)|" -e "s|__PUERTO__|$PUERTO|" -e "s|__SERVER_NAMES__|$NAMES|" "$DEPLOY_DIR/nginx-tenant.conf.tmpl" > "$CONF"
+  fi
   ln -sf "$CONF" "$NGINX_ENABLED/crm-$SLUG.conf"
   if nginx -t >/dev/null 2>&1; then
     systemctl reload nginx && ok "nginx: $NAMES → :$PUERTO"
-    if [[ $HTTPS -eq 1 && -n "$DOMINIO" ]]; then
-      certbot --nginx -d "$DOMINIO" --non-interactive --agree-tos --register-unsafely-without-email --redirect && ok "HTTPS activo en $DOMINIO" || warn "certbot falló (¿DNS de $DOMINIO ya apunta al server?)"
+    # HTTPS: con dominio propio usa el dominio; sin dominio, el nombre nip.io también
+    # acepta certificado de Let's Encrypt. Necesario: con DJANGO_DEBUG=False las cookies
+    # de sesión son Secure y el login NO funciona sobre HTTP.
+    CERT_DOM="${DOMINIO:-$NIP}"
+    if [[ $HTTPS -eq 1 ]] && ! grep -q "managed by Certbot" "$CONF"; then
+      certbot --nginx -d "$CERT_DOM" --non-interactive --agree-tos --register-unsafely-without-email --redirect && ok "HTTPS activo en $CERT_DOM" || warn "certbot falló (¿DNS de $CERT_DOM ya apunta al server?)"
     fi
   else
     rm -f "$NGINX_ENABLED/crm-$SLUG.conf"; warn "nginx -t falló; vhost NO activado (revisa $CONF)"
@@ -158,6 +166,7 @@ echo "  slug:          $SLUG"
 echo "  Puerto local:  127.0.0.1:$PUERTO (solo vía nginx; el firewall no expone puertos altos)"
 echo "  URL nip.io:    http://$NIP/app/login/"
 [[ -n "$DOMINIO" ]] && echo "  URL dominio:   http$([[ $HTTPS -eq 1 ]] && echo s)://$DOMINIO/app/login/"
+[[ $HTTPS -eq 0 ]] && warn "Sin --https el inicio de sesión NO funciona en el navegador (cookies Secure con DJANGO_DEBUG=False); vuelve a correr con --https"
 echo "  Administrador: $ADMIN_EMAIL"
 [[ $ADMIN_PASSWORD_GENERADA -eq 1 ]] && echo "  Contraseña:    $ADMIN_PASSWORD   (guárdala: también está en $ENV_FILE)"
 echo "  Contenedores:  crm-$SLUG-web, crm-$SLUG-mailsync   (imagen $IMAGEN)"
