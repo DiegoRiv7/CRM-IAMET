@@ -41,16 +41,52 @@ tocar DNS). Con dominio propio: `--dominio acme.crm.iamet.mx --https`
 (requiere el registro DNS apuntando al server). El script es idempotente:
 volver a correrlo con el mismo slug conserva llaves, contraseñas y datos.
 
-## Actualizar el código de todas las empresas
+## Actualizar el código de todas las empresas (Fase 4)
 
 ```bash
-cd /home/iamet2026/crm-producto && git checkout --detach <commit-nuevo>
-scripts/construir_imagen.sh
-for s in $(python3 -c "import yaml;print(' '.join(e['slug'] for e in yaml.safe_load(open('/home/iamet2026/crm-empresas/empresas.yml')) if e['activa']))"); do
-  scripts/nueva_empresa.sh $s        # re-crea los contenedores con la imagen nueva (migra al arrancar)
-done
+cd /home/iamet2026/crm-producto
+scripts/deploy_all.sh --ref producto        # mueve el worktree a la rama, construye la imagen y actualiza todas
+scripts/deploy_all.sh --solo demo           # una sola empresa
+scripts/deploy_all.sh --imagen crm-producto:abc123   # reutilizar una imagen ya construida
 ```
-(La Fase 4 lo empaqueta en `deploy_all.sh`.)
+Por empresa: cambia `IMAGEN` en su `.env`, `up -d` (migra al arrancar), espera al login,
+verifica que no queden migraciones pendientes y registra la imagen en `empresas.yml`.
+Si una empresa falla, la regresa a su imagen anterior y se detiene (`--continuar` para
+seguir con las demás).
+
+### Dos líneas de código
+- `principal` = CRM de IAMET (laboratorio; ahí entra todo primero).
+- `producto` = lo que corren los clientes: `principal` con retraso, cuando se decida
+  liberar. Hasta el merge del multiempresa a `principal`, `producto` nace de `pruebas`
+  ya verificado; después se avanza con `git merge --ff-only principal`.
+- Nunca se desarrolla directo en `producto`. Correcciones urgentes: `cherry-pick`.
+
+### Cómo llega el código al servidor
+El server no tiene credenciales para GitHub (el `git pull` del Action falla en silencio).
+Dos opciones:
+1. **Autorizar la llave del servidor (recomendado, 2 min):** GitHub → repo → Settings →
+   Deploy keys → Add, pegar `/root/.ssh/id_ed25519.pub` (solo lectura) y en el server
+   `git -C /home/iamet2026/crm-pruebas remote set-url origin git@github.com:DiegoRiv7/CRM-IAMET.git`.
+   Desde entonces `deploy_all.sh --ref producto` hace `git fetch` solo.
+2. **Bundle por SSH** (lo que se usa hoy): `git bundle create f.bundle <base>..producto`,
+   mandarlo en trozos de 6 KB y `git -C /home/iamet2026/crm-pruebas fetch f.bundle producto:producto`.
+
+## Respaldos
+
+```bash
+scripts/backup_empresas.sh           # BD de cada empresa (+ media los domingos) + .env.core + empresas.yml
+scripts/backup_empresas.sh --media   # forzar media hoy
+```
+Cron (root, 03:30): `30 3 * * * /home/iamet2026/crm-producto/scripts/backup_empresas.sh >> /home/iamet2026/crm-empresas/backup.log 2>&1`.
+Retención: BD 14 días, media 60, env 30. Restaurar una empresa:
+`gunzip < db-<fecha>.sql.gz | docker exec -i -e MYSQL_PWD=... crm-mysql mysql -uroot crm_<slug>` y
+`docker run --rm -v crm-<slug>_media:/m -v <dir>:/b alpine tar xzf /b/media-<fecha>.tgz -C /m`.
+
+## Estado
+
+```bash
+scripts/empresas_status.sh     # contenedores, imagen, migraciones pendientes y URL de cada empresa
+```
 
 ## Baja
 
