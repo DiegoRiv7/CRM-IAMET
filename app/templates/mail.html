@@ -808,7 +808,11 @@
             <button class="modal-close" onclick="cerrarModal('modalConfig')">✕</button>
         </div>
         <div class="modal-body">
+{% if EMPRESA.es_iamet %}
             <p style="font-size:0.8rem;color:var(--label3);line-height:1.5;">Para <strong>iamet.mx</strong> usa <code style="background:var(--bg3);padding:1px 6px;border-radius:5px;">mail.iamet.mx</code> como servidor IMAP y SMTP.</p>
+{% else %}
+            <p style="font-size:0.8rem;color:var(--label3);line-height:1.5;">Captura el servidor IMAP (recibir) y SMTP (enviar) que te indique tu proveedor de correo. Con Google Workspace usa una <strong>contraseña de aplicación</strong>.</p>
+{% endif %}
             <div><div class="f-label">Correo electrónico</div><input class="f-input" id="cfgEmail" type="email" placeholder="{{ EMPRESA.placeholder_correo }}"></div>
             <div><div class="f-label">Contraseña</div><input class="f-input" id="cfgPass" type="password" placeholder="••••••••"></div>
             <div class="f-grid2">
@@ -832,6 +836,7 @@
 <div id="toast"></div>
 
 <script>
+    var _MAIL_SRV_DEFAULT = '{% if EMPRESA.es_iamet %}mail.iamet.mx{% endif %}';
 (function () {
     var CSRF = '{{ csrf_token }}';
     var carpeta = 'INBOX';
@@ -1142,9 +1147,9 @@
         fetch('/app/api/mail/conexion/').then(function(r){ return r.json(); }).then(function(d){
             if (d.ok) {
                 document.getElementById('cfgEmail').value = d.correo_electronico || '';
-                document.getElementById('cfgImapSrv').value = d.imap_servidor || 'mail.iamet.mx';
+                document.getElementById('cfgImapSrv').value = d.imap_servidor || _MAIL_SRV_DEFAULT;
                 document.getElementById('cfgImapPort').value = d.imap_puerto || 993;
-                document.getElementById('cfgSmtpSrv').value = d.smtp_servidor || 'mail.iamet.mx';
+                document.getElementById('cfgSmtpSrv').value = d.smtp_servidor || _MAIL_SRV_DEFAULT;
                 document.getElementById('cfgSmtpPort').value = d.smtp_puerto || 465;
             }
         }).catch(function(){});

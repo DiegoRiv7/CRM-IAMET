@@ -813,6 +813,7 @@
                 <button onclick="mailCerrarModal('mailModalConfig')" style="background:#F3F4F8;border:none;color:#9CA3AF;width:26px;height:26px;border-radius:50%;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
             </div>
             <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow-y:auto;">
+                {% if EMPRESA.es_iamet %}
                 <div style="display:flex;gap:8px;">
                     <button id="mailCfgBtnIamet" onclick="mailSetConfigTpl('iamet')" style="flex:1;padding:9px;border:1px solid #007AFF;background:rgba(0,122,255,0.1);color:#007AFF;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer;">Dominio IAMET</button>
                     <button id="mailCfgBtnBajanet" onclick="mailSetConfigTpl('bajanet')" style="flex:1;padding:9px;border:1px solid #E5E7EB;background:#F9FAFB;color:#6B7280;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer;">Dominio Baja-Net</button>
@@ -831,6 +832,12 @@
                         <li>Pega los 16 caracteres aquí (sin espacios)</li>
                     </ol>
                 </div>
+                {% else %}
+                <div style="font-size:0.76rem;color:#374151;line-height:1.5;background:#F0F9FF;padding:10px 13px;border-radius:8px;border:1px solid #BAE6FD;">
+                    <strong style="color:#0369A1;">&#9432; Datos de tu proveedor de correo</strong><br>
+                    Captura el servidor IMAP (para recibir) y SMTP (para enviar) que te indique tu área de sistemas o tu proveedor. Si usas Google Workspace, necesitas una <strong>contraseña de aplicación</strong> en lugar de tu contraseña normal.
+                </div>
+                {% endif %}
                 <div>
                     <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Correo electrónico</div>
                     <input type="email" class="wf-input" id="mailCfgEmail" placeholder="{{ EMPRESA.placeholder_correo }}" style="width:100%;box-sizing:border-box;">

@@ -217,9 +217,9 @@
                         var cfgSmtpPort = document.getElementById('mailCfgSmtpPort');
 
                         if (cfgEmail) cfgEmail.value = activeConn.correo_electronico;
-                        if (cfgImapSrv) cfgImapSrv.value = activeConn.imap_servidor || 'mail.iamet.mx';
+                        if (cfgImapSrv) cfgImapSrv.value = activeConn.imap_servidor || _mailSrvDefault();
                         if (cfgImapPort) cfgImapPort.value = activeConn.imap_puerto || 993;
-                        if (cfgSmtpSrv) cfgSmtpSrv.value = activeConn.smtp_servidor || 'mail.iamet.mx';
+                        if (cfgSmtpSrv) cfgSmtpSrv.value = activeConn.smtp_servidor || _mailSrvDefault();
                         if (cfgSmtpPort) cfgSmtpPort.value = activeConn.smtp_puerto || 465;
 
                         mailCargarLista(_mailCarpeta);
@@ -1443,7 +1443,7 @@
             var imapSrv = document.getElementById('mailCfgImapSrv');
             if (imapSrv && imapSrv.value === 'imap.gmail.com') {
                 mailSetConfigTpl('bajanet', true);
-            } else {
+            } else if (_mailEsIamet()) {
                 mailSetConfigTpl('iamet', true);
             }
         };
@@ -1462,11 +1462,16 @@
             if (okEl) okEl.style.display = 'none';
             if (titleEl) titleEl.textContent = 'Agregar cuenta de correo';
             m.style.display = 'flex';
-            mailSetConfigTpl('iamet', true);
+            if (_mailEsIamet()) mailSetConfigTpl('iamet', true);
             var cfgFirma = document.getElementById('mailCfgFirma');
             if (cfgFirma) cfgFirma.innerHTML = _mailFirmaHtml();
             if (cfgEmail) cfgEmail.focus();
         };
+
+        // MULTIEMPRESA: los presets de servidor (mail.iamet.mx / Google Workspace) son de IAMET;
+        // otras empresas capturan sus propios servidores sin valores precargados.
+        function _mailEsIamet() { return !!(window._CRM_EMPRESA && window._CRM_EMPRESA.slug === 'iamet'); }
+        function _mailSrvDefault() { return _mailEsIamet() ? 'mail.iamet.mx' : ''; }
 
         window.mailSetConfigTpl = function (type, noClear) {
             var btnIamet = document.getElementById('mailCfgBtnIamet');
