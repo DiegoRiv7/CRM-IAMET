@@ -641,7 +641,7 @@
                     <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                     <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
                     {% comment %}Vista 'Equipo' (agenda por persona) en pausa — código dormido; se reactiva re-agregando este botón.{% endcomment %}
-                    <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
+                    {% if MODULOS.proyectos_iamet %}<button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>{% endif %}
                 </div>
             </div>
         </div>
@@ -663,7 +663,7 @@
                 <button id="calBtnSemana" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
                 <button id="calBtnDia" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
                 {% comment %}Vista 'Equipo' (agenda por persona) en pausa — código dormido; se reactiva re-agregando este botón.{% endcomment %}
-                <button id="calBtnTecnicos" class="cal-view-btn" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
+                {% if MODULOS.proyectos_iamet %}<button id="calBtnTecnicos" class="cal-view-btn" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>{% endif %}
             </div>
         </div>
 

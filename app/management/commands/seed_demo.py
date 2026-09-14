@@ -366,7 +366,7 @@ class Command(BaseCommand):
         AsistenteEstado.objects.get_or_create(usuario=laura)
         # Buzón simulado: el feed de Mi día exige un buzón activo; el worker de correo
         # ignora los servidores 'simulacion.iamet' (no hay IMAP real que consultar).
-        MailConexion.objects.get_or_create(
+        buzon, _ = MailConexion.objects.get_or_create(
             usuario=laura, correo_electronico=laura.email,
             defaults={'imap_servidor': SIM_DOM, 'smtp_servidor': SIM_DOM, 'activo': True, 'password_encriptado': ''},
         )
@@ -374,7 +374,7 @@ class Command(BaseCommand):
             ct = contactos[ci]
             fecha = ahora - timedelta(minutes=mins)
             MailCorreo.objects.create(
-                usuario=laura, conexion=None, uid_imap=f'sim_{int(fecha.timestamp() * 1000)}',
+                usuario=laura, conexion=buzon, uid_imap=f'sim_{int(fecha.timestamp() * 1000)}',
                 message_id=f'<sim-{int(fecha.timestamp() * 1000)}@{SIM_DOM}>', carpeta_imap='INBOX', carpeta_display='INBOX',
                 remitente_nombre=f'{ct.nombre} {ct.apellido}', remitente_email=ct.email,
                 destinatarios_json='[]', asunto=asunto, cuerpo_texto=cuerpo, cuerpo_html='', cuerpo_cargado=True,
