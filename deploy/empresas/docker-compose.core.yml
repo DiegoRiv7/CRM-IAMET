@@ -1,0 +1,49 @@
+# MULTIEMPRESA — Núcleo compartido por TODAS las empresas nuevas (Fase 2).
+# Un solo MySQL 8 Community; cada empresa tiene su base y su usuario con
+# permisos únicamente sobre su base. Producción y pruebas de IAMET NO usan
+# esto: conservan sus contenedores `db` propios.
+#
+#   docker compose -p crm-core --env-file /home/iamet2026/crm-empresas/.env.core \
+#       -f docker-compose.core.yml up -d
+#
+# Lo levanta solo scripts/nueva_empresa.sh la primera vez.
+name: crm-core
+
+services:
+  crm-mysql:
+    image: mysql:8.0
+    container_name: crm-mysql
+    restart: unless-stopped
+    # Buffer pool chico: el server 82 comparte RAM con el CRM de producción.
+    # Subirlo (y el límite de memoria) cuando haya más de ~5 empresas.
+    command: >
+      --innodb-buffer-pool-size=256M
+      --max-connections=200
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - crm_core_db:/var/lib/mysql
+    # Sin `ports`: solo accesible desde la red crm_tenants (nunca desde el host).
+    networks:
+      - crm_tenants
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
+        reservations:
+          memory: 256m
+
+volumes:
+  crm_core_db:
+
+networks:
+  crm_tenants:
+    name: crm_tenants
+    driver: bridge

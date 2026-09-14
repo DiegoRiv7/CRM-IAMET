@@ -52,3 +52,8 @@ Thumbs.db
 
 # Dataset ejemplos AI volumetria (fotos de clientes - NO subir)
 ai_volumetria_ejemplos/
+
+# ═══ Multiempresa (operación en el servidor; nunca al repo) ═══
+deploy/empresas/.env.*
+deploy/empresas/empresas.yml
+deploy/empresas/IMAGEN_ACTUAL

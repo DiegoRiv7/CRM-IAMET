@@ -1,0 +1,69 @@
+# MULTIEMPRESA — Plantilla de UNA empresa (Fase 2). No se usa a mano:
+# scripts/nueva_empresa.sh la levanta con
+#   docker compose -p crm-<slug> --env-file .env.<slug> -f docker-compose.tenant.yml up -d
+#
+# Variables que interpola compose desde .env.<slug>: IMAGEN, SLUG, PUERTO,
+# ENV_FILE, BIND. Las demás variables del .env las lee Django.
+#
+# Corre la IMAGEN (sin montar el código): un parche en el árbol del servidor
+# no le llega a los clientes por accidente. Actualizar = nueva imagen + up -d.
+
+services:
+  web:
+    image: ${IMAGEN}
+    container_name: crm-${SLUG}-web
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE}
+    environment:
+      DB_HOST: crm-mysql
+      DB_PORT: "3306"
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "${BIND:-0.0.0.0}:${PUERTO}:8000"
+    volumes:
+      - media:/app/media
+    # gthread como pruebas/prod: varios slots concurrentes con poca RAM.
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 8 --worker-class gthread --timeout 90 --max-requests 1000 --max-requests-jitter 200
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+        reservations:
+          memory: 192m
+    networks:
+      - crm_tenants
+
+  # Worker de correo: único que habla IMAP. Entrypoint directo para no repetir
+  # migrate/collectstatic (de eso se encarga `web` al arrancar).
+  mailsync:
+    image: ${IMAGEN}
+    container_name: crm-${SLUG}-mailsync
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE}
+    environment:
+      DB_HOST: crm-mysql
+      DB_PORT: "3306"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - media:/app/media
+    depends_on:
+      - web
+    entrypoint: python manage.py sincronizar_correo --loop 30
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+    networks:
+      - crm_tenants
+
+volumes:
+  media:
+
+networks:
+  crm_tenants:
+    external: true
+    name: crm_tenants
