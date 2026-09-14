@@ -5,6 +5,8 @@ del envío y de las respuestas dentro del chat de la oportunidad.
 from django.db import migrations, models
 import django.db.models.deletion
 
+from ._seguro import AddFieldSiFalta
+
 
 class Migration(migrations.Migration):
 
@@ -13,7 +15,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
+        AddFieldSiFalta(  # 0063 ya crea la columna en bases nuevas
             model_name='mailcorreo',
             name='oportunidad',
             field=models.ForeignKey(
