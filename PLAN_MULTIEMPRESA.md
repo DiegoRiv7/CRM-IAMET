@@ -1,6 +1,6 @@
 # PLAN MULTIEMPRESA — CRM IAMET como producto para otras empresas
 
-**Fecha del plan:** 2026-09-07 · **Estado:** Fase 1 HECHA y desplegada en pruebas (2026-09-07); sigue Fase 2
+**Fecha del plan:** 2026-09-07 · **Estado:** Fases 1 y 2 HECHAS (2026-09-14); demo viva en `demo.82-223-44-29.nip.io`; sigue Fase 3
 **Responsable:** Jafet · **Ejecuta:** Jafet + agentes Claude (rama `pruebas`)
 **Documento para jefes:** `reports/Plan_CRM_Multiempresa_07_Septiembre_2026.html`
 
@@ -135,7 +135,39 @@ son un subconjunto manejable.
   **no muestra "IAMET" ni correos @iamet** salvo el prefijo "IAMET ·" del nombre.
 - Con las banderas encendidas y datos de IAMET, `pruebas` se ve idéntico a hoy.
 
-### Fase 2 — Alta automática de empresas (1.5 días · días 3–4)
+### Fase 2 — Alta automática de empresas (1.5 días · días 3–4) — ✅ HECHA 2026-09-14
+
+**Entregado (commits 72fe397d, 1809270e, ef98dcc4, 6b16afd6, f1b9c13c en `pruebas`):**
+`deploy/empresas/` (compose core + tenant, plantillas .env/.env.core/nginx, README de
+operación) y `scripts/` (`empresas_lib.sh`, `construir_imagen.sh`, `nueva_empresa.sh`,
+`baja_empresa.sh`). En el servidor: worktree limpio `/home/iamet2026/crm-producto`
+(imagen `crm-producto:<sha>`, build acotado), operación en `/home/iamet2026/crm-empresas`
+(`.env.core` con root de MySQL y llave IA compartida copiada de pruebas, `.env.demo`,
+`empresas.yml`, `IMAGEN_ACTUAL`), núcleo `crm-core` (contenedor `crm-mysql`, red
+`crm_tenants`, sin puerto al host).
+
+**Verificado:** alta desde cero de "Prueba Dos" en **66 s** (237 migraciones incluidas);
+re-alta idempotente de la demo en ~30 s; `u_demo` solo ve `crm_demo` y el SELECT sobre
+`crm_prueba2` es denegado (1142); `baja_empresa.sh prueba2 --purge` dejó respaldos de BD,
+media y .env y borró todo lo demás; prod (:8000) y pruebas (:8001) siguieron en 200.
+Consumo: crm-mysql 512 MB, web 200 MB, mailsync 90 MB.
+
+**Demo viva:** empresa `demo` "Aceros del Norte" → `http://demo.82-223-44-29.nip.io/app/login/`
+(nip.io resuelve a la IP sin tocar DNS; el puerto 8010 queda en 127.0.0.1 y el firewall
+no expone puertos altos, así que nginx es la única puerta). Admin
+`admin@acerosdelnorte.com`, contraseña en `/home/iamet2026/crm-empresas/.env.demo`.
+Sin rastros de IAMET en crm/correo/calendario.
+
+**Hallazgo corregido:** la cadena de migraciones no se reproducía desde cero (0063 se
+editó después de aplicarse y 0143 volvía a crear `MailCorreo.oportunidad_id`).
+`app/migrations/_seguro.py` aporta `AddFieldSiFalta`, `CreateModelSiFalta`, etc.; 0143
+lo usa. Regla: si una migración vieja se edita a mano, usar estas operaciones.
+
+**Pendientes de la Fase 2:** `--https` con certbot no se probó (no hay dominio real aún);
+el modo Instalaciones del calendario ("Plan de Trabajo Bajanet") sigue visible para todas
+las empresas (es de IAMET; candidato a bandera en el pulido). crm-pruebas sigue con el árbol
+parchado en cdf9857b (no se le llevaron 25315c0f..f1b9c13c; no afectan a IAMET).
+
 
 **Tareas**
 1. `docker-compose.core.yml`: servicio `crm-mysql` (mysql:8.0, volumen
