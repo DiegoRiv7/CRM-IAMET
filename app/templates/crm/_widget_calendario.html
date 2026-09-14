@@ -576,7 +576,7 @@
                         <div class="cal-filter-pop-lbl">Mostrar</div>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="tarea" checked><span class="cal-filter-dot" style="background:#FF9500;"></span><span>Tareas</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
-                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="instalacion" checked><span class="cal-filter-dot" style="background:#7C3AED;"></span><span>Instalaciones</span></label>
+                        {% if MODULOS.proyectos_iamet %}<label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="instalacion" checked><span class="cal-filter-dot" style="background:#7C3AED;"></span><span>Instalaciones</span></label>{% endif %}
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-state="completadas" checked><span class="cal-filter-dot" style="background:#16A34A;"></span><span>Completadas</span></label>
                         {% comment %}
                         Fuente del calendario (antes era un toggle aparte en el
@@ -590,10 +590,10 @@
                                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
                                 Todas
                             </button>
-                            <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Solo instalaciones (Plan de Trabajo)">
+                            {% if MODULOS.proyectos_iamet %}<button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Solo instalaciones (Plan de Trabajo)">
                                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
                                 Instalaciones
-                            </button>
+                            </button>{% endif %}
                         </div>
                     </div>
                 </div>
