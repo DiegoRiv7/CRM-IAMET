@@ -69,7 +69,11 @@ Dos opciones:
    `git -C /home/iamet2026/crm-pruebas remote set-url origin git@github.com:DiegoRiv7/CRM-IAMET.git`.
    Desde entonces `deploy_all.sh --ref producto` hace `git fetch` solo.
 2. **Bundle por SSH** (lo que se usa hoy): `git bundle create f.bundle <base>..producto`,
-   mandarlo en trozos de 6 KB y `git -C /home/iamet2026/crm-pruebas fetch f.bundle producto:producto`.
+   mandarlo en trozos de 6 KB y `git -C /home/iamet2026/crm-pruebas fetch f.bundle producto:refs/remotes/bundle/producto`,
+   y luego `git -C /home/iamet2026/crm-producto merge --ff-only refs/remotes/bundle/producto`.
+   **Nunca** hagas `fetch ... producto:producto` sobre la rama que el worktree tiene
+   activa: mueve la rama sin tocar los archivos y el worktree queda desfasado (si pasa:
+   `git -C /home/iamet2026/crm-producto checkout HEAD -- .`).
 
 ## Respaldos
 
