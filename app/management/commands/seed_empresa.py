@@ -38,16 +38,24 @@ CATALOGO_GENERICO = [
 # Mismo catálogo que la migración 0224 siembra para IAMET (para demos "tipo IAMET").
 CATALOGO_IAMET = None  # se importa perezosamente de la migración
 
+# Etapas por defecto de una empresa nueva. Los nombres "Pagado" y "Perdido" son los
+# que el código reconoce como cobrado / perdido (reportes, metas, kanban); el pipeline
+# "prospeccion" debe coincidir con Prospecto.ETAPA_CHOICES.
 ETAPAS_DEFAULT = {
     'runrate': [
-        ('Prospección', '#94A3B8'), ('Contacto', '#60A5FA'), ('Cotizado', '#F59E0B'),
-        ('Negociación', '#A78BFA'), ('Orden de compra', '#34D399'), ('Facturado', '#10B981'),
-        ('Perdida', '#EF4444'),
+        ('En Solicitud', '#FFFFFF'), ('Cotizando', '#FFEB3B'), ('Enviada', '#2196F3'),
+        ('Seguimiento', '#FF9800'), ('Vendido c/PO', '#9C27B0'), ('Entregado', '#4CAF50'),
+        ('Facturado', '#00BCD4'), ('Pagado', '#7BD500'), ('Perdido', '#F44336'),
     ],
     'proyecto': [
-        ('Levantamiento', '#94A3B8'), ('Propuesta', '#60A5FA'), ('Cotizado', '#F59E0B'),
-        ('Negociación', '#A78BFA'), ('Orden de compra', '#34D399'), ('Ejecución', '#38BDF8'),
-        ('Facturado', '#10B981'), ('Perdida', '#EF4444'),
+        ('Oportunidad', '#FFFFFF'), ('Levantamiento', '#FF5C5A'), ('Cotizando', '#2FC6F6'),
+        ('Enviada', '#2FC6F6'), ('Seguimiento', '#39A8EF'), ('Vendido c/PO', '#FF00FF'),
+        ('Comprando', '#2FC6F6'), ('Ejecutando', '#FFFF00'), ('Entregado', '#2FC6F6'),
+        ('Facturado', '#55D0E0'), ('Pagado', '#7BD500'), ('Perdido', '#FF0000'),
+    ],
+    'prospeccion': [
+        ('Identificado', '#6366F1'), ('Calificado', '#3B82F6'), ('Reunion', '#0EA5E9'),
+        ('En Progreso', '#F59E0B'), ('Procesado', '#10B981'), ('Cerrar Prospecto', '#6B7280'),
     ],
 }
 
