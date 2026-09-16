@@ -12,6 +12,19 @@ Empresa ficticia: **Aceros del Norte** (slug `demo`). Datos sembrados con `manag
 > Al entrar aparece el recordatorio de jornada ("Iniciar mi día"). Pulsa **Iniciar mi día**
 > o **Recordarme más tarde**.
 
+## 0. El cliente crea su propia empresa (3 min)
+Portal: **https://portal.82-223-44-29.nip.io/** (panel interno en `/panel`, usuario `iamet`,
+contraseña en `/home/iamet2026/crm-empresas/portal.env`).
+- El cliente abre **Crear mi empresa**, llena nombre, responsable, correo y contraseña. La
+  página de su solicitud muestra los 4 pasos.
+- Tú, en `/panel`, ves la solicitud **pendiente** y pulsas **Aprobar** (o dejas encendida la
+  *aprobación automática* para que se cree sola). En ~80 s la página del cliente cambia a
+  **¡Tu CRM está listo!** con el botón **Entrar a mi CRM**.
+- Entra con su correo y contraseña: su CRM vacío, con su nombre. En Administración → Empresa
+  sube su logo. Después, **Entrar a mi CRM** en el portal lo lleva a su instancia escribiendo
+  su nombre o su correo.
+- Al terminar la reunión: panel → **Baja + borrar** (se respalda antes).
+
 ## 1. Entrar como Laura (2 min)
 - Pantalla de acceso con la marca de la empresa: "IAMET · Aceros del Norte", correo de ejemplo `@acerosdelnorte.com`.
 - Al entrar salta el aviso de **Mi día**: "Jorge Salas te escribió sobre Suministro de perfiles IPR Q4" con resumen de la IA y botones Abrir correo / Agendar.
@@ -38,7 +51,7 @@ Empresa ficticia: **Aceros del Norte** (slug `demo`). Datos sembrados con `manag
 - **Catálogos**: agregar un producto (por ejemplo `INSTALACION` / "Instalación", marcar Columna) y volver a la tabla del CRM: aparece la columna nueva.
 - **Usuarios** y **Metas**: alta de vendedores y metas mensuales.
 
-## 6. Alta en vivo de una empresa nueva (2 min de reloj)
+## 6. Alta en vivo desde la terminal (alternativa al portal)
 En el servidor, con el nombre del cliente:
 ```bash
 ssh root@82.223.44.29

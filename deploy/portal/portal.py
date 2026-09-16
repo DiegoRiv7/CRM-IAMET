@@ -203,6 +203,11 @@ def _ctx():
 
 
 # ── Público ─────────────────────────────────────────────────────────────────
+@app.get('/favicon.ico')
+def favicon():
+    return ('', 204)
+
+
 @app.get('/')
 def index():
     return render_template('index.html', activas=len(empresas_activas()))

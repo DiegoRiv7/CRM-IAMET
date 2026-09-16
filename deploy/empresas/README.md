@@ -106,3 +106,25 @@ scripts/baja_empresa.sh acme --purge    # borra todo (siempre respalda antes)
 - El usuario `u_<slug>` solo tiene permisos sobre `crm_<slug>`.
 - `crm-mysql` no expone puerto al host; solo la red Docker `crm_tenants`.
 - Los contenedores corren la imagen (no montan el código del servidor).
+
+## Portal maestro (Fase 5) — registro público y panel
+
+Servicio `crm-portal` (Flask + gunicorn en 127.0.0.1:8090, systemd, nginx con HTTPS) que
+vive en el host, fuera de las instancias. Código en `deploy/portal/`.
+
+```bash
+deploy/portal/instalar_portal.sh [--dominio portal.crm.iamet.mx]   # instala/actualiza (idempotente)
+systemctl restart crm-portal                                        # tras cambiar portal.py
+journalctl -u crm-portal -f                                         # log
+```
+- Público: `/` portada · `/entrar` (nombre, identificador o correo → login de su instancia) ·
+  `/registro` (solicitud con honeypot, suma de verificación, tope de cupo y límite por IP) ·
+  `/solicitud/<token>` (avance en vivo; guarda el enlace).
+- Panel `/panel` (usuario y contraseña en `/home/iamet2026/crm-empresas/portal.env`):
+  aprobar/rechazar/reintentar solicitudes, interruptor **aprobación automática**, tope de
+  empresas, empresas del servidor con Login / Baja / Baja + borrar.
+- Un hilo del servicio ejecuta `nueva_empresa.sh --https` y `baja_empresa.sh` de una en una;
+  el log de cada trabajo queda en `portal.db` (SQLite). La contraseña del administrador se
+  guarda solo hasta que la instancia existe.
+- Pendiente: correo de bienvenida (no hay SMTP del portal); hoy el registrante ve sus
+  accesos en la página de la solicitud.

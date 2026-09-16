@@ -57,6 +57,12 @@ DROP USER IF EXISTS 'u_$SLUG'@'%';
 FLUSH PRIVILEGES;
 SQL
   rm -f "$EMPRESAS_DIR/.env.$SLUG"
+  # Certificados Let's Encrypt del host de la empresa (nip.io o dominio propio)
+  if command -v certbot >/dev/null; then
+    for CN in $(certbot certificates 2>/dev/null | grep "Certificate Name:" | awk '{print $3}' | grep -E "^$SLUG\." || true); do
+      certbot delete --cert-name "$CN" --non-interactive >/dev/null 2>&1 && ok "certificado $CN eliminado"
+    done
+  fi
   inventario_quitar "$SLUG"
   ok "empresa $SLUG eliminada (respaldos en $DEST)"
 else

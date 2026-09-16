@@ -1,6 +1,6 @@
 # PLAN MULTIEMPRESA — CRM IAMET como producto para otras empresas
 
-**Fecha del plan:** 2026-09-07 · **Estado:** LAS 4 FASES HECHAS (2026-09-14). Demo con datos en `https://demo.82-223-44-29.nip.io`. Falta: tu revisión de la demo, y el merge a `principal` cuando lo ordenes
+**Fecha del plan:** 2026-09-07 · **Estado:** FASES 1-5 HECHAS (2026-09-15). Portal público `https://portal.82-223-44-29.nip.io` + demo con datos. Falta: revisión del usuario, "CRM lite", y el merge a `principal` cuando lo ordene
 **Responsable:** Jafet · **Ejecuta:** Jafet + agentes Claude (rama `pruebas`)
 **Documento para jefes:** `reports/Plan_CRM_Multiempresa_07_Septiembre_2026.html`
 
@@ -282,6 +282,22 @@ bundle (README §"Cómo llega el código al servidor").
 
 **Criterio de hecho:** un `deploy_all` actualiza demo + una segunda empresa y
 ambas responden; un backup produce un archivo por empresa.
+
+### Fase 5 — Portal maestro: registro público con aprobación (2026-09-15) — ✅ HECHA
+
+Decisión del usuario: la demo debe ser completa como la vería el cliente (link → registro →
+autorización → entrar). `deploy/portal/` (Flask en el host, servicio `crm-portal`, nginx +
+certbot en `portal.<ip>.nip.io`): portada, "Entrar a mi CRM" (redirige a la instancia por
+nombre/slug/correo), "Crear mi empresa" (solicitud con honeypot, suma, cupo, límite por IP),
+página de avance en vivo, panel interno (aprobar/rechazar/reintentar, aprobación automática,
+tope, baja/purga). Hilo trabajador ejecuta los scripts de alta/baja de uno en uno.
+**Verificado real:** registro → aprobación en panel → creación en 82 s con HTTPS → login con
+la contraseña elegida → home 200 → "Entrar" por correo redirige → baja+borrar desde el panel
+(contenedores, BD y vhost fuera; respaldos guardados). Capturas revisadas. `baja --purge`
+ahora también borra el certificado del host. Pendiente: correo de bienvenida (sin SMTP).
+
+**Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
+clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
 
 ### Después de la firma (sin tiempo asignado)
 
