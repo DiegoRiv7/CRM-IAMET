@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Crear mi empresa · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;margin:0 auto;">
+  <h1>Crear mi empresa</h1>
+  <p class="lead">Llena estos datos. Tu CRM se crea con tu nombre y tu administrador; después podrás subir tu logo, agregar a tu equipo y ajustar tus catálogos.</p>
+  {% if not hay_cupo %}<div class="flash error">Por ahora no hay cupo para empresas nuevas. Escríbenos a {{ CFG.CONTACTO }} y te avisamos.</div>{% endif %}
+  <form method="post" autocomplete="off">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input class="hp" type="text" name="sitio_web_url" tabindex="-1" autocomplete="off">
+    <label for="nombre">Nombre de la empresa</label>
+    <input type="text" id="nombre" name="nombre" value="{{ f.nombre or '' }}" placeholder="ej. Aceros del Norte S.A. de C.V." required minlength="3" oninput="sugerirSlug()">
+    <label for="slug">Identificador (dirección de tu CRM)</label>
+    <input type="text" id="slug" name="slug" value="{{ f.slug or slug_sugerido }}" placeholder="ej. acerosdelnorte" pattern="[a-z0-9][a-z0-9-]{1,29}" oninput="this.dataset.manual=1;verSlug()">
+    <div class="hint" id="slugHint">Tu CRM quedará en <strong id="slugPrev">…</strong></div>
+    <label for="responsable">Nombre del responsable</label>
+    <input type="text" id="responsable" name="responsable" value="{{ f.responsable or '' }}" placeholder="Quien administrará el CRM" required>
+    <div class="grid" style="gap:12px;">
+      <div><label for="correo">Correo del administrador</label><input type="email" id="correo" name="correo" value="{{ f.correo or '' }}" placeholder="tu@empresa.com" required></div>
+      <div><label for="telefono">Teléfono (opcional)</label><input type="tel" id="telefono" name="telefono" value="{{ f.telefono or '' }}" placeholder="+52 ..."></div>
+    </div>
+    <div class="grid" style="gap:12px;">
+      <div><label for="password">Contraseña del administrador</label><input type="password" id="password" name="password" minlength="8" required><div class="hint">Mínimo 8 caracteres. Con ella entrarás a tu CRM.</div></div>
+      <div><label for="password2">Repite la contraseña</label><input type="password" id="password2" name="password2" minlength="8" required></div>
+    </div>
+    <label for="suma">Verificación: ¿cuánto es {{ suma }}?</label>
+    <input type="number" id="suma" name="suma" required style="max-width:140px;">
+    <label style="font-weight:500;margin-top:18px;"><input type="checkbox" name="acepto" required> Acepto los términos del servicio y el aviso de privacidad.</label>
+    <div style="margin-top:22px;"><button class="btn" type="submit" {% if not hay_cupo %}disabled{% endif %}>Crear mi empresa</button></div>
+  </form>
+</div>
+<script>
+  var base = "{{ CFG.DOMINIO_BASE or (CFG.IP.replace('.', '-') ~ '.nip.io') }}";
+  function verSlug(){ var s=document.getElementById('slug').value||'…'; document.getElementById('slugPrev').textContent = s + '.' + base; }
+  function sugerirSlug(){
+    var slug=document.getElementById('slug'); if(slug.dataset.manual) return;
+    var n=document.getElementById('nombre').value;
+    fetch('/api/slug?nombre='+encodeURIComponent(n)).then(function(r){return r.json();}).then(function(d){ if(!slug.dataset.manual){ slug.value=d.slug; verSlug(); document.getElementById('slugHint').style.color = d.disponible ? '' : '#DC2626'; } });
+  }
+  verSlug();
+</script>
+{% endblock %}

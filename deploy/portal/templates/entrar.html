@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Entrar · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px;margin:0 auto;">
+  <h1>Entrar a mi CRM</h1>
+  <p class="lead">Escribe el nombre de tu empresa, su identificador o el correo con el que se registró.</p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label for="q">Empresa o correo</label>
+    <input type="text" id="q" name="q" placeholder="ej. Aceros del Norte, aceros, o tu@empresa.com" autofocus required>
+    <div style="margin-top:18px;"><button class="btn" type="submit">Continuar</button></div>
+  </form>
+  {% if resultados is not none %}
+    {% if resultados|length == 0 %}
+      <div class="flash error" style="margin-top:20px;">No encontramos esa empresa. Revisa el nombre o escríbenos a {{ CFG.CONTACTO }}.</div>
+    {% elif resultados|length > 1 %}
+      <h2 style="margin-top:22px;">¿Cuál es tu empresa?</h2>
+      {% for e in resultados %}<p><a class="btn sec small" href="{{ url_login(e.slug, e.dominio) }}">{{ e.nombre }}</a></p>{% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

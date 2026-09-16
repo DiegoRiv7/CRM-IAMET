@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Tu CRM, listo en un minuto.</h1>
+<p class="lead">Pipeline de ventas, clientes, cotizaciones, correo y calendario en un solo lugar. Cada empresa tiene su propio espacio, con su nombre, su logo y sus datos separados de los demás.</p>
+<div class="grid">
+  <div class="card">
+    <h2>Ya tengo cuenta</h2>
+    <p class="hint" style="margin-bottom:16px;">Escribe el nombre de tu empresa o tu correo y te llevamos a tu inicio de sesión.</p>
+    <a class="btn" href="{{ url_for('entrar') }}">Entrar a mi CRM</a>
+  </div>
+  <div class="card">
+    <h2>Quiero mi CRM</h2>
+    <p class="hint" style="margin-bottom:16px;">Registra tu empresa. En cuanto se autorice, tu CRM se crea solo y recibes tu acceso.</p>
+    <a class="btn sec" href="{{ url_for('registro') }}">Crear mi empresa</a>
+  </div>
+</div>
+{% endblock %}

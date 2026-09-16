@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Tu solicitud · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:680px;margin:0 auto;">
+  <h1>{{ s.nombre }}</h1>
+  <p class="hint">Guarda este enlace: aquí verás el avance de tu CRM. Solicitud del {{ s.creado_en }}.</p>
+  <div class="steps" id="steps">
+    <div class="step" data-k="pendiente">1 · Solicitud recibida</div>
+    <div class="step" data-k="aprobada">2 · Autorizada</div>
+    <div class="step" data-k="creando">3 · Creando tu CRM</div>
+    <div class="step" data-k="lista">4 · Listo</div>
+  </div>
+  <div id="cuerpo"></div>
+</div>
+<script>
+  var token = "{{ s.token }}";
+  var orden = ['pendiente','aprobada','creando','lista'];
+  function pintar(d){
+    var idx = orden.indexOf(d.estado);
+    document.querySelectorAll('.step').forEach(function(el){ var i=orden.indexOf(el.dataset.k); el.className='step'+(i<idx?' done':(i===idx?' on':'')); });
+    var c = document.getElementById('cuerpo'), h='';
+    if(d.estado==='pendiente'){ h='<div class="flash ok">Recibimos tu solicitud. En cuanto la autoricemos, tu CRM se creará automáticamente. Esta página se actualiza sola.</div>'; }
+    else if(d.estado==='aprobada'){ h='<div class="flash ok">Autorizada. Tu CRM entra a creación en unos segundos…</div>'; }
+    else if(d.estado==='creando'){ h='<div class="flash ok">Estamos creando tu CRM. Tarda alrededor de un minuto.</div><pre class="log">'+(d.log||'').replace(/</g,'&lt;')+'</pre>'; }
+    else if(d.estado==='lista'){ h='<div class="flash ok"><strong>¡Tu CRM está listo!</strong></div><p>Entra con el correo <strong>'+d.correo+'</strong> y la contraseña que elegiste.</p><p><a class="btn" href="'+d.url+'">Entrar a mi CRM</a></p><p class="hint">Dirección de tu CRM: <a href="'+d.url+'">'+d.url+'</a></p>'; }
+    else if(d.estado==='error'){ h='<div class="flash error">Algo no salió bien al crear tu CRM. Ya lo estamos revisando; si quieres, escríbenos a {{ CFG.CONTACTO }}.</div>'; }
+    else if(d.estado==='rechazada'){ h='<div class="flash error">La solicitud no fue autorizada. Si crees que es un error, escríbenos a {{ CFG.CONTACTO }}.</div>'; }
+    c.innerHTML = h;
+    if(['pendiente','aprobada','creando'].indexOf(d.estado)>=0) setTimeout(cargar, 3000);
+  }
+  function cargar(){ fetch('/api/solicitud/'+token).then(function(r){return r.json();}).then(pintar).catch(function(){ setTimeout(cargar, 5000); }); }
+  cargar();
+</script>
+{% endblock %}

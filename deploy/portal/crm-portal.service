@@ -1,0 +1,16 @@
+[Unit]
+Description=CRM multiempresa — portal maestro (registro público + panel)
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/iamet2026/crm-producto/deploy/portal
+EnvironmentFile=/home/iamet2026/crm-empresas/portal.env
+# 1 solo worker: el hilo que crea empresas vive dentro del proceso.
+ExecStart=/home/iamet2026/crm-empresas/portal-venv/bin/gunicorn --bind 127.0.0.1:8090 --workers 1 --threads 8 --timeout 120 portal:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

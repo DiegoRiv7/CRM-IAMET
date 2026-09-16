@@ -57,3 +57,5 @@ ai_volumetria_ejemplos/
 deploy/empresas/.env.*
 deploy/empresas/empresas.yml
 deploy/empresas/IMAGEN_ACTUAL
+
+deploy/portal/__pycache__/

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Panel · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block content %}
+<h1>Panel de empresas</h1>
+<div class="card" style="margin-bottom:20px;">
+  <form method="post" action="{{ url_for('panel_ajustes') }}" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label style="margin:0;"><input type="checkbox" name="auto" {% if auto %}checked{% endif %}> Aprobación automática (la empresa se crea al registrarse)</label>
+    <label style="margin:0 0 0 18px;">Tope de empresas activas <input type="number" name="maximo" value="{{ maximo }}" min="1" max="50" style="width:80px;display:inline-block;margin-left:6px;"></label>
+    <button class="btn small" type="submit">Guardar</button>
+    <span class="hint">Activas: {{ activas }} · en cola: {{ en_cola }}</span>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h2>Solicitudes</h2>
+  <table>
+    <tr><th>Fecha</th><th>Tipo</th><th>Empresa</th><th>Responsable</th><th>Estado</th><th></th></tr>
+    {% for s in sols %}
+    <tr>
+      <td>{{ s.creado_en[:16] }}</td>
+      <td>{{ s.tipo }}</td>
+      <td><strong>{{ s.nombre }}</strong><br><span class="hint">{{ s.slug }}</span></td>
+      <td>{{ s.responsable }}<br><span class="hint">{{ s.correo }} {{ s.telefono }}</span></td>
+      <td><span class="estado {{ s.estado }}">{{ s.estado }}</span>{% if s.mensaje %}<div class="hint">{{ s.mensaje }}</div>{% endif %}</td>
+      <td class="inline">
+        {% if s.tipo == 'alta' %}
+        {% if s.estado == 'pendiente' %}
+          <form method="post" action="{{ url_for('panel_accion', sid=s.id, accion='aprobar') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small">Aprobar</button></form>
+          <form method="post" action="{{ url_for('panel_accion', sid=s.id, accion='rechazar') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small sec">Rechazar</button></form>
+        {% elif s.estado == 'error' %}
+          <form method="post" action="{{ url_for('panel_accion', sid=s.id, accion='reintentar') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small">Reintentar</button></form>
+          <form method="post" action="{{ url_for('panel_accion', sid=s.id, accion='rechazar') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small sec">Descartar</button></form>
+        {% elif s.estado == 'lista' %}
+          <a class="btn small sec" href="{{ s.url }}">Login</a>
+        {% endif %}
+        {% endif %}
+        <a class="btn small sec" href="{{ url_for('solicitud', token=s.token) }}">Ver</a>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="hint">Sin solicitudes todavía.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Empresas en el servidor</h2>
+  <table>
+    <tr><th>Empresa</th><th>Identificador</th><th>Puerto</th><th>Imagen</th><th>Web</th><th>Alta</th><th></th></tr>
+    {% for e in empresas %}
+    <tr>
+      <td><strong>{{ e.nombre }}</strong>{% if not e.activa %} <span class="estado rechazada">baja</span>{% endif %}</td>
+      <td>{{ e.slug }}</td><td>{{ e.puerto }}</td><td>{{ (e.imagen or '')|replace('crm-producto:', '') }}</td>
+      <td>{{ e.web }}</td><td>{{ e.alta }}</td>
+      <td class="inline">
+        <a class="btn small sec" href="{{ e.url }}">Login</a>
+        {% if e.activa %}
+        <form method="post" action="{{ url_for('panel_baja', slug=e.slug) }}" onsubmit="return confirm('¿Dar de baja {{ e.slug }}? Se respalda antes.');"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small danger">Baja</button></form>
+        <form method="post" action="{{ url_for('panel_baja', slug=e.slug) }}" onsubmit="return confirm('¿Dar de baja {{ e.slug }} y BORRAR sus datos? Se respalda antes.');"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="purgar" value="1"><button class="btn small danger">Baja + borrar</button></form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
