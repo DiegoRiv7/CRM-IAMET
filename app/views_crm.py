@@ -69,16 +69,19 @@ def _get_etapas_pipeline_json():
 
 
 def _cotizado_total_mxn(cot_qs):
-    """Suma cot.total normalizando USD→MXN.
+    """Suma cot.subtotal (sin IVA) normalizando USD→MXN.
 
     Las cotizaciones guardan subtotal/total EN SU MONEDA cruda (por defecto USD),
     así que sumarlas directo mezcla pesos y dólares y subestima. Aquí los montos
     en USD se convierten con el mismo tipo de cambio que usan las oportunidades.
+
+    Sin IVA, igual que el monto de las oportunidades y las POs, para que las
+    vistas de Reportes cuadren entre sí.
     """
     from .views_cotizaciones import get_tipo_cambio_usd_mxn
     _z = Value(Decimal('0'), output_field=models.DecimalField(max_digits=14, decimal_places=2))
-    usd = cot_qs.filter(moneda__iexact='USD').aggregate(t=Coalesce(Sum('total'), _z))['t'] or Decimal('0')
-    otros = cot_qs.exclude(moneda__iexact='USD').aggregate(t=Coalesce(Sum('total'), _z))['t'] or Decimal('0')
+    usd = cot_qs.filter(moneda__iexact='USD').aggregate(t=Coalesce(Sum('subtotal'), _z))['t'] or Decimal('0')
+    otros = cot_qs.exclude(moneda__iexact='USD').aggregate(t=Coalesce(Sum('subtotal'), _z))['t'] or Decimal('0')
     tc = Decimal(str(get_tipo_cambio_usd_mxn()))
     return otros + (usd * tc)
 
@@ -2240,7 +2243,7 @@ def api_crm_table_data(request):
                 if not cot.cliente_id:
                     continue
                 cid = cot.cliente_id
-                t = cot.total or Decimal('0')
+                t = cot.subtotal or Decimal('0')   # sin IVA, como las oportunidades
                 if (cot.moneda or '').upper() == 'USD':
                     t = t * _tc_cot   # USD → MXN
                 total_by_id[cid] = total_by_id.get(cid, Decimal('0')) + t
@@ -2598,7 +2601,8 @@ def api_tendencia_mensual(request):
         cot = Cotizacion.objects.filter(
             Q(oportunidad_id__in=opp_ids) |
             Q(oportunidad__isnull=True, fecha_creacion__year=anio, fecha_creacion__month=int(mes_str))
-        ).aggregate(t=Coalesce(Sum('total'), _zero))['t'] or _zero
+        )
+        cot = _cotizado_total_mxn(cot)   # sin IVA y en pesos, como las oportunidades
         data_cot.append(float(cot))
 
     # Detectar puntos notables (cambios > 30% respecto al mes anterior)
@@ -6552,11 +6556,17 @@ def api_desglose_cotizaciones(request):
     monto_by_client = {}
     client_names = {}
 
+    # Sin IVA y en pesos (USD→MXN), igual que la vista Cotizado.
+    from .views_cotizaciones import get_tipo_cambio_usd_mxn
+    _tc = Decimal(str(get_tipo_cambio_usd_mxn()))
     for cot in cot_qs:
         if not cot.cliente_id:
             continue
         count_by_client[cot.cliente_id] += 1
-        monto_by_client[cot.cliente_id] = monto_by_client.get(cot.cliente_id, Decimal('0')) + (cot.total or Decimal('0'))
+        _m = cot.subtotal or Decimal('0')
+        if (cot.moneda or '').upper() == 'USD':
+            _m = _m * _tc
+        monto_by_client[cot.cliente_id] = monto_by_client.get(cot.cliente_id, Decimal('0')) + _m
         if cot.cliente_id not in client_names:
             client_names[cot.cliente_id] = cot.cliente.nombre_empresa if cot.cliente else 'Sin Cliente'
 
@@ -6566,7 +6576,7 @@ def api_desglose_cotizaciones(request):
             'cliente': client_names.get(cid, 'Sin Cliente'),
             'cliente_id': cid,
             'num_cotizaciones': count,
-            'monto_total': str(monto_by_client.get(cid, Decimal('0'))),
+            'monto_total': str(monto_by_client.get(cid, Decimal('0')).quantize(Decimal('0.01'))),
         })
 
     return JsonResponse({
