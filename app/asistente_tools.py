@@ -396,7 +396,9 @@ def _tool_resumen_empresa(args: dict, user: User) -> dict:
     cot_qs = Cotizacion.objects.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
     if visible_ids is not None:
         cot_qs = cot_qs.filter(created_by_id__in=visible_ids)
-    total_cotizado = cot_qs.aggregate(total=Sum('total')).get('total') or 0
+    # Sin IVA y en pesos, como el monto de las oportunidades (misma regla que Reportes).
+    from .views_crm import _cotizado_total_mxn
+    total_cotizado = _cotizado_total_mxn(cot_qs)
     num_cotizaciones = cot_qs.count()
 
     # Facturado REAL: del ArchivoFacturacion del periodo (misma fuente que

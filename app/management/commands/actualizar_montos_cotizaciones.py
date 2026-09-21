@@ -4,7 +4,7 @@ from app.models import TodoItem, Cotizacion
 
 
 class Command(BaseCommand):
-    help = 'Actualiza el monto de cada oportunidad con el total (con IVA) de su última cotización (convertido a MXN si es USD)'
+    help = 'Actualiza el monto de cada oportunidad con el subtotal (sin IVA) de su última cotización (convertido a MXN si es USD)'
 
     def handle(self, *args, **options):
         from app.views_cotizaciones import get_tipo_cambio_usd_mxn
@@ -27,11 +27,11 @@ class Command(BaseCommand):
                 saltadas_po += 1
                 continue
             ultima_cot = opp.cotizaciones.order_by('-fecha_creacion').first()
-            if ultima_cot and ultima_cot.total > 0:
-                monto_mxn = ultima_cot.total
+            if ultima_cot and ultima_cot.subtotal > 0:
+                monto_mxn = ultima_cot.subtotal
                 moneda = (ultima_cot.moneda or '').upper()
                 if moneda == 'USD':
-                    monto_mxn = (ultima_cot.total * tc).quantize(Decimal('0.01'))
+                    monto_mxn = (ultima_cot.subtotal * tc).quantize(Decimal('0.01'))
                 opp.monto = monto_mxn
                 opp.save(update_fields=['monto', 'fecha_actualizacion'])
                 actualizadas += 1
