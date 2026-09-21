@@ -78,6 +78,17 @@ class UserProfile(models.Model):
     # asignárselos a sí mismo o a miembros de su grupo. Se administra desde el
     # panel admin → Permisos. Supervisores y administradores pueden siempre.
     puede_crear_prospecto = models.BooleanField(default=False, verbose_name="Puede crear Prospectos")
+    # Permiso para ver la bandeja "Chat Web" (chats del sitio público con
+    # Cuenta IAMET). Supervisores siempre pueden; el resto necesita el flag.
+    # Se administra desde el panel admin → Permisos.
+    puede_chat_web = models.BooleanField(default=False, verbose_name="Puede ver el Chat Web")
+    # Permiso para administrar la Tienda del sitio web público (panel /admin/tienda
+    # de iamet-platform): subir/editar productos, precios, descuentos, existencias y
+    # gestionar el estado de los pedidos. El staff entra al panel de la tienda con su
+    # MISMA cuenta del CRM vía SSO (endpoint api_validar_credenciales); el CRM valida
+    # credenciales y devuelve este flag. Supervisores siempre pueden; el resto necesita
+    # el flag. Se administra desde el panel admin → Permisos (Control de Acceso).
+    puede_editar_tienda = models.BooleanField(default=False, verbose_name="Puede editar la Tienda")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
