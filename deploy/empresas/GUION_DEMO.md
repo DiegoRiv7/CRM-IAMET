@@ -15,8 +15,10 @@ Empresa ficticia: **Aceros del Norte** (slug `demo`). Datos sembrados con `manag
 ## 0. El cliente crea su propia empresa (3 min)
 Portal: **https://portal.82-223-44-29.nip.io/** (panel interno en `/panel`, usuario `iamet`,
 contraseña en `/home/iamet2026/crm-empresas/portal.env`).
-- El cliente abre **Crear mi empresa**, llena nombre, responsable, correo y contraseña. La
-  página de su solicitud muestra los 4 pasos.
+- El portal es la misma pantalla del login del CRM (palmeras + tarjeta) con dos pestañas:
+  **Entrar a mi CRM** y **Crear mi empresa**. El cliente llena nombre, responsable, correo y
+  contraseña. La página de su solicitud muestra los 4 pasos (Recibida → Autorizada →
+  Creando → Listo) y se actualiza sola.
 - Tú, en `/panel`, ves la solicitud **pendiente** y pulsas **Aprobar** (o dejas encendida la
   *aprobación automática* para que se cree sola). En ~80 s la página del cliente cambia a
   **¡Tu CRM está listo!** con el botón **Entrar a mi CRM**.

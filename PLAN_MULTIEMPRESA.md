@@ -296,6 +296,11 @@ la contraseña elegida → home 200 → "Entrar" por correo redirige → baja+bo
 (contenedores, BD y vhost fuera; respaldos guardados). Capturas revisadas. `baja --purge`
 ahora también borra el certificado del host. Pendiente: correo de bienvenida (sin SMTP).
 
+**Rediseño 2026-09-28 (pedido del usuario):** el portal dejó de ser una página genérica y ahora
+usa la misma pantalla del login del CRM (foto de palmeras + tarjeta con logo y palma); Entrar /
+Crear mi empresa son pestañas de la tarjeta; `/` redirige a `/entrar`. Un identificador de una
+empresa dada de baja vuelve a estar disponible. Verificado en vivo con capturas.
+
 **Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
 clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
 
