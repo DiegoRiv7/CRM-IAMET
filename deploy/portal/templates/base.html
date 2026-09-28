@@ -120,6 +120,20 @@
         .muted { color: var(--text-muted); font-size: 0.82rem; }
         .hp { position: absolute; left: -9999px; }
         .foot { margin-top: 26px; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+        /* Modal "Olvidé mi contraseña" (copiado del login del CRM) */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10, 20, 34, 0.55); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(4, 10, 18, 0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: var(--mar-azul-oscuro); }
+        .modal-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
+        .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: #ffffff; border: 1px solid #e0e0dd; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 16px; }
+        .modal-box input:focus { border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(74, 110, 156, 0.15); }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; }
+        .btn-modal-cancel { background: #e8e8e5; color: var(--text-muted); } .btn-modal-cancel:hover { background: #ddddd9; }
+        .btn-modal-send { background: linear-gradient(135deg, #6E96C4, #4A6E9C); color: white; } .btn-modal-send:hover { background: linear-gradient(135deg, #92B8E0, #5276AA); }
+        .modal-msg { font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1.2em; }
+        .modal-msg.success { color: var(--ok-color); } .modal-msg.error { color: var(--error-color); }
         @media (max-width: 900px) { .branding-section { display: none; } .login-section { flex: 1; } }
     </style>
 </head>

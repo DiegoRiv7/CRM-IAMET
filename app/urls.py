@@ -23,6 +23,7 @@ from . import views_asistente_prospeccion
 from . import views_widget_pages
 from . import views_leads_web
 from . import views_chat_web
+from . import views_portal_sso
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from . import views_sync
@@ -514,6 +515,10 @@ urlpatterns = [
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='user_login'),
+    # MULTIEMPRESA: inicio de sesión desde el portal maestro (solo instancias con PORTAL_SSO_SECRET)
+    path('login/portal/', views_portal_sso.login_portal, name='login_portal'),
+    path('api/portal/validar/', views_portal_sso.api_portal_validar, name='api_portal_validar'),
+    path('api/portal/reset/', views_portal_sso.api_portal_reset, name='api_portal_reset'),
     path('logout/', views.user_logout, name='user_logout'),
     path('api/solicitar-reset-password/', views.solicitar_reset_password, name='solicitar_reset_password'),
     path('set-language/', views.set_language, name='set_language'),

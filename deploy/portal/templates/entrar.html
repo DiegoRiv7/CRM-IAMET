@@ -1,23 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Entrar · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block title %}Iniciar sesión · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
 {% block content %}
-<p class="subtitle anim-stagger-2">Ingresa a tu CRM o crea el de tu empresa.</p>
+<p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>
 {% set activa = 'entrar' %}{% include "_tabs.html" %}
 {% with mensajes = get_flashed_messages(with_categories=true) %}{% for cat, m in mensajes %}<div class="{% if cat == 'error' %}error-banner{% else %}ok-banner{% endif %}">{{ m }}</div>{% endfor %}{% endwith %}
+{% if opciones %}
+<div class="ok-banner">Tu usuario existe en más de una empresa. ¿A cuál quieres entrar?</div>
+<div class="input-group">
+    {% for o in opciones %}<a class="btn-submit" style="margin-bottom:10px;" href="{{ o.url }}">{{ o.nombre }}</a>{% endfor %}
+</div>
+{% else %}
 <form method="post" class="anim-stagger-3">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
     <div class="input-group">
-        <label for="q">Empresa o correo</label>
-        <input type="text" id="q" name="q" placeholder="ej. Aceros del Norte o tu@empresa.com" value="{{ q or '' }}" autofocus required>
-        <div class="hint">Te llevamos al inicio de sesión de tu empresa.</div>
+        <label for="username">Usuario o Correo</label>
+        <input type="text" id="username" name="username" placeholder="ej. nombre.apellido o tu@empresa.com" value="{{ usuario or '' }}" autocomplete="username" required autofocus>
     </div>
-    {% if resultados is not none and resultados|length == 0 %}
-        <div class="error-banner">No encontramos esa empresa. Revisa el nombre o escríbenos a {{ CFG.CONTACTO }}.</div>
-    {% elif resultados and resultados|length > 1 %}
-        <div class="input-group"><label>¿Cuál es tu empresa?</label>
-            {% for e in resultados %}<p style="margin:6px 0;"><a class="btn-small ghost" href="{{ url_login(e.slug, e.dominio) }}">{{ e.nombre }}</a></p>{% endfor %}
-        </div>
-    {% endif %}
-    <button type="submit" class="btn-submit anim-stagger-4">Continuar</button>
+    <div class="input-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <div class="options anim-stagger-4">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" name="remember" style="width:16px;height:16px;accent-color:var(--sol-naranja);"> Recordarme</label>
+        <button type="button" id="btn-forgot-pwd" class="link">¿Olvidaste tu contraseña?</button>
+    </div>
+    <button type="submit" class="btn-submit anim-stagger-5">Iniciar Sesión</button>
 </form>
+{% endif %}
+
+<!-- Modal: Olvidé mi contraseña (mismo que el login del CRM) -->
+<div class="modal-overlay" id="modalForgot">
+    <div class="modal-box">
+        <h2>Restablecer contraseña</h2>
+        <p>Escribe tu usuario o correo y se notificará a un supervisor de tu empresa para gestionar el cambio.</p>
+        <input type="text" id="modalUsername" placeholder="ej. nombre.apellido o tu@empresa.com" autocomplete="username">
+        <div class="modal-actions">
+            <button class="btn-modal-cancel" id="btnModalCancel" type="button">Cancelar</button>
+            <button class="btn-modal-send" id="btnModalSend" type="button">Enviar solicitud</button>
+        </div>
+        <p class="modal-msg" id="modalMsg"></p>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    var modal = document.getElementById('modalForgot'), modalInput = document.getElementById('modalUsername'), modalMsg = document.getElementById('modalMsg');
+    var btnF = document.getElementById('btn-forgot-pwd');
+    if (btnF) btnF.addEventListener('click', function () { modalInput.value = (document.getElementById('username') || {}).value || ''; modalMsg.textContent = ''; modalMsg.className = 'modal-msg'; modal.classList.add('active'); setTimeout(function(){ modalInput.focus(); }, 100); });
+    document.getElementById('btnModalCancel').addEventListener('click', function () { modal.classList.remove('active'); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('active'); });
+    document.getElementById('btnModalSend').addEventListener('click', function () {
+        var username = modalInput.value.trim();
+        if (!username) { modalMsg.textContent = 'Por favor escribe tu usuario o correo.'; modalMsg.className = 'modal-msg error'; return; }
+        var btn = this; btn.disabled = true; btn.textContent = 'Enviando...'; modalMsg.textContent = ''; modalMsg.className = 'modal-msg';
+        fetch('/entrar/olvide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: username }) })
+        .then(function(r){ return r.json(); })
+        .then(function(data){ modalMsg.textContent = data.message || ''; modalMsg.className = 'modal-msg ' + (data.status === 'ok' ? 'success' : 'error'); if (data.status === 'ok') setTimeout(function(){ modal.classList.remove('active'); }, 3500); })
+        .catch(function(){ modalMsg.textContent = 'Error de conexión. Intenta de nuevo.'; modalMsg.className = 'modal-msg error'; })
+        .finally(function(){ btn.disabled = false; btn.textContent = 'Enviar solicitud'; });
+    });
+</script>
 {% endblock %}

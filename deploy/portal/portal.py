@@ -17,6 +17,7 @@ Interno (/panel, con contraseña de portal.env):
 Un hilo trabajador ejecuta las altas/bajas de una en una y guarda el log en SQLite.
 """
 import hmac
+import json
 import os
 import re
 import secrets
@@ -24,6 +25,8 @@ import sqlite3
 import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 
 import yaml
@@ -176,6 +179,55 @@ def cupo_disponible():
     return activas + en_cola < max_empresas(), activas, en_cola
 
 
+# ── Inicio de sesión contra las instancias (SSO por token) ──────────────────
+def _env_de(slug):
+    """Variables del .env de una empresa (solo lectura, para PORTAL_SSO_SECRET)."""
+    ruta = os.path.join(CFG['EMPRESAS_DIR'], f'.env.{slug}')
+    out = {}
+    try:
+        with open(ruta) as f:
+            for linea in f:
+                linea = linea.strip()
+                if linea and not linea.startswith('#') and '=' in linea:
+                    k, v = linea.split('=', 1)
+                    out[k.strip()] = v.strip()
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def _api_instancia(e, ruta, datos, timeout=6):
+    """POST JSON a la API interna de una instancia (127.0.0.1:<puerto>) con su secreto."""
+    secreto = _env_de(e['slug']).get('PORTAL_SSO_SECRET', '')
+    if not secreto:
+        return None
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{e['puerto']}{ruta}", data=json.dumps(datos).encode(),
+        headers={'Content-Type': 'application/json', 'X-Portal-Secret': secreto, 'Host': host_de(e['slug'], e.get('dominio', ''))},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode() or '{}')
+    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError):
+        return None
+
+
+def _candidatas(usuario):
+    """Empresas activas ordenadas: primero las registradas con ese correo, luego el resto."""
+    activas = empresas_activas()
+    prioridad = set()
+    if '@' in usuario:
+        rows = db().execute("SELECT slug FROM solicitudes WHERE tipo='alta' AND estado='lista' AND lower(correo)=?", (usuario.lower(),)).fetchall()
+        prioridad = {r['slug'] for r in rows}
+    return sorted(activas, key=lambda e: 0 if e['slug'] in prioridad else 1)
+
+
+def _url_sso(e, token):
+    base = url_login(e['slug'], e.get('dominio', ''))
+    return f"{base}portal/?t={urllib.request.quote(token)}&next=/app/home/"
+
+
 # ── Anti-abuso sencillo ─────────────────────────────────────────────────────
 _intentos = {}
 
@@ -218,29 +270,52 @@ def index():
 
 @app.route('/entrar', methods=['GET', 'POST'])
 def entrar():
-    resultados = None
-    q = ''
+    """Login único: usuario/correo + contraseña. Se validan contra las instancias por la red
+    interna; la que acepte emite un token de un solo uso y se redirige a su CRM."""
+    opciones = None
+    usuario = ''
     if request.method == 'POST':
-        q = (request.form.get('q') or '').strip().lower()
-        if q:
-            resultados = []
-            for e in empresas_activas():
-                if q in e['slug'].lower() or q in e['nombre'].lower():
-                    resultados.append(e)
-            if not resultados and '@' in q:
-                rows = db().execute("SELECT slug FROM solicitudes WHERE tipo='alta' AND estado='lista' AND lower(correo)=?", (q,)).fetchall()
-                slugs = {r['slug'] for r in rows}
-                dom = q.split('@')[-1]
-                resultados = [e for e in empresas_activas() if e['slug'] in slugs]
-                if not resultados:
-                    # último recurso: dominio del correo coincide con el dominio configurado de la empresa
-                    for e in empresas_activas():
-                        if e.get('dominio') and dom in e['dominio']:
-                            resultados.append(e)
-            if len(resultados) == 1:
-                e = resultados[0]
-                return redirect(url_login(e['slug'], e.get('dominio', '')))
-    return render_template('entrar.html', resultados=resultados, url_login=url_login, q=q)
+        if not csrf_ok():
+            abort(400)
+        ip = request.headers.get('X-Real-IP') or request.remote_addr or ''
+        usuario = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
+        remember = bool(request.form.get('remember'))
+        if not rate_ok('login:' + ip, limite=15, ventana=900):
+            flash('Demasiados intentos; espera unos minutos.', 'error')
+        elif usuario and password:
+            aceptadas = []
+            for e in _candidatas(usuario):
+                r = _api_instancia(e, '/app/api/portal/validar/', {'usuario': usuario, 'password': password, 'remember': remember})
+                if r and r.get('ok'):
+                    aceptadas.append((e, r['token']))
+            if len(aceptadas) == 1:
+                return redirect(_url_sso(*aceptadas[0]))
+            if len(aceptadas) > 1:
+                opciones = [{'nombre': e['nombre'], 'url': _url_sso(e, t)} for e, t in aceptadas]
+            else:
+                flash('Credenciales incorrectas. Verifica tu usuario y contraseña.', 'error')
+        else:
+            flash('Escribe tu usuario y tu contraseña.', 'error')
+    return render_template('entrar.html', usuario=usuario, opciones=opciones)
+
+
+@app.post('/entrar/olvide')
+def entrar_olvide():
+    """Modal "¿Olvidaste tu contraseña?": avisa a los supervisores de la empresa del usuario."""
+    ip = request.headers.get('X-Real-IP') or request.remote_addr or ''
+    if not rate_ok('reset:' + ip, limite=5, ventana=900):
+        return jsonify({'status': 'error', 'message': 'Demasiados intentos; espera unos minutos.'}), 429
+    data = request.get_json(silent=True) or {}
+    usuario = (data.get('username') or '').strip()
+    if not usuario:
+        return jsonify({'status': 'error', 'message': 'Escribe tu usuario o correo.'}), 400
+    for e in _candidatas(usuario):
+        r = _api_instancia(e, '/app/api/portal/reset/', {'usuario': usuario})
+        if r and r.get('ok') and r.get('existe'):
+            break
+    # Respuesta genérica siempre (no revelar si el usuario existe ni en qué empresa)
+    return jsonify({'status': 'ok', 'message': 'Si el usuario existe, un supervisor de tu empresa recibió la solicitud y te contactará.'})
 
 
 @app.route('/registro', methods=['GET', 'POST'])

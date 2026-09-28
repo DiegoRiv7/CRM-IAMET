@@ -7266,6 +7266,17 @@ class EmpresaConfig(models.Model):
         return {m: bool(getattr(self, f'mod_{m}', False)) for m in self.MODULOS}
 
 
+class PortalTokenUsado(models.Model):
+    """Nonces de tokens del portal (SSO) ya consumidos: cada token vale una sola vez.
+    Ver views_portal_sso.py. Se limpian los de más de un día."""
+    nonce = models.CharField(max_length=32, unique=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Token del portal usado'
+        verbose_name_plural = 'Tokens del portal usados'
+
+
 class OpcionCatalogo(models.Model):
     """Opción editable de un catálogo (producto / área / marca). Sustituye a
     las listas fijas PRODUCTO_CHOICES, AREA_CHOICES y MARCA_CHOICES."""
