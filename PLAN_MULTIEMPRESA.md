@@ -301,6 +301,13 @@ usa la misma pantalla del login del CRM (foto de palmeras + tarjeta con logo y p
 Crear mi empresa son pestañas de la tarjeta; `/` redirige a `/entrar`. Un identificador de una
 empresa dada de baja vuelve a estar disponible. Verificado en vivo con capturas.
 
+**Login único (2026-09-28, pedido del usuario):** "Entrar a mi CRM" es el login real (usuario/correo,
+contraseña, recordarme, olvidé contraseña). SSO por token: `app/views_portal_sso.py`
+(validar / reset / login por token firmado de un solo uso y 90 s; `PortalTokenUsado`, migración
+0225), `PORTAL_SSO_SECRET` por empresa (plantilla .env + alta idempotente que lo agrega a las
+existentes). Verificado en vivo: login por usuario y por correo → home 200, token reusado
+rechazado, contraseña mala → mensaje del CRM, reset → notificación al supervisor, IAMET → 404.
+
 **Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
 clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
 

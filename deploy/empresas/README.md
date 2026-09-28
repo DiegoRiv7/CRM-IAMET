@@ -117,7 +117,13 @@ deploy/portal/instalar_portal.sh [--dominio portal.crm.iamet.mx]   # instala/act
 systemctl restart crm-portal                                        # tras cambiar portal.py
 journalctl -u crm-portal -f                                         # log
 ```
-- Público: `/` portada · `/entrar` (nombre, identificador o correo → login de su instancia) ·
+- Público: `/` → `/entrar` = **login único** (usuario/correo + contraseña + recordarme + olvidé
+  contraseña). El portal prueba las credenciales contra las instancias por la red interna
+  (`127.0.0.1:<puerto>/app/api/portal/validar/`, cabecera `X-Portal-Secret` = `PORTAL_SSO_SECRET`
+  del `.env` de la empresa; primero las registradas con ese correo) y redirige a
+  `/app/login/portal/?t=<token>` de la que las aceptó (token firmado, 90 s, un solo uso; si varias
+  aceptan, elige). "Olvidé mi contraseña" avisa a los supervisores de esa empresa. Sin secreto
+  (IAMET) esos endpoints dan 404. ·
   `/registro` (solicitud con honeypot, suma de verificación, tope de cupo y límite por IP) ·
   `/solicitud/<token>` (avance en vivo; guarda el enlace).
 - Panel `/panel` (usuario y contraseña en `/home/iamet2026/crm-empresas/portal.env`):

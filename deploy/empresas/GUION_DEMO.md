@@ -23,8 +23,9 @@ contraseña en `/home/iamet2026/crm-empresas/portal.env`).
   *aprobación automática* para que se cree sola). En ~80 s la página del cliente cambia a
   **¡Tu CRM está listo!** con el botón **Entrar a mi CRM**.
 - Entra con su correo y contraseña: su CRM vacío, con su nombre. En Administración → Empresa
-  sube su logo. Después, **Entrar a mi CRM** en el portal lo lleva a su instancia escribiendo
-  su nombre o su correo.
+  sube su logo. Desde entonces el portal es SU login: en **Entrar a mi CRM** escribe usuario o
+  correo y contraseña (con "Recordarme" y "¿Olvidaste tu contraseña?") y cae directo en su
+  CRM; el portal averigua a qué empresa pertenece.
 - Al terminar la reunión: panel → **Baja + borrar** (se respalda antes).
 
 ## 1. Entrar como Laura (2 min)
