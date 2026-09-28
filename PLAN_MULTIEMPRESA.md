@@ -308,6 +308,12 @@ contraseña, recordarme, olvidé contraseña). SSO por token: `app/views_portal_
 existentes). Verificado en vivo: login por usuario y por correo → home 200, token reusado
 rechazado, contraseña mala → mensaje del CRM, reset → notificación al supervisor, IAMET → 404.
 
+**Portada + un solo inicio (2026-09-28, pedido del usuario: "tenemos 2 inicios"):** `/` es una
+portada promocional (hero con la foto del login, 6 beneficios, 3 pasos, CTA) con "Iniciar sesión"
+y "Pruébalo"; el login y el registro ya no llevan pestañas. Las instancias de clientes definen
+`PORTAL_URL` y su `/app/login/` redirige al portal conservando `?next` y la empresa (hint para
+validar primero ahí); IAMET no lo define y conserva su login.
+
 **Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
 clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
 
