@@ -1,22 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Entrar · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:560px;margin:0 auto;">
-  <h1>Entrar a mi CRM</h1>
-  <p class="lead">Escribe el nombre de tu empresa, su identificador o el correo con el que se registró.</p>
-  <form method="post">
+<p class="subtitle anim-stagger-2">Ingresa a tu CRM o crea el de tu empresa.</p>
+{% set activa = 'entrar' %}{% include "_tabs.html" %}
+{% with mensajes = get_flashed_messages(with_categories=true) %}{% for cat, m in mensajes %}<div class="{% if cat == 'error' %}error-banner{% else %}ok-banner{% endif %}">{{ m }}</div>{% endfor %}{% endwith %}
+<form method="post" class="anim-stagger-3">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-    <label for="q">Empresa o correo</label>
-    <input type="text" id="q" name="q" placeholder="ej. Aceros del Norte, aceros, o tu@empresa.com" autofocus required>
-    <div style="margin-top:18px;"><button class="btn" type="submit">Continuar</button></div>
-  </form>
-  {% if resultados is not none %}
-    {% if resultados|length == 0 %}
-      <div class="flash error" style="margin-top:20px;">No encontramos esa empresa. Revisa el nombre o escríbenos a {{ CFG.CONTACTO }}.</div>
-    {% elif resultados|length > 1 %}
-      <h2 style="margin-top:22px;">¿Cuál es tu empresa?</h2>
-      {% for e in resultados %}<p><a class="btn sec small" href="{{ url_login(e.slug, e.dominio) }}">{{ e.nombre }}</a></p>{% endfor %}
+    <div class="input-group">
+        <label for="q">Empresa o correo</label>
+        <input type="text" id="q" name="q" placeholder="ej. Aceros del Norte o tu@empresa.com" value="{{ q or '' }}" autofocus required>
+        <div class="hint">Te llevamos al inicio de sesión de tu empresa.</div>
+    </div>
+    {% if resultados is not none and resultados|length == 0 %}
+        <div class="error-banner">No encontramos esa empresa. Revisa el nombre o escríbenos a {{ CFG.CONTACTO }}.</div>
+    {% elif resultados and resultados|length > 1 %}
+        <div class="input-group"><label>¿Cuál es tu empresa?</label>
+            {% for e in resultados %}<p style="margin:6px 0;"><a class="btn-small ghost" href="{{ url_login(e.slug, e.dominio) }}">{{ e.nombre }}</a></p>{% endfor %}
+        </div>
     {% endif %}
-  {% endif %}
-</div>
+    <button type="submit" class="btn-submit anim-stagger-4">Continuar</button>
+</form>
 {% endblock %}

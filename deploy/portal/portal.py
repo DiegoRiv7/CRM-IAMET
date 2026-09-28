@@ -50,7 +50,7 @@ INVENTARIO = os.path.join(CFG['EMPRESAS_DIR'], 'empresas.yml')
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,29}$')
 SLUGS_RESERVADOS = {'iamet', 'core', 'pruebas', 'demo-iamet', 'portal', 'www', 'admin', 'api', 'crm'}
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = CFG['SECRET']
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
                   SESSION_COOKIE_SECURE=CFG['HTTPS'], PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
@@ -210,12 +210,14 @@ def favicon():
 
 @app.get('/')
 def index():
-    return render_template('index.html', activas=len(empresas_activas()))
+    # La portada ES la pantalla de entrada (misma pantalla que el login del CRM).
+    return redirect(url_for('entrar'))
 
 
 @app.route('/entrar', methods=['GET', 'POST'])
 def entrar():
     resultados = None
+    q = ''
     if request.method == 'POST':
         q = (request.form.get('q') or '').strip().lower()
         if q:
@@ -236,7 +238,7 @@ def entrar():
             if len(resultados) == 1:
                 e = resultados[0]
                 return redirect(url_login(e['slug'], e.get('dominio', '')))
-    return render_template('entrar.html', resultados=resultados, url_login=url_login)
+    return render_template('entrar.html', resultados=resultados, url_login=url_login, q=q)
 
 
 @app.route('/registro', methods=['GET', 'POST'])

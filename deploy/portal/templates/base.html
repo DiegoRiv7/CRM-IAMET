@@ -1,59 +1,181 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}{{ CFG.NOMBRE_PRODUCTO }}{% endblock %}</title>
-<style>
-  :root { --azul:#2C5080; --azul2:#4A6E9C; --ink:#1A1A2E; --muted:#6B7280; --bg:#F4F6FA; --ok:#10B981; --err:#DC2626; --line:#E5E7EB; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
-  header { background:linear-gradient(135deg,#1B2E4A 0%,#2C5080 100%); color:#fff; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; }
-  header a { color:#fff; text-decoration:none; font-weight:800; letter-spacing:.01em; font-size:1.1rem; }
-  header nav a { font-weight:600; font-size:.9rem; opacity:.85; margin-left:18px; }
-  main { max-width:960px; margin:0 auto; padding:36px 20px 60px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:28px; box-shadow:0 10px 30px rgba(15,23,42,.06); }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
-  h1 { font-size:2rem; margin:0 0 10px; letter-spacing:-.02em; } h2 { font-size:1.25rem; margin:0 0 8px; }
-  p.lead { color:var(--muted); font-size:1.05rem; margin:0 0 26px; }
-  .btn { display:inline-block; padding:12px 20px; border-radius:12px; background:var(--azul); color:#fff; font-weight:700; text-decoration:none; border:0; cursor:pointer; font-size:1rem; }
-  .btn.sec { background:#fff; color:var(--azul); border:1.5px solid var(--azul); }
-  .btn.small { padding:7px 12px; font-size:.85rem; border-radius:9px; }
-  .btn.danger { background:var(--err); }
-  label { display:block; font-size:.85rem; font-weight:600; margin:14px 0 6px; color:#374151; }
-  input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number] { width:100%; padding:11px 13px; border:1.5px solid var(--line); border-radius:10px; font-size:1rem; }
-  input:focus { outline:none; border-color:var(--azul2); }
-  .hint { font-size:.8rem; color:var(--muted); margin-top:4px; }
-  .flash { padding:12px 14px; border-radius:10px; margin:10px 0; font-size:.92rem; }
-  .flash.error { background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; } .flash.ok { background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0; }
-  .estado { display:inline-block; padding:3px 10px; border-radius:999px; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-  .estado.pendiente { background:#FEF3C7; color:#92400E; } .estado.aprobada,.estado.creando { background:#DBEAFE; color:#1E40AF; }
-  .estado.lista { background:#D1FAE5; color:#065F46; } .estado.error,.estado.rechazada { background:#FEE2E2; color:#991B1B; }
-  table { width:100%; border-collapse:collapse; font-size:.9rem; } th,td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { font-size:.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:.05em; }
-  pre.log { background:#0F172A; color:#E2E8F0; padding:14px; border-radius:10px; font-size:.8rem; max-height:320px; overflow:auto; white-space:pre-wrap; }
-  .steps { display:flex; gap:10px; margin:18px 0; flex-wrap:wrap; } .step { flex:1; min-width:120px; padding:10px; border-radius:10px; background:#F3F4F6; text-align:center; font-size:.8rem; font-weight:700; color:var(--muted); }
-  .step.on { background:var(--azul); color:#fff; } .step.done { background:#D1FAE5; color:#065F46; }
-  footer { text-align:center; color:var(--muted); font-size:.8rem; padding:20px; }
-  .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .hp { position:absolute; left:-9999px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ CFG.NOMBRE_PRODUCTO }}{% endblock %}</title>
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           PORTAL — misma pantalla que el login del CRM (tema Temporada ·
+           Verano "California Sunset"): foto de palmeras a la izquierda,
+           tarjeta a la derecha. El formulario cambia según la vista.
+           ════════════════════════════════════════════════════════════════ */
+        :root {
+            --bg-white: #F5F7FB; --text-main: #1d1d1f; --text-muted: #6b7280;
+            --sol-naranja: #4A6E9C; --sol-naranja-hover: #3E608E;
+            --mar-azul: #4A6E9C; --mar-azul-oscuro: #2C5080;
+            --input-bg: #ffffff; --brand-text: #ffffff; --brand-text-muted: rgba(255,255,255,0.82);
+            --error-color: #c0392b; --ok-color: #16a34a;
+        }
+        body[data-fase="despertar"] { --cielo: linear-gradient(160deg, #2A5A7E 0%, #1E4664 50%, #143348 100%); }
+        body[data-fase="pleno"]     { --cielo: linear-gradient(160deg, #2E6488 0%, #1F4A68 50%, #15364C 100%); }
+        body[data-fase="atardecer"] { --cielo: linear-gradient(160deg, #28506E 0%, #1B3E58 50%, #122C40 100%); }
+        body[data-fase="crepusculo"]{ --cielo: linear-gradient(160deg, #1B3A50 0%, #122C40 50%, #0A1E2E 100%); }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { display: flex; min-height: 100vh; background-color: var(--bg-white); color: var(--text-main); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-stagger-1 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.1s; }
+        .anim-stagger-2 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.2s; }
+        .anim-stagger-3 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.3s; }
+        .anim-stagger-4 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.4s; }
+        .anim-stagger-5 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.5s; }
+
+        .branding-section {
+            flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
+            background-image:
+                linear-gradient(180deg, rgba(14, 30, 50, 0.42) 0%, rgba(14, 30, 50, 0.54) 55%, rgba(10, 24, 40, 0.68) 100%),
+                url('/static/verano_login.jpg'),
+                var(--cielo);
+            background-size: auto, cover, auto; background-position: center, center 30%, center; background-repeat: no-repeat;
+        }
+        body[data-fase="atardecer"] .branding-section::before, body[data-fase="crepusculo"] .branding-section::before { content: ''; position: absolute; inset: 0; pointer-events: none; }
+        body[data-fase="atardecer"] .branding-section::before { background: rgba(226, 122, 44, 0.10); mix-blend-mode: overlay; }
+        body[data-fase="crepusculo"] .branding-section::before { background: rgba(10, 20, 40, 0.32); }
+        .branding-content { position: relative; z-index: 5; width: 100%; max-width: 480px; }
+        .kicker { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.72); margin-bottom: 14px; text-shadow: 0 1px 6px rgba(0,0,0,0.35); }
+        .branding-content h1 { font-size: 3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; line-height: 1.12; text-shadow: 0 2px 14px rgba(0,0,0,0.45); }
+        .branding-content p { font-size: 1.2rem; color: var(--brand-text-muted); line-height: 1.6; margin-bottom: 40px; text-shadow: 0 1px 8px rgba(0,0,0,0.35); }
+        .feature-list { display: flex; flex-direction: column; gap: 15px; }
+        .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.12); padding: 15px 20px; border-radius: 14px; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.14); transition: background 0.3s ease; }
+        .feature-item:hover { background: rgba(255, 255, 255, 0.20); }
+        .feature-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .feature-icon.sol { background: linear-gradient(135deg, #6E96C4, #4A6E9C); }
+        .feature-icon.mar { background: linear-gradient(135deg, #4E86B8, #2C6398); }
+        .feature-icon.arena { background: linear-gradient(135deg, #E8B34D, #C98A2B); }
+
+        .login-section {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px; position: relative;
+            background: radial-gradient(circle 520px at 0% 34%, rgba(255, 202, 122, 0.13) 0%, rgba(255, 202, 122, 0) 62%), var(--bg-white);
+        }
+        .login-section::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #92B8E0 0%, #5E86B4 50%, #46689A 100%); }
+        .login-box { width: 100%; max-width: 380px; }
+        .login-box.wide { max-width: 440px; }
+        .login-box.panel { max-width: 900px; }
+        .logo { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, #2C5080 0%, #4A6E9C 50%, #82A8D2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .logo-palma { flex-shrink: 0; transform-origin: 54% 94%; animation: palmaBrisa 7s ease-in-out infinite; }
+        @keyframes palmaBrisa { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(2deg); } }
+        @media (prefers-reduced-motion: reduce) { .logo-palma { animation: none; } }
+        .subtitle { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 26px; }
+
+        /* Pestañas: Entrar / Crear mi empresa (mismo lenguaje que el CRM) */
+        .tabs { display: flex; background: #E9EDF3; border-radius: 12px; padding: 4px; margin-bottom: 26px; }
+        .tabs a { flex: 1; text-align: center; padding: 10px 12px; border-radius: 9px; font-size: 0.92rem; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; }
+        .tabs a.active { background: #fff; color: var(--mar-azul-oscuro); box-shadow: 0 2px 8px rgba(30, 50, 80, 0.10); }
+
+        .input-group { margin-bottom: 18px; }
+        .input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        .input-group input[type="text"], .input-group input[type="email"], .input-group input[type="password"], .input-group input[type="tel"], .input-group input[type="number"] {
+            width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid #e0e0dd; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main);
+        }
+        .input-group input:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(74, 110, 156, 0.15); }
+        .input-group .hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .error-banner { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.9rem; color: var(--error-color); }
+        .ok-banner { background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.9rem; color: #065f46; }
+        .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; font-size: 0.9rem; color: var(--text-muted); }
+        .link { color: var(--mar-azul); text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; font-size: 0.9rem; padding: 0; }
+        .link:hover { text-decoration: underline; color: var(--sol-naranja); }
+        .btn-submit {
+            width: 100%; padding: 16px; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: center; text-decoration: none; display: block;
+            background: linear-gradient(135deg, #82A8D2 0%, #5E86B4 45%, #46689A 100%); box-shadow: 0 4px 16px rgba(74, 110, 156, 0.35), 0 2px 4px rgba(0,0,0,0.12);
+        }
+        .btn-submit:hover { background: linear-gradient(135deg, #92B8E0 0%, #6E96C4 45%, #5276AA 100%); box-shadow: 0 6px 24px rgba(74, 110, 156, 0.42), 0 2px 6px rgba(0,0,0,0.16); transform: translateY(-1px); }
+        .btn-submit:active { transform: scale(0.98) translateY(0); }
+        .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-small { display: inline-block; padding: 8px 14px; border-radius: 9px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; background: linear-gradient(135deg, #6E96C4, #4A6E9C); color: #fff; }
+        .btn-small.ghost { background: #E9EDF3; color: var(--mar-azul-oscuro); }
+        .btn-small.danger { background: linear-gradient(135deg, #E07070, #C0392B); }
+        .btn-small:hover { filter: brightness(1.06); }
+
+        /* Pasos de la solicitud */
+        .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 22px; }
+        .step { padding: 10px 6px; border-radius: 10px; background: #E9EDF3; text-align: center; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); line-height: 1.25; }
+        .step.on { background: linear-gradient(135deg, #82A8D2 0%, #5E86B4 45%, #46689A 100%); color: #fff; }
+        .step.done { background: #D1FAE5; color: #065F46; }
+        pre.log { background: #0F172A; color: #E2E8F0; padding: 12px; border-radius: 10px; font-size: 0.76rem; max-height: 220px; overflow: auto; white-space: pre-wrap; margin-top: 12px; }
+
+        /* Panel interno (en la misma tarjeta, más ancha) */
+        table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #E5E7EB; vertical-align: top; }
+        th { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+        .estado { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .estado.pendiente { background: #FEF3C7; color: #92400E; } .estado.aprobada, .estado.creando { background: #DBEAFE; color: #1E40AF; }
+        .estado.lista { background: #D1FAE5; color: #065F46; } .estado.error, .estado.rechazada { background: #FEE2E2; color: #991B1B; }
+        .card { background: #fff; border: 1px solid #E5E7EB; border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(30, 50, 80, 0.06); }
+        .card h2 { font-size: 1.05rem; color: var(--mar-azul-oscuro); margin-bottom: 10px; }
+        .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .muted { color: var(--text-muted); font-size: 0.82rem; }
+        .hp { position: absolute; left: -9999px; }
+        .foot { margin-top: 26px; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+        @media (max-width: 900px) { .branding-section { display: none; } .login-section { flex: 1; } }
+    </style>
 </head>
-<body>
-<header>
-  <a href="{{ url_for('index') }}">{{ CFG.NOMBRE_PRODUCTO }}</a>
-  <nav>
-    <a href="{{ url_for('entrar') }}">Entrar a mi CRM</a>
-    <a href="{{ url_for('registro') }}">Crear mi empresa</a>
-    {% if es_admin %}<a href="{{ url_for('panel') }}">Panel</a><a href="{{ url_for('panel_salir') }}">Salir</a>{% endif %}
-  </nav>
-</header>
-<main>
-  {% with mensajes = get_flashed_messages(with_categories=true) %}
-    {% for cat, m in mensajes %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
-  {% endwith %}
-  {% block content %}{% endblock %}
-</main>
-<footer>{{ CFG.NOMBRE_PRODUCTO }} · ¿Dudas? {{ CFG.CONTACTO }}</footer>
+<body data-fase="pleno">
+    <div class="branding-section">
+        <div class="branding-content">
+            <div class="kicker anim-stagger-1">{{ CFG.NOMBRE_PRODUCTO }} &middot; Sistema de Gesti&oacute;n</div>
+            <h1 class="anim-stagger-1">{% block hero %}Tu CRM, listo en un minuto.{% endblock %}</h1>
+            <p class="anim-stagger-2">{% block hero_text %}Pipeline de ventas, clientes, cotizaciones, correo y calendario en un solo lugar. Cada empresa tiene su propio espacio, con su nombre, su logo y sus datos separados de los demás.{% endblock %}</p>
+            <div class="feature-list">
+                <div class="feature-item anim-stagger-3">
+                    <div class="feature-icon sol"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div>
+                </div>
+                <div class="feature-item anim-stagger-4">
+                    <div class="feature-icon mar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">Correo y Mi día</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Tu bandeja ligada a cada oportunidad y un asistente que prioriza.</span></div>
+                </div>
+                <div class="feature-item anim-stagger-5">
+                    <div class="feature-icon arena"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="19" y1="20" x2="19" y2="14"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">Tu empresa, tus reglas</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Logo, catálogos, metas y módulos configurables por ti.</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-section">
+        <div class="login-box {% block box_class %}{% endblock %}">
+            <div class="anim-stagger-1" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                <span class="logo" style="margin-bottom:0;">{{ CFG.NOMBRE_PRODUCTO }}</span>
+                <svg class="logo-palma" width="46" height="46" viewBox="-18 -8 136 110">
+                    <defs>
+                        <linearGradient id="palmaG" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2C5080"/><stop offset="50%" stop-color="#4A6E9C"/><stop offset="100%" stop-color="#82A8D2"/></linearGradient>
+                        <g id="lgFronda"><path d="M0 0 C 26 -26, 62 -32, 88 -15 C 60 -13, 30 1, 8 13 Z"/></g>
+                    </defs>
+                    <g fill="url(#palmaG)">
+                        <path d="M52 94 C 50 76, 48 58, 44 36 L 51 35 C 54 57, 56 76, 59 94 Z"/>
+                        <g transform="translate(47,34) scale(0.66)">
+                            <use href="#lgFronda" transform="rotate(-150) scale(1.05)"/><use href="#lgFronda" transform="rotate(-115) scale(1.15)"/><use href="#lgFronda" transform="rotate(-78) scale(1.0)"/>
+                            <use href="#lgFronda" transform="rotate(-40) scale(1.18)"/><use href="#lgFronda" transform="rotate(-5) scale(1.1)"/><use href="#lgFronda" transform="rotate(26) scale(0.92)"/>
+                        </g>
+                        <circle cx="42" cy="41" r="4.6" fill="#2C5080"/><circle cx="51" cy="43" r="4" fill="#3E608E"/>
+                    </g>
+                </svg>
+            </div>
+            {% block content %}{% endblock %}
+            <div class="foot">{% if es_admin %}<a class="link" href="{{ url_for('panel') }}">Panel</a> · <a class="link" href="{{ url_for('panel_salir') }}">Salir</a>{% else %}¿Dudas? {{ CFG.CONTACTO }}{% endif %}</div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var h = new Date().getHours(), f;
+            if (h >= 8 && h < 12) f = 'despertar'; else if (h >= 12 && h < 16) f = 'pleno'; else if (h >= 16 && h < 17) f = 'atardecer'; else f = 'crepusculo';
+            document.body.setAttribute('data-fase', f);
+        })();
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

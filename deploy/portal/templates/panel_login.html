@@ -1,12 +1,14 @@
 {% extends "base.html" %}
+{% block title %}Panel · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
+{% block hero %}Panel de empresas.{% endblock %}
+{% block hero_text %}Acceso interno para autorizar solicitudes y administrar las empresas del servidor.{% endblock %}
 {% block content %}
-<div class="card" style="max-width:420px;margin:0 auto;">
-  <h1>Panel interno</h1>
-  <form method="post">
+<p class="subtitle anim-stagger-2">Acceso interno.</p>
+{% with mensajes = get_flashed_messages(with_categories=true) %}{% for cat, m in mensajes %}<div class="error-banner">{{ m }}</div>{% endfor %}{% endwith %}
+<form method="post" class="anim-stagger-3">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-    <label>Usuario</label><input type="text" name="usuario" required autofocus>
-    <label>Contraseña</label><input type="password" name="password" required>
-    <div style="margin-top:18px;"><button class="btn" type="submit">Entrar</button></div>
-  </form>
-</div>
+    <div class="input-group"><label for="usuario">Usuario</label><input type="text" id="usuario" name="usuario" required autofocus></div>
+    <div class="input-group"><label for="password">Contraseña</label><input type="password" id="password" name="password" placeholder="••••••••" required></div>
+    <button type="submit" class="btn-submit anim-stagger-4">Iniciar Sesión</button>
+</form>
 {% endblock %}
