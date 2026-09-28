@@ -162,9 +162,11 @@ def slug_desde(nombre):
 
 
 def slug_en_uso(slug):
+    """Ocupado si la empresa existe en el inventario o hay una solicitud de alta en curso.
+    Una solicitud 'lista' cuya empresa ya no está en el inventario (baja) NO bloquea."""
     if any(e['slug'] == slug for e in inventario()):
         return True
-    r = db().execute("SELECT 1 FROM solicitudes WHERE tipo='alta' AND slug=? AND estado IN ('pendiente','aprobada','creando','lista')", (slug,)).fetchone()
+    r = db().execute("SELECT 1 FROM solicitudes WHERE tipo='alta' AND slug=? AND estado IN ('pendiente','aprobada','creando')", (slug,)).fetchone()
     return bool(r)
 
 
