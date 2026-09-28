@@ -2,7 +2,6 @@
 {% block title %}Iniciar sesión · {{ CFG.NOMBRE_PRODUCTO }}{% endblock %}
 {% block content %}
 <p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>
-{% set activa = 'entrar' %}{% include "_tabs.html" %}
 {% with mensajes = get_flashed_messages(with_categories=true) %}{% for cat, m in mensajes %}<div class="{% if cat == 'error' %}error-banner{% else %}ok-banner{% endif %}">{{ m }}</div>{% endfor %}{% endwith %}
 {% if opciones %}
 <div class="ok-banner">Tu usuario existe en más de una empresa. ¿A cuál quieres entrar?</div>
@@ -12,6 +11,8 @@
 {% else %}
 <form method="post" class="anim-stagger-3">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="empresa" value="{{ empresa_hint or '' }}">
+    <input type="hidden" name="next" value="{{ next_url or '/app/home/' }}">
     <div class="input-group">
         <label for="username">Usuario o Correo</label>
         <input type="text" id="username" name="username" placeholder="ej. nombre.apellido o tu@empresa.com" value="{{ usuario or '' }}" autocomplete="username" required autofocus>
@@ -26,6 +27,7 @@
     </div>
     <button type="submit" class="btn-submit anim-stagger-5">Iniciar Sesión</button>
 </form>
+<p class="foot anim-stagger-5" style="margin-top:22px;">¿Tu empresa aún no tiene CRM? <a class="link" href="{{ url_for('registro') }}">Crear mi empresa</a></p>
 {% endif %}
 
 <!-- Modal: Olvidé mi contraseña (mismo que el login del CRM) -->

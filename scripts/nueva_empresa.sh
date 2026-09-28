@@ -55,6 +55,7 @@ if [[ ! -f "$CORE_ENV" ]]; then
   warn "OPENROUTER_API_KEY_COMPARTIDA está vacía en $CORE_ENV: la IA queda apagada hasta capturar una llave"
 fi
 cargar_core_env
+PORTAL_URL="${PORTAL_URL:-https://portal.$(tr . - <<<"$IP_PUBLICA").nip.io}"
 asegurar_core
 
 # ── 1. Imagen ────────────────────────────────────────────────────────────
@@ -107,12 +108,13 @@ if [[ ! -f "$ENV_FILE" ]]; then
   SECRET_KEY="$(openssl rand -base64 48 | tr -d '\n/+=' | cut -c1-60)"
   sed -e "s|__SLUG__|$SLUG|g" -e "s|__FECHA__|$(date +%F)|" -e "s|__PUERTO__|$PUERTO|" -e "s|__IMAGEN__|$IMAGEN|" \
       -e "s|__ENV_FILE__|$ENV_FILE|" -e "s|__SECRET_KEY__|$SECRET_KEY|" -e "s|__ALLOWED_HOSTS__|$HOSTS|" \
-      -e "s|__CSRF_ORIGINS__|$ORIGENES|" -e "s|__DB_PASSWORD__|$DB_PASSWORD|" -e "s|__MAIL_KEY__|$MAIL_KEY|" -e "s|__SSO_SECRET__|$(aleatorio 32)|" \
+      -e "s|__CSRF_ORIGINS__|$ORIGENES|" -e "s|__DB_PASSWORD__|$DB_PASSWORD|" -e "s|__MAIL_KEY__|$MAIL_KEY|" -e "s|__SSO_SECRET__|$(aleatorio 32)|" -e "s|__PORTAL_URL__|$PORTAL_URL|" \
       -e "s|__OPENROUTER_KEY__|${OPENROUTER_API_KEY_COMPARTIDA:-}|" -e "s|__ADMIN_EMAIL__|$ADMIN_EMAIL|" \
       -e "s|__ADMIN_PASSWORD__|$ADMIN_PASSWORD|" "$DEPLOY_DIR/env.tenant.tmpl" > "$ENV_FILE"
   chmod 600 "$ENV_FILE"
 else
   # Empresas dadas de alta antes del portal: agregar el secreto del SSO si falta.
+  grep -q '^PORTAL_URL=' "$ENV_FILE" || printf '\n# Login único: el /app/login/ de esta empresa redirige al portal\nPORTAL_URL=%s\n' "$PORTAL_URL" >> "$ENV_FILE"
   grep -q '^PORTAL_SSO_SECRET=' "$ENV_FILE" || printf '\n# Portal maestro: secreto para el inicio de sesión desde el portal (SSO por token)\nPORTAL_SSO_SECRET=%s\n' "$(aleatorio 32)" >> "$ENV_FILE"
   # Actualizar solo lo que puede cambiar entre corridas (imagen, puerto, hosts).
   sed -i -e "s|^IMAGEN=.*|IMAGEN=$IMAGEN|" -e "s|^PUERTO=.*|PUERTO=$PUERTO|" -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$HOSTS|" -e "s|^CSRF_TRUSTED_ORIGINS=.*|CSRF_TRUSTED_ORIGINS=$ORIGENES|" "$ENV_FILE"

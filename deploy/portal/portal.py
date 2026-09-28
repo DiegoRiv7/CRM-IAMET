@@ -213,19 +213,22 @@ def _api_instancia(e, ruta, datos, timeout=6):
         return None
 
 
-def _candidatas(usuario):
-    """Empresas activas ordenadas: primero las registradas con ese correo, luego el resto."""
+def _candidatas(usuario, empresa_hint=''):
+    """Empresas activas ordenadas: primero la empresa desde la que llegó el usuario (hint),
+    luego las registradas con ese correo, luego el resto."""
     activas = empresas_activas()
     prioridad = set()
     if '@' in usuario:
         rows = db().execute("SELECT slug FROM solicitudes WHERE tipo='alta' AND estado='lista' AND lower(correo)=?", (usuario.lower(),)).fetchall()
         prioridad = {r['slug'] for r in rows}
-    return sorted(activas, key=lambda e: 0 if e['slug'] in prioridad else 1)
+    return sorted(activas, key=lambda e: (0 if e['slug'] == empresa_hint else 1 if e['slug'] in prioridad else 2))
 
 
-def _url_sso(e, token):
+def _url_sso(e, token, next_url='/app/home/'):
+    if not (next_url.startswith('/') and not next_url.startswith('//')):
+        next_url = '/app/home/'
     base = url_login(e['slug'], e.get('dominio', ''))
-    return f"{base}portal/?t={urllib.request.quote(token)}&next=/app/home/"
+    return f"{base}portal/?t={urllib.request.quote(token)}&next={urllib.request.quote(next_url)}"
 
 
 # ── Anti-abuso sencillo ─────────────────────────────────────────────────────
@@ -264,8 +267,8 @@ def favicon():
 
 @app.get('/')
 def index():
-    # La portada ES la pantalla de entrada (misma pantalla que el login del CRM).
-    return redirect(url_for('entrar'))
+    """Portada promocional: "Iniciar sesión" (login único) o "Pruébalo" (crear empresa)."""
+    return render_template('index.html')
 
 
 @app.route('/entrar', methods=['GET', 'POST'])
@@ -274,6 +277,11 @@ def entrar():
     interna; la que acepte emite un token de un solo uso y se redirige a su CRM."""
     opciones = None
     usuario = ''
+    # Vienen del login de una instancia que redirige aquí (PORTAL_URL): a qué empresa volver y a qué ruta.
+    empresa_hint = re.sub(r'[^a-z0-9-]', '', (request.values.get('empresa') or '').lower())[:30]
+    next_url = (request.values.get('next') or '/app/home/').strip()
+    if request.args.get('portal') in ('usado', 'expirado'):
+        flash('Tu enlace de acceso caducó. Inicia sesión de nuevo.', 'error')
     if request.method == 'POST':
         if not csrf_ok():
             abort(400)
@@ -285,19 +293,20 @@ def entrar():
             flash('Demasiados intentos; espera unos minutos.', 'error')
         elif usuario and password:
             aceptadas = []
-            for e in _candidatas(usuario):
+            for e in _candidatas(usuario, empresa_hint):
                 r = _api_instancia(e, '/app/api/portal/validar/', {'usuario': usuario, 'password': password, 'remember': remember})
                 if r and r.get('ok'):
                     aceptadas.append((e, r['token']))
             if len(aceptadas) == 1:
-                return redirect(_url_sso(*aceptadas[0]))
+                e, t = aceptadas[0]
+                return redirect(_url_sso(e, t, next_url))
             if len(aceptadas) > 1:
-                opciones = [{'nombre': e['nombre'], 'url': _url_sso(e, t)} for e, t in aceptadas]
+                opciones = [{'nombre': e['nombre'], 'url': _url_sso(e, t, next_url)} for e, t in aceptadas]
             else:
                 flash('Credenciales incorrectas. Verifica tu usuario y contraseña.', 'error')
         else:
             flash('Escribe tu usuario y tu contraseña.', 'error')
-    return render_template('entrar.html', usuario=usuario, opciones=opciones)
+    return render_template('entrar.html', usuario=usuario, opciones=opciones, empresa_hint=empresa_hint, next_url=next_url)
 
 
 @app.post('/entrar/olvide')

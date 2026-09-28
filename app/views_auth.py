@@ -55,6 +55,19 @@ def register(request):
 
 @csrf_exempt
 def user_login(request):
+    # MULTIEMPRESA: en instancias de clientes (PORTAL_URL definido) el único login es el del
+    # portal; el de la instancia solo redirige allá, conservando ?next y el aviso del token.
+    portal_url = (os.environ.get('PORTAL_URL') or '').strip().rstrip('/')
+    if portal_url and request.method == 'GET':
+        from urllib.parse import urlencode
+        from .empresa import empresa_config
+        params = {'empresa': empresa_config().slug}
+        nxt = request.GET.get('next', '')
+        if nxt.startswith('/') and not nxt.startswith('//'):
+            params['next'] = nxt
+        if request.GET.get('portal') in ('usado', 'expirado'):
+            params['portal'] = request.GET['portal']
+        return redirect(f"{portal_url}/entrar?{urlencode(params)}")
     if request.method == 'POST':
         username_input = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')

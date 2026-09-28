@@ -5,7 +5,6 @@
 {% block hero_text %}Registra tu empresa y en cuanto se autorice tu CRM se crea solo: con tu nombre, tu administrador y tus datos separados de los demás.{% endblock %}
 {% block content %}
 <p class="subtitle anim-stagger-2">Crea el CRM de tu empresa en un minuto.</p>
-{% set activa = 'registro' %}{% include "_tabs.html" %}
 {% with mensajes = get_flashed_messages(with_categories=true) %}{% for cat, m in mensajes %}<div class="{% if cat == 'error' %}error-banner{% else %}ok-banner{% endif %}">{{ m }}</div>{% endfor %}{% endwith %}
 {% if not hay_cupo %}<div class="error-banner">Por ahora no hay cupo para empresas nuevas. Escríbenos a {{ CFG.CONTACTO }} y te avisamos.</div>{% endif %}
 <form method="post" autocomplete="off" class="anim-stagger-3">
@@ -38,6 +37,7 @@
     </div>
     <button type="submit" class="btn-submit anim-stagger-4" {% if not hay_cupo %}disabled{% endif %}>Crear mi empresa</button>
 </form>
+<p class="foot anim-stagger-5" style="margin-top:22px;">¿Ya tienes cuenta? <a class="link" href="{{ url_for('entrar') }}">Iniciar sesión</a></p>
 {% endblock %}
 {% block scripts %}
 <script>
