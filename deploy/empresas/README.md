@@ -128,7 +128,11 @@ journalctl -u crm-portal -f                                         # log
   (`?empresa=<slug>&next=…`), así solo existe un inicio de sesión.
   `/registro` (solicitud con honeypot, suma de verificación, tope de cupo y límite por IP) ·
   `/solicitud/<token>` (avance en vivo; guarda el enlace).
-- Panel `/panel` (usuario y contraseña en `/home/iamet2026/crm-empresas/portal.env`):
+- **Desde el CRM de IAMET:** Administración → Producto → **Empresas del producto** hace lo mismo que el
+  panel del portal sin salir del CRM (proxy `api/admin/portal/`, solo supervisores). Requiere en el
+  `.env` de esa instancia `PORTAL_ADMIN_URL` y `PORTAL_ADMIN_TOKEN` (= `PORTAL_ADMIN_TOKEN` de
+  `portal.env`; el instalador lo genera). Las empresas cliente no definen esas variables y no ven la sección.
+- Panel `/panel` del portal (respaldo; usuario y contraseña en `/home/iamet2026/crm-empresas/portal.env`):
   aprobar/rechazar/reintentar solicitudes, interruptor **aprobación automática**, tope de
   empresas, empresas del servidor con Login / Baja / Baja + borrar.
 - Un hilo del servicio ejecuta `nueva_empresa.sh --https` y `baja_empresa.sh` de una en una;

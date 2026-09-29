@@ -314,6 +314,14 @@ y "Pruébalo"; el login y el registro ya no llevan pestañas. Las instancias de 
 `PORTAL_URL` y su `/app/login/` redirige al portal conservando `?next` y la empresa (hint para
 validar primero ahí); IAMET no lo define y conserva su login.
 
+**Autorización dentro del CRM (2026-09-29, pedido del usuario: "para no depender de otro portal"):**
+el portal expone una API de administración por token (`PORTAL_ADMIN_TOKEN`); el Panel de
+Administración del CRM de IAMET tiene la sección Producto → **Empresas del producto**
+(`api/admin/portal/`, proxy, solo supervisores; visible solo con `PORTAL_ADMIN_URL` en el .env,
+es decir IAMET; ya emparejado en crm-pruebas). Verificado desde el CRM: aprobar → empresa creada
+en 68 s → ajustes → baja con borrado. Para producción: agregar las dos variables al .env de prod
+en el merge.
+
 **Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
 clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
 

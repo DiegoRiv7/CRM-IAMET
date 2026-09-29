@@ -21,8 +21,9 @@ contraseña en `/home/iamet2026/crm-empresas/portal.env`).
   cliente redirige al del portal. El cliente pulsa Pruébalo y llena nombre, responsable, correo y
   contraseña. La página de su solicitud muestra los 4 pasos (Recibida → Autorizada →
   Creando → Listo) y se actualiza sola.
-- Tú, en `/panel`, ves la solicitud **pendiente** y pulsas **Aprobar** (o dejas encendida la
-  *aprobación automática* para que se cree sola). En ~80 s la página del cliente cambia a
+- Tú, desde el CRM de IAMET, en **Administración → Producto → Empresas del producto**, ves la
+  solicitud **pendiente** y pulsas **Aprobar** (o dejas encendida la *aprobación automática* para
+  que se cree sola). El `/panel` del portal sigue existiendo como respaldo. En ~80 s la página del cliente cambia a
   **¡Tu CRM está listo!** con el botón **Entrar a mi CRM**.
 - Entra con su correo y contraseña: su CRM vacío, con su nombre. En Administración → Empresa
   sube su logo. Desde entonces el portal es SU login: en **Entrar a mi CRM** escribe usuario o

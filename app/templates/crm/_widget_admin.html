@@ -2133,12 +2133,12 @@ window.loadPortalEmpresas = function(){
     var h = '<div class="admin-card-inner">';
     h += '<div class="admin-content-header"><span class="admin-content-title">Empresas del producto</span>'
        + '<div style="display:flex;gap:8px;align-items:center;"><a class="admin-btn" href="'+_esc(d.portal_url)+'/" target="_blank" rel="noopener">Abrir portal</a>'
-       + '<button class="admin-btn" onclick="loadPortalEmpresas()">Actualizar</button></div></div>';
+       + '<button class="admin-btn admin-btn-secondary" onclick="loadPortalEmpresas()">Actualizar</button></div></div>';
     h += '<p class="admin-help">Aquí se autorizan las solicitudes que llegan por <strong>Pruébalo</strong> en el portal y se administran las empresas que ya tienen su CRM. Activas: <strong>'+d.activas+'</strong> &middot; en cola: <strong>'+d.en_cola+'</strong> &middot; tope: <strong>'+d.maximo+'</strong>'+(d.hay_cupo?'':' &middot; <span style="color:#FF3B30;">sin cupo</span>')+'</p>';
     /* Ajustes */
     h += '<div class="admin-inline-form" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">';
-    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;"><span class="admin-toggle"><input type="checkbox" id="portalAuto" '+(d.auto?'checked':'')+'><span class="admin-toggle-slider"></span></span> Aprobaci&oacute;n autom&aacute;tica (la empresa se crea al registrarse)</label>';
-    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;">Tope de empresas activas <input class="admin-input" id="portalMax" type="number" min="1" max="50" value="'+d.maximo+'" style="width:70px;"></label>';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#3A3A3C;"><span class="admin-toggle"><input type="checkbox" id="portalAuto" '+(d.auto?'checked':'')+'><span class="admin-toggle-slider"></span></span> Aprobaci&oacute;n autom&aacute;tica (la empresa se crea al registrarse)</label>';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#3A3A3C;">Tope de empresas activas <input class="admin-input" id="portalMax" type="number" min="1" max="50" value="'+d.maximo+'" style="width:70px;"></label>';
     h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAjustes()">Guardar</button></div>';
     /* Solicitudes */
     h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:16px 0 8px;">Solicitudes</div>';
@@ -2152,11 +2152,11 @@ window.loadPortalEmpresas = function(){
       h += '<td><span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#fff;background:'+(colores[s.estado]||'#8E8E93')+';">'+_esc(s.estado)+'</span>'+(s.mensaje?'<div style="color:#8E8E93;font-size:0.72rem;margin-top:3px;">'+_esc(s.mensaje)+'</div>':'')+'</td>';
       h += '<td style="white-space:nowrap;">';
       if(s.tipo==='alta'){
-        if(s.estado==='pendiente') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'aprobar\')">Aprobar</button> <button class="admin-btn" onclick="admPortalAccion('+s.id+',\'rechazar\')">Rechazar</button> ';
-        else if(s.estado==='error') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'reintentar\')">Reintentar</button> <button class="admin-btn" onclick="admPortalAccion('+s.id+',\'rechazar\')">Descartar</button> ';
-        else if(s.estado==='lista' && s.url) h += '<a class="admin-btn" href="'+_esc(s.url)+'" target="_blank" rel="noopener">Login</a> ';
+        if(s.estado==='pendiente') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'aprobar\')">Aprobar</button> <button class="admin-btn admin-btn-secondary" onclick="admPortalAccion('+s.id+',\'rechazar\')">Rechazar</button> ';
+        else if(s.estado==='error') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'reintentar\')">Reintentar</button> <button class="admin-btn admin-btn-secondary" onclick="admPortalAccion('+s.id+',\'rechazar\')">Descartar</button> ';
+        else if(s.estado==='lista' && s.url) h += '<a class="admin-btn admin-btn-secondary" href="'+_esc(s.url)+'" target="_blank" rel="noopener">Login</a> ';
       }
-      h += '<a class="admin-btn" href="'+_esc(s.ver_url)+'" target="_blank" rel="noopener">Ver</a></td></tr>';
+      h += '<a class="admin-btn admin-btn-secondary" href="'+_esc(s.ver_url)+'" target="_blank" rel="noopener">Ver</a></td></tr>';
     });
     h += '</tbody></table>';
     /* Empresas */
@@ -2167,7 +2167,7 @@ window.loadPortalEmpresas = function(){
       var activa = e.activa !== false;
       h += '<tr><td><strong>'+_esc(e.nombre)+'</strong>'+(activa?'':' <span style="color:#8E8E93;font-size:0.72rem;">(baja)</span>')+'</td><td>'+_esc(e.slug)+'</td><td>'+_esc(String(e.imagen||'').replace('crm-producto:',''))+'</td><td>'+_esc(e.web||'-')+'</td><td>'+_esc(e.alta||'')+'</td>';
       h += '<td style="white-space:nowrap;"><a class="admin-btn" href="'+_esc(e.url)+'" target="_blank" rel="noopener">Login</a> ';
-      if(activa) h += '<button class="admin-btn" onclick="admPortalBaja(\''+_esc(e.slug)+'\',false)">Baja</button> <button class="admin-btn" style="color:#FF3B30;" onclick="admPortalBaja(\''+_esc(e.slug)+'\',true)">Baja + borrar</button>';
+      if(activa) h += '<button class="admin-btn admin-btn-secondary" onclick="admPortalBaja(\''+_esc(e.slug)+'\',false)">Baja</button> <button class="admin-btn admin-btn-secondary" style="color:#FF3B30;" onclick="admPortalBaja(\''+_esc(e.slug)+'\',true)">Baja + borrar</button>';
       h += '</td></tr>';
     });
     h += '</tbody></table>';
