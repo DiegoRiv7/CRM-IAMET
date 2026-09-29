@@ -2132,7 +2132,7 @@ window.loadPortalEmpresas = function(){
     if(!d.ok){ ac.innerHTML = '<div class="admin-card-inner"><div class="admin-content-header"><span class="admin-content-title">Empresas del producto</span></div><p class="admin-help">'+_esc(d.error||'No se pudo consultar el portal')+'</p></div>'; return; }
     var h = '<div class="admin-card-inner">';
     h += '<div class="admin-content-header"><span class="admin-content-title">Empresas del producto</span>'
-       + '<div style="display:flex;gap:8px;align-items:center;"><a class="admin-btn" href="'+_esc(d.portal_url)+'/" target="_blank" rel="noopener">Abrir portal</a>'
+       + '<div style="display:flex;gap:8px;align-items:center;"><a class="admin-btn admin-btn-secondary" href="'+_esc(d.portal_url)+'/" target="_blank" rel="noopener">Abrir portal</a>'
        + '<button class="admin-btn admin-btn-secondary" onclick="loadPortalEmpresas()">Actualizar</button></div></div>';
     h += '<p class="admin-help">Aquí se autorizan las solicitudes que llegan por <strong>Pruébalo</strong> en el portal y se administran las empresas que ya tienen su CRM. Activas: <strong>'+d.activas+'</strong> &middot; en cola: <strong>'+d.en_cola+'</strong> &middot; tope: <strong>'+d.maximo+'</strong>'+(d.hay_cupo?'':' &middot; <span style="color:#FF3B30;">sin cupo</span>')+'</p>';
     /* Ajustes */
@@ -2166,7 +2166,7 @@ window.loadPortalEmpresas = function(){
     (d.empresas||[]).forEach(function(e){
       var activa = e.activa !== false;
       h += '<tr><td><strong>'+_esc(e.nombre)+'</strong>'+(activa?'':' <span style="color:#8E8E93;font-size:0.72rem;">(baja)</span>')+'</td><td>'+_esc(e.slug)+'</td><td>'+_esc(String(e.imagen||'').replace('crm-producto:',''))+'</td><td>'+_esc(e.web||'-')+'</td><td>'+_esc(e.alta||'')+'</td>';
-      h += '<td style="white-space:nowrap;"><a class="admin-btn" href="'+_esc(e.url)+'" target="_blank" rel="noopener">Login</a> ';
+      h += '<td style="white-space:nowrap;"><a class="admin-btn admin-btn-secondary" href="'+_esc(e.url)+'" target="_blank" rel="noopener">Login</a> ';
       if(activa) h += '<button class="admin-btn admin-btn-secondary" onclick="admPortalBaja(\''+_esc(e.slug)+'\',false)">Baja</button> <button class="admin-btn admin-btn-secondary" style="color:#FF3B30;" onclick="admPortalBaja(\''+_esc(e.slug)+'\',true)">Baja + borrar</button>';
       h += '</td></tr>';
     });
