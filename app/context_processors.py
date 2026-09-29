@@ -49,6 +49,9 @@ def supervisor_flag(request):
         'user_profile': profile,
         'resumen_habilitado': RESUMEN_HABILITADO and mods.get('asistente_ia', True),
         'sitio_web_url': SITIO_WEB_URL,
+        # MULTIEMPRESA: sección "Empresas del producto" del panel admin (solo la instancia de
+        # IAMET define PORTAL_ADMIN_URL/TOKEN; las empresas cliente no la ven).
+        'portal_admin_habilitado': bool(os.environ.get('PORTAL_ADMIN_URL')),
         # Bandeja Chat Web del sitio: supervisores siempre; el resto por flag.
         'puede_chat_web': (
             mods.get('chat_web', False)

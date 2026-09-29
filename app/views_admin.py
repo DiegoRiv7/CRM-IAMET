@@ -2895,3 +2895,49 @@ def api_admin_catalogo(request):
         return JsonResponse({'ok': True})
 
     return JsonResponse({'ok': False, 'error': 'Acción desconocida'}, status=400)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# MULTIEMPRESA — Panel admin → "Empresas del producto": proxy al portal maestro.
+# Solo en la instancia de IAMET (PORTAL_ADMIN_URL + PORTAL_ADMIN_TOKEN en su .env).
+# El portal sigue siendo la puerta pública; aquí se autorizan las solicitudes
+# y se administran las empresas sin salir del CRM.
+# ══════════════════════════════════════════════════════════════════════
+@login_required
+def api_admin_portal(request):
+    base = (os.environ.get('PORTAL_ADMIN_URL') or '').strip().rstrip('/')
+    token = (os.environ.get('PORTAL_ADMIN_TOKEN') or '').strip()
+    if not base or not token:
+        return JsonResponse({'ok': False, 'error': 'El portal no está configurado en esta instancia'}, status=404)
+    if not is_supervisor(request.user):
+        return JsonResponse({'ok': False, 'error': 'No autorizado'}, status=403)
+    headers = {'X-Portal-Admin-Token': token}
+    try:
+        if request.method == 'GET':
+            r = requests.get(f'{base}/api/admin/estado', headers=headers, timeout=20)
+        elif request.method == 'POST':
+            data = json.loads(request.body or '{}')
+            accion = data.get('accion')
+            if accion in ('aprobar', 'rechazar', 'reintentar'):
+                r = requests.post(f'{base}/api/admin/solicitud/{int(data.get("id", 0))}/{accion}', headers=headers, timeout=20)
+            elif accion == 'ajustes':
+                r = requests.post(f'{base}/api/admin/ajustes', headers=headers, timeout=20,
+                                  json={'auto': bool(data.get('auto')), 'maximo': int(data.get('maximo') or 5)})
+            elif accion == 'baja':
+                slug = re.sub(r'[^a-z0-9-]', '', str(data.get('slug') or '').lower())[:30]
+                r = requests.post(f'{base}/api/admin/baja/{slug}', headers=headers, timeout=20, json={'purgar': bool(data.get('purgar'))})
+            else:
+                return JsonResponse({'ok': False, 'error': 'Acción desconocida'}, status=400)
+        else:
+            return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+        try:
+            cuerpo = r.json()
+        except ValueError:
+            cuerpo = {'ok': False, 'error': f'Respuesta inesperada del portal ({r.status_code})'}
+        if r.status_code == 403:
+            cuerpo = {'ok': False, 'error': 'El token del portal no coincide (PORTAL_ADMIN_TOKEN)'}
+        if request.method == 'POST' and cuerpo.get('ok'):
+            logger.info('Portal: %s por %s (%s)', accion, request.user.username, data)
+        return JsonResponse(cuerpo, status=r.status_code if r.status_code in (200, 400, 403, 404) else 502)
+    except (requests.RequestException, ValueError) as e:
+        return JsonResponse({'ok': False, 'error': f'No se pudo contactar al portal: {e}'}, status=502)

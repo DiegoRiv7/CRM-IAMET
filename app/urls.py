@@ -308,6 +308,8 @@ urlpatterns = [
     # MULTIEMPRESA: datos/módulos de la empresa y catálogos editables (Administración → Empresa)
     path('api/admin/empresa/', views.api_admin_empresa, name='api_admin_empresa'),
     path('api/admin/catalogo/', views.api_admin_catalogo, name='api_admin_catalogo'),
+    # MULTIEMPRESA: autorización de empresas del producto desde el panel admin (proxy al portal)
+    path('api/admin/portal/', views.api_admin_portal, name='api_admin_portal'),
     path('api/admin/uso-asistente/', views.api_admin_uso_asistente, name='api_admin_uso_asistente'),
     # Leads Web (integración con la página pública iamet-platform)
     path('api/leads/web/', views_leads_web.api_leads_web, name='api_leads_web'),

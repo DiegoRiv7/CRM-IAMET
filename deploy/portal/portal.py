@@ -47,7 +47,12 @@ CFG = {
     'NOMBRE_PRODUCTO': os.environ.get('PORTAL_NOMBRE_PRODUCTO', 'IAMET CRM'),
     'HTTPS': os.environ.get('PORTAL_HTTPS', '1') == '1',
     'CONTACTO': os.environ.get('PORTAL_CONTACTO', 'ventas@iamet.mx'),
+    # API de administración para el Panel de Administración del CRM de IAMET (token compartido).
+    'ADMIN_TOKEN': (os.environ.get('PORTAL_ADMIN_TOKEN') or '').strip(),
+    'URL': (os.environ.get('PORTAL_URL') or '').strip().rstrip('/'),
 }
+if not CFG['URL']:
+    CFG['URL'] = f"{'https' if CFG['HTTPS'] else 'http'}://portal.{CFG['IP'].replace('.', '-')}.nip.io"
 DB_PATH = os.path.join(CFG['EMPRESAS_DIR'], 'portal.db')
 INVENTARIO = os.path.join(CFG['EMPRESAS_DIR'], 'empresas.yml')
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,29}$')
@@ -451,14 +456,9 @@ def panel_salir():
 @app.get('/panel')
 @requiere_admin
 def panel():
-    sols = db().execute("SELECT * FROM solicitudes ORDER BY id DESC LIMIT 100").fetchall()
-    empresas = []
-    for e in inventario():
-        estado_web = _estado_contenedor(f"crm-{e['slug']}-web")
-        empresas.append({**e, 'web': estado_web, 'url': url_login(e['slug'], e.get('dominio', ''))})
-    hay_cupo, activas, en_cola = cupo_disponible()
-    return render_template('panel.html', sols=sols, empresas=empresas, auto=aprobacion_automatica(),
-                           maximo=max_empresas(), activas=activas, en_cola=en_cola, url_login=url_login)
+    d = _estado_panel()
+    return render_template('panel.html', sols=d['solicitudes'], empresas=d['empresas'], auto=d['auto'],
+                           maximo=d['maximo'], activas=d['activas'], en_cola=d['en_cola'], url_login=url_login)
 
 
 def _estado_contenedor(nombre):
@@ -469,26 +469,66 @@ def _estado_contenedor(nombre):
         return '?'
 
 
+def _accion_solicitud(sid, accion):
+    """Aprobar / rechazar / reintentar una solicitud. Devuelve (ok, mensaje)."""
+    s = db().execute('SELECT * FROM solicitudes WHERE id=?', (sid,)).fetchone()
+    if not s:
+        return False, 'Solicitud no encontrada.'
+    if accion == 'aprobar' and s['estado'] == 'pendiente':
+        db().execute("UPDATE solicitudes SET estado='aprobada', actualizado_en=? WHERE id=?", (ahora(), sid))
+        msg = f"Solicitud de {s['nombre']} aprobada: se crea en unos segundos."
+    elif accion == 'rechazar' and s['estado'] in ('pendiente', 'error'):
+        db().execute("UPDATE solicitudes SET estado='rechazada', admin_password=NULL, actualizado_en=? WHERE id=?", (ahora(), sid))
+        msg = f"Solicitud de {s['nombre']} rechazada."
+    elif accion == 'reintentar' and s['estado'] == 'error':
+        db().execute("UPDATE solicitudes SET estado='aprobada', log='', mensaje='', actualizado_en=? WHERE id=?", (ahora(), sid))
+        msg = 'Se reintentará el alta.'
+    else:
+        return False, 'Acción no válida para ese estado.'
+    db().commit()
+    return True, msg
+
+
+def _guardar_ajustes(auto, maximo):
+    set_ajuste('aprobacion_automatica', '1' if auto else '0')
+    try:
+        set_ajuste('max_empresas', max(1, min(50, int(maximo))))
+    except (TypeError, ValueError):
+        pass
+    return True, 'Ajustes guardados.'
+
+
+def _encolar_baja(slug, purgar):
+    if not SLUG_RE.match(slug or '') or not any(e['slug'] == slug for e in inventario()):
+        return False, 'Empresa no encontrada.'
+    db().execute('''INSERT INTO solicitudes(token,tipo,slug,nombre,purgar,estado,ip,creado_en,actualizado_en)
+                    VALUES(?,?,?,?,?,?,?,?,?)''', (secrets.token_urlsafe(16), 'baja', slug, slug, 1 if purgar else 0, 'aprobada', 'panel', ahora(), ahora()))
+    db().commit()
+    return True, f"Baja de {slug} en cola{' (con borrado de datos)' if purgar else ' (datos conservados)'}."
+
+
+def _estado_panel():
+    """Datos del panel (solicitudes, empresas, ajustes) para el HTML y para la API del CRM."""
+    sols = [dict(r) for r in db().execute("SELECT * FROM solicitudes ORDER BY id DESC LIMIT 100").fetchall()]
+    for s in sols:
+        s.pop('admin_password', None)
+        s['ver_url'] = f"{CFG['URL']}/solicitud/{s['token']}"
+        s['log'] = _log_limpio(s.get('log') or '')[-1500:]
+    empresas = []
+    for e in inventario():
+        empresas.append({**e, 'web': _estado_contenedor(f"crm-{e['slug']}-web"), 'url': url_login(e['slug'], e.get('dominio', ''))})
+    hay_cupo, activas, en_cola = cupo_disponible()
+    return {'solicitudes': sols, 'empresas': empresas, 'auto': aprobacion_automatica(), 'maximo': max_empresas(),
+            'activas': activas, 'en_cola': en_cola, 'hay_cupo': hay_cupo, 'portal_url': CFG['URL']}
+
+
 @app.post('/panel/solicitud/<int:sid>/<accion>')
 @requiere_admin
 def panel_accion(sid, accion):
     if not csrf_ok():
         abort(400)
-    s = db().execute('SELECT * FROM solicitudes WHERE id=?', (sid,)).fetchone()
-    if not s:
-        abort(404)
-    if accion == 'aprobar' and s['estado'] == 'pendiente':
-        db().execute("UPDATE solicitudes SET estado='aprobada', actualizado_en=? WHERE id=?", (ahora(), sid))
-        flash(f"Solicitud de {s['nombre']} aprobada: se crea en unos segundos.", 'ok')
-    elif accion == 'rechazar' and s['estado'] in ('pendiente', 'error'):
-        db().execute("UPDATE solicitudes SET estado='rechazada', admin_password=NULL, actualizado_en=? WHERE id=?", (ahora(), sid))
-        flash(f"Solicitud de {s['nombre']} rechazada.", 'ok')
-    elif accion == 'reintentar' and s['estado'] == 'error':
-        db().execute("UPDATE solicitudes SET estado='aprobada', log='', mensaje='', actualizado_en=? WHERE id=?", (ahora(), sid))
-        flash('Se reintentará el alta.', 'ok')
-    else:
-        flash('Acción no válida para ese estado.', 'error')
-    db().commit()
+    ok, msg = _accion_solicitud(sid, accion)
+    flash(msg, 'ok' if ok else 'error')
     return redirect(url_for('panel'))
 
 
@@ -497,11 +537,7 @@ def panel_accion(sid, accion):
 def panel_ajustes():
     if not csrf_ok():
         abort(400)
-    set_ajuste('aprobacion_automatica', '1' if request.form.get('auto') else '0')
-    try:
-        set_ajuste('max_empresas', max(1, min(50, int(request.form.get('maximo', max_empresas())))))
-    except ValueError:
-        pass
+    _guardar_ajustes(bool(request.form.get('auto')), request.form.get('maximo', max_empresas()))
     flash('Ajustes guardados.', 'ok')
     return redirect(url_for('panel'))
 
@@ -511,14 +547,49 @@ def panel_ajustes():
 def panel_baja(slug):
     if not csrf_ok():
         abort(400)
-    if not SLUG_RE.match(slug) or not any(e['slug'] == slug for e in inventario()):
+    ok, msg = _encolar_baja(slug, bool(request.form.get('purgar')))
+    if not ok:
         abort(404)
-    purgar = 1 if request.form.get('purgar') else 0
-    db().execute('''INSERT INTO solicitudes(token,tipo,slug,nombre,purgar,estado,ip,creado_en,actualizado_en)
-                    VALUES(?,?,?,?,?,?,?,?,?)''', (secrets.token_urlsafe(16), 'baja', slug, slug, purgar, 'aprobada', 'panel', ahora(), ahora()))
-    db().commit()
-    flash(f"Baja de {slug} en cola{' (con purga de datos)' if purgar else ' (datos conservados)'}.", 'ok')
+    flash(msg, 'ok')
     return redirect(url_for('panel'))
+
+
+# ── API de administración (la usa el Panel de Administración del CRM de IAMET) ──
+def _exige_token_admin():
+    if not CFG['ADMIN_TOKEN']:
+        abort(404)
+    dado = request.headers.get('X-Portal-Admin-Token', '')
+    if not hmac.compare_digest(dado, CFG['ADMIN_TOKEN']):
+        abort(403)
+
+
+@app.get('/api/admin/estado')
+def api_admin_estado():
+    _exige_token_admin()
+    return jsonify({'ok': True, **_estado_panel()})
+
+
+@app.post('/api/admin/solicitud/<int:sid>/<accion>')
+def api_admin_solicitud(sid, accion):
+    _exige_token_admin()
+    ok, msg = _accion_solicitud(sid, accion)
+    return jsonify({'ok': ok, 'mensaje': msg}), (200 if ok else 400)
+
+
+@app.post('/api/admin/ajustes')
+def api_admin_ajustes():
+    _exige_token_admin()
+    d = request.get_json(silent=True) or {}
+    ok, msg = _guardar_ajustes(bool(d.get('auto')), d.get('maximo', max_empresas()))
+    return jsonify({'ok': ok, 'mensaje': msg})
+
+
+@app.post('/api/admin/baja/<slug>')
+def api_admin_baja(slug):
+    _exige_token_admin()
+    d = request.get_json(silent=True) or {}
+    ok, msg = _encolar_baja(slug, bool(d.get('purgar')))
+    return jsonify({'ok': ok, 'mensaje': msg}), (200 if ok else 404)
 
 
 # ── Trabajador: altas y bajas de una en una ─────────────────────────────────

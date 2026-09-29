@@ -41,6 +41,10 @@ CFG
   chmod 600 "$ENVF"
 fi
 
+# 2b) Claves nuevas en instalaciones previas (idempotente)
+grep -q '^PORTAL_ADMIN_TOKEN=' "$ENVF" || printf 'PORTAL_ADMIN_TOKEN=%s\n' "$(openssl rand -hex 24)" >> "$ENVF"
+grep -q '^PORTAL_URL=' "$ENVF" || printf 'PORTAL_URL=http%s://%s\n' "$([[ $HTTPS -eq 1 ]] && echo s)" "$HOST" >> "$ENVF"
+
 # 3) Servicio systemd
 cp "$SRC_DIR/deploy/portal/crm-portal.service" /etc/systemd/system/crm-portal.service
 systemctl daemon-reload
@@ -65,3 +69,4 @@ fi
 echo
 log "Portal: http$([[ $HTTPS -eq 1 ]] && echo s)://$HOST/"
 log "Panel:  http$([[ $HTTPS -eq 1 ]] && echo s)://$HOST/panel  (usuario $(grep ^PORTAL_ADMIN_USER= "$ENVF" | cut -d= -f2-), contraseña en $ENVF)"
+log "Para el Panel de Administración del CRM de IAMET, en su .env: PORTAL_ADMIN_URL=$(grep ^PORTAL_URL= "$ENVF" | cut -d= -f2-) y PORTAL_ADMIN_TOKEN=(ver $ENVF)"

@@ -321,6 +321,13 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           Cat&aacute;logos
         </button>
+        {% if portal_admin_habilitado %}
+        <p class="admin-section-label" style="margin-top:8px;">Producto</p>
+        <button class="admin-nav-item" id="admNav-portal" onclick="adminNavClick(this,'portal')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+          Empresas del producto
+        </button>
+        {% endif %}
         <p class="admin-section-label" style="margin-top:8px;">Sistema</p>
         <button class="admin-nav-item" id="admNav-usoia" onclick="adminNavClick(this,'usoia')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 3 3v1a3 3 0 0 0 6 0v-1a3 3 0 0 0 3-3v-1a3 3 0 0 0 0-6V9a3 3 0 0 0-3-3V5a3 3 0 0 0-3-3z"/></svg>
@@ -454,6 +461,7 @@ window.loadAdminSection = function(section){
   else if(section==='rendimiento') loadRendimiento();
   else if(section==='empresa')   loadEmpresa();
   else if(section==='catalogos') loadCatalogos();
+  else if(section==='portal')    loadPortalEmpresas();
 };
 
 /* ── Usuarios ────────────────────────────────────────── */
@@ -2111,6 +2119,73 @@ window.admCatUpd = function(id, cambios){
 window.admCatEliminar = function(id){
   if(!confirm('¿Eliminar esta opción? Si hay registros que la usan, solo se desactivará.')) return;
   _catPost({action:'delete', id:id}, function(res){ if(res.ok){ _showAdminToast(res.mensaje||'Eliminada'); loadCatalogos(); } else _showAdminToast(res.error||'Error', false); });
+};
+
+/* ── MULTIEMPRESA: Empresas del producto (portal maestro) ──────────── */
+function _portalPost(body, cb){
+  fetch('/app/api/admin/portal/', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()}, body: JSON.stringify(body)})
+  .then(function(r){ return r.json(); }).then(cb).catch(function(){ _showAdminToast('Error de red', false); });
+}
+window.loadPortalEmpresas = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/portal/', {credentials:'same-origin'}).then(function(r){ return r.json(); }).then(function(d){
+    if(!d.ok){ ac.innerHTML = '<div class="admin-card-inner"><div class="admin-content-header"><span class="admin-content-title">Empresas del producto</span></div><p class="admin-help">'+_esc(d.error||'No se pudo consultar el portal')+'</p></div>'; return; }
+    var h = '<div class="admin-card-inner">';
+    h += '<div class="admin-content-header"><span class="admin-content-title">Empresas del producto</span>'
+       + '<div style="display:flex;gap:8px;align-items:center;"><a class="admin-btn" href="'+_esc(d.portal_url)+'/" target="_blank" rel="noopener">Abrir portal</a>'
+       + '<button class="admin-btn" onclick="loadPortalEmpresas()">Actualizar</button></div></div>';
+    h += '<p class="admin-help">Aquí se autorizan las solicitudes que llegan por <strong>Pruébalo</strong> en el portal y se administran las empresas que ya tienen su CRM. Activas: <strong>'+d.activas+'</strong> &middot; en cola: <strong>'+d.en_cola+'</strong> &middot; tope: <strong>'+d.maximo+'</strong>'+(d.hay_cupo?'':' &middot; <span style="color:#FF3B30;">sin cupo</span>')+'</p>';
+    /* Ajustes */
+    h += '<div class="admin-inline-form" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;"><span class="admin-toggle"><input type="checkbox" id="portalAuto" '+(d.auto?'checked':'')+'><span class="admin-toggle-slider"></span></span> Aprobaci&oacute;n autom&aacute;tica (la empresa se crea al registrarse)</label>';
+    h += '<label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;">Tope de empresas activas <input class="admin-input" id="portalMax" type="number" min="1" max="50" value="'+d.maximo+'" style="width:70px;"></label>';
+    h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAjustes()">Guardar</button></div>';
+    /* Solicitudes */
+    h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:16px 0 8px;">Solicitudes</div>';
+    h += '<table class="admin-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Empresa</th><th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>';
+    if(!(d.solicitudes||[]).length) h += '<tr><td colspan="6" style="text-align:center;color:#8E8E93;padding:20px;">Sin solicitudes todav&iacute;a</td></tr>';
+    var colores = {pendiente:'#FF9500', aprobada:'#007AFF', creando:'#007AFF', lista:'#34C759', error:'#FF3B30', rechazada:'#8E8E93'};
+    (d.solicitudes||[]).forEach(function(s){
+      h += '<tr><td style="white-space:nowrap;">'+_esc((s.creado_en||'').slice(0,16))+'</td><td>'+_esc(s.tipo)+'</td>';
+      h += '<td><strong>'+_esc(s.nombre)+'</strong><div style="color:#8E8E93;font-size:0.75rem;">'+_esc(s.slug)+'</div></td>';
+      h += '<td>'+_esc(s.responsable||'')+'<div style="color:#8E8E93;font-size:0.75rem;">'+_esc(s.correo||'')+' '+_esc(s.telefono||'')+'</div></td>';
+      h += '<td><span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#fff;background:'+(colores[s.estado]||'#8E8E93')+';">'+_esc(s.estado)+'</span>'+(s.mensaje?'<div style="color:#8E8E93;font-size:0.72rem;margin-top:3px;">'+_esc(s.mensaje)+'</div>':'')+'</td>';
+      h += '<td style="white-space:nowrap;">';
+      if(s.tipo==='alta'){
+        if(s.estado==='pendiente') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'aprobar\')">Aprobar</button> <button class="admin-btn" onclick="admPortalAccion('+s.id+',\'rechazar\')">Rechazar</button> ';
+        else if(s.estado==='error') h += '<button class="admin-btn admin-btn-primary" onclick="admPortalAccion('+s.id+',\'reintentar\')">Reintentar</button> <button class="admin-btn" onclick="admPortalAccion('+s.id+',\'rechazar\')">Descartar</button> ';
+        else if(s.estado==='lista' && s.url) h += '<a class="admin-btn" href="'+_esc(s.url)+'" target="_blank" rel="noopener">Login</a> ';
+      }
+      h += '<a class="admin-btn" href="'+_esc(s.ver_url)+'" target="_blank" rel="noopener">Ver</a></td></tr>';
+    });
+    h += '</tbody></table>';
+    /* Empresas */
+    h += '<div style="font-size:0.78rem;font-weight:700;color:#3A3A3C;margin:18px 0 8px;">Empresas en el servidor</div>';
+    h += '<table class="admin-table"><thead><tr><th>Empresa</th><th>Identificador</th><th>Versi&oacute;n</th><th>Web</th><th>Alta</th><th></th></tr></thead><tbody>';
+    if(!(d.empresas||[]).length) h += '<tr><td colspan="6" style="text-align:center;color:#8E8E93;padding:20px;">Sin empresas</td></tr>';
+    (d.empresas||[]).forEach(function(e){
+      var activa = e.activa !== false;
+      h += '<tr><td><strong>'+_esc(e.nombre)+'</strong>'+(activa?'':' <span style="color:#8E8E93;font-size:0.72rem;">(baja)</span>')+'</td><td>'+_esc(e.slug)+'</td><td>'+_esc(String(e.imagen||'').replace('crm-producto:',''))+'</td><td>'+_esc(e.web||'-')+'</td><td>'+_esc(e.alta||'')+'</td>';
+      h += '<td style="white-space:nowrap;"><a class="admin-btn" href="'+_esc(e.url)+'" target="_blank" rel="noopener">Login</a> ';
+      if(activa) h += '<button class="admin-btn" onclick="admPortalBaja(\''+_esc(e.slug)+'\',false)">Baja</button> <button class="admin-btn" style="color:#FF3B30;" onclick="admPortalBaja(\''+_esc(e.slug)+'\',true)">Baja + borrar</button>';
+      h += '</td></tr>';
+    });
+    h += '</tbody></table>';
+    h += '<p class="admin-help" style="margin-top:14px;">Las altas tardan alrededor de un minuto; pulsa <strong>Actualizar</strong> para ver el avance. La p&aacute;gina <strong>Ver</strong> es la que ve el cliente.</p>';
+    h += '</div>';
+    ac.innerHTML = h;
+  }).catch(function(){ _showAdminToast('Error de red', false); });
+};
+window.admPortalAccion = function(id, accion){
+  if(accion==='rechazar' && !confirm('¿Rechazar esta solicitud?')) return;
+  _portalPost({accion:accion, id:id}, function(res){ _showAdminToast(res.mensaje||res.error||'Listo', !!res.ok); loadPortalEmpresas(); });
+};
+window.admPortalAjustes = function(){
+  _portalPost({accion:'ajustes', auto: document.getElementById('portalAuto').checked, maximo: document.getElementById('portalMax').value}, function(res){ _showAdminToast(res.mensaje||res.error||'Listo', !!res.ok); loadPortalEmpresas(); });
+};
+window.admPortalBaja = function(slug, purgar){
+  if(!confirm(purgar ? '¿Dar de baja '+slug+' y BORRAR sus datos? Se respalda antes.' : '¿Dar de baja '+slug+'? Se respalda antes; los datos se conservan.')) return;
+  _portalPost({accion:'baja', slug:slug, purgar:purgar}, function(res){ _showAdminToast(res.mensaje||res.error||'Listo', !!res.ok); setTimeout(loadPortalEmpresas, 1500); });
 };
 
 /* Expose helpers */
