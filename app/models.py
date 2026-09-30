@@ -32,10 +32,15 @@ class UserProfile(models.Model):
     ]
     
     THEME_CHOICES = [
-        # 'temporada' es el slot estacional (piel actual: Verano). 'mundial'
-        # queda oculto del selector pero se conserva por si vuelve a usarse.
+        # 'temporada' es el slot estacional que rota de piel cada estación
+        # (hoy: Verano; en camino: Otoño). Los temas estacionales que ya
+        # rotaron se CONSERVAN como choices ocultos del selector, con su CSS
+        # intacto, para poder revivirlos:
+        #   'mundial' → tema_mundial.css
+        #   'verano'  → tema_verano.css
         ('temporada', 'Temporada'),
         ('mundial', 'Mundial'),
+        ('verano', 'Verano'),
         ('perla', 'Perla'),
         ('sakura', 'Sakura'),
         ('duna', 'Duna'),

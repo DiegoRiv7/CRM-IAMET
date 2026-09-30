@@ -126,6 +126,13 @@
     {% endcomment %}
     <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260723-fixsvg">
     {% comment %}
+    Tema Verano — ARCHIVADO. Es el skin "California Sunset" que ocupó el
+    slot Temporada; se conserva scopeado a body[data-theme="verano"] (oculto
+    del selector) para revivirlo el próximo verano. Reactivo por hora vía el
+    mismo data-fase. Igual que Mundial: quitar = borrar esta línea y su CSS.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tema_verano.css' %}?v=20260930-archivo">
+    {% comment %}
     Tema Sakura — cherry blossoms. Autocontenido y scopeado a
     body[data-theme="sakura"] (misma arquitectura que Temporada).
     {% endcomment %}
