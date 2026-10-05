@@ -1,6 +1,7 @@
 /* ════════════════════════════════════════════════════════════════════════
-   TEMA TEMPORADA — slot estacional del sistema (piel actual: VERANO
-   "California Sunset", reactiva por hora del día).
+   TEMA TEMPORADA — slot estacional del sistema (piel actual: OTOÑO,
+   reactiva por hora del día). La piel de Verano quedó archivada en
+   tema_verano.css (choice 'verano'), revivible el próximo año.
    ────────────────────────────────────────────────────────────────────────
    ARCHIVO ÚNICO Y AUTOCONTENIDO del tema (misma arquitectura que
    tema_mundial.css). Reglas:
@@ -23,138 +24,98 @@
    Paleta verano: azul marino/acero + naranja sunset (#F2823B) + blanco.
    ════════════════════════════════════════════════════════════════════════ */
 
-/* ═══ Variables del tema + color de respaldo ═══ */
+/* ═══ Variables del tema + color de respaldo ═══
+   TEMA OTOÑO — slot estacional (piel actual: Otoño). Reactivo por hora.
+   Misma arquitectura que la piel anterior (Verano, archivada en
+   tema_verano.css): la UI consume variables por fase; recolorear las
+   variables vuelve todo otoñal. Sin sol; de noche, faroles en la escena. */
 body[data-theme="temporada"] {
-    --bg-crm: #16233C;
+    --bg-crm: #2A1C12;
     --text-crm: #ffffff;
     --card-bg: rgba(255, 255, 255, 0.93);
     --border-crm: rgba(255, 255, 255, 0.22);
     --table-header-bg: rgba(255, 255, 255, 0.10);
     --table-row-hover: rgba(255, 255, 255, 0.16);
-    --accent-crm: #F2823B;
-
-    /* ── ACENTO POR FASE ──
-       Las 2 primeras fases del día (despertar, pleno) acentúan en AZUL
-       (el tono de la sidebar de esa hora); las 2 últimas (atardecer,
-       crepúsculo) en NARANJA sunset. Default = naranja. */
-    --tmp-acc: #F2823B;
-    --tmp-acc-dark: #E8722E;
-    --tmp-acc-light: #FF9A4D;
-    --tmp-acc-deep: #C05A28;
-    --tmp-acc-rgb: 242, 130, 59;
-    --tmp-acc-grad: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%);
+    --accent-crm: #C8551B;
     --island-bg: rgba(255, 255, 255, 0.14);
     --island-border: rgba(255, 255, 255, 0.28);
-    background-color: #16233C;
+    background-color: #2A1C12;
 
-    /* Piel por defecto (= pleno) por si data-fase no llegó.
-       PLENO es la playa a las 2 de la tarde: cielo azul claro y luminoso,
-       sol grande y brillante, sidebar AZUL CIELO y scrim casi nulo.
-       (Brillo sí, deslumbrar no: el tope de claridad lo pone la arena
-       del último tramo, no blanco puro.) */
-    --tmp-cielo: linear-gradient(180deg, #3E6FA8 0%, #5E92C6 30%, #8FBCE0 62%, #C6E0F2 100%);
-    --tmp-sol: radial-gradient(circle, #FFFFF6 0%, #FFF4C4 45%, #FFE9A0 60%, rgba(255, 233, 160, 0) 78%);
-    --tmp-sol-x: 76%;
-    --tmp-sol-y: 12%;
-    --tmp-sol-size: 150px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    /* Escena de mediodía: palmeras lavadas por el sol + cúmulos blancos */
-    --tmp-palmeras: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20900%22%3E%20%3Cdefs%3E%20%3Cfilter%20id=%22b%22%20x=%22-20%25%22%20y=%22-20%25%22%20width=%22140%25%22%20height=%22140%25%22%3E%3CfeGaussianBlur%20stdDeviation=%227%22/%3E%3C/filter%3E%20%3Cfilter%20id=%22bn%22%20x=%22-30%25%22%20y=%22-30%25%22%20width=%22160%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%2214%22/%3E%3C/filter%3E%20%3Cg%20id=%22fronda%22%3E%3Cpath%20d=%22M0%200%20C%2034%20-30,%2086%20-38,%20120%20-18%20C%2084%20-22,%2042%20-9,%2010%209%20Z%22/%3E%3C/g%3E%20%3Cg%20id=%22palma%22%3E%20%3Cpath%20d=%22M-7%20340%20C%20-3%20230,%203%20120,%20-1%2010%20L%2011%2010%20C%209%20120,%2012%20230,%2019%20340%20Z%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-155)%20scale(1.15)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-125)%20scale(1.25)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-95)%20scale(1.1)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-65)%20scale(1.3)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-35)%20scale(1.2)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-8)%20scale(1.28)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(18)%20scale(1.05)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(40)%20scale(0.9)%22/%3E%20%3Cellipse%20cx=%222%22%20cy=%224%22%20rx=%2212%22%20ry=%229%22/%3E%20%3C/g%3E%20%3C/defs%3E%20%3Cg%20opacity=%220.16%22%20transform=%22translate(260,150)%20scale(1.15)%22%20fill=%22%23FFFFFF%22%20filter=%22url%28%23bn%29%22%3E%3Cellipse%20cx=%220%22%20cy=%220%22%20rx=%22130%22%20ry=%2234%22/%3E%3Cellipse%20cx=%2290%22%20cy=%22-22%22%20rx=%2290%22%20ry=%2240%22/%3E%3Cellipse%20cx=%22185%22%20cy=%222%22%20rx=%22110%22%20ry=%2230%22/%3E%3Cellipse%20cx=%2255%22%20cy=%22-40%22%20rx=%2255%22%20ry=%2228%22/%3E%3C/g%3E%3Cg%20opacity=%220.18%22%20transform=%22translate(860,90)%20scale(1.5)%22%20fill=%22%23FFFFFF%22%20filter=%22url%28%23bn%29%22%3E%3Cellipse%20cx=%220%22%20cy=%220%22%20rx=%22130%22%20ry=%2234%22/%3E%3Cellipse%20cx=%2290%22%20cy=%22-22%22%20rx=%2290%22%20ry=%2240%22/%3E%3Cellipse%20cx=%22185%22%20cy=%222%22%20rx=%22110%22%20ry=%2230%22/%3E%3Cellipse%20cx=%2255%22%20cy=%22-40%22%20rx=%2255%22%20ry=%2228%22/%3E%3C/g%3E%3Cg%20opacity=%220.13%22%20transform=%22translate(1380,210)%20scale(0.9)%22%20fill=%22%23FFFFFF%22%20filter=%22url%28%23bn%29%22%3E%3Cellipse%20cx=%220%22%20cy=%220%22%20rx=%22130%22%20ry=%2234%22/%3E%3Cellipse%20cx=%2290%22%20cy=%22-22%22%20rx=%2290%22%20ry=%2240%22/%3E%3Cellipse%20cx=%22185%22%20cy=%222%22%20rx=%22110%22%20ry=%2230%22/%3E%3Cellipse%20cx=%2255%22%20cy=%22-40%22%20rx=%2255%22%20ry=%2228%22/%3E%3C/g%3E%20%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%2324466E%22%3E%20%3Cg%20opacity=%220.22%22%20transform=%22translate(210,565)%20scale(1.35)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.15%22%20transform=%22translate(365,640)%20scale(0.85)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.20%22%20transform=%22translate(1450,610)%20scale(1.5)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.11%22%20transform=%22translate(1240,690)%20scale(0.7)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3C/g%3E%20%3C/svg%3E");
-    /* Acento azul del mediodía con toque de blanco (resalta sobre la
-       sidebar azul oscura) */
-    --tmp-acc: #4E82BC;
-    --tmp-acc-dark: #3E6FA8;
-    --tmp-acc-light: #8FB8E2;
-    --tmp-acc-deep: #28507E;
-    --tmp-acc-rgb: 78, 130, 188;
-    --tmp-acc-grad: linear-gradient(135deg, #8FB8E2 0%, #4478B2 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #A2C6EC 0%, #5288C0 100%);
-    /* Sidebar del pleno: el tono más oscuro del cielo de esta fase */
-    --tmp-sidebar: linear-gradient(180deg, rgba(62, 111, 168, 0.92) 0%, rgba(50, 92, 142, 0.94) 55%, rgba(40, 76, 120, 0.96) 100%);
-}
-
-/* ═══ Pieles por fase del día (cielo, sol, scrim y sidebar) ═══
-   El sidebar acompaña al sol: intermedio al despertar, azul cielo en el
-   pleno, atardecer con la mitad de arriba oscura y el último cuarto azul
-   cielo (la luz quedando abajo), y azul noche en el crepúsculo. */
-body[data-theme="temporada"][data-fase="despertar"] {
-    /* Escena de mañana: palmeras en bruma azulada + nubes bajas suaves */
-    --tmp-palmeras: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20900%22%3E%20%3Cdefs%3E%20%3Cfilter%20id=%22b%22%20x=%22-20%25%22%20y=%22-20%25%22%20width=%22140%25%22%20height=%22140%25%22%3E%3CfeGaussianBlur%20stdDeviation=%227%22/%3E%3C/filter%3E%20%3Cfilter%20id=%22bn%22%20x=%22-30%25%22%20y=%22-30%25%22%20width=%22160%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%2214%22/%3E%3C/filter%3E%20%3Cg%20id=%22fronda%22%3E%3Cpath%20d=%22M0%200%20C%2034%20-30,%2086%20-38,%20120%20-18%20C%2084%20-22,%2042%20-9,%2010%209%20Z%22/%3E%3C/g%3E%20%3Cg%20id=%22palma%22%3E%20%3Cpath%20d=%22M-7%20340%20C%20-3%20230,%203%20120,%20-1%2010%20L%2011%2010%20C%209%20120,%2012%20230,%2019%20340%20Z%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-155)%20scale(1.15)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-125)%20scale(1.25)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-95)%20scale(1.1)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-65)%20scale(1.3)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-35)%20scale(1.2)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-8)%20scale(1.28)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(18)%20scale(1.05)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(40)%20scale(0.9)%22/%3E%20%3Cellipse%20cx=%222%22%20cy=%224%22%20rx=%2212%22%20ry=%229%22/%3E%20%3C/g%3E%20%3C/defs%3E%20%3Cg%20opacity=%220.1%22%20transform=%22translate(380,200)%20scale(1.0)%22%20fill=%22%23FFFFFF%22%20filter=%22url%28%23bn%29%22%3E%3Cellipse%20cx=%220%22%20cy=%220%22%20rx=%22130%22%20ry=%2234%22/%3E%3Cellipse%20cx=%2290%22%20cy=%22-22%22%20rx=%2290%22%20ry=%2240%22/%3E%3Cellipse%20cx=%22185%22%20cy=%222%22%20rx=%22110%22%20ry=%2230%22/%3E%3Cellipse%20cx=%2255%22%20cy=%22-40%22%20rx=%2255%22%20ry=%2228%22/%3E%3C/g%3E%3Cg%20opacity=%220.12%22%20transform=%22translate(1050,130)%20scale(1.3)%22%20fill=%22%23FFFFFF%22%20filter=%22url%28%23bn%29%22%3E%3Cellipse%20cx=%220%22%20cy=%220%22%20rx=%22130%22%20ry=%2234%22/%3E%3Cellipse%20cx=%2290%22%20cy=%22-22%22%20rx=%2290%22%20ry=%2240%22/%3E%3Cellipse%20cx=%22185%22%20cy=%222%22%20rx=%22110%22%20ry=%2230%22/%3E%3Cellipse%20cx=%2255%22%20cy=%22-40%22%20rx=%2255%22%20ry=%2228%22/%3E%3C/g%3E%20%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%231E3450%22%3E%20%3Cg%20opacity=%220.30%22%20transform=%22translate(210,565)%20scale(1.35)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.20%22%20transform=%22translate(365,640)%20scale(0.85)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.26%22%20transform=%22translate(1450,610)%20scale(1.5)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.15%22%20transform=%22translate(1240,690)%20scale(0.7)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3C/g%3E%20%3C/svg%3E");
-    /* Acento azul (tono de la sidebar de la mañana) */
-    --tmp-acc: #4A6E9C;
-    --tmp-acc-dark: #3E608E;
-    --tmp-acc-light: #5E86B4;
-    --tmp-acc-deep: #2C5080;
-    --tmp-acc-rgb: 74, 110, 156;
-    --tmp-acc-grad: linear-gradient(135deg, #82A8D2 0%, #46689A 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #92B8E0 0%, #5276AA 100%);
-    --tmp-cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 30%, #7E9EC0 58%, #D9BC8A 86%, #A8845A 100%);
-    --tmp-sol: radial-gradient(circle, #FFF6DC 0%, #FFDF9A 55%, rgba(255, 223, 154, 0) 78%);
-    --tmp-sol-x: 24%;
-    --tmp-sol-y: 66%;
-    --tmp-sol-size: 110px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.24) 75%, rgba(4, 7, 14, 0.36) 100%);
-    /* Sidebar intermedio: entre azul noche y azul cielo */
-    --tmp-sidebar: linear-gradient(180deg, rgba(52, 82, 124, 0.92) 0%, rgba(40, 66, 104, 0.94) 60%, rgba(30, 52, 86, 0.96) 100%);
-}
-body[data-theme="temporada"][data-fase="atardecer"] {
-    /* PILOTO: siluetas de palmeras difuminadas contra el horizonte
-       (SVG con blur integrado — sombras fotográficas, no dibujo) */
-    --tmp-palmeras: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20900%22%3E%20%3Cdefs%3E%20%3Cfilter%20id=%22b%22%20x=%22-20%25%22%20y=%22-20%25%22%20width=%22140%25%22%20height=%22140%25%22%3E%3CfeGaussianBlur%20stdDeviation=%227%22/%3E%3C/filter%3E%20%3Cg%20id=%22fronda%22%3E%3Cpath%20d=%22M0%200%20C%2034%20-30,%2086%20-38,%20120%20-18%20C%2084%20-22,%2042%20-9,%2010%209%20Z%22/%3E%3C/g%3E%20%3Cg%20id=%22palma%22%3E%20%3Cpath%20d=%22M-7%20340%20C%20-3%20230,%203%20120,%20-1%2010%20L%2011%2010%20C%209%20120,%2012%20230,%2019%20340%20Z%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-155)%20scale(1.15)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-125)%20scale(1.25)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-95)%20scale(1.1)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-65)%20scale(1.3)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-35)%20scale(1.2)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-8)%20scale(1.28)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(18)%20scale(1.05)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(40)%20scale(0.9)%22/%3E%20%3Cellipse%20cx=%222%22%20cy=%224%22%20rx=%2212%22%20ry=%229%22/%3E%20%3C/g%3E%20%3C/defs%3E%20%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23140E14%22%3E%20%3Cg%20opacity=%220.42%22%20transform=%22translate(210,565)%20scale(1.35)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.30%22%20transform=%22translate(365,640)%20scale(0.85)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.38%22%20transform=%22translate(1450,610)%20scale(1.5)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.24%22%20transform=%22translate(1240,690)%20scale(0.7)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3C/g%3E%20%3C/svg%3E");
-    /* Acento del atardecer: degradado azul claro → azul fuerte → morado
-       medio (familia de la sidebar de esta hora) — el naranja queda solo
-       en la escena (cielo/sol), no en la UI */
-    --tmp-acc: #5A6EB4;
-    --tmp-acc-dark: #46589E;
-    --tmp-acc-light: #8FA8DC;
-    --tmp-acc-deep: #3A4788;
-    --tmp-acc-rgb: 90, 110, 180;
-    --tmp-acc-grad: linear-gradient(135deg, #7FA4D8 0%, #4A66B0 50%, #7A5FC0 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #8FB4E4 0%, #5876C0 50%, #8A6FD0 100%);
-    --tmp-cielo: linear-gradient(180deg,
-        #1E2E50 0%, #31497A 32%, #5E5E90 50%,
-        #B8613F 68%, #E8823F 80%, #B85A2A 90%, #3A2415 100%);
-    --tmp-sol: radial-gradient(circle, #FFE9B8 0%, #FFB35C 55%, rgba(255, 179, 92, 0) 78%);
-    --tmp-sol-x: 50%;
-    --tmp-sol-y: 72%;
-    --tmp-sol-size: 140px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%);
-    /* Sidebar atardecer: mitad de arriba azul oscuro → último cuarto azul cielo */
-    --tmp-sidebar: linear-gradient(180deg,
-        rgba(22, 32, 58, 0.95) 0%, rgba(22, 32, 58, 0.94) 50%,
-        rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
-}
-body[data-theme="temporada"][data-fase="crepusculo"] {
-    /* Acento ámbar dorado — el color de las luces de terraza (el naranja
-       sunset no entonaba con la noche) */
-    --tmp-acc: #D4A868;
-    --tmp-acc-dark: #BE9254;
-    --tmp-acc-light: #E2BE84;
-    --tmp-acc-deep: #A67E44;
-    --tmp-acc-rgb: 212, 168, 104;
-    --tmp-acc-grad: linear-gradient(135deg, #E2BE84 0%, #BE9254 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #ECCB96 0%, #D4A868 100%);
-    /* Noche de playa: cielo azul noche LIMPIO (sin naranja terroso ni
-       sol — ya se metió); todo el calor viene de las luces de terraza
-       cayendo desde arriba, con las palmeras casi negras dormidas. */
-    --tmp-luces:
-        radial-gradient(ellipse 110% 34% at 50% -6%, rgba(255, 196, 120, 0.22) 0%, rgba(255, 196, 120, 0) 66%),
-        radial-gradient(circle 270px at 10% 0%, rgba(255, 206, 138, 0.62) 0%, rgba(255, 206, 138, 0) 62%),
-        radial-gradient(circle 220px at 34% -2%, rgba(255, 196, 122, 0.52) 0%, rgba(255, 196, 122, 0) 60%),
-        radial-gradient(circle 265px at 60% 0%, rgba(255, 206, 138, 0.58) 0%, rgba(255, 206, 138, 0) 62%),
-        radial-gradient(circle 215px at 86% -2%, rgba(255, 196, 122, 0.50) 0%, rgba(255, 196, 122, 0) 60%);
-    --tmp-palmeras: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20900%22%3E%20%3Cdefs%3E%20%3Cfilter%20id=%22b%22%20x=%22-20%25%22%20y=%22-20%25%22%20width=%22140%25%22%20height=%22140%25%22%3E%3CfeGaussianBlur%20stdDeviation=%227%22/%3E%3C/filter%3E%20%3Cg%20id=%22fronda%22%3E%3Cpath%20d=%22M0%200%20C%2034%20-30,%2086%20-38,%20120%20-18%20C%2084%20-22,%2042%20-9,%2010%209%20Z%22/%3E%3C/g%3E%20%3Cg%20id=%22palma%22%3E%20%3Cpath%20d=%22M-7%20340%20C%20-3%20230,%203%20120,%20-1%2010%20L%2011%2010%20C%209%20120,%2012%20230,%2019%20340%20Z%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-155)%20scale(1.15)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-125)%20scale(1.25)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-95)%20scale(1.1)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-65)%20scale(1.3)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-35)%20scale(1.2)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-8)%20scale(1.28)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(18)%20scale(1.05)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(40)%20scale(0.9)%22/%3E%20%3Cellipse%20cx=%222%22%20cy=%224%22%20rx=%2212%22%20ry=%229%22/%3E%20%3C/g%3E%20%3C/defs%3E%20%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%2304060B%22%3E%20%3Cg%20opacity=%220.48%22%20transform=%22translate(210,565)%20scale(1.35)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.34%22%20transform=%22translate(365,640)%20scale(0.85)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.44%22%20transform=%22translate(1450,610)%20scale(1.5)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.26%22%20transform=%22translate(1240,690)%20scale(0.7)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3C/g%3E%20%3C/svg%3E");
-    --tmp-cielo: linear-gradient(180deg,
-        #141838 0%, #1A1E42 40%, #221F4A 72%, #241F44 100%);
-    --tmp-sol: radial-gradient(circle, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 100%);
+    /* Piel por defecto (= pleno / tarde dorada) por si data-fase no llegó. */
+    --tmp-cielo: linear-gradient(180deg, #6E94B4 0%, #A9B9A8 34%, #E2C486 64%, #E6B06A 86%, #C98A4A 100%);
+    --tmp-sol: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
     --tmp-sol-x: 50%;
     --tmp-sol-y: 120vh;
     --tmp-sol-size: 0px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.26) 75%, rgba(4, 7, 14, 0.40) 100%);
-    /* Sidebar noche: el tono más oscuro del cielo violeta (misma regla
-       que las demás fases) */
-    --tmp-sidebar: linear-gradient(180deg, rgba(22, 19, 50, 0.92) 0%, rgba(16, 14, 38, 0.95) 60%, rgba(11, 9, 28, 0.97) 100%);
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(30, 18, 6, 0.02) 0%, rgba(24, 14, 5, 0.07) 75%, rgba(18, 10, 4, 0.12) 100%);
+    --tmp-palmeras: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22%3E%3Cdefs%3E%3Cfilter id=%22b%22 x=%22-20%%22 y=%22-20%%22 width=%22140%%22 height=%22140%%22%3E%3CfeGaussianBlur stdDeviation=%227%22/%3E%3C/filter%3E%3Cg id=%22tronco%22%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 C -12 -282 -22 -300 -30 -318 M4 -140 C 10 -180 22 -206 34 -232 M0 -200 C -6 -238 -16 -262 -26 -286%22 fill=%22none%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 L 6 -252 C 4 -170 6 -90 9 0 Z%22/%3E%3C/g%3E%3Cg id=%22copa%22%3E%3Ccircle cx=%220%22 cy=%22-300%22 r=%2292%22/%3E%3Ccircle cx=%22-66%22 cy=%22-266%22 r=%2260%22/%3E%3Ccircle cx=%2272%22 cy=%22-272%22 r=%2262%22/%3E%3Ccircle cx=%22-32%22 cy=%22-348%22 r=%2258%22/%3E%3Ccircle cx=%2240%22 cy=%22-342%22 r=%2254%22/%3E%3Ccircle cx=%224%22 cy=%22-392%22 r=%2242%22/%3E%3Ccircle cx=%224%22 cy=%22-236%22 r=%2256%22/%3E%3C/g%3E%3Cstyle%3E.copa%7Bfill:#CE7C28%7D.tronco%7Bfill:#241711%3Bstroke:#241711%7D%3C/style%3E%3C/defs%3E%3Cg filter=%22url(#b)%22%3E%3Cg transform=%22translate(165,905) scale(1.05,1.05)%22%3E%3Cg class=%22copa%22 opacity=%220.5%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.62%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(360,920) scale(-0.72,0.72)%22%3E%3Cg class=%22copa%22 opacity=%220.32%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.4%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1460,905) scale(-1.15,1.15)%22%3E%3Cg class=%22copa%22 opacity=%220.5%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.62%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1270,920) scale(0.78,0.78)%22%3E%3Cg class=%22copa%22 opacity=%220.32%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.4%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(560,940) scale(0.5,0.5)%22%3E%3Cg class=%22copa%22 opacity=%220.16%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.2%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1050,940) scale(-0.55,0.55)%22%3E%3Cg class=%22copa%22 opacity=%220.16%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.2%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    --tmp-acc: #C8551B;
+    --tmp-acc-dark: #B5451C;
+    --tmp-acc-light: #E0922C;
+    --tmp-acc-deep: #9A3A12;
+    --tmp-acc-rgb: 200, 85, 27;
+    --tmp-acc-grad: linear-gradient(135deg, #E0922C 0%, #C8551B 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #EDA23E 0%, #D9622A 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(74, 46, 24, 0.92) 0%, rgba(58, 36, 20, 0.95) 55%, rgba(44, 28, 16, 0.96) 100%);
+}
+
+/* ═══ Pieles por fase del día (cielo, scrim, acento, escena, sidebar) ═══ */
+body[data-theme="temporada"][data-fase="despertar"] {
+    --tmp-palmeras: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22%3E%3Cdefs%3E%3Cfilter id=%22b%22 x=%22-20%%22 y=%22-20%%22 width=%22140%%22 height=%22140%%22%3E%3CfeGaussianBlur stdDeviation=%227%22/%3E%3C/filter%3E%3Cg id=%22tronco%22%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 C -12 -282 -22 -300 -30 -318 M4 -140 C 10 -180 22 -206 34 -232 M0 -200 C -6 -238 -16 -262 -26 -286%22 fill=%22none%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 L 6 -252 C 4 -170 6 -90 9 0 Z%22/%3E%3C/g%3E%3Cg id=%22copa%22%3E%3Ccircle cx=%220%22 cy=%22-300%22 r=%2292%22/%3E%3Ccircle cx=%22-66%22 cy=%22-266%22 r=%2260%22/%3E%3Ccircle cx=%2272%22 cy=%22-272%22 r=%2262%22/%3E%3Ccircle cx=%22-32%22 cy=%22-348%22 r=%2258%22/%3E%3Ccircle cx=%2240%22 cy=%22-342%22 r=%2254%22/%3E%3Ccircle cx=%224%22 cy=%22-392%22 r=%2242%22/%3E%3Ccircle cx=%224%22 cy=%22-236%22 r=%2256%22/%3E%3C/g%3E%3Cstyle%3E.copa%7Bfill:#C68A44%7D.tronco%7Bfill:#2A1C12%3Bstroke:#2A1C12%7D%3C/style%3E%3C/defs%3E%3Cg filter=%22url(#b)%22%3E%3Cg transform=%22translate(165,905) scale(1.05,1.05)%22%3E%3Cg class=%22copa%22 opacity=%220.42%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.55%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(360,920) scale(-0.72,0.72)%22%3E%3Cg class=%22copa%22 opacity=%220.28%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.36%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1460,905) scale(-1.15,1.15)%22%3E%3Cg class=%22copa%22 opacity=%220.42%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.55%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1270,920) scale(0.78,0.78)%22%3E%3Cg class=%22copa%22 opacity=%220.28%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.36%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(560,940) scale(0.5,0.5)%22%3E%3Cg class=%22copa%22 opacity=%220.14%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.18%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1050,940) scale(-0.55,0.55)%22%3E%3Cg class=%22copa%22 opacity=%220.14%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.18%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    --tmp-cielo: linear-gradient(180deg, #3C4E63 0%, #566474 22%, #8A8372 44%, #C79A66 66%, #E6BC83 85%, #C68C52 100%);
+    --tmp-sol: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
+    --tmp-sol-x: 50%;
+    --tmp-sol-y: 120vh;
+    --tmp-sol-size: 0px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(22, 32, 48, 0.08) 0%, rgba(18, 26, 40, 0.20) 75%, rgba(14, 20, 32, 0.32) 100%);
+    --tmp-acc: #C06A22;
+    --tmp-acc-dark: #A85A1C;
+    --tmp-acc-light: #D99A47;
+    --tmp-acc-deep: #8A4A18;
+    --tmp-acc-rgb: 192, 106, 34;
+    --tmp-acc-grad: linear-gradient(135deg, #D99A47 0%, #C06A22 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #E6AC58 0%, #CE7A2E 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(64, 52, 34, 0.90) 0%, rgba(50, 40, 26, 0.93) 60%, rgba(40, 32, 22, 0.95) 100%);
+}
+body[data-theme="temporada"][data-fase="atardecer"] {
+    --tmp-palmeras: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22%3E%3Cdefs%3E%3Cfilter id=%22b%22 x=%22-20%%22 y=%22-20%%22 width=%22140%%22 height=%22140%%22%3E%3CfeGaussianBlur stdDeviation=%227%22/%3E%3C/filter%3E%3Cg id=%22tronco%22%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 C -12 -282 -22 -300 -30 -318 M4 -140 C 10 -180 22 -206 34 -232 M0 -200 C -6 -238 -16 -262 -26 -286%22 fill=%22none%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 L 6 -252 C 4 -170 6 -90 9 0 Z%22/%3E%3C/g%3E%3Cg id=%22copa%22%3E%3Ccircle cx=%220%22 cy=%22-300%22 r=%2292%22/%3E%3Ccircle cx=%22-66%22 cy=%22-266%22 r=%2260%22/%3E%3Ccircle cx=%2272%22 cy=%22-272%22 r=%2262%22/%3E%3Ccircle cx=%22-32%22 cy=%22-348%22 r=%2258%22/%3E%3Ccircle cx=%2240%22 cy=%22-342%22 r=%2254%22/%3E%3Ccircle cx=%224%22 cy=%22-392%22 r=%2242%22/%3E%3Ccircle cx=%224%22 cy=%22-236%22 r=%2256%22/%3E%3C/g%3E%3Cstyle%3E.copa%7Bfill:#B5481C%7D.tronco%7Bfill:#1E0F09%3Bstroke:#1E0F09%7D%3C/style%3E%3C/defs%3E%3Cg filter=%22url(#b)%22%3E%3Cg transform=%22translate(165,905) scale(1.05,1.05)%22%3E%3Cg class=%22copa%22 opacity=%220.52%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.66%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(360,920) scale(-0.72,0.72)%22%3E%3Cg class=%22copa%22 opacity=%220.34%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.44%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1460,905) scale(-1.15,1.15)%22%3E%3Cg class=%22copa%22 opacity=%220.52%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.66%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1270,920) scale(0.78,0.78)%22%3E%3Cg class=%22copa%22 opacity=%220.34%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.44%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(560,940) scale(0.5,0.5)%22%3E%3Cg class=%22copa%22 opacity=%220.17%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.22%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1050,940) scale(-0.55,0.55)%22%3E%3Cg class=%22copa%22 opacity=%220.17%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.22%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    --tmp-cielo: linear-gradient(180deg, #7A586A 0%, #C27C50 40%, #D88A44 66%, #B0532A 100%);
+    --tmp-sol: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
+    --tmp-sol-x: 50%;
+    --tmp-sol-y: 120vh;
+    --tmp-sol-size: 0px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(40, 14, 8, 0.10) 0%, rgba(60, 22, 10, 0.30) 75%, rgba(40, 14, 6, 0.44) 100%);
+    --tmp-acc: #B8431A;
+    --tmp-acc-dark: #A2360F;
+    --tmp-acc-light: #D9772A;
+    --tmp-acc-deep: #822A0E;
+    --tmp-acc-rgb: 184, 67, 26;
+    --tmp-acc-grad: linear-gradient(135deg, #D9772A 0%, #B8431A 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #E68A3C 0%, #C85424 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(50, 22, 14, 0.95) 0%, rgba(74, 40, 22, 0.9) 70%, rgba(120, 72, 40, 0.86) 100%);
+}
+body[data-theme="temporada"][data-fase="crepusculo"] {
+    --tmp-luces:
+        radial-gradient(ellipse 110% 34% at 50% -6%, rgba(255, 180, 96, 0.20) 0%, rgba(255, 180, 96, 0) 66%),
+        radial-gradient(circle 240px at 19% 72%, rgba(255, 184, 96, 0.30) 0%, rgba(255, 184, 96, 0) 60%),
+        radial-gradient(circle 220px at 47% 66%, rgba(255, 184, 96, 0.22) 0%, rgba(255, 184, 96, 0) 60%),
+        radial-gradient(circle 230px at 70% 68%, rgba(255, 184, 96, 0.26) 0%, rgba(255, 184, 96, 0) 60%),
+        radial-gradient(circle 250px at 85% 72%, rgba(255, 184, 96, 0.30) 0%, rgba(255, 184, 96, 0) 60%);
+    --tmp-palmeras: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22%3E%3Cdefs%3E%3Cfilter id=%22b%22 x=%22-20%%22 y=%22-20%%22 width=%22140%%22 height=%22140%%22%3E%3CfeGaussianBlur stdDeviation=%227%22/%3E%3C/filter%3E%3Cg id=%22tronco%22%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 C -12 -282 -22 -300 -30 -318 M4 -140 C 10 -180 22 -206 34 -232 M0 -200 C -6 -238 -16 -262 -26 -286%22 fill=%22none%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-7 0 C -5 -90 -5 -170 -8 -250 L 6 -252 C 4 -170 6 -90 9 0 Z%22/%3E%3C/g%3E%3Cg id=%22copa%22%3E%3Ccircle cx=%220%22 cy=%22-300%22 r=%2292%22/%3E%3Ccircle cx=%22-66%22 cy=%22-266%22 r=%2260%22/%3E%3Ccircle cx=%2272%22 cy=%22-272%22 r=%2262%22/%3E%3Ccircle cx=%22-32%22 cy=%22-348%22 r=%2258%22/%3E%3Ccircle cx=%2240%22 cy=%22-342%22 r=%2254%22/%3E%3Ccircle cx=%224%22 cy=%22-392%22 r=%2242%22/%3E%3Ccircle cx=%224%22 cy=%22-236%22 r=%2256%22/%3E%3C/g%3E%3Cstyle%3E.copa%7Bfill:#6B4428%7D.tronco%7Bfill:#090605%3Bstroke:#090605%7D%3C/style%3E%3C/defs%3E%3Cg filter=%22url(#b)%22%3E%3Cg transform=%22translate(165,905) scale(1.05,1.05)%22%3E%3Cg class=%22copa%22 opacity=%220.5%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.7%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(360,920) scale(-0.72,0.72)%22%3E%3Cg class=%22copa%22 opacity=%220.34%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.5%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1460,905) scale(-1.15,1.15)%22%3E%3Cg class=%22copa%22 opacity=%220.5%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.7%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1270,920) scale(0.78,0.78)%22%3E%3Cg class=%22copa%22 opacity=%220.34%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.5%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(560,940) scale(0.5,0.5)%22%3E%3Cg class=%22copa%22 opacity=%220.18%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.26%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3Cg transform=%22translate(1050,940) scale(-0.55,0.55)%22%3E%3Cg class=%22copa%22 opacity=%220.18%22%3E%3Cuse href=%22#copa%22/%3E%3C/g%3E%3Cg class=%22tronco%22 opacity=%220.26%22%3E%3Cuse href=%22#tronco%22/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3Cg%3E%3Cg transform=%22translate(300,880) scale(1.0)%22%3E%3Cpath d=%22M0 0 L0 -300%22 stroke=%22#140D0A%22 stroke-width=%2210%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-20 -300 L20 -300 L14 -340 L-14 -340 Z%22 fill=%22#1A120C%22/%3E%3Cpath d=%22M-24 -340 L24 -340 L0 -366 Z%22 fill=%22#1A120C%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2230%22 fill=%22#FFE9A8%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2216%22 fill=%22#FFF6D8%22/%3E%3C/g%3E%3Cg transform=%22translate(760,820) scale(0.72)%22%3E%3Cpath d=%22M0 0 L0 -300%22 stroke=%22#140D0A%22 stroke-width=%2210%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-20 -300 L20 -300 L14 -340 L-14 -340 Z%22 fill=%22#1A120C%22/%3E%3Cpath d=%22M-24 -340 L24 -340 L0 -366 Z%22 fill=%22#1A120C%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2230%22 fill=%22#FFE9A8%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2216%22 fill=%22#FFF6D8%22/%3E%3C/g%3E%3Cg transform=%22translate(1120,840) scale(0.8)%22%3E%3Cpath d=%22M0 0 L0 -300%22 stroke=%22#140D0A%22 stroke-width=%2210%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-20 -300 L20 -300 L14 -340 L-14 -340 Z%22 fill=%22#1A120C%22/%3E%3Cpath d=%22M-24 -340 L24 -340 L0 -366 Z%22 fill=%22#1A120C%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2230%22 fill=%22#FFE9A8%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2216%22 fill=%22#FFF6D8%22/%3E%3C/g%3E%3Cg transform=%22translate(1360,890) scale(1.05)%22%3E%3Cpath d=%22M0 0 L0 -300%22 stroke=%22#140D0A%22 stroke-width=%2210%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M-20 -300 L20 -300 L14 -340 L-14 -340 Z%22 fill=%22#1A120C%22/%3E%3Cpath d=%22M-24 -340 L24 -340 L0 -366 Z%22 fill=%22#1A120C%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2230%22 fill=%22#FFE9A8%22/%3E%3Ccircle cx=%220%22 cy=%22-320%22 r=%2216%22 fill=%22#FFF6D8%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    --tmp-cielo: linear-gradient(180deg, #2B2331 0%, #302532 30%, #3A2A20 62%, #4E3019 100%);
+    --tmp-sol: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
+    --tmp-sol-x: 50%;
+    --tmp-sol-y: 120vh;
+    --tmp-sol-size: 0px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 6, 10, 0.12) 0%, rgba(8, 6, 10, 0.28) 75%, rgba(6, 4, 8, 0.42) 100%);
+    --tmp-acc: #E8A33D;
+    --tmp-acc-dark: #D18A28;
+    --tmp-acc-light: #F2BE64;
+    --tmp-acc-deep: #B4731E;
+    --tmp-acc-rgb: 232, 163, 61;
+    --tmp-acc-grad: linear-gradient(135deg, #F2BE64 0%, #D98227 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #F7CB7E 0%, #E8A33D 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(30, 20, 14, 0.94) 0%, rgba(22, 15, 10, 0.96) 60%, rgba(16, 11, 8, 0.97) 100%);
 }
 
 /* ═══ Capa de cielo FIJA (misma técnica a prueba de balas del Mundial) ═══
