@@ -257,20 +257,29 @@ body[data-theme="temporada"] .crm-workspace-count {
     color: #ffffff !important;
 }
 
-/* ═══ Barra superior: facet-bar + tabs + periodo + CTA ═══ */
-body[data-theme="temporada"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+/* ═══ Barra superior: facet-bar + tabs + periodo + CTA ═══
+   Mismo material que la sidebar (var(--tmp-sidebar)) en vez de dejar ver el
+   cielo azul del tope → la "L" superior+izquierda queda del mismo tono. Los
+   controles usan los tokens --tmp-sb-* para adaptarse (texto oscuro de día,
+   claro de noche), igual que los iconos de la sidebar. */
+body[data-theme="temporada"] .crm-bar {
+    background: var(--tmp-sidebar) !important;
+    border-color: transparent !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
+}
 
 body[data-theme="temporada"] .crm-page-sidebar .crm-tabs {
-    background: rgba(0, 0, 0, 0.22) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    background: var(--tmp-sb-hover, rgba(0, 0, 0, 0.22)) !important;
+    border: 1px solid var(--tmp-sb-line, rgba(255, 255, 255, 0.16)) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 body[data-theme="temporada"] .crm-page-sidebar .crm-tab {
-    color: rgba(255, 255, 255, 0.72) !important;
+    color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.72)) !important;
 }
 body[data-theme="temporada"] .crm-page-sidebar .crm-tab:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    color: #ffffff !important;
+    background: var(--tmp-sb-hover, rgba(255, 255, 255, 0.12)) !important;
+    color: var(--tmp-sb-ink, #ffffff) !important;
 }
 body[data-theme="temporada"] .crm-page-sidebar .crm-tab.active {
     background: var(--tmp-acc-grad) !important;
@@ -280,19 +289,19 @@ body[data-theme="temporada"] .crm-page-sidebar .crm-tab.active {
 
 /* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
 body[data-theme="temporada"] .crm-facet-btn {
-    border-color: rgba(255, 255, 255, 0.28) !important;
-    color: rgba(255, 255, 255, 0.85) !important;
+    border-color: var(--tmp-sb-line, rgba(255, 255, 255, 0.28)) !important;
+    color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.85)) !important;
 }
 body[data-theme="temporada"] .crm-facet-btn:hover {
-    background: rgba(255, 255, 255, 0.14) !important;
-    border-color: rgba(255, 255, 255, 0.45) !important;
-    color: #ffffff !important;
+    background: rgba(var(--tmp-acc-rgb), 0.18) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.50) !important;
+    color: var(--tmp-sb-ink, #ffffff) !important;
 }
 body[data-theme="temporada"] .crm-facet-sort,
 body[data-theme="temporada"] .crm-facet-export {
-    background: rgba(255, 255, 255, 0.10) !important;
-    border-color: rgba(255, 255, 255, 0.24) !important;
-    color: rgba(255, 255, 255, 0.85) !important;
+    background: var(--tmp-sb-hover, rgba(255, 255, 255, 0.10)) !important;
+    border-color: var(--tmp-sb-line, rgba(255, 255, 255, 0.24)) !important;
+    color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.85)) !important;
 }
 body[data-theme="temporada"] .crm-facet-export:hover {
     background: rgba(var(--tmp-acc-rgb), 0.28) !important;
@@ -319,17 +328,17 @@ body[data-theme="temporada"] .crm-facet-new:hover {
 
 /* Pills de periodo / vendedores (der) */
 body[data-theme="temporada"] .crm-period-pills {
-    background: rgba(0, 0, 0, 0.22) !important;
-    border-color: rgba(255, 255, 255, 0.16) !important;
+    background: var(--tmp-sb-hover, rgba(0, 0, 0, 0.22)) !important;
+    border-color: var(--tmp-sb-line, rgba(255, 255, 255, 0.16)) !important;
 }
 body[data-theme="temporada"] .crm-period-pill {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.85)) !important;
 }
-body[data-theme="temporada"] .crm-period-pill.is-default { color: rgba(255, 255, 255, 0.62) !important; }
+body[data-theme="temporada"] .crm-period-pill.is-default { color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.62)) !important; opacity: .8; }
 body[data-theme="temporada"] .crm-period-pill:hover {
-    background: rgba(255, 255, 255, 0.14) !important;
-    border-color: rgba(255, 255, 255, 0.30) !important;
-    color: #ffffff !important;
+    background: rgba(var(--tmp-acc-rgb), 0.18) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.40) !important;
+    color: var(--tmp-sb-ink, #ffffff) !important;
 }
 
 /* Barra de búsqueda / spotlight pill en el header */
