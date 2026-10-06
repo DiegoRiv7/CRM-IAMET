@@ -162,6 +162,8 @@
     {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}
     data-theme="{{ request.user.userprofile.theme|default:'temporada' }}"
     data-user-role="{% if user_profile and user_profile.rol %}{{ user_profile.rol }}{% else %}vendedor{% endif %}">
+    {# Escena de árboles/faroles del tema Otoño — solo visible con data-theme="temporada" (la dibuja tema_otono.js) #}
+    <canvas id="tmpEscena" aria-hidden="true"></canvas>
     <script>
         /* Motor del tema Temporada: pone data-fase según la hora local.
            Solo el CSS de body[data-theme="temporada"] lo consume — para
@@ -353,6 +355,8 @@
     sus listeners ya están instalados desde la primera carga.
     {% endcomment %}
     <script src="{% static 'js/base.js' %}?v=20260615-search-inplace" data-turbo-eval="false"></script>
+    {# Escena de árboles/faroles del tema Otoño (inerte si el tema no es 'temporada') #}
+    <script src="{% static 'js/tema_otono.js' %}?v=20261006-otono" data-turbo-eval="false"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
