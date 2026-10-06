@@ -7,22 +7,21 @@
     <title>{{ EMPRESA.titulo }} - Iniciar Sesión</title>
     <style>
         /* ════════════════════════════════════════════════════════════════
-           LOGIN — TEMA TEMPORADA · OTOÑO "Bosque de lluvia"
-           Foto de bosque otoñal brumoso con lluvia (café / ámbar / naranja),
-           reactiva por hora (mismas 4 fases del CRM). El login es la única
-           pantalla donde la temporada se luce; adentro el CRM es sobrio.
-           (El login de Verano quedó archivado en _archivo/login_verano.html.)
+           LOGIN — TEMA TEMPORADA · VERANO "California Sunset"
+           Escena de playa reactiva por hora (mismas 4 fases del CRM):
+           sol, nubes y gaviotas. El login es la única pantalla
+           donde el verano se luce a plenitud; adentro el CRM es sobrio.
            ════════════════════════════════════════════════════════════════ */
         :root {
-            /* Paleta de otoño: café tostado + ámbar + naranja quemado, sobre
-               papel cálido. Los nombres de las variables se conservan. */
-            --bg-white: #F7F4EF;
+            /* Paleta extraída de la foto: azul petróleo del cielo + coral
+               de las nubes + papel cálido con un toque de rubor. */
+            --bg-white: #F5F7FB;
             --text-main: #1d1d1f;
             --text-muted: #6b7280;
-            --sol-naranja: #C0642A;          /* ámbar/naranja de otoño (acento) */
-            --sol-naranja-hover: #A8541E;
-            --mar-azul: #B5551F;
-            --mar-azul-oscuro: #8A4418;
+            --sol-naranja: #4A6E9C;          /* azul de la manana (fase despertar) */
+            --sol-naranja-hover: #3E608E;
+            --mar-azul: #4A6E9C;
+            --mar-azul-oscuro: #2C5080;
             --input-bg: #ffffff;
             --brand-text: #ffffff;
             --brand-text-muted: rgba(255,255,255,0.82);
@@ -33,24 +32,24 @@
            Solo degradados azul agua — sin figuras. La hora ajusta apenas
            la luminosidad del azul y la calidez del acento de luz. */
         body[data-fase="despertar"] {
-            --cielo: linear-gradient(160deg, #3A2A1E 0%, #2A1C12 50%, #1C120A 100%);
+            --cielo: linear-gradient(160deg, #2A5A7E 0%, #1E4664 50%, #143348 100%);
             --luz: rgba(255, 218, 158, 0.14);
-            --luz-agua: rgba(208, 150, 88, 0.16);
+            --luz-agua: rgba(88, 178, 208, 0.16);
         }
         body[data-fase="pleno"] {
-            --cielo: linear-gradient(160deg, #4A3420 0%, #342213 50%, #241509 100%);
-            --luz: rgba(255, 236, 190, 0.16);
-            --luz-agua: rgba(218, 160, 96, 0.20);
+            --cielo: linear-gradient(160deg, #2E6488 0%, #1F4A68 50%, #15364C 100%);
+            --luz: rgba(255, 244, 208, 0.16);
+            --luz-agua: rgba(96, 190, 218, 0.20);
         }
         body[data-fase="atardecer"] {
-            --cielo: linear-gradient(160deg, #5A2E16 0%, #3E1E0E 50%, #2A1408 100%);
+            --cielo: linear-gradient(160deg, #28506E 0%, #1B3E58 50%, #122C40 100%);
             --luz: rgba(255, 186, 120, 0.15);
-            --luz-agua: rgba(194, 120, 64, 0.14);
+            --luz-agua: rgba(80, 164, 194, 0.14);
         }
         body[data-fase="crepusculo"] {
-            --cielo: linear-gradient(160deg, #241A22 0%, #18101A 50%, #0C0810 100%);
+            --cielo: linear-gradient(160deg, #1B3A50 0%, #122C40 50%, #0A1E2E 100%);
             --luz: rgba(226, 146, 80, 0.10);
-            --luz-agua: rgba(150, 100, 70, 0.10);
+            --luz-agua: rgba(64, 140, 170, 0.10);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -71,16 +70,16 @@
         .branding-section {
             flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
-            /* FOTO de fondo (bosque otoñal brumoso con lluvia) + scrim cálido
-               para legibilidad: velo café que se intensifica al centro-abajo
-               donde vive el texto. El degradado cálido queda de respaldo
+            /* FOTO de fondo (palmeras vistas desde abajo) + scrim para
+               legibilidad: velo oscuro que se intensifica al centro-abajo
+               donde vive el texto. El degradado azul queda de respaldo
                mientras carga la foto. */
             background-image:
-                linear-gradient(180deg, rgba(26, 15, 7, 0.38) 0%, rgba(22, 13, 6, 0.52) 55%, rgba(14, 8, 3, 0.68) 100%),
-                url('{% static "images/fondos/otono_login.jpg" %}'),
+                linear-gradient(180deg, rgba(14, 30, 50, 0.42) 0%, rgba(14, 30, 50, 0.54) 55%, rgba(10, 24, 40, 0.68) 100%),
+                url('{% static "images/fondos/verano_login.jpg" %}'),
                 var(--cielo);
             background-size: auto, cover, auto;
-            background-position: center, center 42%, center;
+            background-position: center, center 30%, center;
             background-repeat: no-repeat;
         }
         /* La hora tiñe la foto sutilmente (cálido en atardecer, frío de noche) */
@@ -92,7 +91,7 @@
             background: rgba(226, 122, 44, 0.10); mix-blend-mode: overlay;
         }
         body[data-fase="crepusculo"] .branding-section::before {
-            background: rgba(14, 8, 4, 0.34);
+            background: rgba(10, 20, 40, 0.32);
         }
 
         .branding-content { position: relative; z-index: 5; width: 100%; max-width: 480px; }
@@ -107,8 +106,8 @@
         .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.12); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.20); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: background 0.2s; }
         .feature-item:hover { background: rgba(255, 255, 255, 0.20); }
         .feature-icon { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; border-radius: 8px; font-weight: bold; flex-shrink: 0; }
-        .feature-icon.sol { background: linear-gradient(135deg, #E0922C, #C0642A); }
-        .feature-icon.mar { background: linear-gradient(135deg, #C86A2A, #8A4418); }
+        .feature-icon.sol { background: linear-gradient(135deg, #6E96C4, #4A6E9C); }
+        .feature-icon.mar { background: linear-gradient(135deg, #4E86B8, #2C6398); }
         .feature-icon.arena { background: linear-gradient(135deg, #E8B34D, #C98A2B); }
 
         /* ═══ Panel del formulario (derecha) — limpio y sobrio ═══ */
@@ -125,34 +124,32 @@
         /* Cinta superior: el horizonte del atardecer */
         .login-section::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, #E0922C 0%, #C0642A 50%, #8A4418 100%);
+            background: linear-gradient(90deg, #92B8E0 0%, #5E86B4 50%, #46689A 100%);
         }
         .login-box { width: 100%; max-width: 380px; }
         .logo {
             font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px;
-            background: linear-gradient(135deg, #8A4418 0%, #C0642A 50%, #E0922C 100%);
+            background: linear-gradient(135deg, #2C5080 0%, #4A6E9C 50%, #82A8D2 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .logo-hoja {
+        .logo-palma {
             flex-shrink: 0;
-            font-size: 40px; line-height: 1;
-            transform-origin: 50% 20%;        /* cuelga del pecíolo, arriba */
-            animation: hojaBrisa 7s ease-in-out infinite;
-            filter: drop-shadow(0 2px 6px rgba(120, 60, 20, 0.28));
+            transform-origin: 54% 94%;
+            animation: palmaBrisa 7s ease-in-out infinite;
         }
-        @keyframes hojaBrisa {
-            0%, 100% { transform: rotate(-3deg); }
-            50% { transform: rotate(3deg); }
+        @keyframes palmaBrisa {
+            0%, 100% { transform: rotate(-1.6deg); }
+            50% { transform: rotate(2deg); }
         }
-        @media (prefers-reduced-motion: reduce) { .logo-hoja { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .logo-palma { animation: none; } }
         .subtitle { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 40px; }
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
         .input-group input[type="text"],
         .input-group input[type="password"] { width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid #e0e0dd; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main); }
         .input-group input[type="text"]:focus,
-        .input-group input[type="password"]:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(192, 100, 42, 0.16); }
+        .input-group input[type="password"]:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(74, 110, 156, 0.15); }
         .input-group input.input-error { border-color: var(--error-color) !important; background-color: #fff5f5 !important; }
 
         .error-banner { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 0.875rem; color: var(--error-color); }
@@ -164,12 +161,12 @@
             width: 100%; padding: 16px; color: white; border: none; border-radius: 12px;
             font-size: 1.1rem; font-weight: 600; cursor: pointer;
             transition: all 0.3s ease; position: relative; overflow: hidden;
-            background: linear-gradient(135deg, #E0922C 0%, #C0642A 45%, #8A4418 100%);
-            box-shadow: 0 4px 16px rgba(192, 100, 42, 0.35), 0 2px 4px rgba(0,0,0,0.12);
+            background: linear-gradient(135deg, #82A8D2 0%, #5E86B4 45%, #46689A 100%);
+            box-shadow: 0 4px 16px rgba(74, 110, 156, 0.35), 0 2px 4px rgba(0,0,0,0.12);
         }
         .btn-submit:hover {
-            background: linear-gradient(135deg, #EDA23E 0%, #D0722E 45%, #9A4E1E 100%);
-            box-shadow: 0 6px 24px rgba(192, 100, 42, 0.42), 0 2px 6px rgba(0,0,0,0.16);
+            background: linear-gradient(135deg, #92B8E0 0%, #6E96C4 45%, #5276AA 100%);
+            box-shadow: 0 6px 24px rgba(74, 110, 156, 0.42), 0 2px 6px rgba(0,0,0,0.16);
             transform: translateY(-1px);
         }
         .btn-submit:active { transform: scale(0.98) translateY(0); }
@@ -177,17 +174,17 @@
         /* Modal "Olvidé mi contraseña" */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10, 20, 34, 0.55); z-index: 100; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(4, 10, 18, 0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 3px solid; border-image: linear-gradient(90deg, #C0642A, #E0922C) 1; }
+        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(4, 10, 18, 0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 3px solid; border-image: linear-gradient(90deg, #4A6E9C, #82A8D2) 1; }
         .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: var(--mar-azul-oscuro); }
         .modal-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
         .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: #ffffff; border: 1px solid #e0e0dd; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 12px; }
-        .modal-box input:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(192, 100, 42, 0.16); }
+        .modal-box input:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(74, 110, 156, 0.15); }
         .modal-actions { display: flex; gap: 10px; }
         .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; }
         .btn-modal-cancel { background: #e8e8e5; color: var(--text-muted); }
         .btn-modal-cancel:hover { background: #ddddd9; }
-        .btn-modal-send { background: linear-gradient(135deg, #E0922C, #C0642A); color: white; }
-        .btn-modal-send:hover { background: linear-gradient(135deg, #EDA23E, #D0722E); }
+        .btn-modal-send { background: linear-gradient(135deg, #6E96C4, #4A6E9C); color: white; }
+        .btn-modal-send:hover { background: linear-gradient(135deg, #92B8E0, #5276AA); }
         .modal-msg { font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1.2em; }
         .modal-msg.success { color: #16a34a; }
         .modal-msg.error { color: var(--error-color); }
@@ -223,7 +220,29 @@
             <div class="anim-stagger-1" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                 <span class="logo" style="margin-bottom:0;">{{ EMPRESA.titulo }}</span>
 {% if EMPRESA.es_iamet %}
-                <span class="logo-hoja" role="img" aria-label="Hoja de otoño">🍁</span>
+                <svg class="logo-palma" width="46" height="46" viewBox="-18 -8 136 110">
+                    <defs>
+                        <linearGradient id="palmaG" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#2C5080"/>
+                            <stop offset="50%" stop-color="#4A6E9C"/>
+                            <stop offset="100%" stop-color="#82A8D2"/>
+                        </linearGradient>
+                        <g id="lgFronda"><path d="M0 0 C 26 -26, 62 -32, 88 -15 C 60 -13, 30 1, 8 13 Z"/></g>
+                    </defs>
+                    <g fill="url(#palmaG)">
+                        <path d="M52 94 C 50 76, 48 58, 44 36 L 51 35 C 54 57, 56 76, 59 94 Z"/>
+                        <g transform="translate(47,34) scale(0.66)">
+                            <use href="#lgFronda" transform="rotate(-150) scale(1.05)"/>
+                            <use href="#lgFronda" transform="rotate(-115) scale(1.15)"/>
+                            <use href="#lgFronda" transform="rotate(-78) scale(1.0)"/>
+                            <use href="#lgFronda" transform="rotate(-40) scale(1.18)"/>
+                            <use href="#lgFronda" transform="rotate(-5) scale(1.1)"/>
+                            <use href="#lgFronda" transform="rotate(26) scale(0.92)"/>
+                        </g>
+                        <circle cx="42" cy="41" r="4.6" fill="#2C5080"/>
+                        <circle cx="51" cy="43" r="4" fill="#3E608E"/>
+                    </g>
+                </svg>
 {% elif EMPRESA.logo_url %}<img src="{{ EMPRESA.logo_url }}" alt="{{ EMPRESA.nombre_visible }}" style="height:46px;max-width:120px;object-fit:contain;">{% endif %}
             </div>
             <p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>

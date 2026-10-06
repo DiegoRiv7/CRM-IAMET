@@ -74,8 +74,10 @@ body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-acc-rgb: 192, 106, 34;
     --tmp-acc-grad: linear-gradient(135deg, #D99A47 0%, #C06A22 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #E6AC58 0%, #CE7A2E 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(248, 232, 204, 0.50) 0%, rgba(244, 224, 194, 0.50) 100%);
-    --tmp-sb-ink: #6E5436; --tmp-sb-hover: rgba(90, 60, 30, 0.10); --tmp-sb-line: rgba(90, 60, 30, 0.16);
+    /* Mañana otoñal: barra con niebla — más apagada y un poco más oscura
+       (greige cálido, más opaca) que el crema inicial. */
+    --tmp-sidebar: linear-gradient(180deg, rgba(198, 192, 180, 0.64) 0%, rgba(178, 170, 156, 0.68) 100%);
+    --tmp-sb-ink: #5E4A30; --tmp-sb-hover: rgba(80, 54, 28, 0.12); --tmp-sb-line: rgba(80, 54, 28, 0.18);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-cielo: linear-gradient(180deg, #7A586A 0%, #C27C50 40%, #D88A44 66%, #B0532A 100%);
