@@ -112,6 +112,21 @@
         ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(x, headY - 5 * s, 19 * s, 0, 6.2832); ctx.fill(); ctx.restore();
     }
 
+    // Lluvia de noche: trazos finos, pálidos y algo diagonales (bosque brumoso).
+    // Estática y sembrada; el blur del canvas la suaviza. Igual que la vista previa.
+    function drawLluvia(W, H) {
+        var rnd = mulberry32(1771), dx = 0.14, n = Math.round(W * H / 7200);
+        if (n > 320) n = 320;
+        ctx.save(); ctx.lineCap = 'round';
+        for (var i = 0; i < n; i++) {
+            var x = rnd() * (W + 80) - 40, y = rnd() * H, len = 14 + rnd() * 30;
+            ctx.strokeStyle = 'rgba(214,226,240,' + (0.04 + rnd() * 0.11).toFixed(3) + ')';
+            ctx.lineWidth = 0.55 + rnd() * 0.7;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx * len, y + len); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     var _W = 0, _H = 0;
     function faseActual() {
         var f = document.body.getAttribute('data-fase') || 'pleno';
@@ -125,7 +140,10 @@
         if (!esTemporada()) return;
         var fase = faseActual(), pal = PAL[fase];
         for (var i = 0; i < TREES.length; i++) drawTree(TREES[i], _W, _H, pal);
-        if (fase === 'crepusculo') for (var j = 0; j < FAROLES.length; j++) drawFarol(FAROLES[j], _W, _H);
+        if (fase === 'crepusculo') {
+            drawLluvia(_W, _H);
+            for (var j = 0; j < FAROLES.length; j++) drawFarol(FAROLES[j], _W, _H);
+        }
     }
 
     function setup() {
