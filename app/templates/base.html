@@ -356,7 +356,19 @@
     {% endcomment %}
     <script src="{% static 'js/base.js' %}?v=20260615-search-inplace" data-turbo-eval="false"></script>
     {# Escena de árboles/faroles del tema Otoño (inerte si el tema no es 'temporada') #}
-    <script src="{% static 'js/tema_otono.js' %}?v=20261006-otono" data-turbo-eval="false"></script>
+    <script src="{% static 'js/tema_otono.js' %}?v=20261006b-otono" data-turbo-eval="false"></script>
+
+    {% if is_supervisor or user.is_superuser %}
+    {# Preview de hora del tema estacional — SOLO admins. Fuerza la fase para revisar las 4 pieles. #}
+    <div id="tmpFaseDemo" aria-label="Previsualizar hora del tema estacional">
+        <span class="tfd-ic" title="Vista previa del tema por hora">🍂</span>
+        <button type="button" data-f="despertar">Mañana</button>
+        <button type="button" data-f="pleno">Tarde</button>
+        <button type="button" data-f="atardecer">Atardecer</button>
+        <button type="button" data-f="crepusculo">Noche</button>
+        <button type="button" data-f="" class="tfd-auto" title="Volver a la hora real">Auto</button>
+    </div>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

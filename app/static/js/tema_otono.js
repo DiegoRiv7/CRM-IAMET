@@ -134,9 +134,34 @@
         dibujar();
     }
 
+    // Widget de preview de hora (solo admins): fuerza la fase con
+    // window.__tmpFaseManual y repinta todo (CSS + escena).
+    function marcarActivo(d) {
+        var cur = window.__tmpFaseManual || '';
+        var bs = d.querySelectorAll('button');
+        for (var i = 0; i < bs.length; i++) {
+            bs[i].classList.toggle('on', (bs[i].getAttribute('data-f') || '') === cur);
+        }
+    }
+    function wireDemo() {
+        var d = document.getElementById('tmpFaseDemo');
+        if (!d || d._wired) return;
+        d.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('button') : null;
+            if (!b) return;
+            window.__tmpFaseManual = b.getAttribute('data-f') || null;
+            if (window.__tmpAplicarFase) { try { window.__tmpAplicarFase(); } catch (err) { } }
+            marcarActivo(d);
+            dibujar();
+        });
+        d._wired = true;
+        marcarActivo(d);
+    }
+
     // Re-inicializa: re-encuentra el canvas (Turbo reemplaza el <body> al
     // navegar), re-aplica la fase del día, re-observa y redibuja.
     function boot() {
+        wireDemo();
         canvas = document.getElementById('tmpEscena');
         if (!canvas || !canvas.getContext) return;
         ctx = canvas.getContext('2d');

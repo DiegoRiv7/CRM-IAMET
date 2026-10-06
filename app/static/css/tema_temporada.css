@@ -207,6 +207,27 @@ body[data-theme="temporada"] .crm-sb-divider { background: var(--tmp-sb-line, rg
 body[data-theme="temporada"] .crm-sb-label { color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.70)); opacity: .85; }
 body[data-theme="temporada"] .crm-sb-dot { background: var(--tmp-acc) !important; }
 
+/* ═══ Widget de PREVIEW de hora (solo admins) — fuerza la fase del tema.
+   Oculto salvo cuando el tema estacional está activo. ═══ */
+#tmpFaseDemo { display: none; }
+body[data-theme="temporada"] #tmpFaseDemo {
+    display: flex; align-items: center; gap: 3px; position: fixed;
+    left: 80px; bottom: 16px; z-index: 9000; padding: 5px 8px; border-radius: 999px;
+    background: rgba(28, 20, 12, 0.82); border: 1px solid rgba(255, 220, 170, 0.22);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.42);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
+    font: 600 12px system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+#tmpFaseDemo .tfd-ic { font-size: 14px; margin: 0 3px; }
+#tmpFaseDemo button {
+    border: none; background: transparent; color: rgba(246, 236, 219, 0.78);
+    padding: 5px 10px; border-radius: 999px; cursor: pointer; font: inherit; line-height: 1;
+    transition: background .15s ease, color .15s ease;
+}
+#tmpFaseDemo button:hover { color: #fff; background: rgba(255, 235, 205, 0.10); }
+#tmpFaseDemo button.on { background: rgba(230, 162, 74, 0.26); color: #F7C778; }
+#tmpFaseDemo .tfd-auto { opacity: .7; margin-left: 2px; }
+
 /* ═══ Topbar / Dynamic Island ═══ */
 body[data-theme="temporada"] .crm-unified-header { background: transparent !important; }
 body[data-theme="temporada"] .crm-island {
