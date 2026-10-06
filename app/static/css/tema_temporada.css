@@ -438,11 +438,11 @@ body[data-theme="temporada"] .ptk-cols-head,
 body[data-theme="temporada"] .pob-head,
 body[data-theme="temporada"] .crm-tw-header,
 body[data-theme="temporada"] .crm-ctw-header {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -973,11 +973,11 @@ body[data-theme="temporada"] .proy-tab-pane {
 
 /* --- Tab header (dentro de panes) con greca --- */
 body[data-theme="temporada"] .proy-tab-header {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1099,11 +1099,11 @@ body[data-theme="temporada"] .proy-dialog-card {
     box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
 }
 body[data-theme="temporada"] .proy-dialog-header {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1198,11 +1198,11 @@ body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-card--page {
 /* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
        y subnav: barra greca azteca verde→rojo --- */
 body[data-theme="temporada"] .cal-card > div:first-child {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1242,11 +1242,11 @@ body[data-theme="temporada"] .cal-subnav-default {
 
 /* --- Topbar del calendario: greca azteca verde→rojo --- */
 body[data-theme="temporada"] .cal-page-bar {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1508,7 +1508,7 @@ body[data-theme="temporada"] .cal-hour-row {
     border-bottom-color: rgba(24, 38, 66, 0.10) !important;
 }
 body[data-theme="temporada"] .cal-hour-label {
-    color: #7E8A9A !important;
+    color: #A6906E !important;
 }
 
 /* --- Day view: agenda cards (sólidos blancos, legibles) --- */
@@ -1531,7 +1531,7 @@ body[data-theme="temporada"] .cal-day-list-empty-s {
 }
 body[data-theme="temporada"] .cal-day-list-empty-ic {
     background: rgba(30, 46, 80, 0.08) !important;
-    color: #7E8A9A !important;
+    color: #A6906E !important;
 }
 body[data-theme="temporada"] .cal-day-list-empty-btn {
     background: var(--tmp-acc-grad) !important;
@@ -1588,11 +1588,11 @@ body[data-theme="temporada"] #widgetOppVerActividad .widget-card {
     box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
 }
 body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1610,11 +1610,11 @@ body[data-theme="temporada"] .wact-shell {
 }
 /* Header con greca verde→rojo */
 body[data-theme="temporada"] .wact-header {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
-        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+        linear-gradient(120deg, #3A2416 0%, #2A1810 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
     border-bottom: 2px solid var(--tmp-acc-dark) !important;
@@ -1795,7 +1795,7 @@ body[data-theme="temporada"] .tcp-col-head,
 body[data-theme="temporada"] .wact-header,
 body[data-theme="temporada"] .wn-ctw-header,
 body[data-theme="temporada"] .wo-header {
-    background-color: #1E2E50 !important;
+    background-color: #3A2416 !important;
     background-image:
         repeating-conic-gradient(from -90deg at var(--tmp-franja-solx, 76%) 150%, rgba(255,255,255,0.09) 0deg 4deg, rgba(255,255,255,0) 4deg 12deg),
         radial-gradient(circle at var(--tmp-franja-solx, 76%) 135%, var(--tmp-franja-glow, rgba(255,220,150,0.55)) 0%, transparent 60%),
@@ -1809,12 +1809,12 @@ body[data-theme="temporada"] .wo-header {
 body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-franja-solx: 24%;
     --tmp-franja-glow: rgba(255, 223, 154, 0.60);
-    --tmp-franja-borde: #5E86B4;
+    --tmp-franja-borde: #D99A47;
 }
 body[data-theme="temporada"][data-fase="pleno"] {
     --tmp-franja-solx: 76%;
     --tmp-franja-glow: rgba(255, 240, 190, 0.50);
-    --tmp-franja-borde: #3E6FA8;
+    --tmp-franja-borde: #C06A22;
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-franja-solx: 50%;
