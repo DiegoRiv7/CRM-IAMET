@@ -7,9 +7,7 @@
    ════════════════════════════════════════════════════════════════════ */
 (function () {
     'use strict';
-    var canvas = document.getElementById('tmpEscena');
-    if (!canvas || !canvas.getContext) return;
-    var ctx = canvas.getContext('2d');
+    var canvas = null, ctx = null, _obs = null;
 
     // Paleta de follaje/tronco por fase (el día que avanza recolorea el árbol).
     var PAL = {
@@ -126,7 +124,8 @@
     }
 
     function setup() {
-        if (!esTemporada()) { ctx.clearRect(0, 0, _W, _H); return; }
+        if (!canvas || !ctx) return;
+        if (!esTemporada()) { if (_W && _H) ctx.clearRect(0, 0, _W, _H); return; }
         var dpr = Math.min(2, window.devicePixelRatio || 1);
         _W = window.innerWidth; _H = window.innerHeight;
         canvas.width = _W * dpr; canvas.height = _H * dpr;
@@ -135,13 +134,25 @@
         dibujar();
     }
 
+    // Re-inicializa: re-encuentra el canvas (Turbo reemplaza el <body> al
+    // navegar), re-aplica la fase del día, re-observa y redibuja.
+    function boot() {
+        canvas = document.getElementById('tmpEscena');
+        if (!canvas || !canvas.getContext) return;
+        ctx = canvas.getContext('2d');
+        if (window.__tmpAplicarFase) { try { window.__tmpAplicarFase(); } catch (e) { } }
+        if (_obs) { try { _obs.disconnect(); } catch (e) { } }
+        try {
+            _obs = new MutationObserver(function () { dibujar(); });
+            _obs.observe(document.body, { attributes: true, attributeFilter: ['data-fase', 'data-theme'] });
+        } catch (e) { }
+        setup();
+    }
+
     var _rt;
     window.addEventListener('resize', function () { clearTimeout(_rt); _rt = setTimeout(setup, 150); });
-    // Redibuja cuando el motor cambia la fase (o si cambiara el tema).
-    try {
-        new MutationObserver(function () { dibujar(); }).observe(document.body, { attributes: true, attributeFilter: ['data-fase', 'data-theme'] });
-    } catch (e) { }
+    document.addEventListener('turbo:load', boot);
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup);
-    else setup();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
 })();
