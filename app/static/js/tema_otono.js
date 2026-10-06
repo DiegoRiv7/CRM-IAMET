@@ -14,7 +14,7 @@
         despertar: { trunk: '#241711', wc: true, foliage: ['#C97B33', '#D99A47', '#B85E28', '#CE8A3C', '#E0A850', '#A85A2A'] },
         pleno: { trunk: '#2A1A10', wc: true, foliage: ['#E0922C', '#EEA836', '#C85A1E', '#D98227', '#F0B54A', '#B85020'] },
         atardecer: { trunk: '#1C0F09', wc: true, foliage: ['#C14D1E', '#A8361A', '#D9772A', '#B5451C', '#8E2A14'] },
-        crepusculo: { trunk: '#120B08', foliage: ['#7A3E1A', '#6B4428', '#8A4A22', '#5A3A20', '#73421E', '#4E3016'] }
+        crepusculo: { trunk: '#1A0F08', foliage: ['#B5591E', '#9A5A2A', '#C2662C', '#8A4A22', '#A8531E', '#7A4420'] }
     };
     // Árboles: enmarcan los lados, con profundidad. Faroles: solo de noche.
     var TREES = [
@@ -90,21 +90,26 @@
     function drawFarol(cfg, W, H) {
         var x = cfg.xf * W, y = cfg.yf * H, s = cfg.s * (H / 900), postH = 160 * s, headY = y - postH;
         ctx.save(); ctx.globalAlpha = 1;
-        var gr0 = ctx.createLinearGradient(0, y, 0, y + 150 * s);
-        gr0.addColorStop(0, 'rgba(240,168,80,.20)'); gr0.addColorStop(1, 'rgba(240,168,80,0)');
-        ctx.fillStyle = gr0; ctx.fillRect(x - 16 * s, y, 32 * s, 150 * s);
+        var gr0 = ctx.createLinearGradient(0, y, 0, y + 175 * s);
+        gr0.addColorStop(0, 'rgba(240,172,84,.28)'); gr0.addColorStop(1, 'rgba(240,172,84,0)');
+        ctx.fillStyle = gr0; ctx.fillRect(x - 18 * s, y, 36 * s, 175 * s);
         ctx.globalCompositeOperation = 'lighter';
-        var gr = ctx.createRadialGradient(x, headY, 0, x, headY, 150 * s);
-        gr.addColorStop(0, 'rgba(255,205,120,.85)'); gr.addColorStop(.32, 'rgba(240,160,70,.42)'); gr.addColorStop(1, 'rgba(235,145,55,0)');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, headY, 150 * s, 0, 6.2832); ctx.fill(); ctx.restore();
+        // halo ambiental amplio (ilumina más la escena)
+        var ga = ctx.createRadialGradient(x, headY, 0, x, headY, 300 * s);
+        ga.addColorStop(0, 'rgba(255,196,110,.30)'); ga.addColorStop(1, 'rgba(255,170,80,0)');
+        ctx.fillStyle = ga; ctx.beginPath(); ctx.arc(x, headY, 300 * s, 0, 6.2832); ctx.fill();
+        // halo principal (más intenso)
+        var gr = ctx.createRadialGradient(x, headY, 0, x, headY, 190 * s);
+        gr.addColorStop(0, 'rgba(255,216,146,.98)'); gr.addColorStop(.34, 'rgba(248,176,86,.58)'); gr.addColorStop(1, 'rgba(240,150,58,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, headY, 190 * s, 0, 6.2832); ctx.fill(); ctx.restore();
         ctx.save(); ctx.globalAlpha = 1; ctx.strokeStyle = '#140D0A'; ctx.fillStyle = '#1A120C'; ctx.lineCap = 'round';
         ctx.lineWidth = 6 * s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, headY + 8 * s); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x - 11 * s, headY + 8 * s); ctx.lineTo(x + 11 * s, headY + 8 * s); ctx.lineTo(x + 8 * s, headY - 18 * s); ctx.lineTo(x - 8 * s, headY - 18 * s); ctx.closePath(); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x - 13 * s, headY - 18 * s); ctx.lineTo(x + 13 * s, headY - 18 * s); ctx.lineTo(x, headY - 32 * s); ctx.closePath(); ctx.fill(); ctx.restore();
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        var gi = ctx.createRadialGradient(x, headY - 5 * s, 0, x, headY - 5 * s, 15 * s);
-        gi.addColorStop(0, 'rgba(255,230,160,1)'); gi.addColorStop(1, 'rgba(255,195,95,0)');
-        ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(x, headY - 5 * s, 15 * s, 0, 6.2832); ctx.fill(); ctx.restore();
+        var gi = ctx.createRadialGradient(x, headY - 5 * s, 0, x, headY - 5 * s, 19 * s);
+        gi.addColorStop(0, 'rgba(255,246,214,1)'); gi.addColorStop(.5, 'rgba(255,224,150,1)'); gi.addColorStop(1, 'rgba(255,200,100,0)');
+        ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(x, headY - 5 * s, 19 * s, 0, 6.2832); ctx.fill(); ctx.restore();
     }
 
     var _W = 0, _H = 0;
