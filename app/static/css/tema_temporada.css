@@ -74,10 +74,10 @@ body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-acc-rgb: 192, 106, 34;
     --tmp-acc-grad: linear-gradient(135deg, #D99A47 0%, #C06A22 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #E6AC58 0%, #CE7A2E 100%);
-    /* Mañana otoñal: barra con niebla — greige cálido más apagado y oscuro
-       que el crema inicial (segundo paso, a pedido del usuario). */
-    --tmp-sidebar: linear-gradient(180deg, rgba(156, 148, 134, 0.74) 0%, rgba(134, 126, 112, 0.78) 100%);
-    --tmp-sb-ink: #4A3A24; --tmp-sb-hover: rgba(60, 40, 20, 0.14); --tmp-sb-line: rgba(60, 40, 20, 0.20);
+    /* Mañana otoñal: barra OSCURA TRANSLÚCIDA — igual que el contenedor de
+       los tabs (deja ver la escena detrás, con blur). Iconos claros. */
+    --tmp-sidebar: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.34) 100%);
+    --tmp-sb-ink: rgba(255, 255, 255, 0.82); --tmp-sb-hover: rgba(255, 255, 255, 0.10); --tmp-sb-line: rgba(255, 255, 255, 0.14);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-cielo: linear-gradient(180deg, #7A586A 0%, #C27C50 40%, #D88A44 66%, #B0532A 100%);
