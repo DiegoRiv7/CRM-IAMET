@@ -55,7 +55,8 @@ body[data-theme="temporada"] {
     --tmp-acc-rgb: 200, 85, 27;
     --tmp-acc-grad: linear-gradient(135deg, #E0922C 0%, #C8551B 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #EDA23E 0%, #D9622A 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(74, 46, 24, 0.92) 0%, rgba(58, 36, 20, 0.95) 55%, rgba(44, 28, 16, 0.96) 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(246, 220, 172, 0.50) 0%, rgba(240, 210, 160, 0.52) 100%);
+    --tmp-sb-ink: #6A4A24; --tmp-sb-hover: rgba(90, 50, 20, 0.10); --tmp-sb-line: rgba(90, 50, 20, 0.16);
 }
 
 /* ═══ Pieles por fase del día (cielo, scrim, acento, escena, sidebar) ═══ */
@@ -73,7 +74,8 @@ body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-acc-rgb: 192, 106, 34;
     --tmp-acc-grad: linear-gradient(135deg, #D99A47 0%, #C06A22 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #E6AC58 0%, #CE7A2E 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(64, 52, 34, 0.90) 0%, rgba(50, 40, 26, 0.93) 60%, rgba(40, 32, 22, 0.95) 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(248, 232, 204, 0.50) 0%, rgba(244, 224, 194, 0.50) 100%);
+    --tmp-sb-ink: #6E5436; --tmp-sb-hover: rgba(90, 60, 30, 0.10); --tmp-sb-line: rgba(90, 60, 30, 0.16);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-cielo: linear-gradient(180deg, #7A586A 0%, #C27C50 40%, #D88A44 66%, #B0532A 100%);
@@ -89,7 +91,8 @@ body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-acc-rgb: 184, 67, 26;
     --tmp-acc-grad: linear-gradient(135deg, #D9772A 0%, #B8431A 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #E68A3C 0%, #C85424 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(50, 22, 14, 0.95) 0%, rgba(74, 40, 22, 0.9) 70%, rgba(120, 72, 40, 0.86) 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(216, 138, 84, 0.54) 0%, rgba(198, 112, 60, 0.56) 100%);
+    --tmp-sb-ink: #4A2410; --tmp-sb-hover: rgba(60, 20, 8, 0.12); --tmp-sb-line: rgba(60, 20, 8, 0.18);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-cielo: linear-gradient(180deg, #2B2331 0%, #302532 30%, #3A2A20 62%, #4E3019 100%);
@@ -105,7 +108,8 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-acc-rgb: 232, 163, 61;
     --tmp-acc-grad: linear-gradient(135deg, #F2BE64 0%, #D98227 100%);
     --tmp-acc-grad-hover: linear-gradient(135deg, #F7CB7E 0%, #E8A33D 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(30, 20, 14, 0.94) 0%, rgba(22, 15, 10, 0.96) 60%, rgba(16, 11, 8, 0.97) 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(30, 20, 14, 0.94) 0%, rgba(20, 13, 8, 0.96) 100%);
+    --tmp-sb-ink: rgba(245, 230, 200, 0.82); --tmp-sb-hover: rgba(255, 255, 255, 0.10); --tmp-sb-line: rgba(255, 255, 255, 0.10);
 }
 
 /* ═══ Capa de cielo FIJA (misma técnica a prueba de balas del Mundial) ═══
@@ -177,19 +181,19 @@ body[data-theme="temporada"] .crm-sidebar {
     background: var(--tmp-sidebar) !important;
     backdrop-filter: blur(22px) saturate(160%);
     -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-right: 1px solid var(--tmp-sb-line, rgba(255, 255, 255, 0.10)) !important;
 }
-/* (Pleno usa los mismos acentos naranjas que las demás fases — decisión
-   del usuario tras probar la variante azul-blanco.) */
+/* De día la sidebar es clara/translúcida (ámbar) con iconos oscuros; de
+   noche es oscura con iconos claros. El color lo dan --tmp-sb-* por fase. */
 body[data-theme="temporada"] .crm-sb-logo {
     background: var(--tmp-acc-grad) !important;
     box-shadow: 0 4px 16px rgba(var(--tmp-acc-rgb), 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 body[data-theme="temporada"] .crm-sb-btn,
-body[data-theme="temporada"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.78); }
+body[data-theme="temporada"] .crm-sb-avatar { color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.78)); }
 body[data-theme="temporada"] .crm-sb-btn:hover {
-    background: rgba(255, 255, 255, 0.10) !important;
-    color: #ffffff;
+    background: var(--tmp-sb-hover, rgba(255, 255, 255, 0.10)) !important;
+    color: var(--tmp-sb-ink, #ffffff);
 }
 body[data-theme="temporada"] .crm-sb-btn.active {
     background: var(--tmp-acc-grad) !important;
@@ -199,8 +203,8 @@ body[data-theme="temporada"] .crm-sb-btn.active {
 body[data-theme="temporada"] .crm-sb-btn.active::before {
     background: #ffffff !important;
 }
-body[data-theme="temporada"] .crm-sb-divider { background: rgba(255, 255, 255, 0.10) !important; }
-body[data-theme="temporada"] .crm-sb-label { color: rgba(255, 255, 255, 0.70); }
+body[data-theme="temporada"] .crm-sb-divider { background: var(--tmp-sb-line, rgba(255, 255, 255, 0.10)) !important; }
+body[data-theme="temporada"] .crm-sb-label { color: var(--tmp-sb-ink, rgba(255, 255, 255, 0.70)); opacity: .85; }
 body[data-theme="temporada"] .crm-sb-dot { background: var(--tmp-acc) !important; }
 
 /* ═══ Topbar / Dynamic Island ═══ */
@@ -1796,35 +1800,40 @@ body[data-theme="temporada"] .wact-header,
 body[data-theme="temporada"] .wn-ctw-header,
 body[data-theme="temporada"] .wo-header {
     background-color: #3A2416 !important;
+    /* Franja OTOÑO: degradado cálido de la hora (sin rayos de sol — eso era
+       Verano) + un glow cálido sutil. */
     background-image:
-        repeating-conic-gradient(from -90deg at var(--tmp-franja-solx, 76%) 150%, rgba(255,255,255,0.09) 0deg 4deg, rgba(255,255,255,0) 4deg 12deg),
-        radial-gradient(circle at var(--tmp-franja-solx, 76%) 135%, var(--tmp-franja-glow, rgba(255,220,150,0.55)) 0%, transparent 60%),
-        var(--tmp-cielo) !important;
-    background-repeat: no-repeat, no-repeat, no-repeat !important;
-    background-size: auto, auto, cover !important;
-    border-bottom: 2px solid var(--tmp-franja-borde, #F2823B) !important;
+        radial-gradient(circle at var(--tmp-franja-solx, 76%) 135%, var(--tmp-franja-glow, rgba(255,220,150,0.45)) 0%, transparent 62%),
+        var(--tmp-franja-bg, linear-gradient(100deg, #3A2416 0%, #8A4418 55%, #C06A22 100%)) !important;
+    background-repeat: no-repeat, no-repeat !important;
+    background-size: auto, cover !important;
+    border-bottom: 2px solid var(--tmp-franja-borde, #C06A22) !important;
 }
 
 /* Posición del sol y glow de la franja según la fase del día */
 body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-franja-solx: 24%;
-    --tmp-franja-glow: rgba(255, 223, 154, 0.60);
+    --tmp-franja-glow: rgba(255, 223, 154, 0.45);
     --tmp-franja-borde: #D99A47;
+    --tmp-franja-bg: linear-gradient(100deg, #3E3222 0%, #8A5A2E 55%, #C68A44 100%);
 }
 body[data-theme="temporada"][data-fase="pleno"] {
     --tmp-franja-solx: 76%;
-    --tmp-franja-glow: rgba(255, 240, 190, 0.50);
+    --tmp-franja-glow: rgba(255, 240, 190, 0.42);
     --tmp-franja-borde: #C06A22;
+    --tmp-franja-bg: linear-gradient(100deg, #3A2416 0%, #9A5020 55%, #CE8C2A 100%);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-franja-solx: 50%;
-    --tmp-franja-glow: rgba(255, 180, 90, 0.70);
+    --tmp-franja-glow: rgba(255, 180, 90, 0.55);
     --tmp-franja-borde: #E8722E;
+    --tmp-franja-bg: linear-gradient(100deg, #3A1A10 0%, #A8431A 55%, #D9772A 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-franja-solx: 50%;
-    --tmp-franja-glow: rgba(212, 168, 104, 0.32);
+    --tmp-franja-glow: rgba(240, 180, 90, 0.35);
     --tmp-franja-borde: #A67E44;
+    --tmp-franja-bg: linear-gradient(100deg, #241A12 0%, #4A2E18 55%, #7A4A24 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1900,5 +1909,5 @@ body[data-theme="temporada"][data-fase="despertar"] .crm-page-sidebar .crm-tab.a
 body[data-theme="temporada"][data-fase="pleno"] .crm-page-sidebar .crm-tab.active,
 body[data-theme="temporada"][data-fase="despertar"] .crm-facet-new,
 body[data-theme="temporada"][data-fase="pleno"] .crm-facet-new {
-    box-shadow: 0 4px 14px rgba(20, 45, 80, 0.35), inset 0 0 0 1.5px rgba(255, 255, 255, 0.60) !important;
+    box-shadow: 0 4px 14px rgba(120, 60, 20, 0.30), inset 0 0 0 1.5px rgba(255, 255, 255, 0.55) !important;
 }
