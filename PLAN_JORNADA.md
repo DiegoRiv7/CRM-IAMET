@@ -1,6 +1,6 @@
-# PLAN — Módulo RH: Registro Electrónico de Jornada ("checadas")
+# PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-08 · **Estado:** diseño cerrado; decisiones tomadas; arranca Fase 1 (infraestructura) en cuanto se elija el nombre
+**Fecha:** 2026-10-08 · **Estado:** diseño cerrado; nombre elegido (**TimeSure**); arranca Fase 1 (infraestructura)
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -253,7 +253,8 @@ Total fases 1–4: **16 días hábiles**, con margen antes del 1 de enero de 202
    todos checan, nadie modifica ni borra el libro (ni el jefe, ni el dueño, ni nosotros desde la
    app), toda corrección es solicitud + aprobación de otra persona (doble control siempre activo;
    cada empresa necesita al menos dos aprobadores), y toda acción de un rol entra al libro.
-5. Pendiente: abogado laboral para el consentimiento y el expediente; proveedor del depósito externo.
+5. Pendiente: abogado laboral para el consentimiento y el expediente; proveedor del depósito externo;
+   registrar dominios timesure.mx / .com.mx; registro de marca mixta en el IMPI; logotipo y lema.
 
 ## 6b. Arquitectura: PRODUCTO INDEPENDIENTE (decisión 2026-10-08)
 
@@ -282,15 +283,23 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
 - **Infraestructura (VPS 82, verificado 2026-10-08):** 2.5 GB de RAM libres, 172 GB de disco, carga
   baja, NTP sincronizado, docker 29 / compose 5. El checador necesita ~400 MB (web + worker de
   cierres/notificaciones). Puertos locales libres a partir de 8020. Reusar el portal para el alta.
-- **Nombre:** pendiente (dominios de una sola palabra todos ocupados; candidatos con .mx libre:
-  checalia, puntua, verazo, checamos, fichamos, horalegal, marcalegal, sellolaboral, jornadaveraz,
-  checalegal, tiempoveraz, registroveraz, checaok). Nombre provisional del repo: `checador`.
+- **Nombre: TimeSure** (decisión del usuario 2026-10-08). Una sola palabra, dos mayúsculas; sin
+  sufijos ("MX", "Pro") ni deformar la escritura. Repo `timesure`; base `timesure`; dirección de
+  pruebas `timesure.82-223-44-29.nip.io` hasta tener dominio.
+  Verificado: no existe producto de software con ese nombre; `timesure.mx`, `timesure.com.mx`,
+  `.app` e `.io` LIBRES (registrar .mx y .com.mx esta semana); `timesure.com` registrado en 2002,
+  sin sitio y con vencimiento pasado (2026-08-05): vigilar por si cae.
+  **Marca:** registrar en el IMPI como marca MIXTA (nombre + logotipo con elemento propio) antes del
+  lanzamiento; búsqueda previa en MARCANET; nombre descriptivo = protección "débil" en texto puro,
+  por eso el logo y la marca mixta. Lema en español bajo el logo: "Registro de jornada con prueba"
+  (o "Tu jornada, con evidencia"). "by IAMET" opcional como respaldo en portada y contratos, nunca
+  en el nombre.
 
 ## 5b. Fases reordenadas (producto independiente)
 
 | Fase | Entregable | Días |
 |---|---|---|
-| 1 Infraestructura y andamiaje | Repo `checador`, proyecto Django multitenant (TenantModel, manager, middleware, pruebas de aislamiento), base en crm-mysql con grants, Docker/compose, vhost + HTTPS, CI de deploy, estilo visual portado, acceso (cuenta/PIN, passkeys, SSO desde el CRM), alta de empresa desde el portal, contrato de integración | 2–3 |
+| 1 Infraestructura y andamiaje | Repo `timesure`, proyecto Django multitenant (TenantModel, manager, middleware, pruebas de aislamiento), base en crm-mysql con grants, Docker/compose, vhost + HTTPS, CI de deploy, estilo visual portado, acceso (cuenta/PIN, passkeys, SSO desde el CRM), alta de empresa desde el portal, contrato de integración | 2–3 |
 | 2 Núcleo RH | Empresas, centros, horarios/turnos con vigencia, trabajadores (sin cuenta CRM), perfiles de marcación, tipos de incidencia, parámetros regulatorios 2027–2030, roles configurables con límites duros, consentimiento | 3 |
 | 3 Evidencia y marcación | Libro primero (cadena serializada, huellas canónicas versionadas, dos sellos, pruebas de concurrencia y sabotaje); web, PWA offline obligatorio, quiosco PIN+foto, QR/NFC; motor de validación; dispositivo registrado | 5 |
 | 4 Jornada e incidencias | Cálculo por año, retardos, faltas, omisiones, descansos, horas extra detectadas vs autorizadas, solicitudes, aprobación segregada, correcciones por capas | 4 |
