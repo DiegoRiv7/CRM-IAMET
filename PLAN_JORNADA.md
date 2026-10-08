@@ -233,14 +233,27 @@ módulos por bandera y multiempresa → el módulo nace multiempresa sin trabajo
 
 Total fases 1–4: **16 días hábiles**, con margen antes del 1 de enero de 2027.
 
-## 6. Pendientes del usuario antes de la Fase 2
-- [ ] Quién debe checar: ¿solo usuarios del CRM o también planta/técnicos sin cuenta? (decide quiosco/PIN desde Fase 2)
-- [ ] Cómo checan hoy en cada empresa
-- [ ] Canal principal: web, teléfono, quiosco, lector
-- [ ] Quién aprueba incidencias y horas extra: supervisores existentes o rol RH nuevo
-- [ ] Nivel de identidad por defecto (propuesta: reforzado)
-- [ ] Abogado laboral para revisar consentimiento y expediente antes de enero
-- [ ] Proveedor del depósito externo inmutable (bucket WORM) y, si aplica, PSC para NOM-151
+## 6. Decisiones del usuario (2026-10-08)
+
+1. **Nómina / integridad:** no depender de ningún sistema de nómina ni entregar un Excel manipulable.
+   Capas 1 y 3 completas; capa 2 = copia al trabajador + depósito externo inmutable; NOM-151 opcional.
+   Nómina = formato neutro + adaptadores bajo demanda.
+2. **Quién checa: TODOS.** Sin excepciones por puesto; directivos y jefes también. Consecuencia: el
+   catálogo de trabajadores de RH es independiente de las cuentas del CRM (un trabajador puede
+   existir sin usuario; para quiosco usa PIN; si tiene cuenta, se liga). El quiosco con PIN + foto
+   entra en la Fase 2.
+3. **Canales: 100 % digital y en la nube**, solo computadora, tablet y teléfono (web, PWA, quiosco en
+   tablet). Sin relojes físicos ahora; el sistema queda **abierto a integraciones con terceros y
+   dispositivos físicos** mediante el canal de integración (API con token, mismo evento, mismo
+   motor; el contrato del evento se publica desde la Fase 2 aunque el conector se construya en la 5).
+   No hay datos históricos que importar.
+4. **Roles: libertad para que cada empresa (IAMET incluida) cree sus roles** de RH/aprobación desde
+   Administración (ver equipo, aprobar incidencias, aprobar horas extra, cerrar periodo, exportar
+   expediente, configurar horarios/perfiles, auditar). **Límites duros que ningún rol puede saltar:**
+   todos checan, nadie modifica ni borra el libro (ni el jefe, ni el dueño, ni nosotros desde la
+   app), toda corrección es solicitud + aprobación de otra persona (doble control siempre activo;
+   cada empresa necesita al menos dos aprobadores), y toda acción de un rol entra al libro.
+5. Pendiente: abogado laboral para el consentimiento y el expediente; proveedor del depósito externo.
 
 ## 7. Principios de trabajo
 Primero el libro y su verificador, con pruebas de sabotaje y de concurrencia; nada de pantallas
