@@ -188,6 +188,32 @@ Niveles configurables por empresa, de menor a mayor:
 Pendiente del usuario: qué escenarios aplican a IAMET y cuáles al cliente nuevo; con eso se decide
 qué canales entran en la Fase 2 (web + PWA + quiosco) y cuáles van a la 5 (reloj físico, API).
 
+## 3.14 Perfiles de marcación (configuración, no código por cliente)
+El motor cubre los 18 escenarios; cada empresa activa lo que usa mediante **perfiles** asignados a
+cada trabajador (con vigencia). Se entregan 4 perfiles universales listos; la empresa los ajusta o
+crea otros desde Administración → RH, sin desarrollo:
+
+| Perfil | Canales | Ubicación | Offline | Identidad |
+|---|---|---|---|---|
+| **Oficina** | Web (Iniciar mi día) y PWA | Geocerca del centro o red de la oficina | No necesario | Reforzado |
+| **Campo** | PWA (+ QR/NFC en sitio opcional) | Centros + clientes + agenda + sitios temporales | **Sí, obligatorio** | Reforzado + geolocalización |
+| **Planta / sin teléfono** | Quiosco con PIN y foto (o reloj físico cuando exista) | Dispositivo fijo = centro | Sí (cola local en el quiosco) | PIN + foto |
+| **Remoto** | Web y PWA | Domicilio autorizado (NOM-037) | No necesario | Reforzado |
+
+Cada perfil define: canales permitidos, si exige ubicación y qué pasa sin ella (rechazo o excepción),
+tolerancias de retardo, si computan descansos, nivel de identidad, y si permite inicio de ruta.
+Un trabajador puede cambiar de perfil con fecha de vigencia (el cálculo usa el vigente ese día).
+
+## 3.15 Offline (fundamental, Fase 2)
+- La PWA guarda la marca localmente con `uuid`, `ts_captura`, ubicación si la obtuvo y el canal, la
+  muestra como "pendiente de sincronizar" y la envía al recuperar red. El servidor pone
+  `ts_servidor`, valida geocerca/secuencia al recibirla y marca anomalías de reloj (diferencia
+  captura/sincronización mayor al umbral) o lotes tardíos. El `uuid` evita duplicados al reintentar.
+- Base: `lev_offline.js` de levantamientos (cola local + sincronización) ya probado en campo.
+- Requisitos: PWA instalada en el teléfono (HTTPS, service worker), dispositivo registrado antes de
+  salir a campo. El quiosco también tiene cola local por si se cae la red de la planta.
+- La marca offline nunca se "corrige" al sincronizar: ambas horas quedan en el libro.
+
 ## 4. Base existente en el CRM (se reutiliza)
 `AsistenciaJornada` (Iniciar mi día / pausar / terminar, `api/jornada/*`, widget
 `_widget_recordatorio_entrada.html`; 170 jornadas de 10 usuarios al mes en prod) → se convierte en
@@ -200,7 +226,7 @@ módulos por bandera y multiempresa → el módulo nace multiempresa sin trabajo
 | Fase | Entregable | Días |
 |---|---|---|
 | 1 Núcleo | Centros de trabajo, horarios/turnos con vigencia, tipos de incidencia, parámetros regulatorios 2027–2030 con vigencia, dispositivos/quioscos, consentimiento y aviso, sección RH en Administración, módulo `rh` por bandera | 3 |
-| 2 Evidencia y marcación | **Libro de evidencia primero** (permisos MySQL, cadena serializada, huellas canónicas versionadas, dos sellos, prueba de concurrencia y de sabotaje); luego captura web (Iniciar mi día), PWA móvil offline, quiosco con PIN; motor de validación (secuencia, duplicados, horario, dispositivo, geocerca circular) con intentos rechazados conservados; identidad reforzada | 5 |
+| 2 Evidencia y marcación | **Libro de evidencia primero** (permisos MySQL, cadena serializada, huellas canónicas versionadas, dos sellos, prueba de concurrencia y de sabotaje); luego captura web (Iniciar mi día), **PWA móvil con offline obligatorio**, quiosco con PIN y foto, QR/NFC en sitio; 4 perfiles universales; motor de validación (secuencia, duplicados, horario, dispositivo, geocerca circular) con intentos rechazados conservados; identidad reforzada | 5 |
 | 3 Jornada e incidencias | Cálculo diario/semanal con la tabla por año, retardos, faltas, omisiones, descansos, horas extra detectadas vs autorizadas (sin truncar salidas), solicitudes con adjuntos, aprobación con segregación, correcciones por capas con motivo, avisos en Mi día | 4 |
 | 4 Control, expediente y custodia | Cierres y reaperturas, reportes por trabajador/centro/excepciones/auditoría, expediente PDF+JSON con marca de la empresa, verificador, copia al trabajador con QR, depósito externo inmutable, tablero de cumplimiento, exportación neutra de incidencias, bitácora de accesos | 4 |
 | 5 Bajo demanda | Conectores de nómina, constancia NOM-151, reloj físico, biometría, geocercas polígono, multi zona horaria | según cliente |
