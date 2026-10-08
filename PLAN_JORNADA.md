@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-08 · **Estado:** diseño cerrado; nombre elegido (**TimeSure**); arranca Fase 1 (infraestructura)
+**Fecha:** 2026-10-08 · **Estado:** Fase 1 HECHA y desplegada (https://timesure.82-223-44-29.nip.io); sigue Fase 2 (núcleo RH)
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -308,6 +308,35 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
 | 7 Bajo demanda | Conectores de nómina, NOM-151, relojes físicos vía API, biometría, geocercas polígono | según cliente |
 
 Total fases 1–6: **19 a 21 días hábiles**.
+
+## 5c. Fase 1 — HECHA 2026-10-08
+
+Repo privado `github.com/DiegoRiv7/timesure` (rama `main`; el VPS lo lee con deploy key de solo
+lectura). Django 5.2 multitenant por columna, seguro por defecto: `TenantManager` exige empresa
+(consulta sin empresa = error), `objects.todas()` explícito, `TenantModel` asigna/valida empresa,
+middleware fija la empresa del usuario. 14 pruebas automáticas (aislamiento, acceso con límite de
+intentos, SSO de un solo uso) corren en la imagen antes de cada despliegue. Usuario propio por
+correo; empresa nula = staff global; roles base por empresa. SSO desde el CRM por token firmado
+(secreto por empresa, 90 s, un solo uso). Contrato del evento de marca en
+`docs/CONTRATO_EVENTO.md`. Identidad TimeSure (acceso de dos paneles, barra lateral, isotipo).
+Despliegue: imagen `timesure:<sha>` sin root, contenedor `timesure-web` en 127.0.0.1:8020 sobre
+`crm-mysql` (base `timesure`; `u_timesure_migra` con DDL, `u_timesure` sin DDL y con permisos por
+tabla vía `deploy/grants.sh`, listo para dejar el libro en solo inserción), nginx con HSTS,
+nosniff, X-Frame DENY y límite de intentos en /entrar/, Let's Encrypt. `deploy/instalar.sh`,
+`deploy/deploy.sh` (pull → build → pruebas → up → grants → salud; no despliega si fallan las
+pruebas). Consumo: ~90 MB. Verificado en vivo: salud, cabeceras, login/logout en navegador,
+u_timesure no puede crear tablas. Empresa `iamet` creada con admin jafet.rivera@iamet.mx; staff
+global staff@timesure.mx. Credenciales en la Mac: `~/.iamet-deploy/timesure_creds.txt`.
+Pendiente de Fase 1: passkeys (dispositivo registrado) se construyen en la Fase 3 con la marcación.
+
+## 8. Fase final — Endurecimiento del servidor (ANTES de salir a producción con TimeSure)
+Plan de la auditoría del 2026-09-29, pospuesto por decisión del usuario hasta terminar el producto:
+SSH solo con llave (apagar contraseña y root por contraseña; confirmar primero quién entra con
+contraseña), reinicio para aplicar kernel y parches de seguridad, TLS 1.2+ en nginx.conf, HSTS y
+cabeceras en todos los vhosts, nginx sin versión, `/admin` y `/_admin/` restringidos por IP, límite
+de peticiones en login y API de todos los sitios, respaldos fuera del servidor (bucket WORM, el
+mismo de la custodia de TimeSure), retirar vhosts/certificados de dominios muertos (nethive),
+monitoreo y avisos de caída. Ninguno cambia la arquitectura; son horas de mantenimiento.
 
 ## 7. Principios de trabajo
 Primero el libro y su verificador, con pruebas de sabotaje y de concurrencia; nada de pantallas
