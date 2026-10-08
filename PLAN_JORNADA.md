@@ -1,6 +1,6 @@
 # PLAN — Módulo RH: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-08 · **Estado:** diseño cerrado del núcleo de evidencia; faltan respuestas del usuario para la Fase 2
+**Fecha:** 2026-10-08 · **Estado:** diseño cerrado; decisiones tomadas; arranca Fase 1 (infraestructura) en cuanto se elija el nombre
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -254,6 +254,51 @@ Total fases 1–4: **16 días hábiles**, con margen antes del 1 de enero de 202
    app), toda corrección es solicitud + aprobación de otra persona (doble control siempre activo;
    cada empresa necesita al menos dos aprobadores), y toda acción de un rol entra al libro.
 5. Pendiente: abogado laboral para el consentimiento y el expediente; proveedor del depósito externo.
+
+## 6b. Arquitectura: PRODUCTO INDEPENDIENTE (decisión 2026-10-08)
+
+El checador es el **primer módulo separado del CRM**: repositorio propio, base propia, despliegue
+propio, dirección propia. Vendible solo; conectable al CRM; quitable sin dejar rastro. Objetivo
+declarado por el usuario: trabajar por módulos independientes que se conectan al CRM, para poder
+quitarlos (cliente que solo quiere CRM) o ponerlos después, y vender el checador por separado.
+Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
+
+- **Multitenant desde la primera línea:** una sola aplicación y una sola base para todas las empresas,
+  con `empresa` como columna obligatoria en toda tabla (modelo base `TenantModel` + manager que filtra
+  siempre + middleware que resuelve la empresa por sesión/subdominio + pruebas automáticas de
+  aislamiento). Alta de empresa en segundos, demos gratis, un solo despliegue. Lo que protege la
+  evidencia no cambia: libro de solo inserción con permisos MySQL (INSERT/SELECT sin UPDATE/DELETE),
+  **una cadena de huellas por empresa**, exportación completa por empresa en formato abierto. Si un
+  cliente grande exige instancia propia, el mismo código corre solo con una variable.
+- **Stack:** Django 5 + MySQL 8 (base `checador` en el motor compartido `crm-mysql`, usuario propio con
+  grants por tabla), Gunicorn, Docker Compose, nginx del host + Let's Encrypt, PWA con service worker
+  (offline), WebAuthn/passkeys para dispositivo registrado. Mismo lenguaje y estilo visual del CRM.
+- **Integración con el CRM (opcional, ambas direcciones, por API con token por empresa):**
+  CRM → checador: entrada única (SSO por token, mismo esquema del portal), sitios de clientes y
+  visitas del calendario para geocercas, alta automática de trabajadores desde usuarios.
+  Checador → CRM: "Iniciar mi día" llama al checador; jornadas válidas alimentan eficiencia y empleado
+  del mes; tarjetas en Mi día (solicitudes, horas extra, excepciones). El contrato del evento de marca
+  se publica desde la Fase 2 (también sirve para dispositivos físicos y terceros en la Fase 5).
+- **Infraestructura (VPS 82, verificado 2026-10-08):** 2.5 GB de RAM libres, 172 GB de disco, carga
+  baja, NTP sincronizado, docker 29 / compose 5. El checador necesita ~400 MB (web + worker de
+  cierres/notificaciones). Puertos locales libres a partir de 8020. Reusar el portal para el alta.
+- **Nombre:** pendiente (dominios de una sola palabra todos ocupados; candidatos con .mx libre:
+  checalia, puntua, verazo, checamos, fichamos, horalegal, marcalegal, sellolaboral, jornadaveraz,
+  checalegal, tiempoveraz, registroveraz, checaok). Nombre provisional del repo: `checador`.
+
+## 5b. Fases reordenadas (producto independiente)
+
+| Fase | Entregable | Días |
+|---|---|---|
+| 1 Infraestructura y andamiaje | Repo `checador`, proyecto Django multitenant (TenantModel, manager, middleware, pruebas de aislamiento), base en crm-mysql con grants, Docker/compose, vhost + HTTPS, CI de deploy, estilo visual portado, acceso (cuenta/PIN, passkeys, SSO desde el CRM), alta de empresa desde el portal, contrato de integración | 2–3 |
+| 2 Núcleo RH | Empresas, centros, horarios/turnos con vigencia, trabajadores (sin cuenta CRM), perfiles de marcación, tipos de incidencia, parámetros regulatorios 2027–2030, roles configurables con límites duros, consentimiento | 3 |
+| 3 Evidencia y marcación | Libro primero (cadena serializada, huellas canónicas versionadas, dos sellos, pruebas de concurrencia y sabotaje); web, PWA offline obligatorio, quiosco PIN+foto, QR/NFC; motor de validación; dispositivo registrado | 5 |
+| 4 Jornada e incidencias | Cálculo por año, retardos, faltas, omisiones, descansos, horas extra detectadas vs autorizadas, solicitudes, aprobación segregada, correcciones por capas | 4 |
+| 5 Control, expediente y custodia | Cierres, reportes, expediente PDF+JSON, verificador, copia al trabajador con QR, depósito externo inmutable, tablero, exportación neutra | 4 |
+| 6 Integración con el CRM | Iniciar mi día, calendario/clientes, eficiencia, tarjetas en Mi día | 1–2 |
+| 7 Bajo demanda | Conectores de nómina, NOM-151, relojes físicos vía API, biometría, geocercas polígono | según cliente |
+
+Total fases 1–6: **19 a 21 días hábiles**.
 
 ## 7. Principios de trabajo
 Primero el libro y su verificador, con pruebas de sabotaje y de concurrencia; nada de pantallas
