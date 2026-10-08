@@ -146,6 +146,48 @@ Niveles configurables por empresa, de menor a mayor:
   marcas de distintas personas con segundos de diferencia desde el mismo origen, viajes imposibles,
   patrones de retardo justo en la tolerancia. Van a revisión del supervisor, nunca se descartan solas.
 
+## 3.12 Ubicación y personal en campo
+- Lugares válidos para una persona en un momento: centros de trabajo con geocerca circular; sitios de
+  clientes (coordenada + radio sobre la dirección que ya tiene el CRM); **la agenda** (visita,
+  levantamiento o instalación en el calendario autoriza ese sitio en esa ventana sin configurar
+  nada); sitios temporales autorizados por el supervisor por fecha/proyecto; domicilio para
+  modalidad remota.
+- Marca fuera de lugar autorizado → se guarda con causa, estado **excepción**, aviso inmediato al
+  trabajador y tarjeta al supervisor en Mi día; no abre ni cierra jornada hasta resolverse.
+  Evento opcional "inicio de ruta": evidencia sin abrir jornada (si la empresa paga traslado, lo
+  configura).
+- GPS falso: rechazar/excepcionar ubicaciones de simulador (flag del dispositivo), coherencia
+  precisión/red, viajes imposibles entre marcas, cruce con la última visita del calendario.
+  **Prueba fuerte para campo: QR o NFC fijo en el sitio del cliente** (marcar = escanear; opción de
+  Fase 2). Fotos de evidencia de levantamientos respaldan la visita.
+- El trabajador ve ANTES de marcar si está en sitio válido y qué pasará con su marca.
+
+## 3.13 Matriz de escenarios (todos entran al mismo libro y al mismo motor)
+
+| # | Escenario | Canal | Trato |
+|---|---|---|---|
+| 1 | Oficina, desde el CRM en la computadora | Web ("Iniciar mi día") | Válida si la IP/red o la geocerca de la oficina coincide; si no, excepción |
+| 2 | Teléfono en oficina, planta o cliente autorizado | PWA | Válida por geocerca/agenda; con dispositivo registrado |
+| 3 | Teléfono fuera de sitio autorizado (casa, tránsito, cine) | PWA | Excepción con causa; supervisor resuelve |
+| 4 | Teléfono sin señal (planta, campo) | PWA offline | Hora original conservada, sincroniza después, hora de sincronización aparte; anomalías de reloj a revisión |
+| 5 | Sitio de cliente con QR/NFC fijo | PWA + escaneo | Válida con prueba de presencia física |
+| 6 | Checador físico (huella, tarjeta, rostro) | Reloj → API o archivo | Marcas entran con dispositivo y centro; lotes tardíos marcados; biometría bajo LFPDPPP |
+| 7 | Quiosco compartido en planta (tablet/PC) | Quiosco + PIN + foto | Para quien no tiene teléfono o cuenta; dispositivo registrado al centro |
+| 8 | Personal sin cuenta en el CRM ni teléfono | Quiosco o reloj físico | Trabajador existe en RH sin usuario; PIN |
+| 9 | Home office / remoto (NOM-037) | Web o PWA | Domicilio como sitio autorizado para esa modalidad |
+| 10 | Comisión o viaje fuera de la ciudad | PWA | Autorización temporal de ubicación o "sin validación de ubicación" por periodo, aprobada y anotada |
+| 11 | Dos o más centros en un día | PWA / quiosco | Secuencia válida entre sitios; jornada continua |
+| 12 | Descansos / comida | Cualquiera | Eventos inicio/fin de descanso; política decide si computa |
+| 13 | Turno nocturno que cruza medianoche, rotaciones, guardias | Cualquiera | Jornada asignada al turno vigente, no partida por fecha |
+| 14 | Entrada sin salida / salida sin entrada / doble entrada | Cualquiera | Incidencia de omisión o secuencia; jornada incompleta hasta corrección aprobada |
+| 15 | Día sin marcas | — | Falta detectada salvo incidencia aprobada (vacaciones, incapacidad, permiso, festivo, comisión) |
+| 16 | Marca muy temprana o salida muy tarde | Cualquiera | Tolerancias; tiempo extra detectado, no truncado; alerta preventiva |
+| 17 | Supervisor o RH marca a nombre de alguien (teléfono muerto, olvido) | Web | NUNCA como marca normal: solicitud/corrección con motivo, aprobación segregada, entra al libro |
+| 18 | Otro sistema envía marcas (integración) | API con token | Fase 5; mismo evento, mismo motor |
+
+Pendiente del usuario: qué escenarios aplican a IAMET y cuáles al cliente nuevo; con eso se decide
+qué canales entran en la Fase 2 (web + PWA + quiosco) y cuáles van a la 5 (reloj físico, API).
+
 ## 4. Base existente en el CRM (se reutiliza)
 `AsistenciaJornada` (Iniciar mi día / pausar / terminar, `api/jornada/*`, widget
 `_widget_recordatorio_entrada.html`; 170 jornadas de 10 usuarios al mes en prod) → se convierte en
