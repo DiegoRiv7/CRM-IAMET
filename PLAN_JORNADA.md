@@ -1,0 +1,181 @@
+# PLAN — Módulo RH: Registro Electrónico de Jornada ("checadas")
+
+**Fecha:** 2026-10-08 · **Estado:** diseño cerrado del núcleo de evidencia; faltan respuestas del usuario para la Fase 2
+**Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
+**Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
+
+> Esto ya no es "que le funcione al cliente": si el registro falla o se puede manipular, el patrón
+> incumple la ley. El núcleo de evidencia se construye primero, se prueba con sabotaje deliberado y
+> solo después se le ponen pantallas.
+
+---
+
+## 1. Base legal (verificada 2026-10-07)
+
+- Reforma a la LFT publicada en el DOF el **1 de mayo de 2026**. Art. 132 fracc. XXXIV: el patrón
+  debe llevar un **registro electrónico de inicio y término de la jornada de cada trabajador**,
+  conservarlo y exhibirlo a la autoridad. El registro **pactado con el trabajador hace prueba plena**.
+- Exigible desde el **1 de enero de 2027**. Multa 250–5,000 UMA (art. 994 fracc. IV Bis).
+- Jornada ordinaria semanal: **46 h (2027), 44 (2028), 42 (2029), 40 (2030)**. Horas extra: máx.
+  9/10/11/12 por semana según año, 4 h/día y 4 días/semana, pago 100 %, excedente 200 %.
+- La STPS debe emitir disposiciones técnicas antes de 2027; **no publicadas a la fecha** → toda regla
+  regulatoria es parámetro con vigencia, nunca constante en código.
+- Biometría = dato sensible (LFPDPPP 2025): consentimiento expreso por escrito, aviso de privacidad
+  específico, alternativa no biométrica obligatoria.
+- Conservación: controles de asistencia durante la relación y después de terminada (art. 804 LFT);
+  retención configurable, mínimo 2 años, bloqueo de borrado dentro del plazo.
+- Integridad de mensajes de datos / fecha cierta: NOM-151-SCFI-2016 (constancia de conservación por
+  PSC acreditado, ~23 MXN por constancia) como complemento opcional.
+
+## 2. Enfoque: híbrido
+
+**Ley** (mínimo innegociable) + **lo valioso del documento del cliente** (marca capturada ≠ válida,
+intentos rechazados conservados, corrección por capas con motivo, vigencias en configuración,
+cierres de periodo, horas extra detectadas vs autorizadas, expediente de inspección) + **lo nuestro**
+(integración con "Mi día", calendario como contexto de campo, PWA offline de levantamientos, avisos
+del asistente al supervisor, copia verificable al trabajador, marca de la empresa en el expediente).
+
+**Fuera por ahora** (extensiones bajo demanda): reloj físico, biometría con plantillas, geocercas
+poligonales, multi zona horaria fina, SaaS/planes (ya lo resuelve el multiempresa), conectores
+específicos de nómina (CONTPAQi, NOMIPAQ, Aspel NOI) sobre un formato neutro de incidencias.
+
+## 3. Núcleo de evidencia (Punto 1) — DISEÑO CERRADO
+
+### 3.1 El libro de evidencia
+Una sola bitácora de **solo inserción por empresa** (`rh_libro`), donde entra TODO lo que afecta una
+jornada: marcas, correcciones, solicitudes de incidencia, aprobaciones/rechazos, cambios de horario,
+tolerancia o geocerca, consentimientos, accesos/exportaciones de evidencia, cierres y reaperturas.
+Lo que no está en el libro no existe; lo que está no cambia.
+
+Cada entrada: `seq` (consecutivo por empresa, sin huecos), `uuid`, `tipo`, `trabajador_id`
+(inmutable), `ts_captura` (reloj del dispositivo, cuando aplica), `ts_servidor` (NTP), `actor`
+(usuario o dispositivo), `origen` (web/pwa/quiosco/api), `contexto` (ip, user agent, dispositivo
+registrado, lat/lon/precisión si hay), `datos` (JSON canónico del evento), `ref_seq` (entrada a la
+que corrige o resuelve), `estado` (válida/rechazada/pendiente/excepción/anulada), `hash_prev`,
+`hash`, `version_hash`.
+
+### 3.2 Inmutabilidad impuesta por la base, no por el código
+- El usuario MySQL de la instancia recibe **INSERT y SELECT** sobre `rh_libro` (y las tablas de
+  evidencia), **sin UPDATE ni DELETE**. Aunque exista un bug o un botón, MySQL lo rechaza.
+- En Django: modelo sin `save()` para actualizar (solo `create`), `delete()` deshabilitado, y los
+  `Meta.default_permissions` reducidos. Las correcciones son entradas nuevas con `ref_seq` y motivo
+  obligatorio; la original permanece consultable.
+- Trabajadores, centros y horarios **nunca se borran**: se dan de baja con vigencia.
+
+### 3.3 Cadena de huellas
+- `hash = SHA-256(version_hash | seq | uuid | tipo | trabajador_id | ts_captura | ts_servidor |
+  actor | origen | contexto_canónico | datos_canónico | ref_seq | estado | hash_prev)`.
+- **Serialización canónica** (JSON con claves ordenadas, sin espacios, UTF-8, fechas ISO-8601 en UTC
+  con milisegundos, decimales como texto) documentada y **versionada** (`version_hash`), para que un
+  verificador externo reproduzca la huella años después aunque el código cambie.
+- **Serialización de la cadena (obligatoria):** la inserción toma un bloqueo en la cabeza del libro
+  (`SELECT ... FOR UPDATE` sobre `rh_libro_cabeza` por empresa, dentro de la transacción) y asigna
+  `seq` y `hash_prev` de forma estrictamente secuencial. Dos marcas en el mismo segundo (cambio de
+  turno) no pueden bifurcar la cadena. Prueba de carga concurrente incluida en la Fase 2.
+- Cualquier alteración de una fila rompe todas las huellas posteriores; cualquier borrado deja hueco
+  en `seq`. El verificador señala ambas cosas.
+
+### 3.4 Dos sellos de tiempo
+`ts_captura` (lo que dijo el dispositivo, incluso offline) y `ts_servidor` (hora NTP del servidor al
+recibir). Diferencia mayor a un umbral configurable → la marca queda en excepción, nunca se "corrige"
+la hora. **El servidor debe sincronizar por NTP y quedar vigilado** (verificación en la instalación).
+
+### 3.5 Configuración como evidencia
+Horarios, turnos, tolerancias, geocercas, parámetros regulatorios (tabla 2027–2030) y políticas se
+**versionan con fecha de vigencia** y cada cambio entra al libro. Todo cálculo usa la regla vigente
+en la fecha del evento. Cambiar hoy una tolerancia no mueve ni un retardo de ayer.
+
+### 3.6 Consentimiento como evidencia
+El acuerdo con el trabajador (lo que hace que el registro sea prueba plena) y el aviso de privacidad
+se aceptan dentro del sistema y entran al libro con la **versión exacta del texto**, fecha, hora,
+dispositivo e IP. Sin consentimiento vigente el sistema avisa y lo pide. El texto final lo revisa un
+abogado laboral antes de enero (pendiente del usuario).
+
+### 3.7 Segregación y accesos
+Quien solicita no aprueba (política configurable de doble control). Ver, exportar o imprimir
+evidencia ajena entra al libro con actor y hora.
+
+### 3.8 Cierres y anclas externas
+- **Cierre de periodo** (semanal o quincenal por empresa): entra al libro con la huella raíz del
+  periodo (hash de la última entrada incluida). Reapertura solo con permiso especial, y también entra
+  al libro.
+- **Copia al trabajador:** al cierre, cada trabajador recibe (y puede descargar cuando quiera) su
+  reporte con su huella y un QR para verificarlo. Si el patrón alterara algo, la copia no coincide.
+- **Depósito externo inmutable:** el expediente del cierre (PDF + JSON) y su huella se copian a un
+  almacenamiento en la nube con bloqueo de escritura (WORM) fuera del servidor, con retención
+  configurable; nadie, ni nosotros, puede modificar ni borrar antes del plazo. Es también el respaldo
+  externo que faltaba. Para los clientes, nuestro VPS ya es custodia independiente (el patrón no tiene
+  acceso al servidor); el depósito protege contra desastre y contra nosotros.
+- **NOM-151 opcional:** conector configurable por empresa para pedir constancia de conservación sobre
+  la huella de cada cierre (sello oficial de fecha cierta). IAMET como patrón y cualquier cliente lo
+  encienden si lo quieren.
+- Detección de retroceso: si la base se restaura a un respaldo viejo, el consecutivo y el depósito
+  externo (cierres que ya no existen) lo delatan.
+
+### 3.9 Expediente y verificación
+- **Formato propio, abierto:** PDF con la marca de la empresa + JSON/CSV con cada entrada del libro
+  del periodo (seq, uuid, sellos, origen, contexto, estado, hash, hash_prev), correcciones como
+  eventos aparte, cierre con huella raíz y, si existe, folio de constancia. Identificadores y fechas
+  intactos (trazabilidad).
+- **Verificador** en el CRM (accesible a inspector/juzgado con el archivo en mano): recorre la cadena,
+  compara con la huella del cierre y con el depósito externo, y dice íntegro / alterado / incompleto.
+- **Prueba de sabotaje incluida en la entrega:** alterar una fila a propósito y mostrar que el
+  verificador la señala. Se repite en cada despliegue.
+- Nómina: formato neutro de incidencias del periodo + exportación genérica CSV; adaptadores
+  específicos (CONTPAQi, NOMIPAQ, NOI) bajo demanda. El registro no depende de ninguno.
+
+### 3.10 Lo que el software no resuelve
+- Que un compañero cheque por otro (buddy punching): se mitiga con identidad reforzada (3.11) y se
+  vuelve visible con detección de anomalías; la sanción es del reglamento interior, no del sistema.
+- Que el patrón simplemente no use el sistema: el tablero muestra jornadas esperadas sin marcas.
+- La validez jurídica final del consentimiento y del expediente la firma un abogado laboral.
+
+### 3.11 Identidad del que marca (propuesta, por confirmar con el usuario)
+Niveles configurables por empresa, de menor a mayor:
+1. **Básico:** usuario y contraseña del CRM. Solo evidencia de IP/dispositivo.
+2. **Reforzado (default recomendado):** dispositivo registrado. El teléfono o navegador del trabajador
+   se registra una vez con una llave propia (WebAuthn/passkey: la huella o la cara se verifican en el
+   propio teléfono, nosotros NO guardamos biométricos) y cada marca va firmada por ese dispositivo.
+   Máx. 2 dispositivos por persona; alta y reposición de dispositivo aprobadas por RH y anotadas en
+   el libro. Geolocalización en campo.
+3. **Estricto:** reforzado + foto al marcar en quiosco (evidencia, no reconocimiento) o lector
+   biométrico con consentimiento LFPDPPP completo.
+- **IP:** nunca como candado (cambia, NAT, celulares); sí como evidencia y como señal de "centro
+  autorizado" (red de la oficina).
+- **Detección de anomalías** en todos los niveles: mismo dispositivo marcando por varias personas,
+  marcas de distintas personas con segundos de diferencia desde el mismo origen, viajes imposibles,
+  patrones de retardo justo en la tolerancia. Van a revisión del supervisor, nunca se descartan solas.
+
+## 4. Base existente en el CRM (se reutiliza)
+`AsistenciaJornada` (Iniciar mi día / pausar / terminar, `api/jornada/*`, widget
+`_widget_recordatorio_entrada.html`; 170 jornadas de 10 usuarios al mes en prod) → se convierte en
+la marca legal. `EficienciaMensual` / empleado del mes se alimentan de jornadas válidas. PWA offline
+de levantamientos (`lev_offline.js`) → base de la marcación móvil sin datos. `EmpresaConfig`,
+módulos por bandera y multiempresa → el módulo nace multiempresa sin trabajo extra.
+
+## 5. Fases
+
+| Fase | Entregable | Días |
+|---|---|---|
+| 1 Núcleo | Centros de trabajo, horarios/turnos con vigencia, tipos de incidencia, parámetros regulatorios 2027–2030 con vigencia, dispositivos/quioscos, consentimiento y aviso, sección RH en Administración, módulo `rh` por bandera | 3 |
+| 2 Evidencia y marcación | **Libro de evidencia primero** (permisos MySQL, cadena serializada, huellas canónicas versionadas, dos sellos, prueba de concurrencia y de sabotaje); luego captura web (Iniciar mi día), PWA móvil offline, quiosco con PIN; motor de validación (secuencia, duplicados, horario, dispositivo, geocerca circular) con intentos rechazados conservados; identidad reforzada | 5 |
+| 3 Jornada e incidencias | Cálculo diario/semanal con la tabla por año, retardos, faltas, omisiones, descansos, horas extra detectadas vs autorizadas (sin truncar salidas), solicitudes con adjuntos, aprobación con segregación, correcciones por capas con motivo, avisos en Mi día | 4 |
+| 4 Control, expediente y custodia | Cierres y reaperturas, reportes por trabajador/centro/excepciones/auditoría, expediente PDF+JSON con marca de la empresa, verificador, copia al trabajador con QR, depósito externo inmutable, tablero de cumplimiento, exportación neutra de incidencias, bitácora de accesos | 4 |
+| 5 Bajo demanda | Conectores de nómina, constancia NOM-151, reloj físico, biometría, geocercas polígono, multi zona horaria | según cliente |
+
+Total fases 1–4: **16 días hábiles**, con margen antes del 1 de enero de 2027.
+
+## 6. Pendientes del usuario antes de la Fase 2
+- [ ] Quién debe checar: ¿solo usuarios del CRM o también planta/técnicos sin cuenta? (decide quiosco/PIN desde Fase 2)
+- [ ] Cómo checan hoy en cada empresa
+- [ ] Canal principal: web, teléfono, quiosco, lector
+- [ ] Quién aprueba incidencias y horas extra: supervisores existentes o rol RH nuevo
+- [ ] Nivel de identidad por defecto (propuesta: reforzado)
+- [ ] Abogado laboral para revisar consentimiento y expediente antes de enero
+- [ ] Proveedor del depósito externo inmutable (bucket WORM) y, si aplica, PSC para NOM-151
+
+## 7. Principios de trabajo
+Primero el libro y su verificador, con pruebas de sabotaje y de concurrencia; nada de pantallas
+hasta que eso pase. Reglas regulatorias como parámetros con vigencia. Todo en `pruebas`; merge a
+producción solo con orden explícita. El otro agente puede estar en `pruebas`: commits solo de
+archivos propios.
