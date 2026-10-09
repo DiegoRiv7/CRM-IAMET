@@ -311,9 +311,22 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
   `timesure/marca/` (SVG claro/oscuro, favicon SVG+PNG, apple-touch-icon, `parametros.json`,
   `laboratorio.html` para explorar variantes). En la app: `core/templates/core/_marca.html`.
   Favicon = tesela verde con el dibujo en blanco.
-- **Pendiente de diseño:** interior de la app (barra lateral aún azul marino del CRM; no responsiva
-  en móvil) → llevar la paleta clara al interior y definir componentes base antes/durante Fase 2;
-  "¿Olvidaste tu contraseña?" real en Fase 2.
+- **Interior (2026-10-09, desplegado en pruebas):** widgets flotantes sin borde sobre fondo con luces
+  verde agua; barra lateral turquesa oscura (#11696D→#0A4B4E) plegada a iconos, crece encima del
+  contenido al pasar el cursor o se fija con el botón (se recuerda); el logo original va intacto en
+  una placa blanca que mide lo que mide el nombre. Sin liquid glass (decisión: página ligera).
+  **Píldora superior** centrada y de una sola superficie (blanca con velo turquesa): estado · reloj
+  del servidor con segundos · un solo botón con la acción que toca (Entrada/Salida/Reanudar).
+  Tocar estado o reloj abre un panel con acciones secundarias (Pausa, Nueva incidencia, Avisos) y el
+  resumen del día. REGLA: la píldora es solo sobre la jornada de hoy; lo demás vive en la barra.
+  Prototipo de caras por estado (fuera/dentro/pausa/fuera del sitio/alerta/sin señal), confirmación
+  dentro de la píldora con hora y huella, y modo sin señal (`?demo=…` en la URL); la Fase 3 lo
+  conecta con marcas reales. Teléfono: píldora con logo+estado+hora, barra inferior flotante con
+  Marcar al centro y hoja "Más". Secciones navegables con marcadores por fase (`/s/<clave>/`).
+- **Pendiente de diseño:** quitar el reloj duplicado del widget "Tu estado" (poner ahí el horario de
+  hoy) y decidir si "Marcar entrada" queda en el widget o solo en la píldora; "Qué sigue"/"Versión"
+  se van cuando entre contenido real; velo detrás del panel en teléfono; "¿Olvidaste tu contraseña?"
+  real en Fase 2. Borrar `entrar_paneles.html` + `fondo-oficina.jpg` cuando el usuario confirme.
 
 
 ## 5b. Fases reordenadas (producto independiente)
