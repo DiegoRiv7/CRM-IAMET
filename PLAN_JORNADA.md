@@ -295,6 +295,27 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
   (o "Tu jornada, con evidencia"). "by IAMET" opcional como respaldo en portada y contratos, nunca
   en el nombre.
 
+### 6c. Diseño y marca (decisiones 2026-10-08, hechas en pruebas)
+- **Pantalla de acceso v3** (desplegada): fondo claro con luces difusas verde agua, logotipo arriba del
+  eslogan a la izquierda, tarjeta blanca de inicio a la derecha; el bloque de texto se alinea con los
+  bordes del contenido de la tarjeta. Variante de paneles (teléfono + tarjeta verificada) guardada en
+  `entrar_paneles.html` (`?v=paneles`) y foto `fondo-oficina.jpg`: borrar cuando el usuario confirme.
+- **Eslogan de portada:** "Cada minuto, en su lugar." Bajada: "Registro de jornada inalterable para
+  equipos que trabajan en oficina, en campo o en casa." El lema de marca "Registro de jornada con
+  prueba" se conserva como descripción corta del producto.
+- **Tipografía:** Inter (OFL), servida desde el propio servidor (`core/static/core/fonts/`), "Time" en
+  `#1F2A30` y "Sure" en `#1FA2A6`. Se descartaron Space Grotesk (no convenció) y San Francisco
+  (licencia de Apple, no se puede servir en web).
+- **Isotipo final:** T con el reloj en la unión, barra negra por debajo con corte diagonal, tronco y
+  reloj verde agua, manecillas negras a las 10 y a la 1 (se leen como palomita). Fuentes en
+  `timesure/marca/` (SVG claro/oscuro, favicon SVG+PNG, apple-touch-icon, `parametros.json`,
+  `laboratorio.html` para explorar variantes). En la app: `core/templates/core/_marca.html`.
+  Favicon = tesela verde con el dibujo en blanco.
+- **Pendiente de diseño:** interior de la app (barra lateral aún azul marino del CRM; no responsiva
+  en móvil) → llevar la paleta clara al interior y definir componentes base antes/durante Fase 2;
+  "¿Olvidaste tu contraseña?" real en Fase 2.
+
+
 ## 5b. Fases reordenadas (producto independiente)
 
 | Fase | Entregable | Días |
