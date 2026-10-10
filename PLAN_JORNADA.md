@@ -343,6 +343,21 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
     "Por atender" (faltan por marcar y por aprobar en una sola lista por urgencia) + avisos.
   · Administrador: la versión completa (la actual, depurada). Se construye PRIMERO y de ahí se derivan
     las otras dos quitando bloques, no al revés. Repasar versión por versión después.
+- **DECISIÓN FINAL DE LA PANTALLA PRINCIPAL (2026-10-09): "Asistencia", no un inicio.** El sistema es
+  ante todo para RH y para quien quiera saber dónde está la gente. Se descartan las variantes de inicio
+  (7 tarjetas, A tres respuestas, B relato, C tríptico, D mosaico); quedan archivadas en
+  `core/templates/core/inicio_*.html` accesibles con `?inicio=completo|a|b|c|d` por si sirven para un
+  director. "Jornadas" desaparece del menú: es esta pantalla.
+  · **Vista Hoy:** lista de trabajadores agrupada por centro; por fila: nombre, turno, dos puntos
+    (entrada / salida) con color: verde = marcó, gris = aún no, ámbar = tarde, rojo = sin marca pasada
+    la hora, azul = justificado (permiso/incapacidad); columna "Hoy" con el detalle en texto; resumen
+    arriba (dentro / retardo / sin marcar / ya salieron); búsqueda por nombre y filtro por centro.
+  · **Vista Catorcena:** misma lista, 14 casillas por fila (una por día) con color asistió / retardo /
+    falta / justificado / descanso, hoy resaltado, total de asistencias a la derecha, "catorcena anterior".
+  · Tocar un nombre abre su día / su catorcena con horas exactas (Fase 4).
+  · Datos: la vista Hoy se llena desde la Fase 3 (marcas); la Catorcena necesita la Fase 4 (retardos,
+    faltas). Hoy es solo diseño con datos de muestra, sin lógica.
+  · Se conservan la píldora (para el propio usuario) y "Por atender" como campana con contador arriba.
 - **Pendiente de diseño:** quitar el reloj duplicado del widget "Tu estado" (poner ahí el horario de
   hoy) y decidir si "Marcar entrada" queda en el widget o solo en la píldora; "Qué sigue"/"Versión"
   se van cuando entre contenido real; velo detrás del panel en teléfono; "¿Olvidaste tu contraseña?"
