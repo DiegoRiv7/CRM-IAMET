@@ -323,6 +323,26 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
   dentro de la píldora con hora y huella, y modo sin señal (`?demo=…` en la URL); la Fase 3 lo
   conecta con marcas reales. Teléfono: píldora con logo+estado+hora, barra inferior flotante con
   Marcar al centro y hoja "Más". Secciones navegables con marcadores por fase (`/s/<clave>/`).
+- **Píldora, reglas cerradas (2026-10-09):** 3 piezas (estado · reloj · acción); botón derecho siempre
+  Entrada/Salida en la misma posición, izquierdo Pausa/Reanudar en tono suave; Salida pide confirmación
+  (con aviso si es antes del horario); confirmación corta (título + hora) que toma el color del estado
+  destino y se desvanece sobre la píldora ya cambiada (la huella va al panel); estado "Jornada
+  terminada" con contador congelado (verde completa / rojo incompleta); reentrada continúa el tiempo;
+  pausas descontadas; una alerta a la vez (primero ayer, luego hoy); retardo en rojo hasta justificar;
+  lo pendiente de aprobación = degradado rojo suave a la izquierda fundido con el color del estado
+  (nunca un cuarto color); la conexión es un indicador aparte (Sin señal / N por enviar / Enviando),
+  nunca sustituye al estado laboral; justificaciones (salida de ayer, llegada tarde, salida anticipada)
+  en tarjeta modal: hora propuesta, tipo, motivo, evidencia; la marca original nunca cambia, solo se
+  registra algo nuevo si el supervisor aprueba. Tolerancia de retardo y horarios salen de la Fase 2.
+- **Inicio: decisión pendiente de aplicar (2026-10-09).** La versión actual (7 tarjetas con datos de
+  ejemplo) está sobrecargada: mezcla lo del trabajador con lo del equipo, todas las tarjetas pesan
+  igual y hay demasiados números. Acordado: el inicio se adapta al rol, máximo 4 bloques, un solo
+  bloque de color (el verde), globos solo si > 0, tarjetas vacías no se muestran.
+  · Trabajador: tu día + justificaciones (si hay) + avisos. Casi vacío es correcto.
+  · Supervisor/RH: tu día en franja delgada + una tarjeta de equipo (resumen + barra de proporción) +
+    "Por atender" (faltan por marcar y por aprobar en una sola lista por urgencia) + avisos.
+  · Administrador: la versión completa (la actual, depurada). Se construye PRIMERO y de ahí se derivan
+    las otras dos quitando bloques, no al revés. Repasar versión por versión después.
 - **Pendiente de diseño:** quitar el reloj duplicado del widget "Tu estado" (poner ahí el horario de
   hoy) y decidir si "Marcar entrada" queda en el widget o solo en la píldora; "Qué sigue"/"Versión"
   se van cuando entre contenido real; velo detrás del panel en teléfono; "¿Olvidaste tu contraseña?"
