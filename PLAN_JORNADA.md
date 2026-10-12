@@ -401,8 +401,11 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
   · Regla de formas: mismo esqueleto en todas (cabecera + píldora + tarjetas + botones + colores de
     estado + scroll interno); la disposición de abajo cambia según la pregunta de cada pantalla.
   · Caché: el CSS lleva `?v=<mtime>` en DEBUG (TS_ESTATICOS_V) para que Brave no muestre versiones viejas.
-  · Pendiente: quitar "Marcar" del menú (vive en Dispositivos > Abrir modo quiosco); subir todo a
-    pruebas en un commit; luego Fase 2.
+  · HECHO 2026-10-12: "Marcar" salió del menú y de las secciones; el botón central del teléfono abre
+    el panel de la píldora. El quiosco/tablet compartida se hará después como un PERFIL distinto
+    (para que todos marquen en una tablet sin tener muchas cuentas). Cuenta ajustada a la ventana
+    (perfil + preferencias | seguridad con actividad reciente | mi registro con constancias).
+  · SUBIDO A PRUEBAS 2026-10-12 (commit b185820): todo el diseño del interior. Sigue: FASE 2.
 - **Pendiente de diseño:** quitar el reloj duplicado del widget "Tu estado" (poner ahí el horario de
   hoy) y decidir si "Marcar entrada" queda en el widget o solo en la píldora; "Qué sigue"/"Versión"
   se van cuando entre contenido real; velo detrás del panel en teléfono; "¿Olvidaste tu contraseña?"
