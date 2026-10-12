@@ -368,6 +368,41 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
   · Datos: la vista Hoy se llena desde la Fase 3 (marcas); la Catorcena necesita la Fase 4 (retardos,
     faltas). Hoy es solo diseño con datos de muestra, sin lógica.
   · Se conservan la píldora (para el propio usuario) y "Por atender" como campana con contador arriba.
+- **DISEÑO COMPLETO DE TODAS LAS SECCIONES (2026-10-12, en local, listo para subir):**
+  · **Mi jornada**: mismo patrón que la principal (cabecera en la fila de la píldora, 4 cifras, línea
+    del día con trabajado/pausa/ahora, dos bloques con scroll interno: Mis marcas con huella y
+    constancia, Mis solicitudes con estado y "volver a enviar"); Semana/Catorcena con tira de días.
+  · **Incidencias**: bandeja (izq) + detalle de la seleccionada (der) estilo correo; el detalle
+    compara "La solicitud" vs "Lo que dice el libro" y explica el efecto de aprobar; controles por
+    tipo (horas a aprobar con aviso de tope semanal; goce de sueldo en permisos); Resueltas muestra la
+    resolución con huella y que no se edita, solo se corrige encima.
+  · **Reportes**: SIN cifras del día (forma distinta, misma cabecera): 5 tipos como pestañas
+    (Jornadas, Horas extra, Incidencias, Cumplimiento por regla legal, Expediente de inspección),
+    filtros periodo/centro/trabajador/formato (PDF, Excel, CSV, Nómina), tabla con encabezado y total
+    fijos; Exportar y Programar envío. "Ver" sustituye la tabla por la jornada de esa persona (misma
+    vista que Mi jornada, con Hoy/Semana/Catorcena y Exportar) y "Volver a reportes".
+  · **Evidencia** (rediseñada por otro agente el 2026-10-12, revisada y aceptada): tarjeta de 4
+    cifras (Estado íntegra, registros, último cierre, huella), Libro cronológico con hora servidor/
+    captura, tipo con color, huella y anterior apiladas, fila resaltada si se sincronizó tarde;
+    Cierres y custodia; Verificar (huella/folio → registro auténtico + verificación completa).
+  · **Administración** = administración total: menú propio (Organización / Personas / Reglas /
+    Conexiones). Apartados: Empresa (datos fiscales, periodo de cierre, aviso de privacidad y
+    consentimientos), Centros, Horarios y turnos (con versión y vigencia; histórico en gris),
+    Trabajadores (lista + ficha con acceso/consentimiento/historial), Perfiles de marcación (4 de
+    fábrica + crear/editar/duplicar/eliminar: desde dónde marca, ubicación exigida, identidad, sin
+    señal), Roles y permisos (matriz + crear/editar/eliminar con alcance; límites duros no editables;
+    Administrador y RH no se eliminan), Usuarios y accesos (cuentas con rol, centros, identidad,
+    vinculada al trabajador; invitación por correo; suspender/eliminar; siempre ≥1 admin), Tipos de
+    incidencia, Parámetros legales por año 2026-2030 (los de ley no se editan; políticas sí; fila
+    STPS por cargar), Dispositivos y quioscos (vincular con código; "Abrir modo quiosco"),
+    Integraciones (CRM, nómina, API, custodia). Todo con crear/editar/eliminar y nota de vigencia.
+  · **Cuenta**: perfil, avisos, seguridad (contraseña, llaves de acceso, sesiones, SSO), mi registro
+    (consentimiento, descargar mis datos, constancias), cerrar sesión.
+  · Regla de formas: mismo esqueleto en todas (cabecera + píldora + tarjetas + botones + colores de
+    estado + scroll interno); la disposición de abajo cambia según la pregunta de cada pantalla.
+  · Caché: el CSS lleva `?v=<mtime>` en DEBUG (TS_ESTATICOS_V) para que Brave no muestre versiones viejas.
+  · Pendiente: quitar "Marcar" del menú (vive en Dispositivos > Abrir modo quiosco); subir todo a
+    pruebas en un commit; luego Fase 2.
 - **Pendiente de diseño:** quitar el reloj duplicado del widget "Tu estado" (poner ahí el horario de
   hoy) y decidir si "Marcar entrada" queda en el widget o solo en la píldora; "Qué sigue"/"Versión"
   se van cuando entre contenido real; velo detrás del panel en teléfono; "¿Olvidaste tu contraseña?"
