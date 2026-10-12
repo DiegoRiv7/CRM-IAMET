@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-08 · **Estado:** Fase 1 HECHA y desplegada (https://timesure.82-223-44-29.nip.io); sigue Fase 2 (núcleo RH)
+**Fecha:** 2026-10-12 · **Estado:** Fase 1 HECHA, diseño completo del interior HECHO, Fase 2 (núcleo RH) 2/3 desplegada en pruebas (https://timesure.82-223-44-29.nip.io); sigue cerrar Fase 2 y arrancar Fase 3 (libro de evidencia y marcación)
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -445,6 +445,39 @@ pruebas). Consumo: ~90 MB. Verificado en vivo: salud, cabeceras, login/logout en
 u_timesure no puede crear tablas. Empresa `iamet` creada con admin jafet.rivera@iamet.mx; staff
 global staff@timesure.mx. Credenciales en la Mac: `~/.iamet-deploy/timesure_creds.txt`.
 Pendiente de Fase 1: passkeys (dispositivo registrado) se construyen en la Fase 3 con la marcación.
+
+## 5d. Fase 2 — Núcleo RH (EN CURSO: 2/3 hecho y desplegado 2026-10-12)
+
+Commits `f7034ee` (modelos, semillas, 18 pruebas) y `c49d26f` (Administración con lógica real),
+ambos en pruebas. Todo lo que se configura queda con vigencia y con quién lo cambió; nada se borra.
+- **App `rh`:** `Centro`; `Horario` + `HorarioVersion` (cada cambio es una versión nueva con
+  `vigente_desde`; `version_vigente(fecha)` devuelve la que aplicaba ese día); `PerfilMarcacion`
+  (canales, ubicación exigida, precisión GPS, radio, identidad, offline; 4 de fábrica); `Trabajador`
+  (número único por empresa, PIN de quiosco cifrado, alta y baja con fecha y motivo, `horario_en` y
+  `perfil_en` por fecha); `AsignacionHorario`/`AsignacionPerfil` con vigencia; `TipoIncidencia` (7 de
+  fábrica); `ParametroLegal` (ley 2026–2030 fija por año: jornada semanal 48→46→44→42→40, extra
+  9/9/10/11/12 por semana, 3→4 por día; políticas de empresa versionadas: tolerancia 15 min, 3
+  retardos = 1 falta); `AvisoPrivacidad` (huella SHA-256) y `Consentimiento` (solo inserción).
+- **Roles y permisos** (`core/permisos.py`): 8 permisos por rol, alcance centro/centros/empresa,
+  roles de fábrica no se borran, y límites duros fuera de cualquier rol: todos marcan su jornada,
+  nadie edita ni borra una marca, nadie aprueba sus propias solicitudes ("ni el jefe").
+- **Bitácora `core_cambio`** de solo inserción (grants MySQL + guardas en el modelo) con usuario,
+  antes/después y motivo en cada acción de Administración.
+- **Semillas** (`manage.py sembrar`, idempotente; corre en el entrypoint y en `crear_empresa`).
+- **Administración** (`/administracion/`, 16 pantallas con el diseño ya aprobado): empresa (datos,
+  periodo de cierre, aviso versionado y quién lo firmó), centros, horarios (nueva versión por cambio),
+  trabajadores (filtros, PIN, horario y perfil con vigencia, consentimiento en papel, baja), perfiles
+  (duplicar), roles, usuarios y accesos (invitación pendiente, suspender/reactivar/cerrar sesiones,
+  mínimo un administrador, nadie se suspende a sí mismo), tipos de incidencia, parámetros (la ley no
+  se edita; las políticas se versionan). Dispositivos e integraciones son marcadores (Fases 3 y 6).
+- **Tenancy:** `TenantQuerySetPerezoso` permite declarar ModelForms sin empresa activa y sigue
+  exigiendo empresa al evaluar; `TenantManager.none()`.
+- 36 pruebas en total (aislamiento, vigencias, PIN, consentimiento, permisos 403, bitácora, mínimo
+  un admin, rol de fábrica, ley no editable).
+- **Falta para cerrar la Fase 2 (3/3):** correo de invitación y restablecer contraseña (requiere
+  SMTP/Resend en pruebas); conectar la pantalla principal, la lista de Asistencia y los selectores
+  de centro a los datos reales de `rh`; revisión en móvil de Administración; consentimiento digital
+  del trabajador (firma desde su cuenta o el quiosco) entra junto con la marcación en la Fase 3.
 
 ## 8. Fase final — Endurecimiento del servidor (ANTES de salir a producción con TimeSure)
 Plan de la auditoría del 2026-09-29, pospuesto por decisión del usuario hasta terminar el producto:
