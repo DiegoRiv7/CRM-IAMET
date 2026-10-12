@@ -195,10 +195,16 @@
             _obs.observe(document.body, { attributes: true, attributeFilter: ['data-fase', 'data-theme'] });
         } catch (e) { }
         setup();
+        // Red de seguridad: si el canvas se midió antes de que el layout
+        // estuviera listo (p. ej. 0×0 en la 1ª pintura), re-dibuja cuando
+        // ya hay dimensiones. Barato e idempotente.
+        setTimeout(setup, 250);
+        setTimeout(setup, 900);
     }
 
     var _rt;
     window.addEventListener('resize', function () { clearTimeout(_rt); _rt = setTimeout(setup, 150); });
+    window.addEventListener('load', setup);
     document.addEventListener('turbo:load', boot);
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
