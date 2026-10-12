@@ -343,7 +343,17 @@ Quien no tiene cuenta en el CRM no la necesita: cuenta o PIN del checador.
     "Por atender" (faltan por marcar y por aprobar en una sola lista por urgencia) + avisos.
   · Administrador: la versión completa (la actual, depurada). Se construye PRIMERO y de ahí se derivan
     las otras dos quitando bloques, no al revés. Repasar versión por versión después.
-- **DECISIÓN FINAL DE LA PANTALLA PRINCIPAL (2026-10-09): "Asistencia", no un inicio.** El sistema es
+- **PANTALLA PRINCIPAL CERRADA (2026-10-12): "Sucursal, hoy" (variante E).** El usuario cambió de la lista
+  (2026-10-09) a un diseño más visual tomado de su referencia: cabecera en la misma fila que la píldora
+  (izq.: nombre de la empresa + fecha + selector de centro; der.: Hoy / Semana / Quincena), una tarjeta
+  con 4 cifras (presentes, retardos, sin marca, horas extra) + barra de proporción, y dos listas:
+  "Faltan por marcar" (Avisar; justificados en gris con etiqueta) y "Por aprobar" (Rechazar/Aprobar).
+  El bloque mide exactamente la ventana (sin scroll de página); cada lista hace scroll por dentro con
+  borde desvanecido. Semana/Quincena cambian cifras a asistencia %, retardos, faltas, extras.
+  La lista completa de trabajadores (entrada/salida por color + catorcena) sigue en `?inicio=lista`:
+  es a donde se llega al tocar "42 de 50" o "5 sin marca". Datos de muestra; sin lógica (Fase 3/4).
+  En local, sin subir a pruebas hasta que el usuario lo ordene. `?muchos=1` prueba el scroll.
+- (Histórico) **Decisión del 2026-10-09: "Asistencia" como lista.** El sistema es
   ante todo para RH y para quien quiera saber dónde está la gente. Se descartan las variantes de inicio
   (7 tarjetas, A tres respuestas, B relato, C tríptico, D mosaico); quedan archivadas en
   `core/templates/core/inicio_*.html` accesibles con `?inicio=completo|a|b|c|d` por si sirven para un
