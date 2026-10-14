@@ -539,6 +539,25 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   2. **Solo en MySQL:** las marcas con coordenadas rompían la verificación (126 de 322 entradas).
      Un float no sobrevive igual a todos los motores. Ahora ningún decimal entra al libro como
      número: se guarda como texto, igual que se firma. Documentado en LIBRO_HUELLA.md.
+- **Receptor del reloj checador físico HECHO 2026-10-14 (commit 21f3e10), adelantado de la Fase 5**
+  porque el modelo de venta es sistema + checador. `rh/adms.py` implementa el protocolo ADMS/Push de
+  ZKTeco y compatibles (`/iclock/cdata`, `/iclock/getrequest`, `/iclock/devicecmd`). El aparato habla
+  solo, así que no hay que abrirle puertos y aguanta quedarse sin red. Se identifica únicamente con
+  su número de serie, por eso hay que darlo de alta antes (serie desconocida = 503). Lo que manda
+  entra al mismo libro con las mismas reglas: el perfil debe permitir el canal «api» o se rechaza, y
+  la forma en que la persona se identificó (huella, rostro, tarjeta) queda registrada, que es lo que
+  da valor probatorio. La tecla equivocada no rompe la jornada. Reloj adelantado = excepción; marca
+  guardada sin red = demora anotada. Reenviar no duplica. 15 pruebas.
+  **PENDIENTE DE INSTALACIÓN:** el vhost redirige HTTP a HTTPS y muchos firmwares viejos no siguen
+  redirecciones ni hablan HTTPS. Si el aparato no conecta: actualizar firmware, o abrir HTTP plano
+  solo para `/iclock/` y solo desde la IP fija del cliente (cambio de nginx, con orden explícita).
+- **Decisión comercial 2026-10-14:** tres paquetes. Sistema solo (oficina), sistema + checador físico
+  (planta, el cliente compra el aparato y nosotros integramos), y sistema + quiosco móvil (obra y
+  campo, el teléfono del supervisor como quiosco de cuadrilla). El PIN con foto queda disponible
+  siempre, porque la ley obliga a tener alternativa no biométrica. **La biometría NO es obligatoria**
+  por ley: la STPS aún no publica las disposiciones técnicas. Recomendado estandarizar en un equipo
+  multibiométrico (rostro + huella + tarjeta, ~3,500 MXN) porque los lectores de solo huella fallan
+  con manos de planta y obra.
 - **Sigue: Fase 4 (jornada e incidencias).** Solicitudes (olvido de marca, permiso, horas extra) con
   aprobación segregada, correcciones por capas sobre el libro, cálculo de faltas y retardos
   acumulados, y el consentimiento digital firmado por el propio trabajador.
