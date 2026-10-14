@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-13 · **Estado:** Fases 1 y 2 hechas (núcleo RH y Administración en pruebas); Fase 3 arrancada: el libro de evidencia encadenado está construido, verificado y desplegado (https://timesure.82-223-44-29.nip.io); sigue la marcación real sobre el libro
+**Fecha:** 2026-10-14 · **Estado:** Fases 1 y 2 hechas; Fase 3 en curso: el libro de evidencia (1/3) y la marcación real sobre el libro (2/3) desplegados en pruebas (https://timesure.82-223-44-29.nip.io); sigue offline, quiosco y dispositivo registrado (3/3)
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -504,6 +504,19 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
 - **Ya entra al libro**: cada cambio de configuración de Administración y cada consentimiento.
 - 25 pruebas nuevas (64 en total), entre ellas cuatro de sabotaje (alterar contenido, alterar hora,
   borrar una fila, borrar y reescribir el eslabón para taparlo) y una de concurrencia.
-- **Sigue (Fase 3, 2/3 y 3/3):** la marcación real (entrada/pausa/salida desde la píldora sobre el
-  libro), el motor de validación por perfil (canal, ubicación, identidad), la PWA offline, el
-  quiosco con PIN y foto, y el dispositivo registrado.
+- **Fase 3 (2/3) HECHA 2026-10-14 (commit 8b8bcfc): la marcación real.** `rh/marcacion.py` es el
+  motor: la jornada se calcula LEYENDO el libro, no de un contador aparte. Máquina de estados
+  fuera/dentro/pausa/terminado, pausas descontadas, reentrada que continúa el tiempo del día, y
+  retardo con la tolerancia vigente ese día (publicar mañana una más estricta no crea un retardo de
+  hoy). La jornada se identifica por su fecha guardada en cada marca, así que el turno nocturno no se
+  parte a medianoche. **Todo intento entra al libro**: lo rechazado queda con `estado='rechazada'`,
+  su motivo y la distancia medida; no cuenta para la jornada, pero es evidencia. Las reglas salen del
+  perfil: canal permitido, ubicación exigida (geocerca con distancia real, sitio de cliente que
+  guarda dónde fue, o ninguna) y precisión mínima del GPS. API `GET /api/jornada/` +
+  `POST /api/marcar/` (422 con el motivo). La píldora dejó de simular: marca contra el servidor, pide
+  ubicación solo si el perfil la exige, alinea su reloj con el del servidor y enseña el motivo del
+  rechazo en el mismo sello; con `?demo=` sigue simulando para enseñar estados. 26 pruebas nuevas
+  (90 en total); cada escenario verifica además que la cadena siga íntegra. Probado en vivo: entrada,
+  pausa y salida desde el navegador quedaron encadenadas y el verificador las da por íntegras.
+- **Sigue (Fase 3, 3/3):** PWA offline (marcar sin señal y sincronizar solo), quiosco con PIN y foto,
+  dispositivo registrado (passkey) y el consentimiento digital firmado por el trabajador.
