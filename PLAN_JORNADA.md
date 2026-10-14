@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-14 · **Estado:** Fases 1 y 2 hechas; Fase 3 en curso: el libro de evidencia (1/3) y la marcación real sobre el libro (2/3) desplegados en pruebas (https://timesure.82-223-44-29.nip.io); sigue offline, quiosco y dispositivo registrado (3/3)
+**Fecha:** 2026-10-14 · **Estado:** Fases 1, 2 y 3 hechas y desplegadas en pruebas (https://timesure.82-223-44-29.nip.io); empresa de demostración «piloto» lista para enseñarla. Sigue la Fase 4 (jornada e incidencias)
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -518,5 +518,27 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   rechazo en el mismo sello; con `?demo=` sigue simulando para enseñar estados. 26 pruebas nuevas
   (90 en total); cada escenario verifica además que la cadena siga íntegra. Probado en vivo: entrada,
   pausa y salida desde el navegador quedaron encadenadas y el verificador las da por íntegras.
-- **Sigue (Fase 3, 3/3):** PWA offline (marcar sin señal y sincronizar solo), quiosco con PIN y foto,
-  dispositivo registrado (passkey) y el consentimiento digital firmado por el trabajador.
+- **Fase 3 (3/3) HECHA 2026-10-14 (commits aa9b951, dda02e5, 62b553d).**
+  **Sin señal:** la marca se guarda en el teléfono y se envía sola al volver la conexión; cuenta a la
+  hora del botón, no a la de llegada. El reloj del aparato al enviar se compara con el del servidor,
+  así que una demora por falta de red se anota y un reloj alterado deja la marca en excepción. Cada
+  marca en cola lleva identificador: reenviarla no la duplica.
+  **Quiosco:** el aparato se identifica con su token (se registra en Administración y se vincula una
+  vez); la persona, con número y PIN, más foto si su perfil pide identidad estricta. La foto vive en
+  disco y su huella entra al libro en una entrada que apunta a la marca. Un PIN equivocado también
+  queda registrado. El teclado es numérico y los números llevan letras, así que la búsqueda tolera
+  guiones y mayúsculas y, si hay empate, no adivina.
+  **Pantalla principal con datos reales** (`rh/tablero.py`): presentes, retardos, sin marca, horas
+  extra, barra, quién falta por marcar y «Por revisar» con los intentos rechazados y las marcas con
+  el reloj desfasado. Semana y quincena calculan asistencia, retardos, faltas y extra.
+  **`manage.py demo`** monta una empresa de demostración con historia real generada por el motor.
+- **Dos fallos encontrados con los datos de demostración y corregidos:**
+  1. Una jornada de un día pasado sin salida marcada seguía sumando hasta hoy e inventaba horas extra
+     (343 h en una semana). Ahora se corta al terminar su duración normal desde la entrada y queda
+     marcada como `sin_salida` para que un supervisor la resuelva.
+  2. **Solo en MySQL:** las marcas con coordenadas rompían la verificación (126 de 322 entradas).
+     Un float no sobrevive igual a todos los motores. Ahora ningún decimal entra al libro como
+     número: se guarda como texto, igual que se firma. Documentado en LIBRO_HUELLA.md.
+- **Sigue: Fase 4 (jornada e incidencias).** Solicitudes (olvido de marca, permiso, horas extra) con
+  aprobación segregada, correcciones por capas sobre el libro, cálculo de faltas y retardos
+  acumulados, y el consentimiento digital firmado por el propio trabajador.
