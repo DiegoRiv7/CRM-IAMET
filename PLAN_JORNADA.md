@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-12 · **Estado:** Fase 1 HECHA, diseño completo del interior HECHO, Fase 2 (núcleo RH) 2/3 desplegada en pruebas (https://timesure.82-223-44-29.nip.io); sigue cerrar Fase 2 y arrancar Fase 3 (libro de evidencia y marcación)
+**Fecha:** 2026-10-13 · **Estado:** Fases 1 y 2 hechas (núcleo RH y Administración en pruebas); Fase 3 arrancada: el libro de evidencia encadenado está construido, verificado y desplegado (https://timesure.82-223-44-29.nip.io); sigue la marcación real sobre el libro
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -479,17 +479,31 @@ ambos en pruebas. Todo lo que se configura queda con vigencia y con quién lo ca
   de centro a los datos reales de `rh`; revisión en móvil de Administración; consentimiento digital
   del trabajador (firma desde su cuenta o el quiosco) entra junto con la marcación en la Fase 3.
 
-## 8. Fase final — Endurecimiento del servidor (ANTES de salir a producción con TimeSure)
-Plan de la auditoría del 2026-09-29, pospuesto por decisión del usuario hasta terminar el producto:
-SSH solo con llave (apagar contraseña y root por contraseña; confirmar primero quién entra con
-contraseña), reinicio para aplicar kernel y parches de seguridad, TLS 1.2+ en nginx.conf, HSTS y
-cabeceras en todos los vhosts, nginx sin versión, `/admin` y `/_admin/` restringidos por IP, límite
-de peticiones en login y API de todos los sitios, respaldos fuera del servidor (bucket WORM, el
-mismo de la custodia de TimeSure), retirar vhosts/certificados de dominios muertos (nethive),
-monitoreo y avisos de caída. Ninguno cambia la arquitectura; son horas de mantenimiento.
+## 5e. Fase 3 — Libro de evidencia (1/3 HECHO 2026-10-13, commit 28dd1af)
 
-## 7. Principios de trabajo
-Primero el libro y su verificador, con pruebas de sabotaje y de concurrencia; nada de pantallas
-hasta que eso pase. Reglas regulatorias como parámetros con vigencia. Todo en `pruebas`; merge a
-producción solo con orden explícita. El otro agente puede estar en `pruebas`: commits solo de
-archivos propios.
+El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que sigue es la marcación.
+- **`rh_libro`**, una sola bitácora de solo inserción por empresa: `seq` consecutivo sin huecos,
+  `uuid`, `tipo`, `trabajador`, los dos sellos (`ts_captura` del dispositivo y `ts_servidor`),
+  `actor`, `origen`, `contexto`, `datos`, `ref_seq`, `estado`, `hash_prev`, `hash`, `version_hash`.
+- **Huella**: SHA-256 sobre los campos en orden fijo, con serialización canónica versionada `ts-1`
+  (claves ordenadas, sin espacios, UTF-8, fechas UTC ISO-8601 con milisegundos, decimales como
+  texto) y el separador escapado para que dos juegos de campos distintos no den la misma cadena.
+  Documentada en `timesure/docs/LIBRO_HUELLA.md` con ejemplo reproducible, para que un verificador
+  externo la rehaga sin ver nuestro código.
+- **Inserción serializada**: candado en `rh_libro_cabeza` (`SELECT ... FOR UPDATE`) + la última
+  entrada real como fuente de verdad + restricción única `(empresa, seq)` + reintentos. Ni con un
+  motor sin bloqueo de filas se bifurca la cadena. Probado con 12 hilos escribiendo a la vez.
+- **Dos sellos**: si el reloj del dispositivo se aparta más del umbral (política `desfase_reloj`,
+  5 min de fábrica), la entrada queda en `excepcion` y la hora capturada se conserva: nunca se
+  "corrige".
+- **Verificador**: `manage.py verificar_libro` señala huecos, huellas alteradas y eslabones rotos,
+  y devuelve código 1. Probado en vivo alterando una fila a mano en la base.
+- **Inmutabilidad real**: `rh_libro` con grants SELECT+INSERT; UPDATE y DELETE rechazados por MySQL
+  (comprobado en el servidor). `rh_libro_cabeza` sí tiene UPDATE a propósito y alterarla no permite
+  bifurcar nada.
+- **Ya entra al libro**: cada cambio de configuración de Administración y cada consentimiento.
+- 25 pruebas nuevas (64 en total), entre ellas cuatro de sabotaje (alterar contenido, alterar hora,
+  borrar una fila, borrar y reescribir el eslabón para taparlo) y una de concurrencia.
+- **Sigue (Fase 3, 2/3 y 3/3):** la marcación real (entrada/pausa/salida desde la píldora sobre el
+  libro), el motor de validación por perfil (canal, ubicación, identidad), la PWA offline, el
+  quiosco con PIN y foto, y el dispositivo registrado.
