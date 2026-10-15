@@ -603,6 +603,24 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   encimado. 240 pruebas.
   **Ya no queda ninguna pantalla con datos de muestra salvo Cuenta** (contraseña y dispositivos de
   confianza) y la vista de Jornadas para supervisor, que no tiene plantilla propia.
+- **Copia al trabajador, Cuenta y passkeys — 2026-10-15.** Tres huecos del plan, cerrados:
+  · **Copia al trabajador con QR** (`rh/constancias.py`): su periodo con la huella que lo resume y
+    un QR que lleva a una página pública que recalcula y dice si sigue cuadrando. No muestra nombre
+    ni horas. Es lo que protege al trabajador incluso del que administra el sistema.
+  · **Expediente**: lleva carátula HTML imprimible. Sigue sin motor de PDF en el servidor, a
+    propósito: lo que vale como prueba son los CSV.
+  · **Cuenta**: nombre, teléfono, cambiar contraseña, cerrar otras sesiones y su actividad en el
+    libro. Se fueron los campos que no guardaban nada.
+  · **Passkeys FUERA**: la opción «identidad reforzada» prometía una llave en el dispositivo que
+    nunca se implementó, y venía puesta de fábrica en los perfiles Campo y Remoto. Se quita hasta
+    que exista. Queda como «bajo demanda».
+  Dos defectos encontrados: los avisos (`messages`) sólo se pintaban dentro de Administración, así
+  que todo lo que decían Incidencias, Reportes, Evidencia y Cuenta se escribía y nadie lo veía; y
+  tres comentarios de plantilla se imprimían en la página ({# #} en Django es de una línea).
+  263 pruebas.
+- **Del plan, lo que queda sin hacer a propósito:** depósito externo WORM (la constancia del cierre
+  cubre la manipulación; el desastre es respaldo y va en el endurecimiento), expediente en PDF
+  (el ZIP de CSV es mejor prueba), passkeys, NOM-151 y conectores de nómina (bajo demanda).
 - **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
   por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
   final.
