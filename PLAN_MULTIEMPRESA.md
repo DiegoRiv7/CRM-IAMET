@@ -402,7 +402,16 @@ empresas— se resuelve con un job que recorre las bases.
   dejó pasar ninguna tabla de la app). Nota de harness: con `DJANGO_DEBUG=False`
   la cookie es `Secure` y curl no la reenvía por HTTP → el home vuelve al login;
   en el server real va con HTTPS (gotcha ya conocido de la Fase 3).
-- **6.1 Blindaje** — cierra las fugas del mapeo del 2026-10-15: hilos sin
+- **6.1 Blindaje** — ✅ HECHA 2026-10-15, verificada en server con 2 empresas
+  (commit 1ef5d069; `tenants/runtime.py`, `tenants/storage.py`, `tenants/views.py`
+  + parches en app; 17 pruebas). Resultado en vivo (`f6smoke` vs `f6b`): cada
+  host ve su login y desconocido → 404; `/media/` sin login → 302 y `../` → 404;
+  secreto SSO de A en host B → 403; token de A en B → rechazado (firma de otra
+  empresa), en A → sesión, reutilizado → usado; sesiones por BD (A=3, B=0);
+  control con 3 tablas. *Pendiente antes de PROD:* los webhooks de Bitrix ya no
+  tienen default en el código → confirmar que el `.env` de producción define
+  `BITRIX_PROJECTS_WEBHOOK_URL` y `BITRIX_DISK_UPLOAD_WEBHOOK_URL` (pruebas sí).
+  Lo que cerró — las fugas del mapeo del 2026-10-15: hilos sin
   tenant (`views_mail.py:605-614`, `views_iamet.py:3901` → `bind_tenant`); token
   SSO sin empresa (`views_portal_sso.py:79` → firmar el slug y verificarlo contra
   el tenant resuelto); `MAIL_ENCRYPTION_KEY` / `PORTAL_SSO_SECRET` por tenant
