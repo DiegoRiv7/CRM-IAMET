@@ -441,10 +441,24 @@ empresas— se resuelve con un job que recorre las bases.
   del registro sin tocar la base. `docker-entrypoint.sh` ya no migra ni crea
   superusuario con `TENANT_MODE=1`. Secretos por empresa en
   `$EMPRESAS_DIR/.secretos.<slug>` (600), reusados entre corridas.
-  **Falta 6.3b (portal):** elegir la empresa **antes** de autenticar y leer el
-  secreto del SSO desde control, para eliminar el fan-out de la contraseña a
-  todas las instancias (`deploy/portal/portal.py:298-311`), que con una sola app
-  ya no tiene sentido. Hecho cuando: alta < 15 s y login por hostname.
+  ✅ **6.3b HECHA** (commit 3d0c0c45): se acabó el fan-out de la contraseña. El
+  portal ya no habla con "instancias" ni lee `.env.<slug>`: usa la **API de
+  control** (`tenants/control_api.py`, protegida por `CONTROL_API_TOKEN`, que el
+  middleware deja pasar sin resolver empresa igual que `/healthz/`):
+  `/control/empresas/` (catálogo sin secretos), `/control/validar/` (autentica
+  **dentro del contexto de ESA empresa** y firma el token con SU secreto, con el
+  slug adentro) y `/control/reset/`. En `/entrar` la empresa se elige **antes**
+  de pedir la contraseña (selector, o `?empresa=` si vienes de su CRM).
+  *Verificado en server:* catálogo OK; sin token / token malo → 403; empresa
+  inexistente → 404; contraseña mala → `{"ok": false}`; **round-trip**: token de
+  `f6d` emitido por control → canjeado en el host de `f6d` → `302 /app/home/`, y
+  **ese mismo token en el host de `f6c` → rechazado**.
+  ✅ **6.3c HECHA** (commit 489d9daf): base **plantilla** ya migrada
+  (`tenant_plantilla`, Tenant en memoria → no entra al registro). El alta la
+  clona en vez de correr 221 migraciones. *Medido en server:* plantilla 42 s una
+  sola vez (176 tablas) y **alta de 49 s → 11 s**, con `migrate` final como red
+  de seguridad si la plantilla se atrasa.
+  **Criterio cumplido: alta 11 s (< 15 s) y login por hostname.**
   *Verificado en server 2026-10-15:* alta real de una tercera empresa (`f6c`) en
   **49 s** y **0 contenedores nuevos**; las TRES empresas responden su propio
   login por hostname desde **un solo proceso** (`IAMET · Smoke Fase 6`,
