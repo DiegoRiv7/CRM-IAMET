@@ -20,6 +20,15 @@ Urgencia: tiempos mínimos. **Total: 5 días hábiles** (2 + 1.5 + 1 + 0.5).
 
 ## 2. Arquitectura decidida
 
+> **ACTUALIZACIÓN 2026-10-15 (decisión del usuario):** el modelo "una instancia
+> por empresa" se REEMPLAZA por **multitenant real tipo bridge** — una sola app
+> atiende a todas las empresas, cada una con SU base de datos, resuelta por el
+> hostname en cada request. Motivo: levantar un contenedor por registro cuesta
+> ~650 MB (caben 4-5 empresas) y hace imposible el self-serve y las demos sin
+> autorización. Los datos NO se mueven (ya hay una BD por empresa); cambia solo
+> la capa de conexión. Ver **§Fase 6**. Lo que sigue en esta sección es la
+> arquitectura anterior, que se conserva como historia.
+
 **Una instancia por empresa** (mismo código, misma imagen, base de datos y
 volúmenes propios). No es multi-tenant por columna ni por router de BD.
 
@@ -324,6 +333,87 @@ en el merge.
 
 **Siguiente (orden acordado):** revisión del usuario de la demo completa → "CRM lite" para
 clientes (quitar IA, Mi día, empleado del mes, etc.; se define con el usuario) → merge.
+
+### Fase 6 — Multitenant real (bridge): una app, una BD por empresa — 🔄 EN CURSO desde 2026-10-15
+
+**Decisión (usuario, 2026-10-15).** Reemplaza "una instancia por empresa". Una
+sola app (`TENANT_MODE=1`, línea `producto`) atiende a N empresas; cada request
+resuelve su empresa por el **hostname** y se conecta a SU base (`crm_<slug>`,
+usuario `u_<slug>` con GRANT solo sobre ella). IAMET producción y pruebas siguen
+en modo clásico (`TENANT_MODE` apagado): mismo código, **cero cambio** de
+comportamiento. Los datos no se mueven: ya existe una BD por empresa; cambia
+solo la capa de conexión.
+
+**Por qué bridge y no pool (columna `empresa` en cada tabla).** 146 modelos,
+54k líneas de vistas, 34 SQL crudos: un filtro olvidado = fuga de datos y meses
+de trabajo. En bridge la empresa A no puede ver la base de B *por construcción*
+(router + GRANT de MySQL). Lo único que se pierde —consultas cruzadas entre
+empresas— se resuelve con un job que recorre las bases.
+
+**Diseño.**
+- `tenants/` (app nueva; solo se instala con `TENANT_MODE=1`):
+  - `Tenant` / `TenantHost` en la BD de **control** (`crm_control`, usuario
+    `u_control`, variables `CONTROL_DB_*`). Es el único mapa hostname → base;
+    reemplaza a `empresas.yml` + `.env.<slug>` como fuente de verdad.
+  - `context.py`: contextvar del tenant actual + `tenant_context()` +
+    `bind_tenant()` para hilos (threading no hereda contextvars).
+  - `router.py`: `tenants` → `control`; todo lo demás → `t_<slug>` del tenant
+    actual; **sin tenant → rechaza** (nunca `default` ni otra empresa);
+    `default` no recibe migraciones en modo tenant.
+  - `middleware.py`: resuelve por `Host` **antes** de sesiones/auth; host
+    desconocido o empresa inactiva → 404; `/healthz/` responde sin BD.
+  - `connections.py`: registra `connections.databases['t_<slug>']` en caliente.
+  - `manage.py tenant_run <slug> <comando> [args]`: única forma de operar una
+    empresa desde consola (migrate, seed_empresa, createsuperuser...).
+- `settings.py`: bloque gateado por `TENANT_MODE` (app, middleware, BD de
+  control, router, sufijos de host `TENANT_HOST_SUFFIXES`). `default` apunta a
+  control a propósito: si algo lo toca por error, truena en vez de filtrar.
+- `app/empresa.py`: caché prefijada por tenant (fuga #1 del mapeo) y sin
+  fallback a "IAMET con todo abierto" en modo tenant (fuga #3).
+- Un solo `SECRET_KEY` de app: las sesiones siguen separadas porque
+  `django_session` vive en la BD de cada empresa y la cookie es por host.
+  `MAIL_ENCRYPTION_KEY` y `PORTAL_SSO_SECRET` pasan a vivir en `Tenant` (6.1).
+
+**Sub-fases y criterio de hecho.**
+- **6.0 Cimiento** — ✅ código 2026-10-15 (app `tenants`, settings, router,
+  middleware, comando, pruebas). Pruebas locales sin cargar `app`:
+  `DJANGO_SETTINGS_MODULE=tenants.tests.settings_test python -m django test tenants`.
+  Hecho cuando: pruebas en verde **y** en el server de pruebas una empresa real
+  responde por hostname con `TENANT_MODE=1`.
+- **6.1 Blindaje** — cierra las fugas del mapeo del 2026-10-15: hilos sin
+  tenant (`views_mail.py:605-614`, `views_iamet.py:3901` → `bind_tenant`); token
+  SSO sin empresa (`views_portal_sso.py:79` → firmar el slug y verificarlo contra
+  el tenant resuelto); `MAIL_ENCRYPTION_KEY` / `PORTAL_SSO_SECRET` por tenant
+  (`views_mail.py:48,61`, `views_portal_sso.py:34`); `MEDIA_ROOT` por tenant y
+  `/media/` con autorización (`cartera_clientes/urls.py:29-33`); env leído al
+  importar → en request (`context_processors.py:11,16`,
+  `bitrix_integration.py:14-16` — y sacar del código el webhook real de IAMET);
+  `cache.set('asist_xlsx_…')` con prefijo de tenant; OCR (`services_financiero.py:451`)
+  por tenant o en cola. Hecho cuando: suite de aislamiento con 2 tenants en verde.
+- **6.2 Workers** — `sincronizar_correo` y el scheduler recorren los tenants con
+  `tenant_context` + `using(alias)` y la llave de cada uno. Hecho cuando: el
+  correo de 2 empresas sincroniza desde UN solo proceso.
+- **6.3 Alta sin contenedor** — `nueva_empresa.sh` solo hace: BD + usuario +
+  GRANT, `tenant_run <slug> migrate`, `seed_empresa`, alta en control (+ hosts).
+  Sin puerto, sin vhost por empresa (uno comodín). Portal: la empresa se elige
+  **antes** de autenticar (se elimina el fan-out de la contraseña a todas las
+  instancias). Hecho cuando: alta < 15 s y login por hostname.
+- **6.4 Migración y cierre** — registrar en control las empresas existentes
+  (sus datos no se mueven), suite de aislamiento completa (vistas, media, SSO,
+  hilos, caché), apagar los contenedores por empresa, `deploy_all.sh` migra por
+  tenant. Hecho cuando: todas sirven desde la app compartida con la suite en verde.
+
+**Riesgos → cobertura.** Caché de proceso → prefijo por tenant (6.0). Hilos →
+`bind_tenant` (6.1). SSO → slug firmado (6.1). Media → ruta por tenant +
+autorización (6.1). Resolución fallida → 404/500, nunca otra empresa (6.0).
+Vecino ruidoso (OCR, IA) → límites/colas (6.1+). Secretos en BD de control →
+usuario `u_control` solo con acceso a `crm_control`; cifrado en reposo queda
+anotado para después de la firma.
+
+**Reglas.** Con `TENANT_MODE` apagado nada cambia. Todo nace en `pruebas`;
+`principal` y `producto` solo con orden explícita del usuario.
+
+---
 
 ### Después de la firma (sin tiempo asignado)
 

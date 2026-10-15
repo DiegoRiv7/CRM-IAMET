@@ -1,11 +1,17 @@
 """
 MULTIEMPRESA — helpers de la empresa dueña de esta instancia.
 
-Cada empresa corre en su propia base de datos (ver PLAN_MULTIEMPRESA.md), así
-que aquí no hay "tenant" por request: solo un singleton `EmpresaConfig` y los
-catálogos `OpcionCatalogo`, cacheados en memoria del proceso por unos segundos
-para no pegarle a la BD en cada request (gunicorn gthread → cache por worker;
-por eso el TTL es corto y además se invalida al guardar desde este proceso).
+Cada empresa tiene su propia base de datos (ver PLAN_MULTIEMPRESA.md). Dentro
+de esa base hay un singleton `EmpresaConfig` y los catálogos `OpcionCatalogo`,
+cacheados en memoria del proceso por unos segundos para no pegarle a la BD en
+cada request (gunicorn gthread → cache por worker; TTL corto + invalidación al
+guardar).
+
+MULTITENANT (bridge, Fase 6): un mismo proceso puede atender a VARIAS empresas,
+así que cada llave de la caché lleva el prefijo del tenant actual
+(tenants.context). Sin ese prefijo, el primer request sembraría el nombre, logo
+y módulos de UNA empresa y los demás tenants del worker los verían. En modo
+clásico (TENANT_MODE apagado, IAMET) no hay tenant y las llaves van sin prefijo.
 
 API pública (importar desde aquí, no tocar los modelos directo):
     empresa_config()            → EmpresaConfig (singleton)
@@ -24,27 +30,53 @@ import logging
 import time
 from functools import wraps
 
+from django.conf import settings
 from django.db.utils import OperationalError, ProgrammingError
 from django.http import Http404, JsonResponse
 
 logger = logging.getLogger(__name__)
 
 _TTL = 30  # segundos
-_cache = {}  # clave → (expira, valor)
+_cache = {}  # clave (con prefijo del tenant) → (expira, valor)
+
+
+def _tenant_actual():
+    """Tenant del request/comando actual; None en modo clásico (IAMET)."""
+    try:
+        from tenants.context import get_current_tenant
+        return get_current_tenant()
+    except Exception:
+        return None
+
+
+def _ns(clave):
+    """Prefija la llave con el alias del tenant actual (bridge). Sin tenant,
+    la llave va tal cual: modo clásico, una sola empresa por proceso."""
+    t = _tenant_actual()
+    return f'{t.db_alias}|{clave}' if t is not None else clave
 
 
 def _get(clave, loader):
+    k = _ns(clave)
     ahora = time.monotonic()
-    hit = _cache.get(clave)
+    hit = _cache.get(k)
     if hit and hit[0] > ahora:
         return hit[1]
     valor = loader()
-    _cache[clave] = (ahora + _TTL, valor)
+    _cache[k] = (ahora + _TTL, valor)
     return valor
 
 
 def invalidar_cache():
-    _cache.clear()
+    """Invalida SOLO las llaves del tenant actual; sin tenant (modo clásico),
+    todas. Así un guardado en la empresa A no tira la caché de B."""
+    t = _tenant_actual()
+    if t is None:
+        _cache.clear()
+        return
+    pref = f'{t.db_alias}|'
+    for k in [k for k in _cache if k.startswith(pref)]:
+        _cache.pop(k, None)
 
 
 # ── Empresa ─────────────────────────────────────────────────────────────
@@ -63,6 +95,11 @@ def empresa_config():
         try:
             return EmpresaConfig.get_singleton()
         except (OperationalError, ProgrammingError):
+            if getattr(settings, 'TENANT_MODE', False):
+                # Bridge: NUNCA caer a "IAMET con todos los módulos abiertos"
+                # en la pantalla de otra empresa. Una base sin migrar es un
+                # error de operación y debe verse como tal.
+                raise
             logger.warning('EmpresaConfig no disponible (¿migración 0224 pendiente?)')
             return _config_fallback()
     return _get('empresa', loader)

@@ -189,6 +189,49 @@ else:
         }
     }
 
+# ══════════════════════════════════════════════════════════════════════
+# MULTITENANT (modelo bridge) — Fase 6 de PLAN_MULTIEMPRESA.md
+# TENANT_MODE=1 → UNA sola app atiende a muchas empresas, cada una con SU base
+# (crm_<slug>, usuario u_<slug>), resuelta por el hostname en cada request.
+# Apagado (IAMET producción y pruebas): nada de esto existe y el sistema es
+# exactamente el de siempre (una sola BD `default`).
+# ══════════════════════════════════════════════════════════════════════
+TENANT_MODE = os.environ.get('TENANT_MODE', '0') == '1'
+if TENANT_MODE:
+    INSTALLED_APPS.append('tenants')
+    # Antes de SessionMiddleware/AuthenticationMiddleware: ambos pegan a la BD
+    # de la empresa, así que la empresa tiene que estar resuelta antes.
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.contrib.sessions.middleware.SessionMiddleware'),
+        'tenants.middleware.TenantMiddleware',
+    )
+    # BD de CONTROL: solo el registro de empresas (tablas tenants_*), con
+    # credenciales propias (usuario con permisos solo sobre crm_control).
+    _control = {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('CONTROL_DB_NAME', 'crm_control'),
+        'USER': os.environ.get('CONTROL_DB_USER', 'u_control'),
+        'PASSWORD': os.environ.get('CONTROL_DB_PASSWORD', ''),
+        'HOST': os.environ.get('CONTROL_DB_HOST', os.environ.get('DB_HOST', 'crm-mysql')),
+        'PORT': os.environ.get('CONTROL_DB_PORT', os.environ.get('DB_PORT', '3306')),
+        'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+    }
+    # `default` apunta a control A PROPÓSITO: el router nunca lo usa para la app
+    # (sin tenant → rechaza) y, si algo lo tocara por error, fallaría ruidosamente
+    # (control no tiene las tablas de la app) en vez de filtrar datos de alguien.
+    DATABASES = {'default': dict(_control), 'control': _control}
+    DATABASE_ROUTERS = ['tenants.router.TenantRouter']
+    # Hosts de las empresas: sufijos comodín (ALLOWED_HOSTS acepta ".dominio").
+    # El gate real es el registro de empresas (TenantMiddleware → 404).
+    _sufijos = [s.strip() for s in os.environ.get(
+        'TENANT_HOST_SUFFIXES', '.82-223-44-29.nip.io,.crm.iamet.mx'
+    ).split(',') if s.strip()]
+    ALLOWED_HOSTS = list(ALLOWED_HOSTS) + _sufijos
+    CSRF_TRUSTED_ORIGINS = list(CSRF_TRUSTED_ORIGINS) + [
+        f'{esq}://*{s}' if s.startswith('.') else f'{esq}://{s}'
+        for s in _sufijos for esq in ('https', 'http')
+    ]
+
 
 
 
