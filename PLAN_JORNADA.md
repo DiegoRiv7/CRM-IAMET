@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-14 · **Estado:** Fases 1, 2 y 3 hechas y desplegadas en pruebas (https://timesure.82-223-44-29.nip.io); empresa de demostración «piloto» lista para enseñarla. Sigue la Fase 4 (jornada e incidencias)
+**Fecha:** 2026-10-14 · **Estado:** Fases 1, 2, 3 y 4 hechas y desplegadas en pruebas (https://timesure.82-223-44-29.nip.io); empresa de demostración «piloto» lista para enseñarla. Siguen reportes con datos reales y el piloto en la oficina antes de que termine octubre
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -558,6 +558,23 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   por ley: la STPS aún no publica las disposiciones técnicas. Recomendado estandarizar en un equipo
   multibiométrico (rostro + huella + tarjeta, ~3,500 MXN) porque los lectores de solo huella fallan
   con manos de planta y obra.
-- **Sigue: Fase 4 (jornada e incidencias).** Solicitudes (olvido de marca, permiso, horas extra) con
-  aprobación segregada, correcciones por capas sobre el libro, cálculo de faltas y retardos
-  acumulados, y el consentimiento digital firmado por el propio trabajador.
+- **Fase 4 (jornada e incidencias) — HECHA 2026-10-14, desplegada en pruebas.**
+  `rh/incidencias.py`: pedir, resolver, cancelar. Cada paso entra al libro antes de que nadie lo
+  mire. Al aprobar algo que cambia el cálculo del día entra una entrada `correccion` que apunta a la
+  marca original (`reemplaza_seq`); **la marca original nunca se edita ni se borra** y el motor lee
+  las dos. Límite duro que ningún rol levanta: quien pide no aprueba, y nadie resuelve una solicitud
+  sobre su propia jornada, ni el administrador de la empresa.
+  Pantallas: `/s/incidencias/` (bandeja con el detalle de la solicitud al lado de lo que dice el
+  libro de ese día) y `/s/mi-jornada/` (hoy / semana / catorcena, línea del día, cada marca con su
+  huella y su origen, y las solicitudes propias). Los botones de justificar de la píldora ya crean
+  solicitudes de verdad (`POST /api/justificar/`): llegada tarde, salida anticipada y reponer la
+  salida de un día que quedó abierto, con evidencia opcional. 167 pruebas.
+  Tres defectos que salió a buscar la propia construcción: olvidar la salida secuestraba el día
+  siguiente (la jornada abierta de ayer sólo absorbe marcas hasta su tope); se podía pedir reponer
+  una marca que ya existía, duplicando la jornada; y una cuenta sin trabajador ligado veía una
+  píldora de marcación que no le tocaba.
+- **Sigue:** Reportes con datos reales (la sección sigue con datos de ejemplo), consentimiento
+  digital firmado por el propio trabajador desde su pantalla, invitación por correo (falta la llave
+  de Resend en pruebas) y el endurecimiento del servidor como fase final.
+- **Antes del piloto de octubre:** montar `iamet-piloto` como empresa aparte, para que el libro real
+  de IAMET arranque limpio el 01 de enero.
