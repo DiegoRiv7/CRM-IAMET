@@ -1,0 +1,55 @@
+# CRM COMPARTIDO (multitenant bridge) — UNA app para TODAS las empresas.
+#
+# Reemplaza a docker-compose.tenant.yml: ya no hay un stack por empresa. Cada
+# request resuelve su empresa por el Host y se conecta a SU base (crm_<slug>);
+# el registro vive en la BD de control. Alta de empresa = BD + GRANT + migrar +
+# registrar (segundos), sin contenedores nuevos.
+#
+#   docker compose -p crm-bridge --env-file .env.bridge -f docker-compose.bridge.yml up -d
+#
+# media: un solo volumen; TenantMediaStorage separa por carpeta (media/<slug>/).
+services:
+  web:
+    image: ${IMAGEN}
+    container_name: crm-bridge-web
+    restart: unless-stopped
+    env_file: ${ENV_FILE}
+    ports:
+      - "${BIND:-127.0.0.1}:${PUERTO}:8000"
+    volumes:
+      - media:/app/media
+    networks:
+      - crm_tenants
+    # Sin migrate ni createsuperuser al arrancar: en modo tenant las migraciones
+    # van por empresa (manage.py tenant_run <slug> migrate, desde alta_empresa.sh
+    # y deploy_all_bridge.sh). Solo estáticos + gunicorn.
+    entrypoint: ["/bin/sh", "-c", "python manage.py collectstatic --noinput --verbosity=0 && exec \"$$@\"", "--"]
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 8 --worker-class gthread --timeout 90 --max-requests 1000 --max-requests-jitter 200
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz/',timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  mailsync:
+    image: ${IMAGEN}
+    container_name: crm-bridge-mailsync
+    restart: unless-stopped
+    env_file: ${ENV_FILE}
+    volumes:
+      - media:/app/media
+    networks:
+      - crm_tenants
+    # Un solo worker para todas las empresas: recorre el registro de control y
+    # sincroniza cada una en su contexto (ver sincronizar_correo).
+    entrypoint: python manage.py sincronizar_correo --loop 30
+    depends_on:
+      - web
+
+volumes:
+  media:
+
+networks:
+  crm_tenants:
+    external: true

@@ -48,9 +48,62 @@ compose_core() {
   docker compose -p crm-core --env-file "$CORE_ENV" -f "$DEPLOY_DIR/docker-compose.core.yml" "$@"
 }
 
-compose_tenant() {  # compose_tenant <slug> <args...>
+compose_tenant() {  # compose_tenant <slug> <args...>  (modelo viejo: un stack por empresa)
   local slug="$1"; shift
   docker compose -p "crm-$slug" --env-file "$EMPRESAS_DIR/.env.$slug" -f "$DEPLOY_DIR/docker-compose.tenant.yml" "$@"
+}
+
+# ── Multitenant bridge (Fase 6): UNA app para todas las empresas ──────────
+BRIDGE_ENV="$EMPRESAS_DIR/.env.bridge"
+CONTROL_ENV="$EMPRESAS_DIR/.env.control"
+BRIDGE_PUERTO="${BRIDGE_PUERTO:-8009}"   # 8000 prod, 8001 pruebas, 8010+ tenants viejos
+
+compose_bridge() {
+  docker compose -p crm-bridge --env-file "$BRIDGE_ENV" -f "$DEPLOY_DIR/docker-compose.bridge.yml" "$@"
+}
+
+# Ejecuta manage.py DENTRO del contenedor compartido (o, si no está arriba, en
+# un contenedor efímero con el mismo .env). Así el alta funciona aun antes del
+# primer `up`.
+bridge_manage() {
+  if docker ps --format '{{.Names}}' | grep -qx crm-bridge-web; then
+    docker exec crm-bridge-web python manage.py "$@"
+  else
+    docker run --rm --network crm_tenants --env-file "$BRIDGE_ENV" \
+      --entrypoint python "$(grep -E '^IMAGEN=' "$BRIDGE_ENV" | cut -d= -f2-)" manage.py "$@"
+  fi
+}
+
+# Crea base + usuario con permisos SOLO sobre esa base. Idempotente.
+crear_bd_empresa() {  # crear_bd_empresa <slug> <password>
+  local slug="$1" pw="$2"
+  mysql_root <<SQL
+CREATE DATABASE IF NOT EXISTS \`crm_$slug\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE USER IF NOT EXISTS 'u_$slug'@'%' IDENTIFIED BY '$pw';
+ALTER USER 'u_$slug'@'%' IDENTIFIED BY '$pw';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'u_$slug'@'%';
+GRANT ALL PRIVILEGES ON \`crm_$slug\`.* TO 'u_$slug'@'%';
+FLUSH PRIVILEGES;
+SQL
+}
+
+# Secretos de una empresa: se guardan en $EMPRESAS_DIR/.secretos.<slug> (chmod 600)
+# para poder re-correr el alta sin cambiarlos. Nunca viajan por argv.
+cargar_o_crear_secretos() {  # cargar_o_crear_secretos <slug>  → exporta TENANT_DB_PASSWORD/SSO/MAIL
+  local slug="$1" f="$EMPRESAS_DIR/.secretos.$slug"
+  if [[ -f "$f" ]]; then
+    # shellcheck disable=SC1090
+    set -a; source "$f"; set +a
+  else
+    TENANT_DB_PASSWORD="$(aleatorio 16)"
+    TENANT_SSO_SECRET="$(aleatorio 32)"
+    TENANT_MAIL_KEY="$(bridge_manage shell -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())' 2>/dev/null | tail -1)"
+    [[ -n "$TENANT_MAIL_KEY" ]] || die "no pude generar la llave de correo (¿imagen disponible?)"
+    umask 077
+    printf 'TENANT_DB_PASSWORD=%s\nTENANT_SSO_SECRET=%s\nTENANT_MAIL_KEY=%s\n' \
+      "$TENANT_DB_PASSWORD" "$TENANT_SSO_SECRET" "$TENANT_MAIL_KEY" > "$f"
+    export TENANT_DB_PASSWORD TENANT_SSO_SECRET TENANT_MAIL_KEY
+  fi
 }
 
 asegurar_core() {

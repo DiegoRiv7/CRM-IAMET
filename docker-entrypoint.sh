@@ -18,9 +18,19 @@ if [ "$DB_HOST" ]; then
     log "✅ Base de datos disponible."
 fi
 
-# Ejecutar migraciones
-log "🔄 Ejecutando migraciones de base de datos..."
-python manage.py migrate --noinput
+# MULTITENANT (bridge): con TENANT_MODE=1 NO hay una "base de la instancia".
+# `default` apunta a la BD de control y las tablas de la app viven en la base de
+# cada empresa, así que migrar y crear superusuarios aquí sería un error (o
+# escribiría en la base equivocada). Eso lo hacen, por empresa:
+#   manage.py tenant_run <slug> migrate      (scripts/alta_empresa.sh, deploy_all_bridge.sh)
+#   manage.py migrate --database control     (scripts/instalar_bridge.sh)
+if [ "$TENANT_MODE" = "1" ]; then
+    log "🏢 Modo multitenant: migraciones y superusuario se manejan por empresa (omitidos aquí)"
+else
+    # Ejecutar migraciones
+    log "🔄 Ejecutando migraciones de base de datos..."
+    python manage.py migrate --noinput
+fi
 
 # Recolectar archivos estáticos (IMPORTANTE para el favicon)
 log "📁 Recolectando archivos estáticos..."
@@ -40,8 +50,8 @@ else
     log "⚠️  favicon.ico no encontrado en staticfiles"
 fi
 
-# Crear superusuario si no existe (opcional)
-if [ "$DJANGO_SUPERUSER_EMAIL" ]; then
+# Crear superusuario si no existe (opcional) — nunca en modo multitenant
+if [ "$TENANT_MODE" != "1" ] && [ "$DJANGO_SUPERUSER_EMAIL" ]; then
     log "👤 Creando superusuario..."
     python manage.py shell -c "
 from django.contrib.auth import get_user_model
