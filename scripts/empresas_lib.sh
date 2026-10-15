@@ -65,11 +65,22 @@ compose_bridge() {
 # Ejecuta manage.py DENTRO del contenedor compartido (o, si no está arriba, en
 # un contenedor efímero con el mismo .env). Así el alta funciona aun antes del
 # primer `up`.
+#
+# Reenvía los secretos de empresa que estén exportados (TENANT_*) sin pasarlos
+# por argv. BRIDGE_RUN_OPTS permite opciones extra de docker (p. ej. montar un
+# árbol de código al probar: BRIDGE_RUN_OPTS="-v /ruta:/app").
 bridge_manage() {
+  local -a sec=()
+  local v
+  for v in TENANT_DB_PASSWORD TENANT_SSO_SECRET TENANT_MAIL_KEY; do
+    [[ -n "${!v:-}" ]] && sec+=(-e "$v=${!v}")
+  done
+  # shellcheck disable=SC2206
+  local -a extra=(${BRIDGE_RUN_OPTS:-})
   if docker ps --format '{{.Names}}' | grep -qx crm-bridge-web; then
-    docker exec crm-bridge-web python manage.py "$@"
+    docker exec "${sec[@]}" crm-bridge-web python manage.py "$@"
   else
-    docker run --rm --network crm_tenants --env-file "$BRIDGE_ENV" \
+    docker run --rm --network crm_tenants --env-file "$BRIDGE_ENV" "${sec[@]}" "${extra[@]}" \
       --entrypoint python "$(grep -E '^IMAGEN=' "$BRIDGE_ENV" | cut -d= -f2-)" manage.py "$@"
   fi
 }
@@ -90,7 +101,10 @@ SQL
 # Secretos de una empresa: se guardan en $EMPRESAS_DIR/.secretos.<slug> (chmod 600)
 # para poder re-correr el alta sin cambiarlos. Nunca viajan por argv.
 cargar_o_crear_secretos() {  # cargar_o_crear_secretos <slug>  → exporta TENANT_DB_PASSWORD/SSO/MAIL
-  local slug="$1" f="$EMPRESAS_DIR/.secretos.$slug"
+  # OJO: `local a="$1" b="...$a"` NO sirve — bash expande los argumentos del
+  # builtin antes de ejecutarlo, así que $a todavía no existe (y con set -u, truena).
+  local slug="$1"
+  local f="$EMPRESAS_DIR/.secretos.$slug"
   if [[ -f "$f" ]]; then
     # shellcheck disable=SC1090
     set -a; source "$f"; set +a

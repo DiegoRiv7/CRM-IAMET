@@ -65,15 +65,8 @@ log "Registrando la empresa en control (hostname → su base)"
 ARGS_ALTA=("$SLUG" --host "$NIP")
 [[ -n "$NOMBRE" ]] && ARGS_ALTA+=(--nombre "$NOMBRE")
 [[ -n "$DOMINIO" ]] && ARGS_ALTA+=(--host "$DOMINIO")
-if docker ps --format '{{.Names}}' | grep -qx crm-bridge-web; then
-  docker exec -e TENANT_DB_PASSWORD="$TENANT_DB_PASSWORD" -e TENANT_SSO_SECRET="$TENANT_SSO_SECRET" \
-    -e TENANT_MAIL_KEY="$TENANT_MAIL_KEY" crm-bridge-web python manage.py tenant_alta "${ARGS_ALTA[@]}" | sed 's/^/  /'
-else
-  docker run --rm --network crm_tenants --env-file "$BRIDGE_ENV" \
-    -e TENANT_DB_PASSWORD="$TENANT_DB_PASSWORD" -e TENANT_SSO_SECRET="$TENANT_SSO_SECRET" \
-    -e TENANT_MAIL_KEY="$TENANT_MAIL_KEY" --entrypoint python \
-    "$(grep -E '^IMAGEN=' "$BRIDGE_ENV" | cut -d= -f2-)" manage.py tenant_alta "${ARGS_ALTA[@]}" | sed 's/^/  /'
-fi
+# Los secretos van por entorno (bridge_manage los reenvía), nunca por argv.
+bridge_manage tenant_alta "${ARGS_ALTA[@]}" | sed 's/^/  /'
 
 # ── 4. Migrar SU base ────────────────────────────────────────────────────
 log "Migrando la base de $SLUG"

@@ -430,11 +430,21 @@ empresas— se resuelve con un job que recorre las bases.
   buzones; la sincronización IMAP real por empresa se ejercita en 6.4 con un
   buzón de verdad). `app/scheduler.py` no tiene llamadores (código muerto):
   se deja intacto.
-- **6.3 Alta sin contenedor** — `nueva_empresa.sh` solo hace: BD + usuario +
-  GRANT, `tenant_run <slug> migrate`, `seed_empresa`, alta en control (+ hosts).
-  Sin puerto, sin vhost por empresa (uno comodín). Portal: la empresa se elige
-  **antes** de autenticar (se elimina el fan-out de la contraseña a todas las
-  instancias). Hecho cuando: alta < 15 s y login por hostname.
+- **6.3 Alta sin contenedor** — ✅ **6.3a HECHA** 2026-10-15 (commit d5ef4424):
+  `scripts/alta_empresa.sh <slug> --nombre "..."` hace BD + usuario + GRANT →
+  registro en control (`tenant_alta`, secretos por entorno, nunca por argv) →
+  `tenant_run <slug> migrate` → `seed_empresa`. **Sin puerto y sin contenedores
+  nuevos.** `scripts/instalar_bridge.sh` monta la app compartida una sola vez
+  (BD de control + `.env.bridge` + `crm-bridge-web`/`crm-bridge-mailsync` +
+  **vhost comodín** `*.nip.io` / `*.crm.iamet.mx`); el vhost por empresa solo
+  existe si hay dominio propio con certificado. `tenant_baja` desactiva o borra
+  del registro sin tocar la base. `docker-entrypoint.sh` ya no migra ni crea
+  superusuario con `TENANT_MODE=1`. Secretos por empresa en
+  `$EMPRESAS_DIR/.secretos.<slug>` (600), reusados entre corridas.
+  **Falta 6.3b (portal):** elegir la empresa **antes** de autenticar y leer el
+  secreto del SSO desde control, para eliminar el fan-out de la contraseña a
+  todas las instancias (`deploy/portal/portal.py:298-311`), que con una sola app
+  ya no tiene sentido. Hecho cuando: alta < 15 s y login por hostname.
 - **6.4 Migración y cierre** — registrar en control las empresas existentes
   (sus datos no se mueven), suite de aislamiento completa (vistas, media, SSO,
   hilos, caché), apagar los contenedores por empresa, `deploy_all.sh` migra por
