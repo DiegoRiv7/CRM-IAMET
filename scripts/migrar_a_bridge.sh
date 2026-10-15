@@ -78,6 +78,19 @@ for SLUG in $SLUGS; do
   log "Registrando en control (sus datos NO se mueven: ya están en $DB_NAME)"
   bridge_manage tenant_alta "${ARGS[@]}" | sed 's/^/  /'
 
+  # ── 2b. Poner su esquema al día ──
+  # Su base la creó una imagen anterior; la app compartida corre código nuevo,
+  # así que puede faltarle alguna columna. Sus DATOS no se tocan: migrate solo
+  # aplica lo que falte (y si ya está al día, no hace nada).
+  log "Aplicando migraciones pendientes de $SLUG (sus datos no se tocan)"
+  if bridge_manage tenant_run "$SLUG" migrate --noinput >/dev/null 2>&1; then
+    PEND="$(bridge_manage tenant_run "$SLUG" showmigrations --plan 2>/dev/null | grep -c '\[ \]' || true)"
+    [[ "${PEND:-0}" == "0" ]] && ok "esquema al día" || warn "quedan $PEND migraciones pendientes"
+  else
+    warn "$SLUG: falló el migrate — NO se apaga nada de esta empresa"
+    FAIL_LIST+=("$SLUG"); continue
+  fi
+
   # ── 3. Media: del volumen propio a la carpeta <slug>/ del volumen compartido ──
   VOL_VIEJO="crm-${SLUG}_media"
   if docker volume inspect "$VOL_VIEJO" >/dev/null 2>&1; then

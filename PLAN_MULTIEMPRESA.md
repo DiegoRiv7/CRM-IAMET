@@ -473,10 +473,26 @@ empresas— se resuelve con un job que recorre las bases.
   **Gotcha de operación:** `docker exec -i` se come el stdin; en scripts que se
   mandan por `ssh 'bash -s' < script` hay que cerrarlo (`< /dev/null`) o el
   resto del script desaparece sin error.
-- **6.4 Migración y cierre** — registrar en control las empresas existentes
-  (sus datos no se mueven), suite de aislamiento completa (vistas, media, SSO,
-  hilos, caché), apagar los contenedores por empresa, `deploy_all.sh` migra por
-  tenant. Hecho cuando: todas sirven desde la app compartida con la suite en verde.
+- **6.4 Migración y cierre** — ✅ código 2026-10-15 (commit 68b8bb0b).
+  - `scripts/migrar_a_bridge.sh`: pasa una empresa del modelo viejo al
+    compartido **sin mover sus datos** (ya viven en `crm_<slug>`). Conserva sus
+    secretos **tal cual** —clave: con otra `MAIL_ENCRYPTION_KEY` dejaría de leer
+    las contraseñas de sus buzones—, aplica las migraciones que le falten (su
+    base la creó una imagen anterior), copia su media del volumen propio a
+    `media/<slug>/` del volumen compartido, verifica por hostname y **solo
+    entonces**, con `--apagar`, detiene lo viejo. Idempotente; si algo falla no
+    apaga nada.
+  - `scripts/deploy_bridge.sh`: un solo contenedor que actualizar y luego
+    migraciones de plantilla → control → cada empresa; si la app no arranca,
+    vuelve a la imagen anterior sin haber migrado nada.
+  - `scripts/bridge_status.sh`: salud, **memoria total** (una cifra para todas),
+    plantilla, tabla por empresa y aviso de contenedores viejos vivos.
+  - `tenants/tests/test_aislamiento.py`: 9 pruebas con **dos empresas a la vez**
+    sobre los caminos por los que se filtrarían datos — base y SQL crudo, caché
+    de configuración (la fuga #1), invalidación que no cruza, caché compartida,
+    secretos de correo/SSO, media con el **mismo nombre de archivo**, hilos de
+    trabajo, y dos requests en paralelo. **Total de la suite: 44.**
+  Hecho cuando: todas sirven desde la app compartida con la suite en verde.
 
 **Riesgos → cobertura.** Caché de proceso → prefijo por tenant (6.0). Hilos →
 `bind_tenant` (6.1). SSO → slug firmado (6.1). Media → ruta por tenant +
