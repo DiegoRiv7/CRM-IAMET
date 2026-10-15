@@ -445,6 +445,20 @@ empresas— se resuelve con un job que recorre las bases.
   secreto del SSO desde control, para eliminar el fan-out de la contraseña a
   todas las instancias (`deploy/portal/portal.py:298-311`), que con una sola app
   ya no tiene sentido. Hecho cuando: alta < 15 s y login por hostname.
+  *Verificado en server 2026-10-15:* alta real de una tercera empresa (`f6c`) en
+  **49 s** y **0 contenedores nuevos**; las TRES empresas responden su propio
+  login por hostname desde **un solo proceso** (`IAMET · Smoke Fase 6`,
+  `· Beta Dos`, `· Tercera Empresa SA`), host desconocido → 404, y el proceso
+  entero consume **177 MiB para las tres** (contra ~650 MB *por empresa* en el
+  modelo silo: el techo de 4-5 empresas desaparece).
+  **Pendiente 6.3c (opcional, para self-serve):** los 49 s son casi todos las
+  221 migraciones sobre una base vacía (~42 s). Clonar una base plantilla ya
+  migrada (`CREATE DATABASE` + volcado de una base vacía migrada) bajaría el
+  alta a unos segundos — es lo que hace falta para que una demo se cree sola
+  mientras el visitante espera.
+  **Gotcha de operación:** `docker exec -i` se come el stdin; en scripts que se
+  mandan por `ssh 'bash -s' < script` hay que cerrarlo (`< /dev/null`) o el
+  resto del script desaparece sin error.
 - **6.4 Migración y cierre** — registrar en control las empresas existentes
   (sus datos no se mueven), suite de aislamiento completa (vistas, media, SSO,
   hilos, caché), apagar los contenedores por empresa, `deploy_all.sh` migra por
