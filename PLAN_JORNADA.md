@@ -1,6 +1,6 @@
 # PLAN — TimeSure: Registro Electrónico de Jornada ("checadas")
 
-**Fecha:** 2026-10-14 · **Estado:** Fases 1, 2, 3 y 4 hechas y desplegadas en pruebas (https://timesure.82-223-44-29.nip.io); empresa de demostración «piloto» lista para enseñarla. Siguen reportes con datos reales y el piloto en la oficina antes de que termine octubre
+**Fecha:** 2026-10-14 · **Estado:** Fases 1 a 5 hechas y desplegadas en pruebas (https://timesure.82-223-44-29.nip.io); empresa de demostración «piloto» lista para enseñarla. Sigue el piloto en la oficina antes de que termine octubre
 **Para:** IAMET (su CRM) y el cliente nuevo (instancia multiempresa) · **Trabajo en `pruebas`, nunca prod sin orden**
 **Documento del cliente:** `~/Downloads/Registro_Electronico_Jornada_2027.pdf` (spec funcional genérica, v1.0 28/09/2026)
 
@@ -573,8 +573,18 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   siguiente (la jornada abierta de ayer sólo absorbe marcas hasta su tope); se podía pedir reponer
   una marca que ya existía, duplicando la jornada; y una cuenta sin trabajador ligado veía una
   píldora de marcación que no le tocaba.
-- **Sigue:** Reportes con datos reales (la sección sigue con datos de ejemplo), consentimiento
-  digital firmado por el propio trabajador desde su pantalla, invitación por correo (falta la llave
-  de Resend en pruebas) y el endurecimiento del servidor como fase final.
+- **Fase 5 (reportes) — HECHA 2026-10-14, desplegada en pruebas.** `rh/reportes.py` + la pantalla
+  de Reportes con datos reales. Cinco reportes por periodo y centro: jornadas (horas, retardos,
+  faltas, con detalle día por día de cada persona), horas extra (detectadas contra autorizadas),
+  incidencias (con la huella de la resolución), cumplimiento (siete reglas medidas contra los topes
+  de ley VIGENTES del periodo, leídos de ParametroLegal: 48 h en 2026, 46 en 2027, sin tocar
+  código) y el expediente de inspección (ZIP con todo lo anterior más cada marca con sus dos
+  relojes y su huella, el certificado de integridad y la receta de la huella, para que un perito
+  verifique sin este sistema). Exportación a CSV y, en las dos descargas, permiso «reportes» y
+  constancia en el libro. Carga en bloque: 5 consultas para una quincena completa, con una prueba
+  que falla si vuelven a crecer con la gente. 202 pruebas.
+- **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
+  por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
+  final.
 - **Antes del piloto de octubre:** montar `iamet-piloto` como empresa aparte, para que el libro real
   de IAMET arranque limpio el 01 de enero.
