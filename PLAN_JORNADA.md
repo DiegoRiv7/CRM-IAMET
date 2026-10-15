@@ -583,6 +583,15 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   verifique sin este sistema). Exportación a CSV y, en las dos descargas, permiso «reportes» y
   constancia en el libro. Carga en bloque: 5 consultas para una quincena completa, con una prueba
   que falla si vuelven a crecer con la gente. 202 pruebas.
+- **Biometría y amarre firmado — 2026-10-15.** Decisión confirmada: TimeSure no guarda plantillas
+  biométricas; la huella vive en el reloj y el responsable de ese dato es el patrón. Lo que vale
+  como prueba es la marca con `identidad` (huella/rostro/tarjeta) por evento, encadenada. **Ojo al
+  venderlo:** el checador SÍ guarda una plantilla —no la imagen, pero sí dato biométrico sensible—,
+  así que el cliente sigue necesitando el consentimiento expreso de su gente; lo que se dice es
+  «nuestro sistema no guarda tu huella», no «aquí nadie guarda biométricos».
+  Se cerró el único eslabón sin firmar: el amarre entre el número del reloj y el trabajador. Ligar,
+  desligar, importar y el amarre automático por número parecido entran al libro; el automático nace
+  **sin confirmar**, se señala en pantalla y sus marcas llevan `enlace: sin confirmar`. 214 pruebas.
 - **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
   por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
   final.
