@@ -421,9 +421,15 @@ empresas— se resuelve con un job que recorre las bases.
   `bitrix_integration.py:14-16` — y sacar del código el webhook real de IAMET);
   `cache.set('asist_xlsx_…')` con prefijo de tenant; OCR (`services_financiero.py:451`)
   por tenant o en cola. Hecho cuando: suite de aislamiento con 2 tenants en verde.
-- **6.2 Workers** — `sincronizar_correo` y el scheduler recorren los tenants con
-  `tenant_context` + `using(alias)` y la llave de cada uno. Hecho cuando: el
-  correo de 2 empresas sincroniza desde UN solo proceso.
+- **6.2 Workers** — ✅ HECHA 2026-10-15 (commit 45c71fba). `sincronizar_correo`
+  recorre las empresas activas de control y corre cada pasada en
+  `tenant_context` (router → su BD, llave Fernet propia) con `default`
+  repuntado para el código legado; `close_all()` entre empresas; un error en
+  una no detiene a las demás. Verificado en server: UN proceso, una pasada,
+  `[f6b]` y `[f6smoke]` recorridas sin errores (las empresas de humo no tienen
+  buzones; la sincronización IMAP real por empresa se ejercita en 6.4 con un
+  buzón de verdad). `app/scheduler.py` no tiene llamadores (código muerto):
+  se deja intacto.
 - **6.3 Alta sin contenedor** — `nueva_empresa.sh` solo hace: BD + usuario +
   GRANT, `tenant_run <slug> migrate`, `seed_empresa`, alta en control (+ hosts).
   Sin puerto, sin vhost por empresa (uno comodín). Portal: la empresa se elige
