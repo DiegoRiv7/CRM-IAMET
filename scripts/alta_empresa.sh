@@ -68,8 +68,15 @@ ARGS_ALTA=("$SLUG" --host "$NIP")
 # Los secretos van por entorno (bridge_manage los reenvía), nunca por argv.
 bridge_manage tenant_alta "${ARGS_ALTA[@]}" | sed 's/^/  /'
 
-# ── 4. Migrar SU base ────────────────────────────────────────────────────
-log "Migrando la base de $SLUG"
+# ── 4. Esquema: clonar la plantilla (segundos) o migrar desde cero ──────
+# Correr las 221 migraciones en una base vacía toma ~42 s; clonar la plantilla
+# ~2 s. El `migrate` final es la red de seguridad: si la plantilla está atrasada
+# respecto al código, aplica lo que falte (y si está al día, no hace nada).
+if [[ "$(tablas_de "crm_$SLUG")" == "0" ]] && [[ "$(tablas_de "$PLANTILLA_DB")" != "0" ]]; then
+  log "Clonando la plantilla $PLANTILLA_DB → crm_$SLUG"
+  clonar_plantilla "crm_$SLUG" && ok "esquema clonado ($(tablas_de "crm_$SLUG") tablas)"
+fi
+log "Migrando la base de $SLUG (lo que falte)"
 bridge_manage tenant_run "$SLUG" migrate --noinput 2>&1 | tail -3 | sed 's/^/  /'
 
 # ── 5. Semilla ───────────────────────────────────────────────────────────

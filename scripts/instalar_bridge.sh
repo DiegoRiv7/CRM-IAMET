@@ -83,6 +83,9 @@ ok ".env del bridge listo (puerto $PUERTO)"
 log "Migrando la BD de control (tablas del registro de empresas)"
 bridge_manage migrate --database control --noinput | sed 's/^/  /'
 
+# ── 3b. Base plantilla (hace que las altas tarden segundos) ─────────────
+asegurar_plantilla
+
 # ── 4. Contenedores compartidos ──────────────────────────────────────────
 log "Levantando crm-bridge-web y crm-bridge-mailsync"
 compose_bridge up -d --remove-orphans >/dev/null
@@ -115,4 +118,5 @@ printf '\033[1;32m══════ CRM compartido listo en %d s ════�
 echo "  Contenedores:  crm-bridge-web, crm-bridge-mailsync   (imagen $IMAGEN)"
 echo "  Puerto local:  127.0.0.1:$PUERTO (solo vía nginx)"
 echo "  Control:       crm_control (usuario u_control) · credenciales en $CONTROL_ENV"
+echo "  Plantilla:     $PLANTILLA_DB (esquema listo: las altas la clonan)"
 echo "  Alta empresa:  scripts/alta_empresa.sh <slug> --nombre \"...\"   (segundos, sin contenedores)"

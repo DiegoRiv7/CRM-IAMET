@@ -86,16 +86,20 @@ bridge_manage() {
 }
 
 # Crea base + usuario con permisos SOLO sobre esa base. Idempotente.
-crear_bd_empresa() {  # crear_bd_empresa <slug> <password>
-  local slug="$1" pw="$2"
+crear_bd_empresa_con() {  # crear_bd_empresa_con <base> <usuario> <password>
+  local base="$1" usuario="$2" pw="$3"
   mysql_root <<SQL
-CREATE DATABASE IF NOT EXISTS \`crm_$slug\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-CREATE USER IF NOT EXISTS 'u_$slug'@'%' IDENTIFIED BY '$pw';
-ALTER USER 'u_$slug'@'%' IDENTIFIED BY '$pw';
-REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'u_$slug'@'%';
-GRANT ALL PRIVILEGES ON \`crm_$slug\`.* TO 'u_$slug'@'%';
+CREATE DATABASE IF NOT EXISTS \`$base\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE USER IF NOT EXISTS '$usuario'@'%' IDENTIFIED BY '$pw';
+ALTER USER '$usuario'@'%' IDENTIFIED BY '$pw';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$usuario'@'%';
+GRANT ALL PRIVILEGES ON \`$base\`.* TO '$usuario'@'%';
 FLUSH PRIVILEGES;
 SQL
+}
+
+crear_bd_empresa() {  # crear_bd_empresa <slug> <password>
+  crear_bd_empresa_con "crm_$1" "u_$1" "$2"
 }
 
 # Secretos de una empresa: se guardan en $EMPRESAS_DIR/.secretos.<slug> (chmod 600)
@@ -118,6 +122,32 @@ cargar_o_crear_secretos() {  # cargar_o_crear_secretos <slug>  → exporta TENAN
       "$TENANT_DB_PASSWORD" "$TENANT_SSO_SECRET" "$TENANT_MAIL_KEY" > "$f"
     export TENANT_DB_PASSWORD TENANT_SSO_SECRET TENANT_MAIL_KEY
   fi
+}
+
+# ── Base PLANTILLA: esquema ya migrado que las altas clonan ──────────────
+# Correr 221 migraciones en una base vacía toma ~42 s; clonar la plantilla
+# toma ~2 s. Es lo que hace viable el alta mientras un visitante espera.
+PLANTILLA_DB="${PLANTILLA_DB:-crm_plantilla}"
+PLANTILLA_USER="${PLANTILLA_USER:-u_plantilla}"
+
+asegurar_plantilla() {  # crea/actualiza la base plantilla. Idempotente.
+  cargar_o_crear_secretos plantilla
+  log "Base plantilla $PLANTILLA_DB (esquema del CRM, sin datos)"
+  crear_bd_empresa_con "$PLANTILLA_DB" "$PLANTILLA_USER" "$TENANT_DB_PASSWORD"
+  bridge_manage tenant_plantilla --db-name "$PLANTILLA_DB" --db-user "$PLANTILLA_USER" 2>&1 | tail -2 | sed 's/^/  /'
+}
+
+# ¿Cuántas tablas tiene una base? (0 = vacía)
+tablas_de() {  # tablas_de <base>
+  mysql_root -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$1'" </dev/null
+}
+
+# Clona el esquema+estado de migraciones de la plantilla en la base de una empresa.
+clonar_plantilla() {  # clonar_plantilla <base_destino>
+  local destino="$1"
+  docker exec -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" crm-mysql \
+      mysqldump -uroot --single-transaction --routines --no-tablespaces "$PLANTILLA_DB" \
+    | docker exec -i -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" crm-mysql mysql -uroot "$destino"
 }
 
 asegurar_core() {
