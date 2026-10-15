@@ -14,29 +14,10 @@ Ejemplos:
 import argparse
 
 from django.core.management import BaseCommand, CommandError, call_command
-from django.db import connections
 
 from tenants.context import tenant_context
 from tenants.resolver import por_slug
-
-
-def apuntar_default_al_tenant(tenant):
-    """Hace que el alias `default` de ESTE proceso sea la BD del tenant.
-
-    Solo para consola (tenant_run, workers), nunca para el web. Motivo: mucho
-    código legado —migraciones con SQL crudo sobre `django.db.connection`,
-    `seed_empresa`, `sincronizar_correo`, `connection.cursor()`— asume que
-    `default` es "la base de la empresa". Bajo silo lo era; bajo bridge
-    `default` apunta a control y ese código truena (p. ej. la migración que
-    toca app_carpetaproyecto). Repuntar `default` aquí les devuelve esa premisa
-    sin reescribir 221 migraciones. El router sigue mandando el ORM a
-    `t_<slug>`, que es la misma base física.
-    """
-    connections.databases['default'] = dict(tenant.db_config())
-    try:
-        del connections['default']  # descarta la conexión ya abierta (control) en este hilo
-    except Exception:
-        pass
+from tenants.runtime import apuntar_default_al_tenant
 
 
 class Command(BaseCommand):

@@ -34,56 +34,84 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         loop = opts['loop']
         while True:
-            # Envíos programados vencidos (independiente del loop por conexión)
-            try:
-                n_prog = procesar_envios_programados()
-                if n_prog:
-                    self.stdout.write(f'{n_prog} envíos programados despachados')
-            except Exception as e:
-                self.stderr.write(f'Error en envíos programados: {e}')
-
-            qs = MailConexion.objects.filter(activo=True).select_related('usuario')
-            if opts['usuario']:
-                qs = qs.filter(usuario__username=opts['usuario'])
-            for conexion in qs:
-                # Buzones simulados (instancias demo, seed_demo): no hay IMAP real.
-                if 'simulacion.iamet' in (conexion.imap_servidor or '').lower():
-                    continue
-                try:
-                    imap = _get_imap(conexion)
-                except Exception as e:
-                    self.stderr.write(f'{conexion.correo_electronico}: sin conexión IMAP ({e})')
-                    continue
-                try:
-                    acciones = aplicar_acciones_pendientes(conexion, imap)
-                    nuevos = sincronizar_nuevos_conexion(conexion, imap)
-                    flags = refrescar_flags_inbox(conexion, imap)
-                    self.stdout.write(
-                        f'{conexion.correo_electronico}: {nuevos} nuevos, '
-                        f'{acciones} acciones aplicadas, {flags} flags actualizados'
-                    )
-                    # Mi Asistente: clasificar lo recién llegado (IA con tope, 1 sola
-                    # vez por correo) para que el veredicto ya esté listo cuando el
-                    # widget pregunte por el feed.
-                    if nuevos:
+            # MULTITENANT (bridge): UN solo worker atiende a todas las empresas.
+            # Cada pasada recorre las empresas activas del registro de control y
+            # corre la sincronización dentro del contexto de cada una (router →
+            # su BD, llave Fernet propia, y `default` repuntado para el código
+            # legado). Un error en una empresa no detiene a las demás. En modo
+            # clásico (IAMET) la pasada es la de siempre, sin tenants.
+            from tenants.runtime import apuntar_default_al_tenant, modo_tenant, tenants_activos
+            if modo_tenant():
+                from tenants.context import tenant_context
+                for tenant in tenants_activos():
+                    with tenant_context(tenant):
+                        apuntar_default_al_tenant(tenant)
                         try:
-                            from app.views_crm import analizar_correos_recientes
-                            analizados = analizar_correos_recientes(conexion.usuario)
-                            if analizados:
-                                self.stdout.write(
-                                    f'{conexion.correo_electronico}: {analizados} correos analizados'
-                                )
+                            self._pasada(opts, etiqueta=f'[{tenant.slug}] ')
                         except Exception as e:
-                            self.stderr.write(f'{conexion.correo_electronico}: análisis falló ({e})')
-                except Exception as e:
-                    self.stderr.write(f'{conexion.correo_electronico}: error ({e})')
-                finally:
-                    try:
-                        imap.logout()
-                    except Exception:
-                        pass
+                            self.stderr.write(f'[{tenant.slug}] pasada falló: {e}')
+                        finally:
+                            connections.close_all()  # nada de una empresa queda abierto para la siguiente
+            else:
+                self._pasada(opts)
             if not loop:
                 break
             # MySQL cierra conexiones ociosas; renovarlas entre pasadas
             connections.close_all()
             time.sleep(loop)
+
+    def _pasada(self, opts, etiqueta=''):
+        """Una pasada completa sobre la empresa actual (la BD a la que apunta el
+        ORM en este momento)."""
+        out = lambda m: self.stdout.write(etiqueta + m)  # noqa: E731
+        err = lambda m: self.stderr.write(etiqueta + m)  # noqa: E731
+        # Envíos programados vencidos (independiente del loop por conexión)
+        try:
+            n_prog = procesar_envios_programados()
+            if n_prog:
+                out(f'{n_prog} envíos programados despachados')
+        except Exception as e:
+            err(f'Error en envíos programados: {e}')
+
+        qs = MailConexion.objects.filter(activo=True).select_related('usuario')
+        if opts['usuario']:
+            qs = qs.filter(usuario__username=opts['usuario'])
+        n_conex = 0
+        for conexion in qs:
+            n_conex += 1
+            # Buzones simulados (instancias demo, seed_demo): no hay IMAP real.
+            if 'simulacion.iamet' in (conexion.imap_servidor or '').lower():
+                continue
+            try:
+                imap = _get_imap(conexion)
+            except Exception as e:
+                err(f'{conexion.correo_electronico}: sin conexión IMAP ({e})')
+                continue
+            try:
+                acciones = aplicar_acciones_pendientes(conexion, imap)
+                nuevos = sincronizar_nuevos_conexion(conexion, imap)
+                flags = refrescar_flags_inbox(conexion, imap)
+                out(
+                    f'{conexion.correo_electronico}: {nuevos} nuevos, '
+                    f'{acciones} acciones aplicadas, {flags} flags actualizados'
+                )
+                # Mi Asistente: clasificar lo recién llegado (IA con tope, 1 sola
+                # vez por correo) para que el veredicto ya esté listo cuando el
+                # widget pregunte por el feed.
+                if nuevos:
+                    try:
+                        from app.views_crm import analizar_correos_recientes
+                        analizados = analizar_correos_recientes(conexion.usuario)
+                        if analizados:
+                            out(f'{conexion.correo_electronico}: {analizados} correos analizados')
+                    except Exception as e:
+                        err(f'{conexion.correo_electronico}: análisis falló ({e})')
+            except Exception as e:
+                err(f'{conexion.correo_electronico}: error ({e})')
+            finally:
+                try:
+                    imap.logout()
+                except Exception:
+                    pass
+        if etiqueta:
+            out(f'pasada completa: {n_conex} conexiones de correo')

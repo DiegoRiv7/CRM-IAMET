@@ -58,3 +58,31 @@ def sso_secret():
     """Secreto del inicio de sesión desde el portal: por empresa en bridge;
     la variable PORTAL_SSO_SECRET en clásico (vacía en IAMET = SSO apagado)."""
     return _secreto('portal_sso_secret', os.environ.get('PORTAL_SSO_SECRET', ''))
+
+
+# ── Consola y workers ─────────────────────────────────────────────────────
+def tenants_activos():
+    """Empresas activas del registro de control (lista materializada, para
+    poder cerrar conexiones mientras se recorren). [] en modo clásico."""
+    if not modo_tenant():
+        return []
+    from .models import Tenant
+    return list(Tenant.objects.filter(activo=True).order_by('slug'))
+
+
+def apuntar_default_al_tenant(tenant):
+    """Hace que el alias `default` de ESTE proceso sea la BD del tenant.
+
+    Solo para consola y workers (tenant_run, sincronizar_correo), nunca para
+    el web. Mucho código legado —migraciones con SQL crudo sobre
+    `django.db.connection`, `seed_empresa`, el worker de correo— asume que
+    `default` es "la base de la empresa". Bajo silo lo era; bajo bridge
+    `default` apunta a control y ese código truena. Repuntarlo aquí les
+    devuelve esa premisa sin reescribirlo. El router sigue mandando el ORM a
+    `t_<slug>`, que es la misma base física.
+    """
+    connections.databases['default'] = dict(tenant.db_config())
+    try:
+        del connections['default']  # descarta la conexión ya abierta en este hilo
+    except Exception:
+        pass
