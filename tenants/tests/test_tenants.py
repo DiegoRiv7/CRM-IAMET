@@ -10,12 +10,14 @@ Pruebas del cimiento multitenant (Fase 0). Lo que garantizan:
   - Dos hosts seguidos en el mismo hilo no se cruzan.
   - Los hilos no heredan el tenant salvo con bind_tenant().
 """
+import io
 import threading
 
 from django.contrib.sessions.models import Session
+from django.core.management import call_command
 from django.db import connections
 from django.http import HttpResponse
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase
 
 from tenants.connections import olvidar_alias
 from tenants.context import bind_tenant, get_current_tenant, tenant_context
@@ -165,3 +167,29 @@ class ContextTests(_LimpiaAlias, TestCase):
         th.join()
         self.assertEqual(visto, ['hilo'])
         self.assertIsNone(get_current_tenant())
+
+
+class TenantRunTests(_LimpiaAlias, SimpleTestCase):
+    """SimpleTestCase a propósito: tenant_run repunta `default` del proceso y
+    eso no convive con el atomic por clase de TestCase. Django ordena los
+    SimpleTestCase al final, así que no afecta a las demás clases."""
+    databases = {'default', 'control'}
+
+    def test_reenvia_flags_al_hijo_y_repunta_default_a_la_empresa(self):
+        t = _tenant('cli')
+        antes = dict(connections.databases['default'])
+        out = io.StringIO()
+        try:
+            # `check --tag models` lleva un --flag: con nargs='*' argparse lo rechazaba.
+            call_command('tenant_run', 'cli', 'check', '--tag', 'models', stdout=out)
+            self.assertIn('[cli] check --tag models', out.getvalue())
+            # Tras el comando, `default` de ESTE proceso es la BD de la empresa
+            # (misma config que t_cli): lo que necesitan migraciones/semillas legadas.
+            self.assertEqual(connections.databases['default']['NAME'], t.db_config()['NAME'])
+            self.assertIsNone(get_current_tenant(), 'el contexto se limpia al salir')
+        finally:
+            connections.databases['default'] = antes
+            try:
+                del connections['default']
+            except Exception:
+                pass
