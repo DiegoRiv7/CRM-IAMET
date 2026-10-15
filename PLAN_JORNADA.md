@@ -592,6 +592,17 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   Se cerró el único eslabón sin firmar: el amarre entre el número del reloj y el trabajador. Ligar,
   desligar, importar y el amarre automático por número parecido entran al libro; el automático nace
   **sin confirmar**, se señala en pantalla y sus marcas llevan `enlace: sin confirmar`. 214 pruebas.
+- **Fase 6 (Evidencia + cierre de periodo) — HECHA 2026-10-15, desplegada en pruebas.**
+  `rh/cierres.py` + la pantalla de Evidencia con datos reales (libro, cierres y custodia, verificar).
+  Sellar una quincena calcula su **huella raíz** y emite una constancia en texto para guardar FUERA
+  del sistema: ese papel es la custodia, porque si alguien altera el pasado el recálculo deja de
+  coincidir con lo que el patrón ya tiene en la mano. Dientes: no se aprueba una corrección sobre un
+  periodo sellado (hay que reabrir con motivo y volver a sellar, y la raíz cambia a propósito); una
+  marca que llega tardísima a un periodo sellado queda en excepción en vez de mover un total
+  entregado; no se sella un periodo sin terminar, con solicitudes pendientes, sobre cadena rota ni
+  encimado. 240 pruebas.
+  **Ya no queda ninguna pantalla con datos de muestra salvo Cuenta** (contraseña y dispositivos de
+  confianza) y la vista de Jornadas para supervisor, que no tiene plantilla propia.
 - **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
   por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
   final.
