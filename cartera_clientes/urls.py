@@ -27,6 +27,14 @@ from django.views.static import serve
 from django.urls import re_path
 
 if getattr(settings, 'TENANT_MODE', False):
+    # API de CONTROL (sin empresa): catálogo y validación por slug para el portal.
+    # El middleware deja pasar /control/ sin resolver tenant; el token manda.
+    from tenants import control_api
+    urlpatterns += [
+        path('control/empresas/', control_api.empresas),
+        path('control/validar/', control_api.validar),
+        path('control/reset/', control_api.reset),
+    ]
     # MULTITENANT: /media/ solo para usuarios autenticados y solo desde la
     # subcarpeta de SU empresa (MEDIA_ROOT/<slug>) — nunca el disco compartido.
     from tenants.views import media as _media_tenant

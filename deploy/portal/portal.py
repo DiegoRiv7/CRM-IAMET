@@ -50,6 +50,10 @@ CFG = {
     # API de administración para el Panel de Administración del CRM de IAMET (token compartido).
     'ADMIN_TOKEN': (os.environ.get('PORTAL_ADMIN_TOKEN') or '').strip(),
     'URL': (os.environ.get('PORTAL_URL') or '').strip().rstrip('/'),
+    # CRM COMPARTIDO (multitenant bridge): si estas dos están definidas, el
+    # portal habla con la API de control en vez de con una instancia por empresa.
+    'BRIDGE_URL': (os.environ.get('PORTAL_BRIDGE_URL') or '').strip().rstrip('/'),
+    'CONTROL_TOKEN': (os.environ.get('PORTAL_CONTROL_TOKEN') or '').strip(),
 }
 if not CFG['URL']:
     CFG['URL'] = f"{'https' if CFG['HTTPS'] else 'http'}://portal.{CFG['IP'].replace('.', '-')}.nip.io"
@@ -202,7 +206,9 @@ def _env_de(slug):
 
 
 def _api_instancia(e, ruta, datos, timeout=6):
-    """POST JSON a la API interna de una instancia (127.0.0.1:<puerto>) con su secreto."""
+    """POST JSON a la API interna de una instancia (127.0.0.1:<puerto>) con su secreto.
+    Modelo VIEJO (un contenedor por empresa). Con el CRM compartido se usa
+    _api_control()."""
     secreto = _env_de(e['slug']).get('PORTAL_SSO_SECRET', '')
     if not secreto:
         return None
@@ -216,6 +222,48 @@ def _api_instancia(e, ruta, datos, timeout=6):
             return json.loads(r.read().decode() or '{}')
     except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError):
         return None
+
+
+# ── CRM compartido (multitenant bridge): API de control ────────────────────
+# Una sola app atiende a todas las empresas, así que el portal ya no habla con
+# "instancias": le pregunta al control por el catálogo y valida contra UNA
+# empresa (por slug). Así la contraseña del usuario deja de viajar a empresas
+# ajenas, que es lo que hacía el fan-out del modelo anterior.
+def _api_control(ruta, datos=None, timeout=8):
+    if not (CFG['BRIDGE_URL'] and CFG['CONTROL_TOKEN']):
+        return None
+    cabeceras = {'X-Control-Token': CFG['CONTROL_TOKEN']}
+    cuerpo = None
+    if datos is not None:
+        cuerpo = json.dumps(datos).encode()
+        cabeceras['Content-Type'] = 'application/json'
+    req = urllib.request.Request(f"{CFG['BRIDGE_URL']}{ruta}", data=cuerpo, headers=cabeceras,
+                                 method='POST' if datos is not None else 'GET')
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode() or '{}')
+    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError):
+        return None
+
+
+def modo_bridge():
+    return bool(CFG['BRIDGE_URL'] and CFG['CONTROL_TOKEN'])
+
+
+def empresas_control():
+    """Catálogo de empresas activas según la BD de control (CRM compartido).
+    [] si el bridge no está configurado o no responde."""
+    r = _api_control('/control/empresas/')
+    return (r or {}).get('empresas', []) if (r or {}).get('ok') else []
+
+
+def empresas_para_elegir():
+    """Lista {slug, nombre} para que el usuario escoja su empresa ANTES de
+    escribir su contraseña. Con el CRM compartido viene del control; si no,
+    del inventario de siempre."""
+    if modo_bridge():
+        return [{'slug': e['slug'], 'nombre': e['nombre']} for e in empresas_control()]
+    return [{'slug': e['slug'], 'nombre': e['nombre']} for e in empresas_activas()]
 
 
 def _candidatas(usuario, empresa_hint=''):
@@ -294,9 +342,28 @@ def entrar():
         usuario = (request.form.get('username') or '').strip()
         password = request.form.get('password') or ''
         remember = bool(request.form.get('remember'))
+        empresa_sel = (request.form.get('empresa') or empresa_hint or '').strip()
         if not rate_ok('login:' + ip, limite=15, ventana=900):
             flash('Demasiados intentos; espera unos minutos.', 'error')
+        elif modo_bridge():
+            # CRM compartido: la empresa se elige ANTES de autenticar y la
+            # contraseña se valida SOLO contra ella (nunca contra las demás).
+            if not empresa_sel:
+                flash('Elige tu empresa para continuar.', 'error')
+            elif not (usuario and password):
+                flash('Escribe tu usuario y tu contraseña.', 'error')
+            else:
+                r = _api_control('/control/validar/', {'slug': empresa_sel, 'usuario': usuario,
+                                                       'password': password, 'remember': remember})
+                if r and r.get('ok'):
+                    datos = next((e for e in empresas_control() if e['slug'] == empresa_sel), None)
+                    host = (datos or {}).get('hosts') or []
+                    base = f"{'https' if CFG['HTTPS'] else 'http'}://{host[0]}/app/login/" if host else url_login(empresa_sel)
+                    destino = next_url if (next_url.startswith('/') and not next_url.startswith('//')) else '/app/home/'
+                    return redirect(f"{base}portal/?t={urllib.request.quote(r['token'])}&next={urllib.request.quote(destino)}")
+                flash('Credenciales incorrectas. Verifica tu usuario y contraseña.', 'error')
         elif usuario and password:
+            # Modelo viejo (una instancia por empresa).
             aceptadas = []
             for e in _candidatas(usuario, empresa_hint):
                 r = _api_instancia(e, '/app/api/portal/validar/', {'usuario': usuario, 'password': password, 'remember': remember})
@@ -311,7 +378,10 @@ def entrar():
                 flash('Credenciales incorrectas. Verifica tu usuario y contraseña.', 'error')
         else:
             flash('Escribe tu usuario y tu contraseña.', 'error')
-    return render_template('entrar.html', usuario=usuario, opciones=opciones, empresa_hint=empresa_hint, next_url=next_url)
+    return render_template('entrar.html', usuario=usuario, opciones=opciones, empresa_hint=empresa_hint,
+                           next_url=next_url,
+                           empresas=empresas_para_elegir() if modo_bridge() else [],
+                           empresa_sel=(request.form.get('empresa') or '').strip())
 
 
 @app.post('/entrar/olvide')
@@ -324,10 +394,17 @@ def entrar_olvide():
     usuario = (data.get('username') or '').strip()
     if not usuario:
         return jsonify({'status': 'error', 'message': 'Escribe tu usuario o correo.'}), 400
-    for e in _candidatas(usuario):
-        r = _api_instancia(e, '/app/api/portal/reset/', {'usuario': usuario})
-        if r and r.get('ok') and r.get('existe'):
-            break
+    empresa_sel = (data.get('empresa') or '').strip()
+    if modo_bridge():
+        # Con el CRM compartido se avisa SOLO a los supervisores de la empresa
+        # elegida; sin empresa no se consulta a nadie.
+        if empresa_sel:
+            _api_control('/control/reset/', {'slug': empresa_sel, 'usuario': usuario})
+    else:
+        for e in _candidatas(usuario):
+            r = _api_instancia(e, '/app/api/portal/reset/', {'usuario': usuario})
+            if r and r.get('ok') and r.get('existe'):
+                break
     # Respuesta genérica siempre (no revelar si el usuario existe ni en qué empresa)
     return jsonify({'status': 'ok', 'message': 'Si el usuario existe, un supervisor de tu empresa recibió la solicitud y te contactará.'})
 

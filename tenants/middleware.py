@@ -17,6 +17,12 @@ from .context import reset_current_tenant, set_current_tenant
 from .resolver import por_host
 
 HEALTH_PATH = '/healthz/'
+#: Endpoints que NO pertenecen a ninguna empresa (catálogo de empresas, validación
+#: de login por slug para el portal). Pasan sin resolver tenant: el router manda
+#: los modelos de `tenants` a la BD de control aunque no haya tenant actual, y
+#: cada vista abre el contexto de la empresa que le toque. Van protegidos por
+#: CONTROL_API_TOKEN (ver tenants/control_api.py).
+CONTROL_PREFIX = '/control/'
 
 
 class TenantMiddleware:
@@ -26,6 +32,8 @@ class TenantMiddleware:
     def __call__(self, request):
         if request.path == HEALTH_PATH:
             return HttpResponse('ok', content_type='text/plain')
+        if request.path.startswith(CONTROL_PREFIX):
+            return self.get_response(request)
 
         tenant = por_host(request.META.get('HTTP_HOST', ''))
         if tenant is None:

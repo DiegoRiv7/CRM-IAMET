@@ -221,6 +221,9 @@ if TENANT_MODE:
     # (control no tiene las tablas de la app) en vez de filtrar datos de alguien.
     DATABASES = {'default': dict(_control), 'control': _control}
     DATABASE_ROUTERS = ['tenants.router.TenantRouter']
+    # Token que exige la API de control (/control/…) al portal maestro. Sin él,
+    # esos endpoints responden 404 (ver tenants/control_api.py).
+    CONTROL_API_TOKEN = os.environ.get('CONTROL_API_TOKEN', '')
     # Hosts de las empresas: sufijos comodín (ALLOWED_HOSTS acepta ".dominio").
     # El gate real es el registro de empresas (TenantMiddleware → 404).
     _sufijos = [s.strip() for s in os.environ.get(

@@ -11,11 +11,24 @@
 {% else %}
 <form method="post" class="anim-stagger-3">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-    <input type="hidden" name="empresa" value="{{ empresa_hint or '' }}">
     <input type="hidden" name="next" value="{{ next_url or '/app/home/' }}">
+    {# La empresa se elige ANTES de la contraseña: así se valida contra UNA sola
+       y la contraseña no viaja a empresas ajenas. Si ya venimos de su CRM
+       (empresa_hint), no hace falta preguntar. #}
+    {% if empresas and not empresa_hint %}
+    <div class="input-group">
+        <label for="empresa">Empresa</label>
+        <select id="empresa" name="empresa" required autofocus>
+            <option value="">Elige tu empresa…</option>
+            {% for e in empresas %}<option value="{{ e.slug }}" {% if e.slug == empresa_sel %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}
+        </select>
+    </div>
+    {% else %}
+    <input type="hidden" name="empresa" value="{{ empresa_hint or empresa_sel or '' }}">
+    {% endif %}
     <div class="input-group">
         <label for="username">Usuario o Correo</label>
-        <input type="text" id="username" name="username" placeholder="ej. nombre.apellido o tu@empresa.com" value="{{ usuario or '' }}" autocomplete="username" required autofocus>
+        <input type="text" id="username" name="username" placeholder="ej. nombre.apellido o tu@empresa.com" value="{{ usuario or '' }}" autocomplete="username" required {% if empresa_hint or not empresas %}autofocus{% endif %}>
     </div>
     <div class="input-group">
         <label for="password">Contraseña</label>
