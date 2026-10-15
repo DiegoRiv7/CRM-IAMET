@@ -4,16 +4,31 @@ import os
 from .views import is_supervisor, is_engineer
 from .models import UserProfile
 
-# Feature flag de "Mi día" (icono del sidebar). Nació OCULTO por default para
-# el soft-launch; con Mi Asistente listo para liberar (2026-08-17) el default
-# es VISIBLE en todos lados — el merge a producción basta, sin tocar su .env.
-# Para ocultarlo en un ambiente: RESUMEN_HABILITADO=0 en su .env.
-RESUMEN_HABILITADO = os.environ.get('RESUMEN_HABILITADO', '1') == '1'
+# MULTITENANT: estas banderas se leen EN CADA REQUEST (no al importar): en
+# modo bridge un mismo proceso atiende a varias empresas y lo que se lea del
+# entorno al importar se serviría a todas. Las integraciones del sitio de
+# IAMET (Sitio Web, panel del portal) se ocultan a las empresas cliente.
 
-# URL del sitio web en pruebas (botón "Sitio Web" del sidebar). Solo aparece
-# donde la variable esté definida — en pruebas apunta a la copia del sitio
-# que corre en este mismo servidor; producción no la define y no ve nada.
-SITIO_WEB_URL = os.environ.get('SITIO_WEB_URL', '')
+
+def _es_iamet_o_clasico(empresa):
+    from tenants.runtime import modo_tenant
+    return (not modo_tenant()) or bool(getattr(empresa, 'es_iamet', False))
+
+
+def _resumen_habilitado():
+    # Feature flag de "Mi día" (icono del sidebar). Default VISIBLE; para
+    # ocultarlo en un ambiente: RESUMEN_HABILITADO=0 en su .env.
+    return os.environ.get('RESUMEN_HABILITADO', '1') == '1'
+
+
+def _sitio_web_url(empresa):
+    # Botón "Sitio Web" del sidebar: copia del sitio de IAMET en pruebas.
+    return os.environ.get('SITIO_WEB_URL', '') if _es_iamet_o_clasico(empresa) else ''
+
+
+def _portal_admin_habilitado(empresa):
+    # Sección "Empresas del producto" del panel admin: solo la instancia de IAMET.
+    return bool(os.environ.get('PORTAL_ADMIN_URL')) if _es_iamet_o_clasico(empresa) else False
 
 def supervisor_flag(request):
     user_authenticated = request.user.is_authenticated
@@ -47,11 +62,11 @@ def supervisor_flag(request):
         'is_supervisor': is_supervisor(request.user) if user_authenticated else False,
         'is_engineer': is_engineer(request.user) if user_authenticated else False,
         'user_profile': profile,
-        'resumen_habilitado': RESUMEN_HABILITADO and mods.get('asistente_ia', True),
-        'sitio_web_url': SITIO_WEB_URL,
+        'resumen_habilitado': _resumen_habilitado() and mods.get('asistente_ia', True),
+        'sitio_web_url': _sitio_web_url(empresa),
         # MULTIEMPRESA: sección "Empresas del producto" del panel admin (solo la instancia de
         # IAMET define PORTAL_ADMIN_URL/TOKEN; las empresas cliente no la ven).
-        'portal_admin_habilitado': bool(os.environ.get('PORTAL_ADMIN_URL')),
+        'portal_admin_habilitado': _portal_admin_habilitado(empresa),
         # Bandeja Chat Web del sitio: supervisores siempre; el resto por flag.
         'puede_chat_web': (
             mods.get('chat_web', False)

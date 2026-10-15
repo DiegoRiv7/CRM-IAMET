@@ -31,7 +31,16 @@ _SALT = 'crm-portal-sso'
 
 
 def _secreto():
-    return (os.environ.get('PORTAL_SSO_SECRET') or '').strip()
+    # Bridge: secreto propio de la empresa del request (Tenant.portal_sso_secret);
+    # clásico: la variable PORTAL_SSO_SECRET del .env (vacía en IAMET → 404).
+    from tenants.runtime import sso_secret
+    return sso_secret()
+
+
+def _slug_tenant(request):
+    """slug de la empresa resuelta por hostname ('' en modo clásico)."""
+    t = getattr(request, 'tenant', None)
+    return t.slug if t is not None else ''
 
 
 def _signer():
@@ -76,8 +85,11 @@ def api_portal_validar(request):
     user = authenticate(request, username=username, password=password)
     if not user or not user.is_active:
         return JsonResponse({'ok': False})
+    # 't' = empresa que emite el token: login_portal lo verifica contra la
+    # empresa del host para que un token de A jamás abra sesión en B.
     token = _signer().sign_object({
         'u': user.username, 'r': 1 if data.get('remember') else 0, 'n': secrets.token_hex(8),
+        't': _slug_tenant(request),
     })
     return JsonResponse({'ok': True, 'token': token, 'username': user.username,
                          'nombre': (user.get_full_name() or user.username)})
@@ -122,6 +134,11 @@ def login_portal(request):
         datos = _signer().unsign_object(token, max_age=TOKEN_MAX_AGE)
     except (signing.BadSignature, signing.SignatureExpired):
         return redirect('/app/login/?portal=expirado')
+    # Bridge: el token tiene que ser de ESTA empresa (además de estar firmado
+    # con SU secreto). Un token de otra empresa nunca abre sesión aquí.
+    esperado = _slug_tenant(request)
+    if esperado and datos.get('t') != esperado:
+        return redirect('/app/login/?portal=invalido')
     nonce = datos.get('n', '')
     # Un solo uso: si ya se usó, no vale (protege contra reenvío del enlace).
     if not nonce or PortalTokenUsado.objects.filter(nonce=nonce).exists():

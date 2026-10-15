@@ -45,7 +45,8 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _encrypt_password(plain: str) -> str:
-    key = settings.MAIL_ENCRYPTION_KEY
+    from tenants.runtime import mail_key  # llave de ESTA empresa (bridge) o settings (clásico)
+    key = mail_key()
     if not key:
         return plain  # Fallback: store plain if no key configured
     try:
@@ -58,7 +59,8 @@ def _encrypt_password(plain: str) -> str:
 
 
 def _decrypt_password(encrypted: str) -> str:
-    key = settings.MAIL_ENCRYPTION_KEY
+    from tenants.runtime import mail_key  # llave de ESTA empresa (bridge) o settings (clásico)
+    key = mail_key()
     if not key:
         return encrypted
     try:
@@ -611,7 +613,10 @@ def encolar_accion_mail(correo, accion):
         finally:
             connections.close_all()  # conexión BD del hilo
 
-    threading.Thread(target=_bg, args=(correo.conexion_id,), daemon=True).start()
+    # MULTITENANT: el hilo NO hereda el tenant del request; sin bind_tenant
+    # resolvería `conexion_id` en la BD equivocada (los IDs se repiten entre empresas).
+    from tenants.context import bind_tenant
+    threading.Thread(target=bind_tenant(_bg), args=(correo.conexion_id,), daemon=True).start()
 
 
 def aplicar_acciones_pendientes(conexion, imap=None):

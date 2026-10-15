@@ -993,7 +993,9 @@ def _tool_generar_reporte_excel(args: dict, user: User) -> dict:
         'vendedor_username': vendedor_username,
         'user_id': user.id,
     }
-    cache.set('asist_xlsx_' + token, payload, timeout=3600)
+    # MULTITENANT: la caché puede ser compartida entre empresas → prefijo del tenant.
+    from tenants.runtime import prefijo_cache
+    cache.set(prefijo_cache('asist_xlsx_' + token), payload, timeout=3600)
 
     url = '/app/api/asistente/reporte/xlsx/?token=' + token
 

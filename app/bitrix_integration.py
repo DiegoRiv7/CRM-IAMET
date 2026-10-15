@@ -11,9 +11,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# Los webhooks de Bitrix24 son credenciales de IAMET: viven SOLO en el .env de
+# la instancia (antes había defaults con el webhook real hardcodeado en el
+# repo → cualquier empresa con mod_bitrix habría escrito en el Bitrix de IAMET).
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
-BITRIX_PROJECTS_WEBHOOK_URL = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json")
-BITRIX_DISK_UPLOAD_WEBHOOK_URL = os.getenv("BITRIX_DISK_UPLOAD_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/uti3hluszm31h1xr/disk.folder.uploadfile.json")
+BITRIX_PROJECTS_WEBHOOK_URL = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "")
+BITRIX_DISK_UPLOAD_WEBHOOK_URL = os.getenv("BITRIX_DISK_UPLOAD_WEBHOOK_URL", "")
 
 def get_or_create_bitrix_company(company_name, email=None, contact_name=None, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre

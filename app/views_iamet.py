@@ -3898,7 +3898,9 @@ def api_volumetria_generar_ai(request, levantamiento_id):
         data={'_ai': {'status': 'generando'}},
         creado_por=request.user,
     )
-    threading.Thread(target=_volumetria_ai_worker,
+    # MULTITENANT: el hilo no hereda el tenant; bind_tenant lo lleva consigo.
+    from tenants.context import bind_tenant
+    threading.Thread(target=bind_tenant(_volumetria_ai_worker),
                      args=(vol.id, request.user.id), daemon=True).start()
     return JsonResponse({'success': True, 'volumetria_id': vol.id})
 

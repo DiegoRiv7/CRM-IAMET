@@ -474,10 +474,10 @@ def api_archivo_proyecto_stream(request, proyecto_id, archivo_id):
     if not archivo.bitrix_file_id:
         return JsonResponse({'error': 'Archivo no disponible'}, status=404)
 
-    bitrix_webhook = os.getenv(
-        "BITRIX_PROJECTS_WEBHOOK_URL",
-        "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json"
-    )
+    # Sin default hardcodeado: el webhook es credencial de IAMET y vive en su .env.
+    bitrix_webhook = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "")
+    if not bitrix_webhook:
+        return JsonResponse({'error': 'Integración Bitrix24 no configurada'}, status=404)
     base = bitrix_webhook.rsplit("/", 1)[0] + "/"
 
     download_url = ""
@@ -870,10 +870,10 @@ def api_drive_archivo_stream(request, opp_id, archivo_id):
     if not archivo.bitrix_file_id:
         return JsonResponse({'error': 'Archivo no disponible'}, status=404)
 
-    bitrix_webhook = os.getenv(
-        "BITRIX_PROJECTS_WEBHOOK_URL",
-        "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json"
-    )
+    # Sin default hardcodeado: el webhook es credencial de IAMET y vive en su .env.
+    bitrix_webhook = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "")
+    if not bitrix_webhook:
+        return JsonResponse({'error': 'Integración Bitrix24 no configurada'}, status=404)
     base = bitrix_webhook.rsplit("/", 1)[0] + "/"
 
     # Obtener URL de descarga fresca (expiran, por eso se pide cada vez)

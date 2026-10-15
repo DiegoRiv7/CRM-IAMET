@@ -300,6 +300,11 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# MULTITENANT: media por empresa (MEDIA_ROOT/<slug>/...). Las URLs no cambian;
+# la carpeta la decide el tenant del request. Solo en modo bridge.
+if TENANT_MODE:
+    STORAGES['default']['BACKEND'] = 'tenants.storage.TenantMediaStorage'
+
 # Límite de subida de archivos: 100MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600

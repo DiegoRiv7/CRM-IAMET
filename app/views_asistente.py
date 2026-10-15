@@ -564,10 +564,11 @@ def api_asistente_reporte_xlsx(request):
     """
     from django.core.cache import cache
     from django.http import HttpResponse
+    from tenants.runtime import prefijo_cache  # MULTITENANT: llave por empresa
     token = (request.GET.get('token') or '').strip()
     if not token:
         return JsonResponse({'ok': False, 'error': 'Falta token.'}, status=400)
-    payload = cache.get('asist_xlsx_' + token)
+    payload = cache.get(prefijo_cache('asist_xlsx_' + token))
     if not payload:
         return JsonResponse({'ok': False, 'error': 'Token expirado o inválido.'}, status=410)
     if payload.get('user_id') != request.user.id:
@@ -665,7 +666,7 @@ def api_asistente_reporte_xlsx(request):
     )
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     # Token de un solo uso: invalidamos después de la descarga.
-    cache.delete('asist_xlsx_' + token)
+    cache.delete(prefijo_cache('asist_xlsx_' + token))
     return resp
 
 

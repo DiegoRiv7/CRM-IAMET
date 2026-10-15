@@ -1556,8 +1556,6 @@ def api_actualizar_estado_tarea(request):
     """
     API para actualizar el estado de una tarea
     """
-    global tareas_temporales
-    
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
@@ -1613,8 +1611,6 @@ def api_actualizar_tarea(request):
     """
     API para actualizar una tarea completa (solo creadores)
     """
-    global tareas_temporales
-    
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
@@ -4050,8 +4046,9 @@ def solicitar_acceso_proyecto(request, proyecto_id):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto
-            from django.db import connection
-            
+            from tenants.runtime import conexion
+            connection = conexion()  # BD de ESTA empresa (bridge) o `default` (clásico)
+
             # Verificar si la tabla existe en la base de datos
             with connection.cursor() as cursor:
                 # Consulta compatible con MySQL y SQLite
@@ -4128,8 +4125,9 @@ def responder_solicitud_proyecto(request, solicitud_id):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto
-            from django.db import connection
-            
+            from tenants.runtime import conexion
+            connection = conexion()  # BD de ESTA empresa (bridge) o `default` (clásico)
+
             # Verificar si la tabla existe en la base de datos
             with connection.cursor() as cursor:
                 # Consulta compatible con MySQL y SQLite
@@ -4208,8 +4206,9 @@ def obtener_solicitudes_proyecto(request):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto, Proyecto
-            from django.db import connection
-            
+            from tenants.runtime import conexion
+            connection = conexion()  # BD de ESTA empresa (bridge) o `default` (clásico)
+
             # Verificar si la tabla existe en la base de datos
             with connection.cursor() as cursor:
                 # Consulta compatible con MySQL y SQLite

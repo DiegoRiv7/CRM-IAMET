@@ -26,10 +26,16 @@ urlpatterns = [
 from django.views.static import serve
 from django.urls import re_path
 
-urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {
-        'document_root': settings.MEDIA_ROOT,
-    }),
-]
+if getattr(settings, 'TENANT_MODE', False):
+    # MULTITENANT: /media/ solo para usuarios autenticados y solo desde la
+    # subcarpeta de SU empresa (MEDIA_ROOT/<slug>) — nunca el disco compartido.
+    from tenants.views import media as _media_tenant
+    urlpatterns += [re_path(r'^media/(?P<path>.*)$', _media_tenant)]
+else:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {
+            'document_root': settings.MEDIA_ROOT,
+        }),
+    ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
