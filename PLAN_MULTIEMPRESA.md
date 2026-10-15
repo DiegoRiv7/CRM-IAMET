@@ -375,11 +375,33 @@ empresas— se resuelve con un job que recorre las bases.
   `MAIL_ENCRYPTION_KEY` y `PORTAL_SSO_SECRET` pasan a vivir en `Tenant` (6.1).
 
 **Sub-fases y criterio de hecho.**
-- **6.0 Cimiento** — ✅ código 2026-10-15 (app `tenants`, settings, router,
-  middleware, comando, pruebas). Pruebas locales sin cargar `app`:
+- **6.0 Cimiento** — ✅ HECHA 2026-10-15, verificada en server (app `tenants`,
+  settings, router, middleware, comando, pruebas; commits dfc5d605 + aadf051e). Pruebas locales sin cargar `app`:
   `DJANGO_SETTINGS_MODULE=tenants.tests.settings_test python -m django test tenants`.
   Hecho cuando: pruebas en verde **y** en el server de pruebas una empresa real
   responde por hostname con `TENANT_MODE=1`.
+  *Hallazgos de la verificación en server (2026-10-15):* (a) el Action de
+  pruebas **no jala commits** (HEAD del server quedó en 41a05d46 con parches sin
+  commitear) → la verificación corre en una copia aislada
+  `/home/iamet2026/crm-f6smoke` (árbol de pruebas + overlay), con BD de control
+  `crm_control`/`u_control` (`crm-empresas/.env.control`) y empresa de humo
+  `crm_f6smoke` (`.env.f6smoke`), contenedor `crm-f6smoke` en `127.0.0.1:8099`
+  con entrypoint gunicorn directo (el entrypoint oficial corre `migrate` y
+  `createsuperuser` contra `default`). (b) **5 migraciones usan SQL crudo sobre
+  `django.db.connection` (= `default`)**: `_seguro.py`, 0035, 0045, 0082, 0083 —
+  bajo silo `default` era la empresa, bajo bridge es control → `tenant_run`
+  repunta `default` a la BD del tenant mientras corre (solo consola; el web
+  sigue estricto). (c) En código web el SQL crudo está **solo** en
+  `views_proyectos.py` (3 `connection.cursor()`: ~4056, 4134, 4214) → 6.1.
+  (d) Middleware verificado en vivo: host desconocido → 404, `127.0.0.1` → 404,
+  `/healthz/` → 200, host del tenant → enruta a `crm_f6smoke` (nunca a control).
+  (e) Cierre 6.0: migración desde cero + `seed_empresa` vía `tenant_run` OK;
+  login del tenant 200 con título "Smoke Fase 6"; POST de login 302 → sesión
+  creada en `crm_f6smoke.django_session` (auth_user=1); `crm_control` contiene
+  SOLO `django_migrations`, `tenants_tenant`, `tenants_tenanthost` (el router no
+  dejó pasar ninguna tabla de la app). Nota de harness: con `DJANGO_DEBUG=False`
+  la cookie es `Secure` y curl no la reenvía por HTTP → el home vuelve al login;
+  en el server real va con HTTPS (gotcha ya conocido de la Fase 3).
 - **6.1 Blindaje** — cierra las fugas del mapeo del 2026-10-15: hilos sin
   tenant (`views_mail.py:605-614`, `views_iamet.py:3901` → `bind_tenant`); token
   SSO sin empresa (`views_portal_sso.py:79` → firmar el slug y verificarlo contra
