@@ -224,6 +224,11 @@ if TENANT_MODE:
     # Token que exige la API de control (/control/…) al portal maestro. Sin él,
     # esos endpoints responden 404 (ver tenants/control_api.py).
     CONTROL_API_TOKEN = os.environ.get('CONTROL_API_TOKEN', '')
+    # Llave maestra del cifrado EN REPOSO de los secretos de cada empresa
+    # (contraseña de su base, llave de correo, secreto de SSO). Vive aquí, NO
+    # en la BD de control: así un volcado de esa base no entrega credenciales.
+    # ⚠️ Sin esta llave no se puede abrir ninguna empresa: respáldala aparte.
+    TENANT_SECRETS_KEY = os.environ.get('TENANT_SECRETS_KEY', '')
     # Hosts de las empresas: sufijos comodín (ALLOWED_HOSTS acepta ".dominio").
     # El gate real es el registro de empresas (TenantMiddleware → 404).
     _sufijos = [s.strip() for s in os.environ.get(

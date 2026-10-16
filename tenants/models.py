@@ -11,6 +11,8 @@ from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
 
+from .cifrado import CampoCifrado
+
 _slug_ok = RegexValidator(
     r'^[a-z0-9][a-z0-9-]{1,38}$',
     'slug: minúsculas, dígitos y guiones (2 a 39 caracteres)',
@@ -24,15 +26,17 @@ class Tenant(models.Model):
     # Conexión a SU base (usuario con permisos solo sobre ella).
     db_name = models.CharField(max_length=100)
     db_user = models.CharField(max_length=100)
-    db_password = models.CharField(max_length=200)
+    # Los tres secretos van CIFRADOS en reposo: la llave maestra vive en el
+    # .env de la app, no en esta base, así que un volcado no los entrega.
+    db_password = CampoCifrado(max_length=500)
     db_host = models.CharField(max_length=100, default='crm-mysql')
     db_port = models.PositiveIntegerField(default=3306)
 
     # Secretos propios de la empresa (antes vivían en .env.<slug>).
-    mail_encryption_key = models.CharField(max_length=200, blank=True, default='',
-                                           help_text='Llave Fernet del cifrado de contraseñas de buzones')
-    portal_sso_secret = models.CharField(max_length=200, blank=True, default='',
-                                         help_text='Secreto del inicio de sesión desde el portal')
+    mail_encryption_key = CampoCifrado(max_length=500, blank=True, default='',
+                                       help_text='Llave Fernet del cifrado de contraseñas de buzones')
+    portal_sso_secret = CampoCifrado(max_length=500, blank=True, default='',
+                                     help_text='Secreto del inicio de sesión desde el portal')
 
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(auto_now_add=True)
