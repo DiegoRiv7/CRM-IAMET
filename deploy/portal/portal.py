@@ -695,7 +695,13 @@ def _worker():
                     cmd += ['--dominio', f"{s['slug']}.{CFG['DOMINIO_BASE']}"]
             log = []
             try:
-                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=CFG['SRC_DIR'])
+                # Los scripts resuelven sus rutas con SRC_DIR/EMPRESAS_DIR y, si
+                # no vienen en el entorno, caen a los valores por defecto de
+                # empresas_lib.sh — y buscan plantillas donde no están. El
+                # portal ya sabe cuáles son: hay que pasárselas.
+                entorno = {**os.environ, 'SRC_DIR': CFG['SRC_DIR'], 'EMPRESAS_DIR': CFG['EMPRESAS_DIR']}
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                     cwd=CFG['SRC_DIR'], env=entorno)
                 for linea in p.stdout:
                     log.append(linea.rstrip('\n'))
                     if len(log) % 3 == 0:
