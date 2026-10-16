@@ -680,10 +680,14 @@ def _worker():
                 con.close(); time.sleep(3); continue
             con.execute("UPDATE solicitudes SET estado='creando', log='', actualizado_en=? WHERE id=?", (ahora(), s['id']))
             con.commit()
+            # Con el CRM COMPARTIDO el alta ya no levanta contenedores: crea la
+            # base de la empresa, la registra y la siembra (segundos). Con el
+            # modelo viejo se sigue usando nueva_empresa.sh.
+            guion_alta = 'alta_empresa.sh' if modo_bridge() else 'nueva_empresa.sh'
             if s['tipo'] == 'baja':
                 cmd = [os.path.join(CFG['SRC_DIR'], 'scripts', 'baja_empresa.sh'), s['slug'], '--si'] + (['--purge'] if s['purgar'] else [])
             else:
-                cmd = [os.path.join(CFG['SRC_DIR'], 'scripts', 'nueva_empresa.sh'), s['slug'], '--nombre', s['nombre'],
+                cmd = [os.path.join(CFG['SRC_DIR'], 'scripts', guion_alta), s['slug'], '--nombre', s['nombre'],
                        '--correo', s['correo'], '--admin-email', s['correo'], '--admin-password', s['admin_password'] or secrets.token_hex(6)]
                 if CFG['HTTPS']:
                     cmd.append('--https')

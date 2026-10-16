@@ -80,11 +80,22 @@ else
       -e "s|__IP_GUIONES__|$(tr . - <<<"$IP_PUBLICA")|" \
       -e "s|__CONTROL_PASSWORD__|$CONTROL_DB_PASSWORD|" \
       -e "s|__OPENROUTER_KEY__|${OPENROUTER_API_KEY_COMPARTIDA:-}|" \
+      -e "s|__CONTROL_API_TOKEN__|$(aleatorio 24)|" \
       -e "s|__PORTAL_URL__|$PORTAL_URL|" "$DEPLOY_DIR/env.bridge.tmpl" > "$BRIDGE_ENV"
   printf 'ENV_FILE=%s\n' "$BRIDGE_ENV" >> "$BRIDGE_ENV"
   chmod 600 "$BRIDGE_ENV"
 fi
+# Empresas instaladas antes de la API de control: agregar el token si falta.
+grep -q '^CONTROL_API_TOKEN=' "$BRIDGE_ENV" || printf 'CONTROL_API_TOKEN=%s\n' "$(aleatorio 24)" >> "$BRIDGE_ENV"
 ok ".env del bridge listo (puerto $PUERTO)"
+
+# El portal necesita el MISMO token para hablar con /control/.
+if [[ -f "$EMPRESAS_DIR/portal.env" ]]; then
+  TOK_CTRL="$(grep -E '^CONTROL_API_TOKEN=' "$BRIDGE_ENV" | cut -d= -f2-)"
+  sed -i -e '/^PORTAL_BRIDGE_URL=/d' -e '/^PORTAL_CONTROL_TOKEN=/d' "$EMPRESAS_DIR/portal.env"
+  printf 'PORTAL_BRIDGE_URL=http://127.0.0.1:%s\nPORTAL_CONTROL_TOKEN=%s\n' "$PUERTO" "$TOK_CTRL" >> "$EMPRESAS_DIR/portal.env"
+  ok "portal.env apuntado al CRM compartido (reinicia crm-portal para aplicarlo)"
+fi
 
 # ── 3. Migrar la BD de control ───────────────────────────────────────────
 log "Migrando la BD de control (tablas del registro de empresas)"
