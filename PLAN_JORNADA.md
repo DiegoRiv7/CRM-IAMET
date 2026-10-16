@@ -621,6 +621,15 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
 - **Del plan, lo que queda sin hacer a propósito:** depósito externo WORM (la constancia del cierre
   cubre la manipulación; el desastre es respaldo y va en el endurecimiento), expediente en PDF
   (el ZIP de CSV es mejor prueba), passkeys, NOM-151 y conectores de nómina (bajo demanda).
+- **Acuerdo de registro electrónico — 2026-10-16.** Revisando un aviso de la STPS para 2027 salió
+  un requisito que NO cumplíamos: «acreditar el acuerdo entre patrón y trabajador para invocar el
+  efecto de prueba plena». No es el aviso de privacidad (datos personales): es otro documento donde
+  la persona reconoce que su jornada se lleva por este medio y acepta que los registros hagan
+  prueba. Sin él, un registro impecable se puede discutir en juicio — que es justo lo que vendemos.
+  Se generalizó el mecanismo que ya existía: `AvisoPrivacidad` ahora tiene `tipo`, cada documento
+  su versión y huella, y firmar uno no firma el otro. Aparece en Empresa, la ficha del trabajador,
+  el tablero, Cumplimiento (dos reglas con base legal distinta), el expediente y Mi jornada.
+  **Falta que un abogado revise la redacción antes de que la firme alguien de verdad.**
 - **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
   por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
   final.
