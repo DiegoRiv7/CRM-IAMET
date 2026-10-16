@@ -30,7 +30,14 @@ mkdir -p "$EMPRESAS_DIR"; chmod 700 "$EMPRESAS_DIR"
 [[ -f "$CORE_ENV" ]] || die "Falta $CORE_ENV (córrelo después de nueva_empresa.sh, o créalo desde env.core.tmpl)"
 cargar_core_env
 PORTAL_URL="${PORTAL_URL:-}"
-asegurar_core
+# Si el MySQL compartido YA está arriba, no se toca: un `compose up` con una
+# plantilla distinta a la que lo levantó podría recrear el contenedor y con él
+# tirar las bases de las empresas que ya están sirviendo.
+if [[ "$(docker inspect -f '{{.State.Status}}' crm-mysql 2>/dev/null)" == "running" ]]; then
+  ok "Núcleo ya en marcha (crm-mysql): no se toca"
+else
+  asegurar_core
+fi
 
 IMAGEN="${IMAGEN:-$(imagen_actual)}"
 [[ -n "$IMAGEN" ]] || die "No hay imagen: corre scripts/construir_imagen.sh primero (o pasa --imagen)"
