@@ -481,16 +481,26 @@ def _texto_ocr(archivo_field, max_paginas=_PO_OCR_MAX_PAGINAS, basta=None):
             crudo = fh.read()
         doc = pdfium.PdfDocument(crudo)
         partes = []
-        with _ocr_candado:
-            if _ocr_motor is None:
-                _ocr_motor = RapidOCR()
-            for i in range(min(len(doc), max_paginas)):
-                img = np.array(
-                    doc[i].render(scale=_PO_OCR_DPI / 72).to_pil().convert('RGB'))
-                res, _ = _ocr_motor(img)
-                partes.append('\n'.join(r[1] for r in (res or [])))
-                if basta and basta('\n'.join(partes)):
-                    break
+        # Cola JUSTA entre empresas: una petición por empresa y un tope global.
+        # Antes era un candado único, así que una empresa con cinco PDFs dejaba
+        # esperando a todas las demás detrás de ella.
+        from tenants.concurrencia import RecursoOcupado, turno_ocr
+        try:
+            with turno_ocr():
+                if _ocr_motor is None:
+                    _ocr_motor = RapidOCR()
+                for i in range(min(len(doc), max_paginas)):
+                    img = np.array(
+                        doc[i].render(scale=_PO_OCR_DPI / 72).to_pil().convert('RGB'))
+                    res, _ = _ocr_motor(img)
+                    partes.append('\n'.join(r[1] for r in (res or [])))
+                    if basta and basta('\n'.join(partes)):
+                        break
+        except RecursoOcupado as e:
+            # Degradar, no morir: el archivo simplemente no aporta monto, que es
+            # lo mismo que pasa cuando el OCR no está instalado.
+            logger.info('PO: OCR omitido por carga (%s)', e)
+            return ''
         return '\n'.join(partes)
     except Exception as e:
         logger.warning('PO: falló el OCR de %s: %s',
