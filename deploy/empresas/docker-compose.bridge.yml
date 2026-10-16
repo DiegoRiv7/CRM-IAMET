@@ -14,6 +14,10 @@ services:
     container_name: crm-bridge-web
     restart: unless-stopped
     env_file: ${ENV_FILE}
+    # Sin esto, Python bufferea stdout fuera de una TTY y `docker logs` sale
+    # vacío: el worker parece muerto cuando en realidad está trabajando.
+    environment:
+      PYTHONUNBUFFERED: "1"
     ports:
       - "${BIND:-127.0.0.1}:${PUERTO}:8000"
     volumes:
@@ -37,6 +41,10 @@ services:
     container_name: crm-bridge-mailsync
     restart: unless-stopped
     env_file: ${ENV_FILE}
+    # Sin esto, Python bufferea stdout fuera de una TTY y `docker logs` sale
+    # vacío: el worker parece muerto cuando en realidad está trabajando.
+    environment:
+      PYTHONUNBUFFERED: "1"
     volumes:
       - media:/app/media
     networks:
