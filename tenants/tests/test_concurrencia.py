@@ -40,38 +40,62 @@ class ColaJustaTests(SimpleTestCase):
         cc._cupos.clear()
 
     def test_una_empresa_ruidosa_no_bloquea_a_las_demas(self):
-        """A lanza 4 peticiones; B lanza 1. B no debe quedar detrás de las 4:
-        como A solo puede tener UNA en cola, B compite contra una, no contra cuatro."""
-        orden = []
-        arrancar = threading.Event()
+        """A tiene 4 peticiones en marcha; B llega con una. B NO debe quedar
+        detrás de las cuatro.
 
-        def trabajo(tenant, etiqueta, dura):
-            def _():
-                arrancar.wait()
-                try:
-                    with turno('prueba', max_global=1, espera=10):
-                        orden.append(etiqueta)
-                        time.sleep(dura)
-                except RecursoOcupado:
-                    orden.append(etiqueta + '!')
-            with tenant_context(tenant):
+        La prueba arranca una de A primero y espera a que esté dentro, para que
+        el escenario sea siempre el mismo: con una empresa ocupando el recurso,
+        llega B y después llegan las otras tres de A. Si el reparto fuera por
+        orden de llegada de verdad, B entra en segundo lugar. (Antes esto pasaba
+        o fallaba según el humor del planificador de hilos, y en el servidor
+        fallaba: B entraba de última.)
+        """
+        orden = []
+        dentro = threading.Event()
+        soltar = threading.Event()
+
+        def primera():
+            with tenant_context(_t('ruidosa')):
                 from tenants.context import bind_tenant
+
+                def _():
+                    with turno('prueba', max_global=1, espera=10):
+                        orden.append('A0')
+                        dentro.set()
+                        soltar.wait(timeout=5)
                 return bind_tenant(_)
 
-        a, b = _t('ruidosa'), _t('tranquila')
-        hilos = [threading.Thread(target=trabajo(a, f'A{i}', 0.08)) for i in range(4)]
-        hilos.append(threading.Thread(target=trabajo(b, 'B', 0.01)))
-        for h in hilos:
+        def trabajo(tenant, etiqueta):
+            with tenant_context(tenant):
+                from tenants.context import bind_tenant
+
+                def _():
+                    try:
+                        with turno('prueba', max_global=1, espera=10):
+                            orden.append(etiqueta)
+                            time.sleep(0.03)
+                    except RecursoOcupado:
+                        orden.append(etiqueta + '!')
+                return bind_tenant(_)
+
+        h0 = threading.Thread(target=primera())
+        h0.start()
+        self.assertTrue(dentro.wait(timeout=5), 'la primera entró')
+
+        hb = threading.Thread(target=trabajo(_t('tranquila'), 'B'))
+        hb.start()
+        time.sleep(0.15)                      # B ya está formada
+        resto = [threading.Thread(target=trabajo(_t('ruidosa'), f'A{i}')) for i in range(1, 4)]
+        for h in resto:
             h.start()
-        arrancar.set()
-        for h in hilos:
+        time.sleep(0.15)                      # las de A llegaron DESPUÉS que B
+        soltar.set()
+        for h in [h0, hb, *resto]:
             h.join(timeout=20)
 
-        self.assertIn('B', orden, 'B alcanzó turno')
-        # Sin la cola justa, B terminaría después de las 4 de A. Con ella, B
-        # entra a más tardar tras la primera de A que ya estuviera corriendo.
-        self.assertLessEqual(orden.index('B'), 2,
-                             f'B no debe esperar a todas las de A (orden: {orden})')
+        self.assertEqual(orden[0], 'A0')
+        self.assertEqual(orden[1], 'B',
+                         f'B llegó antes que las otras de A: debe entrar segunda (orden: {orden})')
 
     def test_tope_global_se_respeta(self):
         """Con tope 1, nunca hay dos ejecutándose a la vez (aunque sean de

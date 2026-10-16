@@ -22,17 +22,65 @@ y quien llama degrada con elegancia (en el OCR: seguir sin reconocer el PDF)
 en vez de morir en el timeout de gunicorn y tumbar la petición.
 """
 import threading
+from collections import deque
 from contextlib import contextmanager
 
 from django.conf import settings
 
 _mutex = threading.Lock()
-_turnos = {}   # (recurso, empresa) → Lock   — un turno por empresa
-_cupos = {}    # recurso → BoundedSemaphore  — tope global
+_turnos = {}   # (recurso, empresa) → Lock      — un turno por empresa
+_cupos = {}    # recurso → _CupoJusto           — tope global, por orden de llegada
 
 
 class RecursoOcupado(RuntimeError):
     """No se consiguió turno a tiempo; quien llama debe degradar, no fallar."""
+
+
+class _CupoJusto:
+    """Semáforo por ORDEN DE LLEGADA.
+
+    `threading.Semaphore` no sirve aquí: al liberar un lugar despierta a quien
+    esperaba, pero un hilo que llega en ese instante puede quedarse con el lugar
+    antes de que el otro alcance a despertar. Eso se llama *barging*, y hacía
+    que la empresa ruidosa —que siempre tiene otro hilo listo para entrar— se
+    quedara con todos los turnos: medido en el servidor, la empresa tranquila
+    entraba en el lugar 5 de 5. Con una fila explícita, quien llega y encuentra
+    cola se forma, sin excepciones.
+    """
+
+    def __init__(self, cupos):
+        self._libres = max(1, cupos)
+        self._fila = deque()
+        self._lk = threading.Lock()
+
+    def _despachar(self):
+        while self._libres > 0 and self._fila:
+            self._libres -= 1
+            self._fila.popleft().set()
+
+    def acquire(self, timeout=None):
+        with self._lk:
+            if self._libres > 0 and not self._fila:
+                self._libres -= 1
+                return True
+            aviso = threading.Event()
+            self._fila.append(aviso)
+        if aviso.wait(timeout):
+            return True
+        with self._lk:
+            try:
+                self._fila.remove(aviso)
+            except ValueError:
+                # Nos dieron el turno justo al expirar la espera: devolverlo
+                # para no dejar un lugar perdido para siempre.
+                self._libres += 1
+                self._despachar()
+            return False
+
+    def release(self):
+        with self._lk:
+            self._libres += 1
+            self._despachar()
 
 
 def _empresa_actual():
@@ -48,7 +96,7 @@ def _piezas(recurso, max_global):
     with _mutex:
         cupo = _cupos.get(recurso)
         if cupo is None:
-            cupo = _cupos[recurso] = threading.BoundedSemaphore(max(1, max_global))
+            cupo = _cupos[recurso] = _CupoJusto(max_global)
         turno = _turnos.setdefault((recurso, empresa), threading.Lock())
     return turno, cupo
 
