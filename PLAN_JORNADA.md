@@ -630,9 +630,9 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   su versión y huella, y firmar uno no firma el otro. Aparece en Empresa, la ficha del trabajador,
   el tablero, Cumplimiento (dos reglas con base legal distinta), el expediente y Mi jornada.
   **Falta que un abogado revise la redacción antes de que la firme alguien de verdad.**
-- **Evaluación funcional de 64 capacidades — cerrada 2026-10-17.** Se evaluó el sistema contra una
-  matriz que trajo el usuario: **52 cumplen, 8 parciales, 4 no**, dictamen **APTO**. Entre el 16 y
-  el 17 se cerraron ocho puntos: alcance por centro (era de seguridad: el rol prometía filtrar y no
+- **Evaluación funcional de 64 capacidades — cerrada 2026-10-16.** Se evaluó el sistema contra una
+  matriz que trajo el usuario: **52 cumplen, 8 parciales, 4 no**, dictamen **APTO**. El 15 y
+  el 16 se cerraron ocho puntos: alcance por centro (era de seguridad: el rol prometía filtrar y no
   filtraba), clasificación de jornada diurna/nocturna/mixta con los topes del art. 61, calendario
   de festivos del art. 74, reparto de horas extra en dobles y triples (art. 68) más el trabajo en
   día de descanso (art. 75), vacaciones como tipo, y el respaldo PROBADO.
