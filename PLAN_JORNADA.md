@@ -630,6 +630,19 @@ El libro existe, está encadenado y se verifica. Todavía sin pantallas: lo que 
   su versión y huella, y firmar uno no firma el otro. Aparece en Empresa, la ficha del trabajador,
   el tablero, Cumplimiento (dos reglas con base legal distinta), el expediente y Mi jornada.
   **Falta que un abogado revise la redacción antes de que la firme alguien de verdad.**
+- **Evaluación funcional de 64 capacidades — cerrada 2026-10-17.** Se evaluó el sistema contra una
+  matriz que trajo el usuario: **52 cumplen, 8 parciales, 4 no**, dictamen **APTO**. Entre el 16 y
+  el 17 se cerraron ocho puntos: alcance por centro (era de seguridad: el rol prometía filtrar y no
+  filtraba), clasificación de jornada diurna/nocturna/mixta con los topes del art. 61, calendario
+  de festivos del art. 74, reparto de horas extra en dobles y triples (art. 68) más el trabajo en
+  día de descanso (art. 75), vacaciones como tipo, y el respaldo PROBADO.
+  Documento lleno en `timesure/docs/EVALUACION_FUNCIONAL.md`.
+- **Lo que queda de la evaluación se declara «bajo demanda», con motivo.** Turnos rotativos,
+  exportación a CONTPAQi (falta el layout del cliente), comparación con la nómina pagada,
+  departamentos y áreas, marcar en varios centros, prenómina, series históricas y filtro por turno.
+  Ninguna es exigencia de la LFT al software — el propio documento marca los Grupos 2 y 3 como
+  capacidades de producto. **Tres dependen de algo externo:** la llave de Resend (avisos), el
+  layout de CONTPAQi y de dónde leer lo pagado.
 - **Sigue:** consentimiento digital firmado por el propio trabajador desde su pantalla, invitación
   por correo (falta la llave de Resend en pruebas) y el endurecimiento del servidor como fase
   final.
